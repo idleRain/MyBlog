@@ -1,0 +1,31 @@
+# MyBlog 应用配置文件
+
+# 服务器配置
+server:
+  host: "localhost"
+  port: 3000
+  mode: "debug"  # debug, release, test
+
+# 数据库配置
+database:
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "123456"
+  dbname: "blog"
+  charset: "utf8mb4"
+  parse_time: true
+  loc: "Local"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+# 日志配置
+logger:
+  level: "debug"  # debug, info, warn, error
+  output: "stdout"  # stdout, file
+  file_path: "logs/app.log"
+
+# API配置
+api:
+  version: "v1"
+  timeout: 30  # 秒

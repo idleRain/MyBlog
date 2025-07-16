@@ -1,0 +1,25 @@
+# 简化版 Air 热更新配置
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/myblog ./cmd/myblog"
+  bin = "tmp/myblog"
+  full_bin = "./tmp/myblog"
+  include_ext = ["go", "yaml", "yml", "json"]
+  exclude_dir = ["tmp", "vendor", "logs", ".git", ".vscode", ".idea"]
+  kill_delay = "1s"
+  rerun_delay = 500
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"  
+  runner = "green"
+
+[misc]
+  clean_on_exit = true
