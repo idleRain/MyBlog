@@ -1,18 +1,10 @@
 # IDE 配置文件
-.vscode/
 .idea/
 .claude
 .trae
 *.swp
 *.swo
 *~
-
-# 环境变量文件
-.env
-.env.local
-.env.development
-.env.test
-.env.production
 
 # 日志文件
 *.log
@@ -25,7 +17,7 @@
 *.dll
 *.so
 *.dylib
-/bin/
+bin
 tmp
 
 # Go 工作空间文件
@@ -34,10 +26,10 @@ go.work
 # 测试产物
 *.test
 *.out
-/coverage/
+coverage
 
 # 依赖包目录
-/vendor/
+vendor
 
 # 数据库文件
 *.db
@@ -56,7 +48,7 @@ Thumbs.db
 # 临时文件
 *.tmp
 *.temp
-/temp/
+temp
 
 # Air 热更新产生的临时文件
 air_tmp/
@@ -83,8 +75,6 @@ node_modules
 .vercel
 .netlify
 .wrangler
-/.svelte-kit
-/build
 .svelte-kit
 
 # Vite

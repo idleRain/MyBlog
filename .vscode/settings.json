@@ -1,0 +1,6 @@
+{
+  "eslint.validate": ["javascript", "typescript", "svelte"],
+  "eslint.workingDirectories": ["./web"],
+  "eslint.experimental.useFlatConfig": true,
+  "svelte.enable-ts-plugin": true
+}
