@@ -4,37 +4,43 @@
   "version": "1.0.0",
   "description": "MyBlog - 一个包含 Go 后端和 SvelteKit 前端的 Monorepo 项目",
   "type": "module",
+  "author": "IdleRain",
   "workspaces": [
     "web"
   ],
   "scripts": {
     "setup": "bun scripts/setup.ts",
-    "dev": "concurrently --names \"SERVER,WEB\" --prefix-colors \"blue,green\" \"bun run dev:server\" \"bun run dev:web\"",
+    "dev": "bun scripts/dev.ts",
+    "dev:simple": "concurrently --names \"SERVER,WEB\" --prefix-colors \"blue,green\" \"bun run dev:server\" \"bun run dev:web\"",
     "dev:server": "cd server && go run scripts/watcher.go",
     "dev:web": "cd web && bun run dev",
-    "build": "bun run build:server && bun run build:web",
-    "build:server": "bun scripts/go-tools.ts build",
-    "build:web": "cd web && bun run build",
+    "build": "bun scripts/build.ts",
+    "build:clean": "bun scripts/build.ts --clean",
+    "build:production": "bun scripts/build.ts --production",
+    "build:server": "bun scripts/build.ts --server-only",
+    "build:web": "bun scripts/build.ts --web-only",
+    "build:fast": "bun scripts/build.ts --skip-tests --skip-lint",
     "test": "bun run test:server && bun run test:web",
     "test:server": "bun scripts/go-tools.ts test",
-    "test:web": "cd web && bun run test",
-    "lint": "bun run lint:web && bun run lint:server && bun run lint:go",
+    "test:web": "cd web && bun run check",
+    "lint": "bun run lint:web && bun run lint:server",
     "lint:web": "cd web && bun run lint",
-    "lint:server": "bun scripts/go-tools.ts vet",
-    "lint:go": "bun scripts/go-tools.ts lint",
+    "lint:server": "bun scripts/go-tools.ts vet && bun scripts/go-tools.ts lint",
     "format": "bun run format:web && bun run format:server",
     "format:web": "cd web && bun run format",
     "format:server": "bun scripts/go-tools.ts format",
-    "format:go": "cd server && bun run scripts/format-code.js",
     "clean": "bun run clean:server && bun run clean:web",
     "clean:server": "bun scripts/go-tools.ts clean",
     "clean:web": "cd web && rm -rf .svelte-kit dist",
     "deps": "bun install && cd web && bun install && cd ../server && go mod tidy",
-    "check": "bun run lint && bun run test",
+    "check": "bun run lint",
     "quality": "bun run format && bun run lint && bun run test",
     "go:lint-install": "bun scripts/go-tools.ts lint-install",
     "go:quality": "bun scripts/go-tools.ts quality",
     "prepare": "husky"
+  },
+  "dependencies": {
+    "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
@@ -61,8 +67,7 @@
   ],
   "lint-staged": {
     "web/**/*.{js,ts,jsx,tsx,svelte}": [
-      "cd web && bun run format",
-      "cd web && bun run lint"
+      "cd web && bun run format"
     ],
     "*.{json,yaml,yml}": [
       "bunx prettier --write"
@@ -71,7 +76,5 @@
       "cd server && gofmt -w",
       "cd server && goimports -w"
     ]
-  },
-  "author": "MyBlog Team",
-  "license": "MIT"
+  }
 }

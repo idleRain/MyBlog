@@ -2,6 +2,7 @@
 .idea/
 .claude
 .trae
+.kiro
 *.swp
 *.swo
 *~

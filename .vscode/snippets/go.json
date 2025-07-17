@@ -1,0 +1,152 @@
+{
+  "Go Handler Function": {
+    "prefix": "gohandler",
+    "body": [
+      "// ${1:FunctionName} ${2:功能描述} POST /api/${3:endpoint}",
+      "func (h *${4:HandlerName}) ${1:FunctionName}(c *gin.Context) {",
+      "\tvar req ${5:RequestType}",
+      "",
+      "\t// 绑定和验证请求参数",
+      "\tif err := c.ShouldBindJSON(&req); err != nil {",
+      "\t\tresponse.BadRequest(c, \"请求参数错误: \"+err.Error())",
+      "\t\treturn",
+      "\t}",
+      "",
+      "\t// 调用服务层",
+      "\t${6:result}, err := h.${7:serviceName}.${1:FunctionName}(&req)",
+      "\tif err != nil {",
+      "\t\tresponse.InternalError(c, err.Error())",
+      "\t\treturn",
+      "\t}",
+      "",
+      "\tresponse.SuccessWithMessage(c, \"${8:操作成功}\", ${6:result})",
+      "}"
+    ],
+    "description": "创建 Gin HTTP 处理器函数"
+  },
+  "Go Service Function": {
+    "prefix": "goservice",
+    "body": [
+      "// ${1:FunctionName} ${2:功能描述}",
+      "func (s *${3:serviceName}) ${1:FunctionName}(req *${4:RequestType}) (*${5:ResponseType}, error) {",
+      "\t// 参数验证",
+      "\tif req == nil {",
+      "\t\treturn nil, fmt.Errorf(\"请求参数不能为空\")",
+      "\t}",
+      "",
+      "\t// 业务逻辑处理",
+      "\t${6:// TODO: 实现业务逻辑}",
+      "",
+      "\t// 调用数据访问层",
+      "\t${7:result}, err := s.${8:repoName}.${9:RepoMethod}(${10:params})",
+      "\tif err != nil {",
+      "\t\treturn nil, fmt.Errorf(\"${11:操作失败}: %w\", err)",
+      "\t}",
+      "",
+      "\treturn ${7:result}, nil",
+      "}"
+    ],
+    "description": "创建服务层函数"
+  },
+  "Go Repository Function": {
+    "prefix": "gorepo",
+    "body": [
+      "// ${1:FunctionName} ${2:功能描述}",
+      "func (r *${3:repositoryName}) ${1:FunctionName}(${4:params}) (*${5:ModelType}, error) {",
+      "\tvar ${6:model} ${5:ModelType}",
+      "",
+      "\t// 数据库操作",
+      "\terr := r.db.${7:Where}(${8:conditions}).${9:First}(&${6:model}).Error",
+      "\tif err != nil {",
+      "\t\tif errors.Is(err, gorm.ErrRecordNotFound) {",
+      "\t\t\treturn nil, fmt.Errorf(\"${10:记录不存在}\")",
+      "\t\t}",
+      "\t\treturn nil, fmt.Errorf(\"${11:数据库操作失败}: %w\", err)",
+      "\t}",
+      "",
+      "\treturn &${6:model}, nil",
+      "}"
+    ],
+    "description": "创建数据访问层函数"
+  },
+  "Go GORM Model": {
+    "prefix": "gomodel",
+    "body": [
+      "// ${1:ModelName} ${2:模型描述}",
+      "type ${1:ModelName} struct {",
+      "\tID        uint      `json:\"id\" gorm:\"primaryKey\"`",
+      "\t${3:FieldName}  ${4:string}    `json:\"${5:fieldName}\" gorm:\"${6:type:varchar(255);not null}\" binding:\"${7:required}\"`",
+      "\tCreatedAt time.Time `json:\"createdAt\"`",
+      "\tUpdatedAt time.Time `json:\"updatedAt\"`",
+      "\t${8:// 添加更多字段}",
+      "}",
+      "",
+      "// TableName 指定表名",
+      "func (${1:ModelName}) TableName() string {",
+      "\treturn \"${9:table_name}\"",
+      "}"
+    ],
+    "description": "创建 GORM 模型"
+  },
+  "Go Request/Response Struct": {
+    "prefix": "gostruct",
+    "body": [
+      "// ${1:StructName} ${2:结构体描述}",
+      "type ${1:StructName} struct {",
+      "\t${3:FieldName} ${4:string} `json:\"${5:fieldName}\" binding:\"${6:required}\" validate:\"${7:required}\"`",
+      "\t${8:// 添加更多字段}",
+      "}"
+    ],
+    "description": "创建请求/响应结构体"
+  },
+  "Go Interface": {
+    "prefix": "gointerface",
+    "body": [
+      "// ${1:InterfaceName} ${2:接口描述}",
+      "type ${1:InterfaceName} interface {",
+      "\t${3:MethodName}(${4:params}) (${5:returnType}, error)",
+      "\t${6:// 添加更多方法}",
+      "}"
+    ],
+    "description": "创建 Go 接口"
+  },
+  "Go Constructor": {
+    "prefix": "goconstructor",
+    "body": [
+      "// New${1:TypeName} 创建 ${1:TypeName} 实例",
+      "func New${1:TypeName}(${2:dependencies}) ${3:InterfaceName} {",
+      "\treturn &${4:typeName}{",
+      "\t\t${5:field}: ${6:value},",
+      "\t}",
+      "}"
+    ],
+    "description": "创建构造函数"
+  },
+  "Go Error Handling": {
+    "prefix": "goerror",
+    "body": [
+      "if err != nil {",
+      "\treturn ${1:nil}, fmt.Errorf(\"${2:错误描述}: %w\", err)",
+      "}"
+    ],
+    "description": "Go 错误处理"
+  },
+  "Go Test Function": {
+    "prefix": "gotest",
+    "body": [
+      "func Test${1:FunctionName}(t *testing.T) {",
+      "\t// 设置",
+      "\t${2:// TODO: 准备测试数据}",
+      "",
+      "\t// 执行",
+      "\t${3:result}, err := ${4:functionCall}",
+      "",
+      "\t// 断言",
+      "\tassert.NoError(t, err)",
+      "\tassert.NotNil(t, ${3:result})",
+      "\t${5:// 添加更多断言}",
+      "}"
+    ],
+    "description": "创建 Go 测试函数"
+  }
+}

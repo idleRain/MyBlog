@@ -1,0 +1,412 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup Project",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "setup"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "初始化项目环境和依赖"
+    },
+    {
+      "label": "Start Development",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "dev"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "custom",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*启动开发服务器.*$",
+          "endsPattern": "^.*所有服务已启动.*$"
+        }
+      },
+      "detail": "启动智能开发环境 (前后端)"
+    },
+    {
+      "label": "Start Development (Simple)",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "dev:simple"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "detail": "启动简单开发环境 (concurrently)"
+    },
+    {
+      "label": "Start Go Server",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "dev:server"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "detail": "仅启动 Go 后端服务"
+    },
+    {
+      "label": "Start Web Server",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "dev:web"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "detail": "仅启动 SvelteKit 前端服务"
+    },
+    {
+      "label": "Build Project",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "build"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "构建生产版本 (前后端)"
+    },
+    {
+      "label": "Build Go Server",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "build:server"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": {
+        "owner": "go",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}/server"
+        ],
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      },
+      "detail": "仅构建 Go 后端"
+    },
+    {
+      "label": "Build Web",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "build:web"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "仅构建前端"
+    },
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "test"
+      ],
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "运行所有测试"
+    },
+    {
+      "label": "Run Go Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "test:server"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": {
+        "owner": "go",
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}/server"
+        ],
+        "pattern": {
+          "regexp": "^\\s*(.*?):(\\d+):\\s*(.*)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        }
+      },
+      "detail": "运行 Go 测试"
+    },
+    {
+      "label": "Run Web Tests",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "test:web"
+      ],
+      "group": "test",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "运行前端测试"
+    },
+    {
+      "label": "Lint Code",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "lint"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [
+        "$eslint-stylish",
+        {
+          "owner": "golangci-lint",
+          "fileLocation": [
+            "relative",
+            "${workspaceFolder}/server"
+          ],
+          "pattern": {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)\\s+\\((.*)\\)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5,
+            "code": 6
+          }
+        }
+      ],
+      "detail": "运行代码检查"
+    },
+    {
+      "label": "Format Code",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "format"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "格式化代码"
+    },
+    {
+      "label": "Quality Check",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "quality"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "完整质量检查 (格式化 + 检查 + 测试)"
+    },
+    {
+      "label": "Clean Build",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "clean"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "清理构建文件"
+    },
+    {
+      "label": "Install Dependencies",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "deps"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "安装所有依赖"
+    },
+    {
+      "label": "Install Go Lint Tools",
+      "type": "shell",
+      "command": "bun",
+      "args": [
+        "run",
+        "go:lint-install"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "problemMatcher": [],
+      "detail": "安装 Go 代码检查工具"
+    }
+  ]
+}

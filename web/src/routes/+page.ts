@@ -1,7 +1,7 @@
 import type { PageLoad } from './$types'
 import request from '../service/index'
 
-export const prerender = true
+export const prerender = false
 
 export interface Data {
   page: number

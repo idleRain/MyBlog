@@ -31,7 +31,7 @@ const basePrettierConfig = {
   // HTML 空格敏感度
   htmlWhitespaceSensitivity: 'css',
   // 换行符类型
-  endOfLine: 'auto'
+  endOfLine: 'crlf'
 }
 
 export default basePrettierConfig

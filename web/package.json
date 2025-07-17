@@ -4,14 +4,14 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "vite dev --mode dev",
+    "build": "vite build --mode prod",
+    "preview": "vite preview --mode prod",
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "format": "prettier --write .",
-    "lint": "prettier --write . && eslint . --fix --ext .js,.ts,.svelte"
+    "format": "prettier --write src",
+    "lint": "prettier --write src && eslint src --fix --ext .js,.ts,.svelte"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.5",

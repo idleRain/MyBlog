@@ -1,7 +1,52 @@
 {
   "recommendations": [
+    // JavaScript/TypeScript 开发
     "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    // Svelte 开发
     "svelte.svelte-vscode",
-    "esbenp.prettier-vscode"
+    // Go 开发
+    "golang.go",
+    "golang.go-nightly",
+    // 数据库和配置文件
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-mysql",
+    // Git 和版本控制
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    "donjayamanne.githistory",
+    // 开发工具
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "formulahendry.auto-rename-tag",
+    "christian-kohler.path-intellisense",
+    "visualstudioexptteam.vscodeintellicode",
+    // 主题和外观
+    "PKief.material-icon-theme",
+    "ms-vscode.theme-tomorrowkit",
+    // 文档和注释
+    "yzhang.markdown-all-in-one",
+    "shd101wyy.markdown-preview-enhanced",
+    "aaron-bond.better-comments",
+    // 工具和效率
+    "ms-vscode.vscode-json",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "oderwat.indent-rainbow",
+    "christian-kohler.npm-intellisense",
+    "ms-vscode.vscode-json",
+    // REST API 测试
+    "humao.rest-client",
+    // Docker (可选)
+    "ms-azuretools.vscode-docker"
+  ],
+  "unwantedRecommendations": [
+    "ms-vscode.vscode-typescript",
+    "hookyqr.beautify",
+    "ms-vscode.vscode-json"
   ]
 }

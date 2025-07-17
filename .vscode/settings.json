@@ -1,6 +1,108 @@
 {
+  // ESLint 配置
   "eslint.validate": ["javascript", "typescript", "svelte"],
   "eslint.workingDirectories": ["./web"],
   "eslint.experimental.useFlatConfig": true,
-  "svelte.enable-ts-plugin": true
+  
+  // Svelte 配置
+  "svelte.enable-ts-plugin": true,
+  
+  // Go 开发配置
+  "go.gocodeAutoBuild": true,
+  "go.lintOnSave": "package",
+  "go.vetOnSave": "package",
+  "go.formatTool": "goimports",
+  "go.useCodeSnippetsOnFunctionSuggest": true,
+  "go.inferGopath": false,
+  "go.gopath": "",
+  "go.goroot": "",
+  "go.toolsManagement.autoUpdate": true,
+  
+  // 文件关联
+  "files.associations": {
+    "*.yaml": "yaml",
+    "*.yml": "yaml",
+    "go.mod": "go",
+    "go.sum": "go",
+    ".air.toml": "toml"
+  },
+  
+  // 编辑器设置
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [80, 120],
+  "editor.wordWrap": "bounded",
+  "editor.wordWrapColumn": 120,
+  
+  // TypeScript 配置
+  "typescript.preferences.noSemicolons": false,
+  "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  
+  // Prettier 配置
+  "prettier.configPath": "./prettier.config.js",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[go]": {
+    "editor.defaultFormatter": "golang.go"
+  },
+  
+  // 文件资源管理器
+  "explorer.excludeGitIgnore": true,
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/tmp": true,
+    "**/bin": true,
+    "**/.svelte-kit": true,
+    "**/dist": true,
+    "**/build": true
+  },
+  
+  // 搜索设置
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/tmp": true,
+    "**/bin": true,
+    "**/.svelte-kit": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/vendor": true,
+    "**/*.log": true
+  },
+  
+  // Git 配置
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  
+  // 终端配置
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.cwd": "${workspaceFolder}",
+  
+  // 工作区推荐
+  "extensions.showRecommendationsOnlyOnDemand": false,
+  
+  // 多根工作区特定设置
+  "eslint.workingDirectories": ["web"],
+  "go.gopath": "",
+  "go.inferGopath": false
 }
