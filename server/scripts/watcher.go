@@ -45,7 +45,6 @@ var skipDirs = []string{
 
 func main() {
 	fmt.Println("🚀 启动 Go 热更新监听器")
-	fmt.Println("💡 仅监听 server 目录下的 .go 文件变化")
 	fmt.Println("💡 按 Ctrl+C 停止监听")
 	fmt.Println()
 

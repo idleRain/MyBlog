@@ -10,3 +10,4 @@ bun.lockb
 /server/
 .vscode
 .husky
+.svelte-kit
