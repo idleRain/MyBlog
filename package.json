@@ -32,7 +32,7 @@
     "clean": "bun run clean:server && bun run clean:web",
     "clean:server": "bun scripts/go-tools.ts clean",
     "clean:web": "cd web && rm -rf .svelte-kit dist",
-    "deps": "bun install && cd web && bun install && cd ../server && go mod tidy",
+    "deps": "bun install && cd server && go mod tidy",
     "check": "bun run lint",
     "quality": "bun run format && bun run lint && bun run test",
     "go:lint-install": "bun scripts/go-tools.ts lint-install",
@@ -45,7 +45,10 @@
   "devDependencies": {
     "@commitlint/cli": "^19.5.0",
     "@commitlint/config-conventional": "^19.5.0",
+    "@eslint/compat": "^1.2.5",
     "@eslint/js": "^9.18.0",
+    "@types/bun": "^1.2.18",
+    "@types/node": "^24.0.13",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
@@ -56,7 +59,13 @@
     "husky": "^9.0.11",
     "lint-staged": "^15.2.10",
     "prettier": "^3.6.2",
-    "typescript-eslint": "^8.20.0"
+    "prettier-plugin-css-order": "^2.1.2",
+    "prettier-plugin-sort-imports": "^1.8.8",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.20.0",
+    "eslint-plugin-svelte": "^3.10.1",
+    "prettier-plugin-svelte": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.11"
   },
   "keywords": [
     "monorepo",
@@ -66,11 +75,11 @@
     "fullstack"
   ],
   "lint-staged": {
-    "web/**/*.{js,ts,jsx,tsx,svelte}": [
-      "cd web && bun run format"
+    "web/src/**/*.{js,ts,jsx,tsx,svelte}": [
+      "prettier --write"
     ],
     "*.{json,yaml,yml}": [
-      "bunx prettier --write"
+      "prettier --write"
     ],
     "server/**/*.go": [
       "cd server && gofmt -w",

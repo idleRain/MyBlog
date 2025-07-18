@@ -149,16 +149,6 @@ async function installDependencies(options: BuildOptions): Promise<boolean> {
     }
   }
 
-  // 检查并安装前端依赖
-  if (!options.serverOnly && !existsSync('web/node_modules')) {
-    console.log(`${colors.yellow}  安装前端依赖...${colors.reset}`)
-    const result = await runCommand('bun', ['install'], { cwd: 'web' })
-    if (!result.success) {
-      console.error(`${colors.red}❌ 前端依赖安装失败${colors.reset}`)
-      return false
-    }
-  }
-
   // 检查并更新 Go 依赖
   if (!options.webOnly) {
     console.log(`${colors.yellow}  更新 Go 依赖...${colors.reset}`)

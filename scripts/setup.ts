@@ -53,13 +53,9 @@ async function installDependencies() {
   console.log('📦 安装依赖...')
 
   try {
-    // 安装根目录依赖
-    console.log('安装根目录依赖...')
+    // 安装所有依赖 (包括 workspace 中的前端依赖)
+    console.log('安装项目依赖 (monorepo + workspace)...')
     await $`bun install`
-
-    // 安装前端依赖
-    console.log('安装前端依赖...')
-    await $`cd web && bun install`
 
     // 安装后端依赖
     console.log('安装后端依赖...')
@@ -100,39 +96,67 @@ VITE_APP_TITLE=MyBlog
   console.log('')
 }
 
-// 验证设置
-function validateSetup() {
+// 验证并修复设置
+async function validateSetup() {
   console.log('🔍 验证设置...')
 
   const checks = [
     { name: 'package.json', path: 'package.json' },
     { name: 'web/package.json', path: 'web/package.json' },
     { name: 'server/go.mod', path: 'server/go.mod' },
-    { name: 'node_modules', path: 'node_modules' },
-    { name: 'web/node_modules', path: 'web/node_modules' }
+    { name: 'node_modules', path: 'node_modules' }
   ]
 
-  let allValid = true
+  let needsRepair = false
 
   checks.forEach(check => {
     if (existsSync(check.path)) {
       console.log(`✅ ${check.name}`)
     } else {
       console.log(`❌ ${check.name} 缺失`)
-      allValid = false
+      needsRepair = true
     }
   })
 
-  if (allValid) {
-    console.log('\n🎉 环境设置完成！')
-    console.log('\n📖 下一步:')
-    console.log('  bun run dev    # 启动开发服务器')
-    console.log('  bun run build  # 构建项目')
-    console.log('  bun run test   # 运行测试')
-  } else {
-    console.log('\n❌ 设置验证失败，请检查上述问题')
-    process.exit(1)
+  // 如果有缺失，尝试修复
+  if (needsRepair) {
+    console.log('\n🔧 尝试修复缺失的依赖...')
+
+    // 修复根目录依赖
+    if (!existsSync('node_modules')) {
+      try {
+        console.log('安装根目录依赖...')
+        await $`bun install`
+      } catch (error) {
+        console.error('❌ 根目录依赖安装失败:', error)
+        process.exit(1)
+      }
+    }
+
+
+    // 重新验证
+    console.log('\n🔍 重新验证设置...')
+    let allValid = true
+    checks.forEach(check => {
+      if (existsSync(check.path)) {
+        console.log(`✅ ${check.name}`)
+      } else {
+        console.log(`❌ ${check.name} 仍然缺失`)
+        allValid = false
+      }
+    })
+
+    if (!allValid) {
+      console.log('\n❌ 设置验证失败，请手动检查问题')
+      process.exit(1)
+    }
   }
+
+  console.log('\n🎉 环境设置完成！')
+  console.log('\n📖 下一步:')
+  console.log('  bun run dev    # 启动开发服务器')
+  console.log('  bun run build  # 构建项目')
+  console.log('  bun run test   # 运行测试')
 }
 
 // 主函数
@@ -141,7 +165,7 @@ async function main() {
     await checkSystemRequirements()
     await installDependencies()
     createEnvironmentFiles()
-    validateSetup()
+    await validateSetup()
   } catch (error: any) {
     console.error('❌ 设置过程中发生错误:', error.message)
     process.exit(1)

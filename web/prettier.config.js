@@ -12,7 +12,7 @@ const webPrettierConfig = {
     'prettier-plugin-svelte',
     'prettier-plugin-tailwindcss',
     'prettier-plugin-css-order',
-    './node_modules/prettier-plugin-sort-imports/dist/index.js'
+    'prettier-plugin-sort-imports'
   ],
   // 针对 Svelte 文件的特殊配置
   overrides: [

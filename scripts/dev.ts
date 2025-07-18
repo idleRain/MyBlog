@@ -137,11 +137,6 @@ async function checkEnvironment() {
     await $`bun install`
   }
 
-  if (!existsSync('web/node_modules')) {
-    console.log(`${colors.yellow}⚠️  前端依赖未安装，正在安装...${colors.reset}`)
-    await $`cd web && bun install`
-  }
-
   console.log('')
 }
 
