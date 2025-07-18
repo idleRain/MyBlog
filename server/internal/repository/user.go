@@ -2,8 +2,9 @@
 package repository
 
 import (
+	"errors"
 	"fmt"
-	_ "time"
+	"time"
 
 	"MyBlog/pkg/datetime"
 
@@ -20,8 +21,8 @@ type User struct {
 	Avatar    string            `json:"avatar" gorm:"size:255"`
 	Birthday  datetime.JSONDate `json:"birthday" gorm:"type:date"`
 	Status    int               `json:"status" gorm:"default:1;comment:状态 1-正常 0-禁用"`
-	CreatedAt datetime.JSONDate `json:"createdAt"`
-	UpdatedAt datetime.JSONDate `json:"updatedAt"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
 	DeletedAt gorm.DeletedAt    `json:"-" gorm:"index"`
 }
 
@@ -67,7 +68,7 @@ func (r *userRepository) Create(user *User) error {
 func (r *userRepository) GetByID(id uint) (*User, error) {
 	var user User
 	if err := r.db.First(&user, id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("用户不存在")
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
@@ -79,7 +80,7 @@ func (r *userRepository) GetByID(id uint) (*User, error) {
 func (r *userRepository) GetByUsername(username string) (*User, error) {
 	var user User
 	if err := r.db.Where("username = ?", username).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("用户不存在")
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
@@ -91,7 +92,7 @@ func (r *userRepository) GetByUsername(username string) (*User, error) {
 func (r *userRepository) GetByEmail(email string) (*User, error) {
 	var user User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("用户不存在")
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)

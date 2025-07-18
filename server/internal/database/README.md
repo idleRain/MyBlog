@@ -14,12 +14,14 @@
 ## 核心功能
 
 ### 数据库连接管理
+
 - `InitMySQL(cfg *config.Config)`: 初始化MySQL连接
 - `GetDB()`: 获取数据库实例
 - `Close()`: 关闭数据库连接
 - `HealthCheck()`: 数据库健康检查
 
 ### 数据库维护
+
 - `AutoMigrate(models ...interface{})`: 自动迁移表结构
 - `createDatabaseIfNotExists()`: 自动创建数据库
 
@@ -31,26 +33,26 @@
 package main
 
 import (
-    "log"
-    "MyBlog/internal/config"
-    "MyBlog/internal/database"
+  "MyBlog/internal/config"
+  "MyBlog/internal/database"
+  "log"
 )
 
 func main() {
-    // 加载配置
-    cfg, err := config.Load("configs/config.yaml")
-    if err != nil {
-        log.Fatal("配置加载失败:", err)
-    }
+  // 加载配置
+  cfg, err := config.Load("configs/config.yaml")
+  if err != nil {
+    log.Fatal("配置加载失败:", err)
+  }
 
-    // 初始化数据库
-    db, err := database.InitMySQL(cfg)
-    if err != nil {
-        log.Fatal("数据库初始化失败:", err)
-    }
+  // 初始化数据库
+  db, err := database.InitMySQL(cfg)
+  if err != nil {
+    log.Fatal("数据库初始化失败:", err)
+  }
 
-    // 在其他地方使用数据库
-    db = database.GetDB()
+  // 在其他地方使用数据库
+  db = database.GetDB()
 }
 ```
 
@@ -119,6 +121,7 @@ database:
 ## 错误处理
 
 模块提供详细的错误信息，包括：
+
 - 连接失败原因
 - 配置参数错误
 - 数据库操作失败

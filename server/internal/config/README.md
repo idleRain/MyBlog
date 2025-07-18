@@ -13,11 +13,13 @@
 ## 配置结构
 
 ### 服务器配置 (ServerConfig)
+
 - `host`: 服务器监听主机
 - `port`: 服务器监听端口
 - `mode`: 运行模式 (debug/release/test)
 
 ### 数据库配置 (DatabaseConfig)
+
 - `host`: 数据库主机地址
 - `port`: 数据库端口
 - `username`: 数据库用户名
@@ -30,11 +32,13 @@
 - `max_open_conns`: 最大打开连接数
 
 ### 日志配置 (LoggerConfig)
+
 - `level`: 日志级别 (debug/info/warn/error)
 - `output`: 输出方式 (stdout/file)
 - `file_path`: 日志文件路径
 
 ### API配置 (APIConfig)
+
 - `version`: API版本
 - `timeout`: 请求超时时间（秒）
 
@@ -44,25 +48,25 @@
 package main
 
 import (
-    "log"
-    "MyBlog/internal/config"
+  "MyBlog/internal/config"
+  "log"
 )
 
 func main() {
-    // 加载配置
-    cfg, err := config.Load("configs/config.yaml")
-    if err != nil {
-        log.Fatal("配置加载失败:", err)
-    }
+  // 加载配置
+  cfg, err := config.Load("configs/config.yaml")
+  if err != nil {
+    log.Fatal("配置加载失败:", err)
+  }
 
-    // 获取数据库连接串
-    dsn := cfg.GetDSN()
-    
-    // 获取服务器地址
-    addr := cfg.GetServerAddress()
-    
-    // 在其他地方获取全局配置
-    globalCfg := config.Get()
+  // 获取数据库连接串
+  dsn := cfg.GetDSN()
+
+  // 获取服务器地址
+  addr := cfg.GetServerAddress()
+
+  // 在其他地方获取全局配置
+  globalCfg := config.Get()
 }
 ```
 

@@ -5,12 +5,13 @@
 ## 设计原则
 
 - **数据库存储**: 保持标准的 datetime/timestamp 格式
-- **JSON序列化**: 在API响应中转换为 YYYY-MM-DD 格式  
+- **JSON序列化**: 在API响应中转换为 YYYY-MM-DD 格式
 - **兼容性**: 完全兼容标准 time.Time 类型
 
 ## JSONDate 类型
 
 ### 核心特性
+
 - 包装 `time.Time`，不改变其本质
 - 数据库存储使用完整的日期时间格式
 - JSON序列化时只显示 YYYY-MM-DD 格式
@@ -19,6 +20,7 @@
 ### 使用示例
 
 #### 模型定义
+
 ```go
 type User struct {
     ID        uint              `json:"id" gorm:"primaryKey"`
@@ -29,6 +31,7 @@ type User struct {
 ```
 
 #### 创建实例
+
 ```go
 import "MyBlog/pkg/datetime"
 
@@ -43,6 +46,7 @@ date, err := datetime.ParseJSONDate("2024-01-01")
 ```
 
 #### JSON 输入/输出
+
 ```go
 // 输入 (支持多种格式)
 {
@@ -59,6 +63,7 @@ date, err := datetime.ParseJSONDate("2024-01-01")
 ```
 
 #### 数据库存储
+
 ```sql
 -- 实际存储在数据库中的格式
 CREATE TABLE users (
@@ -72,24 +77,29 @@ CREATE TABLE users (
 ### 方法说明
 
 #### 构造方法
+
 - `NowJSON()`: 获取当前时间的JSONDate
 - `NewJSONDate(t time.Time)`: 从time.Time创建JSONDate
 - `ParseJSONDate(dateStr string)`: 解析日期字符串
 
 #### 序列化方法
+
 - `MarshalJSON()`: JSON序列化为 "YYYY-MM-DD"
 - `UnmarshalJSON()`: 支持多种格式的JSON反序列化
 - `String()`: 字符串表示为 "YYYY-MM-DD"
 
 #### 数据库方法
+
 - `Value()`: 数据库存储时返回完整的time.Time
 - `Scan()`: 从数据库读取时解析为time.Time
 
 ### 重要说明
 
-**数据库存储格式**: JSONDate 在数据库中存储的是完整的 datetime 格式（如：2024-01-01 14:30:45），只是在JSON序列化时显示为日期格式（如：2024-01-01）。
+**数据库存储格式**: JSONDate 在数据库中存储的是完整的 datetime 格式（如：2024-01-01 14:30:
+45），只是在JSON序列化时显示为日期格式（如：2024-01-01）。
 
 这样设计的好处：
+
 1. 保留了时间的完整信息
 2. 数据库查询和排序功能完整
 3. 只在API响应时简化显示格式

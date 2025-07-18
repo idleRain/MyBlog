@@ -3,6 +3,7 @@
 ## 问题分析
 
 Windows环境下可能遇到的问题：
+
 1. `make` 命令不存在
 2. `air` 工具未安装或不在PATH中
 3. Go bin目录不在环境变量中
@@ -21,6 +22,7 @@ go install github.com/cosmtrek/air@latest
 #### 2. 配置环境变量
 
 检查Go bin目录是否在PATH中：
+
 ```powershell
 # 查看Go环境信息
 go env GOPATH
@@ -31,6 +33,7 @@ echo $env:PATH
 ```
 
 如果Air不能运行，需要添加Go bin目录到PATH：
+
 1. 找到Go bin目录 (通常是 `%USERPROFILE%\go\bin`)
 2. 添加到系统PATH环境变量中
 3. 重启命令行窗口

@@ -9,14 +9,17 @@
 ## 通用说明
 
 ### 请求方式
+
 所有API都使用 `POST` 方法。
 
 ### 请求头
+
 ```
 Content-Type: application/json
 ```
 
 ### 响应格式
+
 ```json
 {
     "code": 200,
@@ -27,6 +30,7 @@ Content-Type: application/json
 ```
 
 ### 状态码说明
+
 - `200`: 操作成功
 - `400`: 请求参数错误
 - `401`: 认证失败
@@ -41,10 +45,12 @@ Content-Type: application/json
 检查服务是否正常运行。
 
 **请求**
+
 - URL: `POST /api/health`
 - Body: 无
 
 **响应**
+
 ```json
 {
     "code": 200,
@@ -61,8 +67,10 @@ Content-Type: application/json
 创建新用户账户。
 
 **请求**
+
 - URL: `POST /api/users/create`
 - Body:
+
 ```json
 {
     "username": "john_doe",
@@ -83,6 +91,7 @@ Content-Type: application/json
 | birthday | string | 否 | 生日，格式 YYYY-MM-DD |
 
 **响应**
+
 ```json
 {
     "code": 200,
@@ -102,6 +111,7 @@ Content-Type: application/json
 ```
 
 **错误响应**
+
 ```json
 {
     "code": 500,
@@ -115,8 +125,10 @@ Content-Type: application/json
 根据用户ID获取用户详细信息。
 
 **请求**
+
 - URL: `POST /api/users/get`
 - Body:
+
 ```json
 {
     "id": 1
@@ -129,6 +141,7 @@ Content-Type: application/json
 | id | integer | 是 | 用户ID，大于0 |
 
 **响应**
+
 ```json
 {
     "code": 200,
@@ -148,6 +161,7 @@ Content-Type: application/json
 ```
 
 **错误响应**
+
 ```json
 {
     "code": 404,
@@ -161,8 +175,10 @@ Content-Type: application/json
 分页获取用户列表。
 
 **请求**
+
 - URL: `POST /api/users/list`
 - Body:
+
 ```json
 {
     "page": 1,
@@ -177,6 +193,7 @@ Content-Type: application/json
 | pageSize | integer | 否 | 每页数量，默认10，最大100 |
 
 **响应**
+
 ```json
 {
     "code": 200,
@@ -208,8 +225,10 @@ Content-Type: application/json
 删除指定用户（软删除）。
 
 **请求**
+
 - URL: `POST /api/users/delete`
 - Body:
+
 ```json
 {
     "id": 1
@@ -222,6 +241,7 @@ Content-Type: application/json
 | id | integer | 是 | 用户ID，大于0 |
 
 **响应**
+
 ```json
 {
     "code": 200,
@@ -231,6 +251,7 @@ Content-Type: application/json
 ```
 
 **错误响应**
+
 ```json
 {
     "code": 404,
@@ -317,14 +338,14 @@ const getUserList = async () => {
 
 ## 错误码参考
 
-| 业务错误信息 | 说明 |
-|-------------|------|
-| "用户名已存在" | 注册时用户名重复 |
-| "邮箱已存在" | 注册时邮箱重复 |
-| "用户不存在" | 查询或操作的用户不存在 |
-| "请求参数错误" | 请求参数格式不正确 |
-| "创建用户失败" | 数据库操作失败 |
-| "删除用户失败" | 删除操作失败 |
+| 业务错误信息   | 说明          |
+|----------|-------------|
+| "用户名已存在" | 注册时用户名重复    |
+| "邮箱已存在"  | 注册时邮箱重复     |
+| "用户不存在"  | 查询或操作的用户不存在 |
+| "请求参数错误" | 请求参数格式不正确   |
+| "创建用户失败" | 数据库操作失败     |
+| "删除用户失败" | 删除操作失败      |
 
 ## 注意事项
 

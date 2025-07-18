@@ -1,4 +1,4 @@
-// 简单的Go文件监听器 - 适用于Windows环境
+// Go 文件监听器 - 仅监听 server 目录
 // 使用方法: go run scripts/watcher.go
 package main
 
@@ -15,14 +15,37 @@ import (
 )
 
 var (
-	lastRun    time.Time
-	building   bool
-	buildMutex sync.Mutex
+	lastRun      time.Time
+	building     bool
+	buildMutex   sync.Mutex
+	process      *exec.Cmd
+	processMutex sync.Mutex
 )
 
+// 需要监听的目录（相对于 server 目录）
+var watchDirs = []string{
+	"cmd",
+	"internal",
+	"pkg",
+	"configs",
+}
+
+// 需要跳过的目录
+var skipDirs = []string{
+	"tmp",
+	"bin",
+	"vendor",
+	".git",
+	"logs",
+	"node_modules",
+	".svelte-kit",
+	"dist",
+	"build",
+}
+
 func main() {
-	fmt.Println("🚀 启动简单Go热更新监听器")
-	fmt.Println("💡 监听 .go 文件变化，自动重新编译和运行")
+	fmt.Println("🚀 启动 Go 热更新监听器")
+	fmt.Println("💡 仅监听 server 目录下的 .go 文件变化")
 	fmt.Println("💡 按 Ctrl+C 停止监听")
 	fmt.Println()
 
@@ -31,7 +54,7 @@ func main() {
 		log.Fatal("初始编译失败:", err)
 	}
 
-	// 设置初始检查时间，避免冷启动重复触发
+	// 设置初始检查时间
 	lastRun = time.Now()
 
 	// 监听文件变化
@@ -51,13 +74,16 @@ func buildAndRun() error {
 
 	fmt.Println("🔨 编译中...")
 
-	// 创建tmp目录
+	// 停止旧进程
+	stopProcess()
+
+	// 创建输出目录
 	if err := os.MkdirAll("tmp", 0755); err != nil {
 		fmt.Printf("❌ 创建tmp目录失败: %v\n", err)
 		return err
 	}
 
-	// 编译 (跨平台)
+	// 编译
 	var outputPath string
 	if runtime.GOOS == "windows" {
 		outputPath = "tmp/myblog.exe"
@@ -66,6 +92,9 @@ func buildAndRun() error {
 	}
 
 	cmd := exec.Command("go", "build", "-o", outputPath, "./cmd/myblog")
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("❌ 编译失败: %v\n", err)
 		return err
@@ -73,86 +102,133 @@ func buildAndRun() error {
 
 	fmt.Println("✅ 编译成功")
 
-	// 运行
-	go func() {
-		fmt.Println("🚀 启动应用...")
-		cmd := exec.Command(outputPath)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("⚠️ 应用退出: %v\n", err)
-		}
-	}()
+	// 启动新进程
+	go startProcess(outputPath)
 
 	return nil
 }
 
+// startProcess 启动应用进程
+func startProcess(outputPath string) {
+	processMutex.Lock()
+	defer processMutex.Unlock()
+
+	fmt.Println("🚀 启动应用...")
+
+	process = exec.Command(outputPath)
+	process.Stdout = os.Stdout
+	process.Stderr = os.Stderr
+
+	if err := process.Run(); err != nil {
+		fmt.Printf("⚠️ 应用退出: %v\n", err)
+	}
+}
+
+// stopProcess 停止应用进程
+func stopProcess() {
+	processMutex.Lock()
+	defer processMutex.Unlock()
+
+	if process != nil && process.Process != nil {
+		fmt.Println("🛑 停止旧进程...")
+
+		// 优雅停止
+		if err := process.Process.Kill(); err != nil {
+			fmt.Printf("⚠️ 停止进程失败: %v\n", err)
+		}
+
+		// 等待进程结束
+		process.Wait()
+		process = nil
+	}
+}
+
 // watchFiles 监听文件变化
 func watchFiles() {
-	// 获取当前脚本所在目录
-	scriptDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	serverDir, err := os.Getwd()
 	if err != nil {
-		log.Fatal("无法获取脚本目录:", err)
+		log.Fatal("无法获取当前目录:", err)
 	}
-	// server目录是脚本目录的上一级
-	serverDir := filepath.Dir(scriptDir)
+
+	fmt.Printf("🔍 监听目录: %s\n", serverDir)
+	fmt.Printf("📁 监听子目录: %s\n", strings.Join(watchDirs, ", "))
+	fmt.Println()
 
 	for {
 		time.Sleep(1 * time.Second)
 
 		changed := false
-		err = filepath.Walk(serverDir, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return nil
+		latestModTime := time.Time{}
+
+		// 只遍历指定的目录
+		for _, dir := range watchDirs {
+			dirPath := filepath.Join(serverDir, dir)
+			if !dirExists(dirPath) {
+				continue
 			}
 
-			// 跳过不需要监听的目录
-			if info.IsDir() {
-				name := info.Name()
-				if name == "tmp" || name == "vendor" || name == ".git" || name == "logs" {
-					return filepath.SkipDir
+			err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return nil
 				}
+
+				// 跳过目录
+				if info.IsDir() {
+					if shouldSkipDir(info.Name()) {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+
+				// 只监听 .go 文件
+				if !strings.HasSuffix(path, ".go") {
+					return nil
+				}
+
+				// 检查文件修改时间
+				if info.ModTime().After(lastRun) {
+					fmt.Printf("📄 文件变化: %s (修改时间: %v)\n", path, info.ModTime())
+					changed = true
+					if info.ModTime().After(latestModTime) {
+						latestModTime = info.ModTime()
+					}
+				}
+
 				return nil
-			}
+			})
 
-			// 只监听 .go 文件
-			if !strings.HasSuffix(path, ".go") {
-				return nil
+			if err != nil {
+				fmt.Printf("⚠️ 监听目录 %s 出错: %v\n", dir, err)
 			}
-
-			// 检查文件修改时间
-			if info.ModTime().After(lastRun) {
-				changed = true
-				return filepath.SkipDir
-			}
-
-			return nil
-		})
-		if err != nil {
-			fmt.Printf("⚠️ 文件监听出错: %v\n", err)
-			continue
 		}
 
 		if changed {
-			lastRun = time.Now()
-			fmt.Println("📝 检测到文件变化，重新编译...")
-
-			// 杀死旧进程 (跨平台)
-			if runtime.GOOS == "windows" {
-				if err := exec.Command("taskkill", "/F", "/IM", "myblog.exe").Run(); err != nil {
-					fmt.Printf("⚠️ 终止Windows进程失败: %v\n", err)
-				}
-			} else {
-				if err := exec.Command("pkill", "-f", "myblog").Run(); err != nil {
-					fmt.Printf("⚠️ 终止进程失败: %v\n", err)
-				}
-			}
+			lastRun = latestModTime
+			fmt.Println("🔄 检测到文件变化，重新编译...")
 
 			// 重新编译和运行
-			time.Sleep(500 * time.Millisecond) // 等待进程完全退出
 			if err := buildAndRun(); err != nil {
 				fmt.Printf("❌ 重新编译失败: %v\n", err)
 			}
 		}
 	}
+}
+
+// dirExists 检查目录是否存在
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+// shouldSkipDir 判断是否应该跳过目录
+func shouldSkipDir(dirName string) bool {
+	for _, skipDir := range skipDirs {
+		if dirName == skipDir {
+			return true
+		}
+	}
+	return false
 }

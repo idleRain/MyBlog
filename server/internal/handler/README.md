@@ -14,9 +14,11 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 ### 核心方法
 
 #### 创建用户
+
 - **路由**: `POST /api/v1/users/create`
 - **功能**: 创建新用户
 - **请求体**:
+
 ```json
 {
     "username": "john_doe",
@@ -27,9 +29,11 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 ```
 
 #### 获取用户
+
 - **路由**: `POST /api/v1/users/get`
 - **功能**: 根据ID获取用户信息
 - **请求体**:
+
 ```json
 {
     "id": 1
@@ -37,9 +41,11 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 ```
 
 #### 用户列表
+
 - **路由**: `POST /api/v1/users/list`
 - **功能**: 分页获取用户列表
 - **请求体**:
+
 ```json
 {
     "page": 1,
@@ -48,9 +54,11 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 ```
 
 #### 删除用户
+
 - **路由**: `POST /api/v1/users/delete`
 - **功能**: 删除指定用户
 - **请求体**:
+
 ```json
 {
     "id": 1
@@ -58,6 +66,7 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 ```
 
 #### 健康检查
+
 - **路由**: `POST /api/v1/health`
 - **功能**: 服务健康状态检查
 - **请求体**: 无
@@ -100,6 +109,7 @@ curl -X POST http://localhost:8080/api/v1/users/create \
 ```
 
 响应：
+
 ```json
 {
     "code": 200,
@@ -128,6 +138,7 @@ curl -X POST http://localhost:8080/api/v1/users/list \
 ```
 
 响应：
+
 ```json
 {
     "code": 200,
@@ -149,6 +160,7 @@ curl -X POST http://localhost:8080/api/v1/health
 ```
 
 响应：
+
 ```json
 {
     "code": 200,

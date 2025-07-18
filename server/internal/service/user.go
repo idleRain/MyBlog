@@ -2,12 +2,10 @@
 package service
 
 import (
+	"MyBlog/internal/repository"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-
-	"MyBlog/internal/repository"
-	"MyBlog/pkg/datetime"
 )
 
 // UserService 用户服务接口
@@ -46,16 +44,13 @@ func (s *userService) CreateUser(req *repository.CreateUserRequest) (*repository
 	hashedPassword := s.hashPassword(req.Password)
 
 	// 构建用户对象
-	now := datetime.NowJSON()
 	user := &repository.User{
-		Username:  req.Username,
-		Email:     req.Email,
-		Password:  hashedPassword,
-		Nickname:  req.Nickname,
-		Birthday:  req.Birthday,
-		Status:    1,
-		CreatedAt: now,
-		UpdatedAt: now,
+		Username: req.Username,
+		Email:    req.Email,
+		Password: hashedPassword,
+		Nickname: req.Nickname,
+		Birthday: req.Birthday,
+		Status:   1,
 	}
 
 	// 如果昵称为空，使用用户名

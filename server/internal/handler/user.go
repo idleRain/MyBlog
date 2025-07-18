@@ -38,7 +38,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithMessage(c, "用户创建成功", user)
+	response.SuccessWithMessage(c, "用户创建成功", user.ToResponse())
 }
 
 // GetUserByID 根据ID获取用户 POST /api/users/get
@@ -59,7 +59,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, user)
+	response.Success(c, user.ToResponse())
 }
 
 // GetUserList 获取用户列表 POST /api/users/list
@@ -91,7 +91,7 @@ func (h *UserHandler) GetUserList(c *gin.Context) {
 
 	// 构建响应数据
 	data := gin.H{
-		"users":    users,
+		"users":    repository.ToResponseList(users),
 		"total":    total,
 		"page":     req.Page,
 		"pageSize": req.PageSize,

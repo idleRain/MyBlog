@@ -40,6 +40,7 @@
       },
       "devDependencies": {
         "@fontsource/fira-mono": "^5.0.0",
+        "@lucide/svelte": "^0.525.0",
         "@neoconfetti/svelte": "^2.0.0",
         "@sveltejs/adapter-auto": "^6.0.0",
         "@sveltejs/kit": "^2.22.0",
@@ -53,7 +54,9 @@
         "svelte": "^5.25.0",
         "svelte-check": "^4.0.0",
         "tailwind-merge": "^3.3.1",
+        "tailwind-variants": "^1.0.0",
         "tailwindcss": "^4.0.0",
+        "tw-animate-css": "^1.3.5",
         "vite": "^7.0.4",
         "vite-plugin-devtools-json": "^0.2.0",
       },
@@ -193,6 +196,8 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.4", "https://registry.npmmirror.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.4.tgz", {}, "sha512-VT2+G1VQs/9oz078bLrYbecdZKs912zQlkelYpuf+SXF+QvZDYJlbx/LSx+meSAwdDFnF8FVXW92AVjjkVmgFw=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.29", "https://registry.npmmirror.com/@jridgewell/trace-mapping/-/trace-mapping-0.3.29.tgz", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-uw6guiW/gcAGPDhLmd77/6lW8QLeiV5RUTsAX46Db6oLhGaVj4lhnPwb184s1bkc8kdVg/+h988dro8GRDpmYQ=="],
+
+    "@lucide/svelte": ["@lucide/svelte@0.525.0", "https://registry.npmmirror.com/@lucide/svelte/-/svelte-0.525.0.tgz", { "peerDependencies": { "svelte": "^5" } }, "sha512-dyUxkXzepagLUzL8jHQNdeH286nC66ClLACsg+Neu/bjkRJWPWMzkT+H0DKlE70QdkicGCfs1ZGmXCc351hmZA=="],
 
     "@neoconfetti/svelte": ["@neoconfetti/svelte@2.2.2", "https://registry.npmmirror.com/@neoconfetti/svelte/-/svelte-2.2.2.tgz", { "peerDependencies": { "svelte": "^3.0.0 || ^4.0.0 || ^5.0.0" } }, "sha512-E7xCFVEEm5Ctnj2udTJy1b9oaTvjz1zi1mYdEtE8rB5BVwq6kHisosDS+zdWN5PMfEMjtbsOV9Cl6tsNSAD1sA=="],
 
@@ -808,6 +813,8 @@
 
     "tailwind-merge": ["tailwind-merge@3.3.1", "https://registry.npmmirror.com/tailwind-merge/-/tailwind-merge-3.3.1.tgz", {}, "sha512-gBXpgUm/3rp1lMZZrM/w7D8GKqshif0zAymAhbCyIt8KMe+0v9DQ7cdYLR4FHH/cKpdTXb+A/tKKU3eolfsI+g=="],
 
+    "tailwind-variants": ["tailwind-variants@1.0.0", "https://registry.npmmirror.com/tailwind-variants/-/tailwind-variants-1.0.0.tgz", { "dependencies": { "tailwind-merge": "3.0.2" }, "peerDependencies": { "tailwindcss": "*" } }, "sha512-2WSbv4ulEEyuBKomOunut65D8UZwxrHoRfYnxGcQNnHqlSCp2+B7Yz2W+yrNDrxRodOXtGD/1oCcKGNBnUqMqA=="],
+
     "tailwindcss": ["tailwindcss@4.1.11", "https://registry.npmmirror.com/tailwindcss/-/tailwindcss-4.1.11.tgz", {}, "sha512-2E9TBm6MDD/xKYe+dvJZAmg3yxIEDNRc0jwlNyDg/4Fil2QcSLjFKGVff0lAf1jjeaArlG/M75Ey/EYr/OJtBA=="],
 
     "tapable": ["tapable@2.2.2", "https://registry.npmmirror.com/tapable/-/tapable-2.2.2.tgz", {}, "sha512-Re10+NauLTMCudc7T5WLFLAwDhQ0JWdrMK+9B2M8zR5hRExKmsRDCBA7/aV/pNJFltmBFO5BAMlQFi/vq3nKOg=="],
@@ -831,6 +838,8 @@
     "ts-api-utils": ["ts-api-utils@2.1.0", "https://registry.npmmirror.com/ts-api-utils/-/ts-api-utils-2.1.0.tgz", { "peerDependencies": { "typescript": ">=4.8.4" } }, "sha512-CUgTZL1irw8u29bzrOD/nH85jqyc74D6SshFgujOIA7osm2Rz7dYH77agkx7H4FBNxDq7Cjf+IjaX/8zwFW+ZQ=="],
 
     "tslib": ["tslib@2.8.1", "https://registry.npmmirror.com/tslib/-/tslib-2.8.1.tgz", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
+
+    "tw-animate-css": ["tw-animate-css@1.3.5", "https://registry.npmmirror.com/tw-animate-css/-/tw-animate-css-1.3.5.tgz", {}, "sha512-t3u+0YNoloIhj1mMXs779P6MO9q3p3mvGn4k1n3nJPqJw/glZcuijG2qTSN4z4mgNRfW5ZC3aXJFLwDtiipZXA=="],
 
     "type-check": ["type-check@0.4.0", "https://registry.npmmirror.com/type-check/-/type-check-0.4.0.tgz", { "dependencies": { "prelude-ls": "^1.2.1" } }, "sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew=="],
 
@@ -941,6 +950,8 @@
     "slice-ansi/is-fullwidth-code-point": ["is-fullwidth-code-point@4.0.0", "https://registry.npmmirror.com/is-fullwidth-code-point/-/is-fullwidth-code-point-4.0.0.tgz", {}, "sha512-O4L094N2/dZ7xqVdrXhh9r1KODPJpFms8B5sGdJLPy664AgvXsreZUyCQQNItZRDlYug4xStLjNp/sz3HvBowQ=="],
 
     "svelte-eslint-parser/postcss-selector-parser": ["postcss-selector-parser@7.1.0", "https://registry.npmmirror.com/postcss-selector-parser/-/postcss-selector-parser-7.1.0.tgz", { "dependencies": { "cssesc": "^3.0.0", "util-deprecate": "^1.0.2" } }, "sha512-8sLjZwK0R+JlxlYcTuVnyT2v+htpdrjDOKuMcOVdYjt52Lh8hWRYpxBPoKx/Zg+bcjc3wx6fmQevMmUztS/ccA=="],
+
+    "tailwind-variants/tailwind-merge": ["tailwind-merge@3.0.2", "https://registry.npmmirror.com/tailwind-merge/-/tailwind-merge-3.0.2.tgz", {}, "sha512-l7z+OYZ7mu3DTqrL88RiKrKIqO3NcpEO8V/Od04bNpvk0kiIFndGEoqfuzvj4yuhRkHKjRkII2z+KS2HfPcSxw=="],
 
     "wrap-ansi/ansi-styles": ["ansi-styles@6.2.1", "https://registry.npmmirror.com/ansi-styles/-/ansi-styles-6.2.1.tgz", {}, "sha512-bN798gFfQX+viw3R7yrGWRqnrN2oRkEkUjjl4JNn4E8GxxbjtG3FbrEIIY3l8/hrwUwIeCZvi4QuOTP4MErVug=="],
 

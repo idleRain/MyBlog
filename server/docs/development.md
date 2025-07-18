@@ -19,11 +19,13 @@ make help
 #### 方式2: 使用脚本
 
 **Linux/Mac:**
+
 ```bash
 ./scripts/dev.sh
 ```
 
 **Windows:**
+
 ```bash
 scripts\dev.bat
 ```
@@ -43,11 +45,13 @@ air -c .air.toml
 项目包含两个Air配置文件：
 
 #### `.air.toml` (完整配置)
+
 - 详细的配置选项
 - 完整的文件监听和排除规则
 - 适合生产级开发环境
 
 #### `.air.simple.toml` (简化配置)
+
 - 精简的配置选项
 - 基本的热更新功能
 - 适合快速开发和测试
@@ -55,11 +59,13 @@ air -c .air.toml
 ### 监听规则
 
 **监听的文件类型:**
+
 - `.go` - Go源代码文件
 - `.yaml`, `.yml` - 配置文件
 - `.json` - JSON配置文件
 
 **忽略的目录:**
+
 - `tmp/` - 临时构建文件
 - `vendor/` - 依赖包目录
 - `logs/` - 日志文件目录
@@ -67,6 +73,7 @@ air -c .air.toml
 - `.vscode/`, `.idea/` - IDE配置目录
 
 **忽略的文件:**
+
 - `*_test.go` - 测试文件
 - `*.md` - 文档文件
 - `*.txt` - 文本文件
@@ -79,14 +86,14 @@ air -c .air.toml
    ```
 
 2. **修改代码**
-   - 编辑任何Go源文件
-   - 修改配置文件 (yaml/json)
-   - 保存文件
+  - 编辑任何Go源文件
+  - 修改配置文件 (yaml/json)
+  - 保存文件
 
 3. **自动重新编译**
-   - Air检测到文件变化
-   - 自动重新编译项目
-   - 重启应用服务器
+  - Air检测到文件变化
+  - 自动重新编译项目
+  - 重启应用服务器
 
 4. **测试API**
    ```bash
@@ -97,20 +104,24 @@ air -c .air.toml
 ### 故障排除
 
 #### Air未安装
+
 ```bash
 go install github.com/cosmtrek/air@latest
 ```
 
 #### 权限问题 (Linux/Mac)
+
 ```bash
 chmod +x scripts/dev.sh
 ```
 
 #### 端口占用
+
 - 检查端口3000是否被占用
 - 修改 `configs/config.yaml` 中的端口配置
 
 #### 编译失败
+
 - 检查Go代码语法错误
 - 运行 `go mod tidy` 更新依赖
 - 查看Air输出的错误信息
@@ -118,12 +129,15 @@ chmod +x scripts/dev.sh
 ### 性能优化
 
 #### 减少重新编译时间
+
 - 使用Go模块缓存：`go env GOCACHE`
 - 优化导入语句
 - 避免不必要的依赖
 
 #### 自定义监听规则
+
 编辑 `.air.toml` 文件：
+
 ```toml
 [build]
   # 自定义包含的文件扩展名
@@ -157,10 +171,13 @@ chmod +x scripts/dev.sh
 ### 日志管理
 
 #### 查看实时日志
+
 热更新模式下，应用日志会直接显示在终端中。
 
 #### 日志级别调整
+
 修改 `configs/config.yaml`：
+
 ```yaml
 logger:
   level: "debug"  # debug, info, warn, error
@@ -169,6 +186,7 @@ logger:
 ### 环境变量
 
 #### 常用环境变量
+
 ```bash
 # 设置Go代理 (国内用户)
 export GOPROXY=https://goproxy.cn,direct
@@ -183,7 +201,9 @@ export GOCACHE=/path/to/cache
 ### 团队开发
 
 #### .gitignore 配置
+
 项目已配置忽略以下文件：
+
 ```
 tmp/
 bin/
@@ -194,6 +214,7 @@ logs/
 ```
 
 #### 依赖管理
+
 ```bash
 # 更新依赖
 go mod tidy

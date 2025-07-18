@@ -2,92 +2,86 @@
 package main
 
 import (
-  "log"
-  "os"
-  "os/signal"
-  "syscall"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-  "MyBlog/internal/config"
-  "MyBlog/internal/database"
-  "MyBlog/internal/handler"
-  "MyBlog/internal/repository"
-  "MyBlog/internal/service"
+	"MyBlog/internal/config"
+	"MyBlog/internal/database"
+	"MyBlog/internal/handler"
+	"MyBlog/internal/repository"
+	"MyBlog/internal/router"
+	"MyBlog/internal/service"
 
-  "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-  // 加载配置
-  cfg, err := config.Load("configs/config.yaml")
-  if err != nil {
-    log.Fatal("配置加载失败:", err)
-  }
+	// 加载配置
+	cfg, err := config.Load("configs/config.yaml")
+	if err != nil {
+		log.Fatal("配置加载失败:", err)
+	}
 
-  // 设置Gin运行模式
-  gin.SetMode(cfg.Server.Mode)
+	// 设置Gin运行模式
+	gin.SetMode(cfg.Server.Mode)
 
-  // 初始化数据库
-  db, err := database.InitMySQL(cfg)
-  if err != nil {
-    log.Fatal("数据库初始化失败:", err)
-  }
+	// 初始化数据库
+	db, err := database.InitMySQL(cfg)
+	if err != nil {
+		log.Fatal("数据库初始化失败:", err)
+	}
 
-  // 自动迁移数据库表
-  if err := database.AutoMigrate(&repository.User{}); err != nil {
-    log.Fatal("数据库表迁移失败:", err)
-  }
+	// 自动迁移数据库表
+	if err := database.AutoMigrate(&repository.User{}); err != nil {
+		log.Fatal("数据库表迁移失败:", err)
+	}
 
-  // 初始化依赖注入
-  userRepo := repository.NewUserRepository(db)
-  userSvc := service.NewUserService(userRepo)
-  userHandler := handler.NewUserHandler(userSvc)
+	// 初始化依赖注入
+	userRepo := repository.NewUserRepository(db)
+	userSvc := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userSvc)
 
-  // 初始化Gin路由
-  r := gin.Default()
+	// 创建路由管理器
+	routerManager := router.NewRouter()
 
-  // 注册路由
-  setupRoutes(r, userHandler)
+	// 设置依赖
+	deps := &router.Dependencies{
+		UserHandler: userHandler,
+	}
 
-  // 启动服务器
-  log.Printf("服务器启动成功，监听地址: %s", cfg.GetServerAddress())
-  log.Printf("运行模式: %s", cfg.Server.Mode)
+	// 注册路由
+	routerManager.SetupRoutes(deps)
 
-  // 优雅关闭
-  go func() {
-    if err := r.Run(cfg.GetServerAddress()); err != nil {
-      log.Fatal("服务器启动失败:", err)
-    }
-  }()
+	// 可选：注册 V2 版本路由
+	// routerManager.SetupV2Routes(deps)
 
-  // 等待中断信号
-  quit := make(chan os.Signal, 1)
-  signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-  <-quit
+	// 获取 Gin 引擎
+	engine := routerManager.GetEngine()
 
-  log.Println("正在关闭服务器...")
+	// 启动服务器
+	log.Printf("服务器启动成功，监听地址: %s", cfg.GetServerAddress())
+	log.Printf("运行模式: %s", cfg.Server.Mode)
 
-  // 关闭数据库连接
-  if err := database.Close(); err != nil {
-    log.Printf("关闭数据库连接失败: %v", err)
-  }
+	// 优雅关闭
+	go func() {
+		if err := engine.Run(cfg.GetServerAddress()); err != nil {
+			log.Fatal("服务器启动失败:", err)
+		}
+	}()
 
-  log.Println("服务器已关闭")
-}
+	// 等待中断信号
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-// setupRoutes 设置路由
-func setupRoutes(r *gin.Engine, userHandler *handler.UserHandler) {
-  // API分组
-  api := r.Group("/api")
+	log.Println("正在关闭服务器...")
 
-  // 健康检查
-  api.POST("/health", userHandler.HealthCheck)
+	// 关闭数据库连接
+	if err := database.Close(); err != nil {
+		log.Printf("关闭数据库连接失败: %v", err)
+	}
 
-  // 用户相关路由
-  users := api.Group("/users")
-  {
-    users.POST("/create", userHandler.CreateUser)
-    users.POST("/get", userHandler.GetUserByID)
-    users.POST("/list", userHandler.GetUserList)
-    users.POST("/delete", userHandler.DeleteUser)
-  }
+	log.Println("服务器已关闭")
 }

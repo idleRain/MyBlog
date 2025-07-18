@@ -35,11 +35,13 @@ MyBlog/
 ### 第一步：重构当前项目结构
 
 1. **创建 backend 目录**
+
 ```bash
 mkdir backend
 ```
 
 2. **移动后端文件到 backend 目录**
+
 ```bash
 # 移动所有Go后端相关文件
 mv cmd backend/
@@ -53,6 +55,7 @@ mv main.go backend/ 2>/dev/null || echo "main.go already moved or doesn't exist"
 ```
 
 3. **保留共享文档在根目录**
+
 ```bash
 # docs 目录保留在根目录，作为项目整体文档
 # CLAUDE.md 保留在根目录
@@ -61,6 +64,7 @@ mv main.go backend/ 2>/dev/null || echo "main.go already moved or doesn't exist"
 ### 第二步：添加前端项目
 
 1. **在根目录创建前端项目**
+
 ```bash
 # 使用 create-svelte 创建新项目
 npm create svelte@latest frontend
@@ -70,6 +74,7 @@ cp -r /path/to/your/frontend/project frontend/
 ```
 
 2. **安装前端依赖**
+
 ```bash
 cd frontend
 npm install
@@ -146,6 +151,7 @@ func setupRoutes(r *gin.Engine, userHandler *handler.UserHandler) {
 #### 1. 创建根目录启动脚本
 
 **Linux/Mac (`scripts/dev-full.sh`)**:
+
 ```bash
 #!/bin/bash
 
@@ -196,6 +202,7 @@ wait
 ```
 
 **Windows (`scripts/dev-full.bat`)**:
+
 ```batch
 @echo off
 cls
@@ -249,6 +256,7 @@ pause >nul
 #### 2. 创建生产构建脚本
 
 **构建脚本 (`scripts/build.sh`)**:
+
 ```bash
 #!/bin/bash
 
@@ -278,6 +286,7 @@ echo "📁 后端可执行文件: bin/myblog"
 #### 1. 前端环境变量
 
 创建 `frontend/.env.development`:
+
 ```env
 # 开发环境
 VITE_API_BASE_URL=http://localhost:3000/api
@@ -285,6 +294,7 @@ VITE_APP_TITLE=MyBlog
 ```
 
 创建 `frontend/.env.production`:
+
 ```env
 # 生产环境
 VITE_API_BASE_URL=/api
@@ -294,6 +304,7 @@ VITE_APP_TITLE=MyBlog
 #### 2. 后端环境变量
 
 更新 `backend/configs/config.yaml` 支持环境变量：
+
 ```yaml
 server:
   host: ${SERVER_HOST:localhost}
@@ -306,6 +317,7 @@ server:
 #### 1. 后端 Dockerfile
 
 创建 `backend/Dockerfile`:
+
 ```dockerfile
 FROM golang:1.20-alpine AS builder
 WORKDIR /app
@@ -326,6 +338,7 @@ CMD ["./main"]
 #### 2. 前端 Dockerfile
 
 创建 `frontend/Dockerfile`:
+
 ```dockerfile
 FROM node:18-alpine AS builder
 WORKDIR /app
@@ -344,6 +357,7 @@ CMD ["nginx", "-g", "daemon off;"]
 #### 3. Docker Compose
 
 创建根目录 `docker-compose.yml`:
+
 ```yaml
 version: '3.8'
 
@@ -383,6 +397,7 @@ volumes:
 ### 第七步：开发工作流
 
 #### 1. 开发模式
+
 ```bash
 # 启动完整开发环境
 ./scripts/dev-full.sh
@@ -393,6 +408,7 @@ cd frontend && npm run dev
 ```
 
 #### 2. 生产部署
+
 ```bash
 # Docker方式
 docker-compose up -d
@@ -404,6 +420,7 @@ docker-compose up -d
 ### 第八步：API 调用示例
 
 #### 前端API调用 (`frontend/src/lib/api.js`):
+
 ```javascript
 // API基础配置
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -460,6 +477,7 @@ export const userAPI = {
 ```
 
 #### SvelteKit页面示例 (`frontend/src/routes/users/+page.svelte`):
+
 ```svelte
 <script>
   import { onMount } from 'svelte';
@@ -552,19 +570,23 @@ export const userAPI = {
 ## 常见问题
 
 ### 1. 端口冲突
+
 - 后端默认端口: 3000
 - 前端默认端口: 5173
 - 确保这些端口没有被其他服务占用
 
 ### 2. CORS 问题
+
 - 确保后端配置了正确的CORS设置
 - 开发环境允许 http://localhost:5173
 
 ### 3. API 路径问题
+
 - 开发环境: 前端代理到 http://localhost:3000/api
 - 生产环境: 前端直接请求 /api
 
 ### 4. 构建问题
+
 - 确保前后端都能独立构建成功
 - 检查依赖版本兼容性
 
@@ -573,7 +595,7 @@ export const userAPI = {
 通过以上步骤，你将拥有一个完整的全栈开发环境，包括：
 
 1. **开发体验**: 前后端热更新，API代理
-2. **项目结构**: 清晰的Monorepo结构  
+2. **项目结构**: 清晰的Monorepo结构
 3. **部署支持**: Docker化部署
 4. **工作流**: 统一的开发和构建脚本
 

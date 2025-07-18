@@ -22,67 +22,83 @@ type Response struct {
 
 ## 状态码定义
 
-| 状态码 | 常量 | 说明 |
-|--------|------|------|
-| 200 | CodeSuccess | 操作成功 |
-| 400 | CodeInvalid | 请求参数错误 |
-| 401 | CodeAuth | 认证失败 |
-| 403 | CodeForbid | 权限不足 |
-| 404 | CodeNotFound | 资源不存在 |
-| 500 | CodeError | 服务器内部错误 |
+| 状态码 | 常量           | 说明      |
+|-----|--------------|---------|
+| 200 | CodeSuccess  | 操作成功    |
+| 400 | CodeInvalid  | 请求参数错误  |
+| 401 | CodeAuth     | 认证失败    |
+| 403 | CodeForbid   | 权限不足    |
+| 404 | CodeNotFound | 资源不存在   |
+| 500 | CodeError    | 服务器内部错误 |
 
 ## 核心方法
 
 ### 成功响应
 
 #### Success
+
 ```go
 response.Success(c, data)
 ```
+
 返回成功响应，使用默认成功消息。
 
 #### SuccessWithMessage
+
 ```go
 response.SuccessWithMessage(c, "自定义成功消息", data)
 ```
+
 返回成功响应，使用自定义消息。
 
 ### 错误响应
 
 #### Error
+
 ```go
 response.Error(c, code, message, err)
 ```
+
 通用错误响应方法。
 
 #### BadRequest
+
 ```go
 response.BadRequest(c, "参数错误信息")
 ```
+
 请求参数错误 (400)。
 
 #### InternalError
+
 ```go
 response.InternalError(c, "错误详情")
 ```
+
 服务器内部错误 (500)。
 
 #### NotFound
+
 ```go
 response.NotFound(c, "资源不存在")
 ```
+
 资源不存在 (404)。
 
 #### Unauthorized
+
 ```go
 response.Unauthorized(c, "认证失败")
 ```
+
 未授权 (401)。
 
 #### Forbidden
+
 ```go
 response.Forbidden(c, "权限不足")
 ```
+
 权限不足 (403)。
 
 ## 使用示例
@@ -114,6 +130,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 ### 响应示例
 
 #### 成功响应
+
 ```json
 {
     "code": 200,
@@ -127,6 +144,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 ```
 
 #### 错误响应
+
 ```json
 {
     "code": 400,
@@ -136,6 +154,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 ```
 
 #### 服务器错误
+
 ```json
 {
     "code": 500,

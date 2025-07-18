@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { PageProps } from './$types'
+import { Button } from '$lib/components/ui/button'
 
 let { data }: PageProps = $props()
 </script>
@@ -10,6 +11,7 @@ let { data }: PageProps = $props()
 </svelte:head>
 
 <section>
+  <Button>123</Button>
   <div class="mx-auto">
     <h1 class="flex flex-col text-red-500">数据：</h1>
     <div>{JSON.stringify(data.data)}</div>
