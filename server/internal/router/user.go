@@ -21,8 +21,11 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	// 用户路由分组
 	userGroup := api.Group("/users")
 	{
-		// 用户管理相关路由
+		// 认证相关路由（无需token验证）
 		userGroup.POST("/create", ur.handler.CreateUser)
+		userGroup.POST("/login", ur.handler.Login)
+
+		// 用户管理相关路由
 		userGroup.POST("/get", ur.handler.GetUserByID)
 		userGroup.POST("/list", ur.handler.GetUserList)
 		userGroup.POST("/delete", ur.handler.DeleteUser)

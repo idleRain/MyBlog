@@ -1,11 +1,12 @@
 <script lang="ts">
+import { Toaster } from '$lib/components/ui/sonner'
+import { ModeWatcher } from 'mode-watcher'
 import '../app.css'
 
 let { children } = $props()
 </script>
 
-<div class="app">
-  <main>
-    {@render children()}
-  </main>
-</div>
+<ModeWatcher />
+<Toaster position="top-center" />
+
+{@render children()}

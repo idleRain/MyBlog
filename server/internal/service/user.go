@@ -6,7 +6,23 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+// JWT相关常量
+const (
+	JWTSecret   = "myblog_jwt_secret_key"
+	TokenExpire = 24 * time.Hour // 24小时过期
+)
+
+// JWTClaims JWT声明
+type JWTClaims struct {
+	UserID   uint   `json:"user_id"`
+	Username string `json:"username"`
+	jwt.RegisteredClaims
+}
 
 // UserService 用户服务接口
 type UserService interface {
@@ -14,6 +30,7 @@ type UserService interface {
 	GetUserByID(id uint) (*repository.User, error)
 	GetUserList(page, pageSize int) ([]*repository.User, int64, error)
 	DeleteUser(id uint) error
+	Login(username, password string) (*repository.User, string, error)
 }
 
 // userService 用户服务实现
@@ -115,4 +132,74 @@ func (s *userService) hashPassword(password string) string {
 	h := md5.New()
 	h.Write([]byte(password + "myblog_salt"))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Login 用户登录
+func (s *userService) Login(username, password string) (*repository.User, string, error) {
+	// 先尝试通过用户名查找
+	user, err := s.userRepo.GetByUsername(username)
+	if err != nil {
+		// 如果用户名未找到，尝试通过邮箱查找
+		user, err = s.userRepo.GetByEmail(username)
+		if err != nil {
+			return nil, "", fmt.Errorf("用户不存在")
+		}
+	}
+
+	// 验证密码
+	hashedPassword := s.hashPassword(password)
+	if user.Password != hashedPassword {
+		return nil, "", fmt.Errorf("密码错误")
+	}
+
+	// 检查用户状态
+	if user.Status != 1 {
+		return nil, "", fmt.Errorf("用户已被禁用")
+	}
+
+	// 生成JWT token
+	token, err := s.generateToken(user)
+	if err != nil {
+		return nil, "", fmt.Errorf("生成token失败: %w", err)
+	}
+
+	return user, token, nil
+}
+
+// generateToken 生成JWT token
+func (s *userService) generateToken(user *repository.User) (string, error) {
+	now := time.Now()
+	claims := JWTClaims{
+		UserID:   user.ID,
+		Username: user.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(TokenExpire)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now),
+			Issuer:    "myblog",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(JWTSecret))
+}
+
+// ValidateToken 验证JWT token
+func ValidateToken(tokenString string) (*JWTClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(JWTSecret), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
 }

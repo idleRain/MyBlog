@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/service"
 	"net/http"
 	"strings"
 
@@ -113,23 +114,28 @@ func AdminAuth() gin.HandlerFunc {
 	}
 }
 
-// validateToken 验证令牌（示例实现）
+// validateToken 验证JWT令牌
 func validateToken(token string) bool {
-	// TODO: 实现真实的令牌验证逻辑
-	// 这里只是示例，实际应该验证 JWT 或查询数据库
-	return token != ""
+	_, err := service.ValidateToken(token)
+	return err == nil
 }
 
-// getUserIDFromToken 从令牌中获取用户ID（示例实现）
+// getUserIDFromToken 从JWT令牌中获取用户ID
 func getUserIDFromToken(token string) uint {
-	// TODO: 实现真实的用户ID提取逻辑
-	// 这里只是示例
-	return 1
+	claims, err := service.ValidateToken(token)
+	if err != nil {
+		return 0
+	}
+	return claims.UserID
 }
 
-// isAdmin 检查是否为管理员（示例实现）
+// isAdmin 检查是否为管理员（简单实现，实际应该从数据库查询用户角色）
 func isAdmin(token string) bool {
-	// TODO: 实现真实的管理员验证逻辑
-	// 这里只是示例
-	return false
+	claims, err := service.ValidateToken(token)
+	if err != nil {
+		return false
+	}
+	// 这里可以根据用户ID查询数据库确定是否为管理员
+	// 暂时简单判断，实际应该有更完善的权限系统
+	return claims.UserID == 1 // 假设ID为1的用户是管理员
 }

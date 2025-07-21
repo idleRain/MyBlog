@@ -121,6 +121,33 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	response.SuccessWithMessage(c, "用户删除成功", nil)
 }
 
+// Login 用户登录 POST /api/users/login
+func (h *UserHandler) Login(c *gin.Context) {
+	type LoginRequest struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	user, token, err := h.userService.Login(req.Username, req.Password)
+	if err != nil {
+		response.Unauthorized(c, err.Error())
+		return
+	}
+
+	data := gin.H{
+		"user":  user.ToResponse(),
+		"token": token,
+	}
+
+	response.SuccessWithMessage(c, "登录成功", data)
+}
+
 // HealthCheck 健康检查 POST /api/health
 func (h *UserHandler) HealthCheck(c *gin.Context) {
 	data := gin.H{

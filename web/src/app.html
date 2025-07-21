@@ -5,6 +5,20 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     %sveltekit.head%
+    <script>
+      // 防止闪烁，在页面加载前设置主题
+      try {
+        if (
+          localStorage.getItem('mode-watcher-mode') === 'dark' ||
+          (!localStorage.getItem('mode-watcher-mode') &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
+        ) {
+          document.documentElement.classList.add('dark')
+        } else {
+          document.documentElement.classList.remove('dark')
+        }
+      } catch (_) {}
+    </script>
   </head>
   <body data-sveltekit-preload-data="hover">
     <div style="display: contents">%sveltekit.body%</div>

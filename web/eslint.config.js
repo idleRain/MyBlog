@@ -1,3 +1,4 @@
+import autoImportGlobals from './.eslintrc-auto-import.js'
 import { includeIgnoreFile } from '@eslint/compat'
 import { baseConfig } from '../eslint.config.js'
 import svelteConfig from './svelte.config.js'
@@ -15,7 +16,12 @@ export default ts.config(
   ...svelte.configs.prettier,
   {
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node }
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        // 自动导入的全局变量
+        ...autoImportGlobals.globals
+      }
     }
   },
   {
@@ -35,5 +41,8 @@ export default ts.config(
         svelteConfig
       }
     }
+  },
+  {
+    ignores: ['src/lib/components/ui/**']
   }
 )

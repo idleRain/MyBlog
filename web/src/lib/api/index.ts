@@ -1,9 +1,9 @@
-import user from './modules/user'
+import UserAPI from './modules/user'
 
 const API = {
-  user
+  user: UserAPI
 }
 
-export { user }
+export { UserAPI }
 
 export default API

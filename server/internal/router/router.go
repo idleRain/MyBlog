@@ -71,4 +71,5 @@ type UserHandlerInterface interface {
 	GetUserByID(c *gin.Context)
 	GetUserList(c *gin.Context)
 	DeleteUser(c *gin.Context)
+	Login(c *gin.Context)
 }

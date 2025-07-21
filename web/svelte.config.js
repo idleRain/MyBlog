@@ -14,9 +14,9 @@ const config = {
     adapter: adapter(),
     // 路径别名
     alias: {
-      '@/*': './src/lib',
       $ui: './src/lib/components/ui',
-      '~': '.'
+      '~': '.',
+      '#/*': './src/types'
     }
   }
 }

@@ -15,7 +15,8 @@
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^5.0.0",
-    "@lucide/svelte": "^0.525.0",
+    "@internationalized/date": "^3.8.1",
+    "@lucide/svelte": "^0.515.0",
     "@neoconfetti/svelte": "^2.0.0",
     "@sveltejs/adapter-auto": "^6.0.1",
     "@sveltejs/kit": "^2.25.0",
@@ -23,19 +24,35 @@
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.0.0",
+    "@tanstack/table-core": "^8.21.3",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
     "autoprefixer": "^10.4.21",
+    "bits-ui": "^2.8.6",
     "clsx": "^2.1.1",
+    "embla-carousel-svelte": "^8.6.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "layerchart": "2.0.0-next.27",
+    "mode-watcher": "^1.1.0",
+    "paneforge": "^1.0.0",
     "postcss": "^8.5.6",
     "svelte": "^5.36.7",
     "svelte-check": "^4.3.0",
+    "svelte-sonner": "^1.0.5",
     "tailwind-merge": "^3.3.1",
     "tailwind-variants": "^1.0.0",
     "tailwindcss": "^4.0.0",
     "tw-animate-css": "^1.3.5",
+    "unplugin-auto-import": "^19.3.0",
+    "vaul-svelte": "^1.0.0-next.7",
     "vite": "^7.0.4",
     "vite-plugin-devtools-json": "^0.2.0"
   },
   "dependencies": {
-    "ky": "^1.8.1"
+    "formsnap": "^2.0.1",
+    "gsap": "^3.13.0",
+    "ky": "^1.8.1",
+    "sveltekit-superforms": "^2.27.1",
+    "zod": "^3.23.8"
   }
 }
