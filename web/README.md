@@ -7,7 +7,7 @@
 - **框架**: SvelteKit + TypeScript
 - **样式**: TailwindCSS + 现代极简主义风格
 - **组件库**: shadcn-svelte
-- **图标**: lucide-svelte
+- **图标**: @lucide/svelte
 - **动画**: GSAP
 - **构建工具**: Vite
 - **包管理**: Bun
@@ -48,7 +48,7 @@ cd web && bun run dev
 - 常用的 CSS 类名或变量统一配置到 `tailwind.config.js` 中，方便后续维护
 
 #### 组件开发
-- 图标使用 lucide-svelte 图标库
+- 图标使用 @lucide/svelte 图标库
 - 动画效果使用 GSAP 库
 - 组件命名使用 PascalCase
 - 文件命名使用 kebab-case
