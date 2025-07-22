@@ -4,10 +4,14 @@ import { zodClient } from 'sveltekit-superforms/adapters'
 import { z } from 'zod'
 import type { PageData } from './$types'
 import { authStore } from '$lib/stores/auth.ts'
-import { ThemeToggle, Card, Form } from '$lib/components'
+import { ThemeToggle } from '$lib/components'
+import { Toaster } from '$lib/components/ui/sonner'
+import { ModeWatcher } from 'mode-watcher'
 import { Input } from '$ui/input'
+import { Form, Card } from '$ui'
 import { EyeOff, Eye, LogIn } from '@lucide/svelte'
 import { UserAPI } from '$lib/api'
+import '../../../app.css'
 
 export let data: PageData
 
@@ -61,6 +65,9 @@ function togglePasswordVisibility() {
 <svelte:head>
   <title>登录 - MyBlog</title>
 </svelte:head>
+
+<ModeWatcher />
+<Toaster position="top-center" />
 
 <div
   class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"

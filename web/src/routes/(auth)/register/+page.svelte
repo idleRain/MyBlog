@@ -3,11 +3,15 @@ import { superForm } from 'sveltekit-superforms'
 import { zodClient } from 'sveltekit-superforms/adapters'
 import { z } from 'zod'
 import type { PageData } from './$types'
-import { ThemeToggle, Form, Card } from '$lib/components'
+import { ThemeToggle } from '$lib/components'
+import { Toaster } from '$lib/components/ui/sonner'
+import { ModeWatcher } from 'mode-watcher'
+import { Form, Card } from '$ui'
 import { Input } from '$ui/input'
 import { Eye, EyeOff, Lock, Mail, User, UserPlus } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth.ts'
 import { UserAPI } from '$lib/api'
+import '../../../app.css'
 
 export let data: PageData
 
@@ -79,6 +83,9 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
 <svelte:head>
   <title>注册 - MyBlog</title>
 </svelte:head>
+
+<ModeWatcher />
+<Toaster position="top-center" />
 
 <div
   class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
