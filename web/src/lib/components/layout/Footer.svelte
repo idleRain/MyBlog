@@ -1,7 +1,6 @@
 <script lang="ts">
-import { Button } from '$lib/components/ui/button'
 import { Separator } from '$lib/components/ui/separator'
-import { Github, Mail, Twitter, Linkedin, Heart } from '@lucide/svelte'
+import { Github, Mail, Heart } from '@lucide/svelte'
 
 const currentYear = new Date().getFullYear()
 
@@ -9,12 +8,10 @@ const socialLinks = [
   {
     name: 'GitHub',
     icon: Github,
-    href: 'https://github.com',
+    href: 'https://github.com/idleRain',
     color: 'hover:text-gray-900 dark:hover:text-white'
   },
-  { name: 'Twitter', icon: Twitter, href: 'https://twitter.com', color: 'hover:text-blue-400' },
-  { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com', color: 'hover:text-blue-600' },
-  { name: 'Email', icon: Mail, href: 'mailto:contact@myblog.com', color: 'hover:text-red-500' }
+  { name: 'Email', icon: Mail, href: 'gold.experience@foxmail.com', color: 'hover:text-red-500' }
 ]
 
 const quickLinks = [
@@ -66,7 +63,7 @@ const categories = [
 
         <!-- 社交媒体链接 -->
         <div class="flex space-x-4">
-          {#each socialLinks as link}
+          {#each socialLinks as link, index (index)}
             <a
               href={link.href}
               target="_blank"
@@ -84,7 +81,7 @@ const categories = [
       <div>
         <h3 class="mb-4 font-semibold text-gray-900 dark:text-white">快速链接</h3>
         <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-          {#each quickLinks as link}
+          {#each quickLinks as link, index (index)}
             <a
               href={link.href}
               class="text-sm text-gray-600 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
@@ -99,7 +96,7 @@ const categories = [
       <div>
         <h3 class="mb-4 font-semibold text-gray-900 dark:text-white">文章分类</h3>
         <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-          {#each categories as category}
+          {#each categories as category, index (index)}
             <a
               href={category.href}
               class="text-sm text-gray-600 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"

@@ -1,42 +1,20 @@
 <script lang="ts">
-import { Button } from '$lib/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '$lib/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '$lib/components/ui/dialog'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '$lib/components/ui/sheet'
+import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { authStore } from '$lib/stores/auth'
-import { Globe, User, ExternalLink, Menu, LogIn, Settings } from '@lucide/svelte'
+import { Globe, User, ExternalLink, Menu, LogIn, Settings, Github } from '@lucide/svelte'
 import { goto } from '$app/navigation'
-import { onMount } from 'svelte'
+import type { User as UserType } from '$lib/api/modules/user/types'
 
-let isScrolled = $state(false)
 let isMobileMenuOpen = $state(false)
 
 // 订阅认证状态
 let isAuthenticated = $state(false)
-let currentUser = $state(null)
+let currentUser = $state<UserType>()
 
 authStore.subscribe(state => {
   isAuthenticated = state.isAuthenticated
-  currentUser = state.user
+  currentUser = state.user!
 })
 
 // 登出功能
@@ -44,28 +22,11 @@ function handleLogout() {
   authStore.logout()
   goto('/')
 }
-
-// 监听滚动事件
-onMount(() => {
-  const scrollHandler = () => {
-    isScrolled = window.scrollY > 20
-  }
-
-  window.addEventListener('scroll', scrollHandler)
-
-  return () => {
-    window.removeEventListener('scroll', scrollHandler)
-  }
-})
 </script>
 
-<header
-  class="fixed top-0 right-0 left-0 z-50 transition-all duration-300 {isScrolled
-    ? 'border-b border-gray-200/20 bg-white/80 shadow-lg backdrop-blur-md dark:border-gray-800/20 dark:bg-gray-950/80'
-    : 'bg-transparent'}"
->
+<header class="fixed top-0 right-0 left-0 z-50 transition-all duration-300">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <div class="flex h-16 items-center justify-between">
+    <div class="flex h-16 items-center">
       <!-- Logo左侧 -->
       <div class="flex items-center">
         <a href="/" class="group flex items-center space-x-3">
@@ -83,13 +44,16 @@ onMount(() => {
               >
             </div>
           </div>
-          <span class="hidden text-lg font-bold text-gray-900 sm:block dark:text-white">MyBlog</span
-          >
+          <span class="hidden text-lg font-bold text-gray-900 sm:block dark:text-white">
+            MyBlog
+          </span>
         </a>
       </div>
 
-      <!-- 中部导航 -->
-      <nav class="hidden items-center space-x-8 md:flex">
+      <!-- 中部导航 - 绝对居中 -->
+      <nav
+        class="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 transform items-center space-x-8 md:flex"
+      >
         <a
           href="/"
           class="group relative text-gray-700 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
@@ -120,43 +84,54 @@ onMount(() => {
       </nav>
 
       <!-- 右侧功能区 -->
-      <div class="flex items-center space-x-3">
+      <div class="ml-auto flex items-center space-x-3">
         <!-- 桌面端功能按钮 -->
         <div class="hidden items-center space-x-3 md:flex">
           <!-- 语言切换 -->
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
               <Button variant="ghost" size="icon" class="h-9 w-9">
                 <Globe class="h-4 w-4" />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
               align="end"
               class="bg-white/90 backdrop-blur-md dark:bg-gray-950/90"
             >
-              <DropdownMenuItem>简体中文</DropdownMenuItem>
-              <DropdownMenuItem>English</DropdownMenuItem>
-              <DropdownMenuItem>日本語</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <DropdownMenu.Item>简体中文</DropdownMenu.Item>
+              <DropdownMenu.Item>English</DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
 
           <!-- 主题切换 -->
           <ThemeToggle />
 
+          <!-- GitHub链接 -->
+          <a
+            href="https://github.com/idleRain"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group"
+          >
+            <Button variant="ghost" size="icon" class="h-9 w-9">
+              <Github class="h-4 w-4 transition-colors group-hover:text-blue-600" />
+            </Button>
+          </a>
+
           <!-- 个人介绍 -->
-          <Dialog>
-            <DialogTrigger asChild>
+          <Dialog.Root>
+            <Dialog.Trigger>
               <Button variant="ghost" size="icon" class="h-9 w-9">
                 <User class="h-4 w-4" />
               </Button>
-            </DialogTrigger>
-            <DialogContent class="bg-white/95 backdrop-blur-md sm:max-w-md dark:bg-gray-950/95">
-              <DialogHeader>
-                <DialogTitle>关于作者</DialogTitle>
-                <DialogDescription>
+            </Dialog.Trigger>
+            <Dialog.Content class="bg-white/95 backdrop-blur-md sm:max-w-md dark:bg-gray-950/95">
+              <Dialog.Header>
+                <Dialog.Title>关于作者</Dialog.Title>
+                <Dialog.Description>
                   一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。
-                </DialogDescription>
-              </DialogHeader>
+                </Dialog.Description>
+              </Dialog.Header>
               <div class="flex flex-col space-y-3">
                 <div class="flex items-center space-x-3">
                   <div
@@ -170,20 +145,20 @@ onMount(() => {
                   </div>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+            </Dialog.Content>
+          </Dialog.Root>
 
           <!-- 友情链接 -->
-          <Dialog>
-            <DialogTrigger asChild>
+          <Dialog.Root>
+            <Dialog.Trigger>
               <Button variant="ghost" size="icon" class="h-9 w-9">
                 <ExternalLink class="h-4 w-4" />
               </Button>
-            </DialogTrigger>
-            <DialogContent class="bg-white/95 backdrop-blur-md sm:max-w-md dark:bg-gray-950/95">
-              <DialogHeader>
-                <DialogTitle>友情链接</DialogTitle>
-              </DialogHeader>
+            </Dialog.Trigger>
+            <Dialog.Content class="bg-white/95 backdrop-blur-md sm:max-w-md dark:bg-gray-950/95">
+              <Dialog.Header>
+                <Dialog.Title>友情链接</Dialog.Title>
+              </Dialog.Header>
               <div class="space-y-3">
                 <a
                   href="https://github.com"
@@ -210,8 +185,8 @@ onMount(() => {
                   <ExternalLink class="h-4 w-4 text-gray-500" />
                 </a>
               </div>
-            </DialogContent>
-          </Dialog>
+            </Dialog.Content>
+          </Dialog.Root>
         </div>
 
         <!-- 登录/登出和后台按钮 -->
@@ -231,8 +206,8 @@ onMount(() => {
             </Button>
 
             <!-- 用户信息下拉菜单 -->
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
                 <Button variant="ghost" size="icon" class="h-9 w-9">
                   <div
                     class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600"
@@ -242,8 +217,8 @@ onMount(() => {
                     </span>
                   </div>
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content
                 align="end"
                 class="w-48 bg-white/90 backdrop-blur-md dark:bg-gray-950/90"
               >
@@ -255,14 +230,14 @@ onMount(() => {
                     {currentUser?.email || ''}
                   </p>
                 </div>
-                <DropdownMenuItem
+                <DropdownMenu.Item
                   onclick={handleLogout}
                   class="text-red-600 hover:text-red-700 dark:text-red-400"
                 >
                   登出
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           {:else}
             <!-- 登录按钮 -->
             <Button
@@ -277,19 +252,19 @@ onMount(() => {
         </div>
 
         <!-- 移动端菜单 -->
-        <Sheet bind:open={isMobileMenuOpen}>
-          <SheetTrigger asChild>
+        <Sheet.Root bind:open={isMobileMenuOpen}>
+          <Sheet.Trigger>
             <Button variant="ghost" size="icon" class="h-9 w-9 md:hidden">
               <Menu class="h-5 w-5" />
             </Button>
-          </SheetTrigger>
-          <SheetContent
+          </Sheet.Trigger>
+          <Sheet.Content
             side="right"
             class="w-80 bg-white/95 p-6 backdrop-blur-md dark:bg-gray-950/95"
           >
-            <SheetHeader class="mb-6 text-left">
-              <SheetTitle class="text-xl font-bold">菜单</SheetTitle>
-            </SheetHeader>
+            <Sheet.Header class="mb-6 text-left">
+              <Sheet.Title class="text-xl font-bold">菜单</Sheet.Title>
+            </Sheet.Header>
 
             <!-- 移动端导航链接 -->
             <nav class="space-y-1">
@@ -325,6 +300,17 @@ onMount(() => {
                 <ThemeToggle />
               </div>
 
+              <!-- GitHub链接 -->
+              <a
+                href="https://github.com/idleRain"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2 transition-colors hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50"
+              >
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">GitHub</span>
+                <Github class="h-4 w-4 text-gray-500" />
+              </a>
+
               <div class="space-y-3">
                 <h4 class="px-4 text-sm font-semibold text-gray-900 dark:text-white">语言选择</h4>
                 <div class="space-y-1">
@@ -337,11 +323,6 @@ onMount(() => {
                     class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/50"
                   >
                     English
-                  </button>
-                  <button
-                    class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/50"
-                  >
-                    日本語
                   </button>
                 </div>
               </div>
@@ -399,8 +380,8 @@ onMount(() => {
                 </Button>
               {/if}
             </div>
-          </SheetContent>
-        </Sheet>
+          </Sheet.Content>
+        </Sheet.Root>
       </div>
     </div>
   </div>
@@ -411,5 +392,10 @@ onMount(() => {
 header {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+/* 确保父容器为相对定位，以便导航绝对定位居中 */
+header > div > div {
+  position: relative;
 }
 </style>

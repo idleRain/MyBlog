@@ -3,6 +3,7 @@ import devtoolsJson from 'vite-plugin-devtools-json'
 import AutoImport from 'unplugin-auto-import/vite'
 import { sveltekit } from '@sveltejs/kit/vite'
 import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath, URL } from 'node:url'
 
 export default ({ mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd())
@@ -66,6 +67,11 @@ export default ({ mode }: ConfigEnv) => {
     },
     css: {
       postcss: './postcss.config.js'
+    },
+    resolve: {
+      alias: {
+        $lib: fileURLToPath(new URL('./src/lib', import.meta.url))
+      }
     }
   })
 }

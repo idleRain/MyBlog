@@ -160,7 +160,7 @@ onMount(() => {
       <div class="order-1 text-center lg:order-2 lg:text-left">
         <!-- 姓名标题 -->
         <h1
-          class="mb-4 text-4xl font-bold text-gray-900 sm:text-5xl lg:text-6xl xl:text-7xl dark:text-white"
+          class="mb-4 text-4xl font-bold text-gray-900 sm:text-3xl lg:text-4xl xl:text-5xl dark:text-white"
         >
           <span
             class="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent"
@@ -200,7 +200,7 @@ onMount(() => {
         <!-- 统计数据 -->
         <div class="mt-12 flex flex-wrap justify-center gap-8 lg:justify-start">
           <div class="text-center">
-            <div class="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">20+</div>
+            <div class="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">30+</div>
             <div class="text-sm text-gray-500 dark:text-gray-400">项目经验</div>
           </div>
           <div class="text-center">

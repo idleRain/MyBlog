@@ -15,8 +15,9 @@ const config = {
     // 路径别名
     alias: {
       $ui: './src/lib/components/ui',
-      '~': '.',
-      '#/*': './src/types'
+      '$ui/*': './src/lib/components/ui/*',
+      '~/*': './*',
+      '#/*': './src/types/*'
     }
   }
 }

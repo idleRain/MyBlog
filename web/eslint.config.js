@@ -28,7 +28,8 @@ export default ts.config(
     rules: {
       // Svelte 特定规则
       'svelte/html-self-closing': 'warn',
-      'svelte/spaced-html-comment': 'warn'
+      'svelte/spaced-html-comment': 'warn',
+      'svelte/valid-prop-names-in-kit-pages': 'off'
     }
   },
   {

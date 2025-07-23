@@ -85,7 +85,7 @@ function getCategoryColor(category: string) {
 
       <!-- 博客卡片网格 -->
       <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {#each featuredPosts as post}
+        {#each featuredPosts as post, index (index)}
           <Card
             class="group cursor-pointer border border-gray-200/50 bg-white/80 pt-0 backdrop-blur-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-xl dark:border-gray-700/50 dark:bg-gray-800/80"
           >
@@ -150,7 +150,7 @@ function getCategoryColor(category: string) {
 
               <!-- 标签 -->
               <div class="flex flex-wrap gap-1">
-                {#each post.tags as tag}
+                {#each post.tags as tag, index (index)}
                   <Badge variant="secondary" class="text-xs">
                     {tag}
                   </Badge>
@@ -177,7 +177,7 @@ function getCategoryColor(category: string) {
 
       <!-- 瀑布流布局 - 移动端两列布局优化 -->
       <div class="columns-2 gap-3 space-y-3 sm:gap-6 sm:space-y-6 lg:columns-3">
-        {#each dailyShares as share}
+        {#each dailyShares as share, index (index)}
           <div class="break-inside-avoid">
             <Card
               class="group cursor-pointer border border-gray-200/50 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-gray-700/50 dark:bg-gray-800/80"
@@ -188,10 +188,8 @@ function getCategoryColor(category: string) {
                 <!-- 表情图标和标题容器 -->
                 <div class="transition-transform duration-300 group-hover:-translate-y-2">
                   <!-- 表情图标 -->
-                  <div
-                    class="mb-1.5 text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-2 sm:text-2xl"
-                  >
-                    {share.emoji}
+                  <div class="mb-1.5 text-xl transition-transform duration-300 sm:mb-2 sm:text-2xl">
+                    <span class="transition-[font_size] group-hover:text-3xl">{share.emoji}</span>
                   </div>
 
                   <!-- 标题 -->

@@ -1,8 +1,27 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
-/* Google Fonts 导入 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+/* 本地字体定义 */
+/*@font-face {
+  font-family: 'Inter';
+  src: url('./lib/assets/font/InterBold.otf') format('opentype');
+  font-weight: 300 900;
+  font-display: swap;
+}*/
+
+/*@font-face {
+  font-family: 'Manrope';
+  src: url('./lib/assets/font/ManropeRegular.otf') format('opentype');
+  font-weight: 300 800;
+  font-display: swap;
+}*/
+
+/*@font-face {
+  font-family: 'PingFang SC';
+  src: url('./lib/assets/font/PingFang.ttf') format('truetype');
+  font-weight: normal;
+  font-display: swap;
+}*/
 
 @custom-variant dark (&:is(.dark *));
 
@@ -121,40 +140,40 @@
     @apply bg-background text-foreground;
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   }
-  
+
   /* 标题字体 */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
     font-weight: 700;
   }
-  
+
   /* 滑顺滚动 */
   html {
     scroll-behavior: smooth;
   }
-  
+
   /* 自定义滚动条 */
   ::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   ::-webkit-scrollbar-thumb {
     background: oklch(0.7 0.04 256.788);
     border-radius: 4px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.6 0.04 256.788);
   }
-  
+
   .dark ::-webkit-scrollbar-thumb {
     background: oklch(0.4 0.04 256.788);
   }
-  
+
   .dark ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.5 0.04 256.788);
   }

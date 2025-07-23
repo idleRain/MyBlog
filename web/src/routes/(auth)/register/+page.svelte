@@ -179,7 +179,7 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
                   />
                   <button
                     type="button"
-                    on:click={() => togglePasswordVisibility('password')}
+                    onclick={() => togglePasswordVisibility('password')}
                     class="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     disabled={$submitting}
                   >
@@ -215,7 +215,7 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
                   />
                   <button
                     type="button"
-                    on:click={() => togglePasswordVisibility('confirmPassword')}
+                    onclick={() => togglePasswordVisibility('confirmPassword')}
                     class="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     disabled={$submitting}
                   >

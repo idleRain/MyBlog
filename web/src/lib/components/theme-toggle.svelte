@@ -2,6 +2,9 @@
 import { Sun, Moon } from '@lucide/svelte'
 import { toggleMode } from 'mode-watcher'
 import { Button } from '$ui/button'
+import { cn } from '$lib/utils'
+
+const props = $props<{ class?: string }>()
 
 function handleToggle() {
   console.log('Theme toggle clicked')
@@ -14,7 +17,10 @@ function handleToggle() {
   variant="outline"
   size="icon"
   onclick={handleToggle}
-  class="fixed top-4 right-4 z-50 border bg-background/80 shadow-md backdrop-blur-sm transition-all hover:shadow-lg"
+  class={cn(
+    props.class,
+    'fixed top-4 right-4 z-50 border bg-background/80 shadow-md backdrop-blur-sm transition-all hover:shadow-lg'
+  )}
   title="切换主题"
 >
   <Sun

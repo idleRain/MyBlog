@@ -1,5 +1,5 @@
 <script>
-import { Toaster } from '$ui/sonner/index.js'
+import { Toaster } from '$ui/sonner'
 import { ModeWatcher } from 'mode-watcher'
 import '../../app.css'
 
