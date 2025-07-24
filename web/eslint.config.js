@@ -44,6 +44,6 @@ export default ts.config(
     }
   },
   {
-    ignores: ['src/lib/components/ui/**']
+    ignores: ['src/lib/components/ui/**', 'src/lib/paraglide/**']
   }
 )

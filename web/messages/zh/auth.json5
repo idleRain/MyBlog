@@ -1,0 +1,9 @@
+{
+  "login": "登录",
+  "register": "注册",
+  "logout": "登出",
+  "username": "用户名",
+  "password": "密码",
+  "email": "邮箱",
+  "forgotPassword": "忘记密码？"
+}

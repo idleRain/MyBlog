@@ -33,6 +33,10 @@
     "isolatedModules": true,
     // 跳过库文件的类型检查，提升编译速度
     "skipLibCheck": true,
+    // 允许编译 JavaScript 文件（paraglide 生成的 JS 文件需要此选项）
+    "allowJs": true,
+    // 检查 JavaScript 文件中的类型（提供更好的类型支持）
+    "checkJs": false,
     // 允许导入 JSON 模块
     "resolveJsonModule": true,
     // 允许导入 .ts 扩展名的文件

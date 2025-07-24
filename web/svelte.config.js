@@ -17,7 +17,8 @@ const config = {
       $ui: './src/lib/components/ui',
       '$ui/*': './src/lib/components/ui/*',
       '~/*': './*',
-      '#/*': './src/types/*'
+      '#/*': './src/types/*',
+      $i18n: './src/lib/paraglide/messages'
     }
   }
 }

@@ -5,6 +5,7 @@ import { authStore } from '$lib/stores/auth'
 import { Globe, User, ExternalLink, Menu, LogIn, Settings, Github } from '@lucide/svelte'
 import { goto } from '$app/navigation'
 import type { User as UserType } from '$lib/api/modules/user/types'
+import { setLocale, getLocale } from '$lib/paraglide/runtime'
 
 let isMobileMenuOpen = $state(false)
 
@@ -21,6 +22,12 @@ authStore.subscribe(state => {
 function handleLogout() {
   authStore.logout()
   goto('/')
+}
+
+// 切换语言
+const setLanguage = (lang: 'zh' | 'en') => {
+  if (getLocale() === lang) return
+  setLocale(lang)
 }
 </script>
 
@@ -98,8 +105,8 @@ function handleLogout() {
               align="end"
               class="bg-white/90 backdrop-blur-md dark:bg-gray-950/90"
             >
-              <DropdownMenu.Item>简体中文</DropdownMenu.Item>
-              <DropdownMenu.Item>English</DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => setLanguage('zh')}>简体中文</DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => setLanguage('en')}>English</DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
 

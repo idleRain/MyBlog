@@ -1,9 +1,11 @@
 import { type ConfigEnv, defineConfig, loadEnv } from 'vite'
+import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import devtoolsJson from 'vite-plugin-devtools-json'
 import AutoImport from 'unplugin-auto-import/vite'
 import { sveltekit } from '@sveltejs/kit/vite'
-import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
+import tailwindcss from '@tailwindcss/vite'
+import ViteJson5 from 'vite-plugin-json5'
 
 export default ({ mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd())
@@ -13,6 +15,7 @@ export default ({ mode }: ConfigEnv) => {
       tailwindcss(),
       sveltekit(),
       devtoolsJson(),
+      ViteJson5(),
       AutoImport({
         // 自动导入常用的 SvelteKit 和 Svelte 函数
         imports: [
@@ -51,6 +54,10 @@ export default ({ mode }: ConfigEnv) => {
           filepath: './.eslintrc-auto-import.js',
           globalsPropValue: true
         }
+      }),
+      paraglideVitePlugin({
+        project: './project.inlang',
+        outdir: './src/lib/paraglide'
       })
     ],
     server: {

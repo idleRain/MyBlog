@@ -1,0 +1,18 @@
+{
+  "button": {
+    "save": "保存",
+    "cancel": "取消",
+    "submit": "提交",
+    "delete": "删除"
+  },
+  "navigation": {
+    "home": "首页",
+    "about": "关于",
+    "contact": "联系"
+  },
+  "status": {
+    "loading": "加载中...",
+    "success": "成功",
+    "error": "错误"
+  }
+}
