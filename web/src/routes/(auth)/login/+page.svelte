@@ -11,7 +11,6 @@ import { Input } from '$ui/input'
 import { Form, Card } from '$ui'
 import { EyeOff, Eye, LogIn } from '@lucide/svelte'
 import { UserAPI } from '$lib/api'
-import '../../../app.css'
 
 export let data: PageData
 

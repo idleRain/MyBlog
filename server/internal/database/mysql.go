@@ -164,12 +164,8 @@ func AutoMigrate(models ...interface{}) error {
 		return fmt.Errorf("数据库未初始化")
 	}
 
-	if err := db.AutoMigrate(models...); err != nil {
-		return fmt.Errorf("数据库表结构迁移失败: %w", err)
-	}
-
-	log.Printf("数据库表结构迁移完成，共 %d 个模型", len(models))
-	return nil
+	// 使用新的迁移逻辑
+	return AutoMigrateWithFix(db)
 }
 
 // HealthCheck 数据库健康检查

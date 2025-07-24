@@ -11,7 +11,6 @@ import { Input } from '$ui/input'
 import { Eye, EyeOff, Lock, Mail, User, UserPlus } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth.ts'
 import { UserAPI } from '$lib/api'
-import '../../../app.css'
 
 export let data: PageData
 

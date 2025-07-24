@@ -11,6 +11,7 @@
 - **动画**: GSAP
 - **构建工具**: Vite
 - **包管理**: Bun
+- **国际化**: @inlang/paraglide-js (支持模块化翻译)
 
 ## 项目结构
 
@@ -103,6 +104,44 @@ bun run test
 # 预览构建结果
 bun run preview
 ```
+
+### 国际化 (i18n) 配置
+
+项目使用 `@inlang/paraglide-js` 实现类型安全的国际化支持，支持模块化翻译文件。
+
+#### 文件结构
+```
+messages/
+├── zh.json          # 中文翻译（基础语言）
+└── en.json          # 英文翻译
+```
+
+#### 使用方式
+
+```typescript
+import { m } from '$lib/i18n'
+
+m['common:greeting']()          // 直接访问
+m['ui:button.save']()           // 动态key
+```
+
+#### 语言切换
+```typescript
+import { setLocale, getLocale } from '$lib/paraglide/runtime'
+
+// 切换语言
+setLocale('en')
+setLocale('zh')
+
+// 获取当前语言
+const currentLocale = getLocale()
+```
+
+#### 翻译文件更新
+修改 `messages/` 目录下的 JSON 文件后，paraglide 会自动重新生成类型安全的消息函数。支持：
+- ✅ 嵌套对象结构
+- ✅ 模块化命名空间
+- ✅ 编译时类型检查
 
 ### API 调用规范
 

@@ -21,8 +21,8 @@ type User struct {
 	Avatar    string            `json:"avatar" gorm:"size:255"`
 	Birthday  datetime.JSONDate `json:"birthday" gorm:"type:date"`
 	Status    int               `json:"status" gorm:"default:1;comment:状态 1-正常 0-禁用"`
-	CreatedAt time.Time         `json:"createdAt"`
-	UpdatedAt time.Time         `json:"updatedAt"`
+	CreatedAt time.Time         `json:"createdAt" gorm:"type:datetime(3)"`
+	UpdatedAt time.Time         `json:"updatedAt" gorm:"type:datetime(3)"`
 	DeletedAt gorm.DeletedAt    `json:"-" gorm:"index"`
 }
 
