@@ -1,4 +1,5 @@
 import type { User } from '$lib/api/modules/user/types'
+import { local } from '$lib/utils/storage'
 import { browser } from '$app/environment'
 import { writable } from 'svelte/store'
 
@@ -6,14 +7,18 @@ import { writable } from 'svelte/store'
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
-  token: string | null
+  accessToken: string | null
+  refreshToken: string | null
+  expiresAt: number | null // 过期时间戳
 }
 
 // 初始状态
 const initialState: AuthState = {
   isAuthenticated: false,
   user: null,
-  token: null
+  accessToken: null,
+  refreshToken: null,
+  expiresAt: null
 }
 
 // 从localStorage加载初始状态
@@ -21,14 +26,18 @@ function loadInitialState(): AuthState {
   if (!browser) return initialState
 
   try {
-    const token = localStorage.getItem('auth_token')
-    const user = localStorage.getItem('auth_user')
+    const accessToken = local.get<string>('auth_access_token')
+    const refreshToken = local.get<string>('auth_refresh_token')
+    const user = local.get<User>('auth_user')
+    const expiresAt = local.get<number>('auth_expires_at')
 
-    if (token && user) {
+    if (accessToken && refreshToken && user) {
       return {
         isAuthenticated: true,
-        user: JSON.parse(user),
-        token
+        user,
+        accessToken,
+        refreshToken,
+        expiresAt
       }
     }
   } catch (error) {
@@ -46,16 +55,22 @@ function createAuthStore() {
     subscribe,
 
     // 登录
-    login(user: User, token: string) {
+    login(user: User, accessToken: string, refreshToken: string, expiresIn: number) {
+      const expiresAt = Date.now() + expiresIn * 1000 // 转换为毫秒时间戳
+
       const authState: AuthState = {
         isAuthenticated: true,
         user,
-        token
+        accessToken,
+        refreshToken,
+        expiresAt
       }
 
       if (browser) {
-        localStorage.setItem('auth_token', token)
-        localStorage.setItem('auth_user', JSON.stringify(user))
+        local.set('auth_access_token', accessToken)
+        local.set('auth_refresh_token', refreshToken)
+        local.set('auth_user', user)
+        local.set('auth_expires_at', expiresAt)
       }
 
       set(authState)
@@ -64,8 +79,10 @@ function createAuthStore() {
     // 登出
     logout() {
       if (browser) {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
+        local.rm('auth_access_token')
+        local.rm('auth_refresh_token')
+        local.rm('auth_user')
+        local.rm('auth_expires_at')
       }
 
       set(initialState)
@@ -77,7 +94,29 @@ function createAuthStore() {
         const newState = { ...state, user }
 
         if (browser) {
-          localStorage.setItem('auth_user', JSON.stringify(user))
+          local.set('auth_user', user)
+        }
+
+        return newState
+      })
+    },
+
+    // 更新令牌
+    updateTokens(accessToken: string, refreshToken: string, expiresIn: number) {
+      const expiresAt = Date.now() + expiresIn * 1000
+
+      update(state => {
+        const newState = {
+          ...state,
+          accessToken,
+          refreshToken,
+          expiresAt
+        }
+
+        if (browser) {
+          local.set('auth_access_token', accessToken)
+          local.set('auth_refresh_token', refreshToken)
+          local.set('auth_expires_at', expiresAt)
         }
 
         return newState
@@ -87,15 +126,43 @@ function createAuthStore() {
     // 检查token是否有效
     isTokenValid(): boolean {
       const state = loadInitialState()
-      return state.isAuthenticated && !!state.token
+      if (!state.isAuthenticated || !state.accessToken || !state.expiresAt) {
+        return false
+      }
+
+      // 检查是否过期（提前5分钟刷新）
+      return Date.now() < state.expiresAt - 5 * 60 * 1000
     },
 
-    // 获取token
-    getToken(): string | null {
+    // 检查是否需要刷新token
+    shouldRefreshToken(): boolean {
+      const state = loadInitialState()
+      if (!state.isAuthenticated || !state.accessToken || !state.expiresAt) {
+        return false
+      }
+
+      // 如果在5分钟内过期，需要刷新
+      return Date.now() >= state.expiresAt - 5 * 60 * 1000
+    },
+
+    // 获取访问令牌
+    getAccessToken(): string | null {
       if (!browser) return null
-      return localStorage.getItem('auth_token')
+      return local.get<string>('auth_access_token')
+    },
+
+    // 获取刷新令牌
+    getRefreshToken(): string | null {
+      if (!browser) return null
+      return local.get<string>('auth_refresh_token')
+    },
+
+    // 向后兼容：获取token（返回access token）
+    getToken(): string | null {
+      return this.getAccessToken()
     }
   }
 }
 
 export const authStore = createAuthStore()
+export type { AuthState }

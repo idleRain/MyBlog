@@ -122,7 +122,7 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
               {#snippet children({ props })}
                 <Form.Label class="flex items-center gap-2">
                   <User class="h-4 w-4" />
-                  用户名 *
+                  用户名 <span class="text-red-400">*</span>
                 </Form.Label>
                 <Input
                   {...props}
@@ -143,7 +143,7 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
               {#snippet children({ props })}
                 <Form.Label class="flex items-center gap-2">
                   <Mail class="h-4 w-4" />
-                  邮箱地址 *
+                  邮箱地址 <span class="text-red-400">*</span>
                 </Form.Label>
                 <Input
                   {...props}
@@ -164,7 +164,7 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
               {#snippet children({ props })}
                 <Form.Label class="flex items-center gap-2">
                   <Lock class="h-4 w-4" />
-                  密码 *
+                  密码 <span class="text-red-400">*</span>
                 </Form.Label>
                 <div class="relative">
                   <Input
@@ -200,7 +200,7 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
               {#snippet children({ props })}
                 <Form.Label class="flex items-center gap-2">
                   <Lock class="h-4 w-4" />
-                  确认密码 *
+                  确认密码 <span class="text-red-400">*</span>
                 </Form.Label>
                 <div class="relative">
                   <Input

@@ -4,7 +4,10 @@ import type {
   RegisterRequest,
   RegisterResponse,
   UserListResponse,
-  UserResponse
+  UserResponse,
+  RefreshTokenRequest,
+  RefreshTokenResponse,
+  LogoutResponse
 } from './types'
 import request from '$lib/service'
 
@@ -39,7 +42,7 @@ const UserAPI = {
       .json()
   },
 
-  // 根据ID获取用户信息
+  // 根据ID获取用户信息 - 统一使用POST方法
   getUserById(id: number): Promise<UserResponse> {
     return request
       .post('users/get', {
@@ -48,13 +51,27 @@ const UserAPI = {
       .json()
   },
 
-  // 删除用户
+  // 删除用户 - 统一使用POST方法
   deleteUser(id: number): Promise<{ code: number; message: string }> {
     return request
       .post('users/delete', {
         json: { id }
       })
       .json()
+  },
+
+  // 刷新令牌
+  refreshToken(params: RefreshTokenRequest): Promise<RefreshTokenResponse> {
+    return request
+      .post('auth/refresh', {
+        json: params
+      })
+      .json()
+  },
+
+  // 用户登出
+  logout(): Promise<LogoutResponse> {
+    return request.post('auth/logout').json()
   },
 
   // 兼容旧接口

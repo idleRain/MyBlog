@@ -40,7 +40,8 @@ func main() {
 
 	// 初始化依赖注入
 	userRepo := repository.NewUserRepository(db)
-	userSvc := service.NewUserService(userRepo)
+	jwtService := service.NewJWTService(cfg)
+	userSvc := service.NewUserService(userRepo, jwtService)
 	userHandler := handler.NewUserHandler(userSvc)
 
 	// 创建路由管理器
@@ -49,6 +50,7 @@ func main() {
 	// 设置依赖
 	deps := &router.Dependencies{
 		UserHandler: userHandler,
+		JWTService:  jwtService,
 	}
 
 	// 注册路由

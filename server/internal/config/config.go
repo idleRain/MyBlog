@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	Logger   LoggerConfig   `mapstructure:"logger"`
 	API      APIConfig      `mapstructure:"api"`
+	JWT      JWTConfig      `mapstructure:"jwt"`
 }
 
 // ServerConfig 服务器配置
@@ -50,6 +51,15 @@ type APIConfig struct {
 	Timeout int    `mapstructure:"timeout"`
 }
 
+// JWTConfig JWT配置
+type JWTConfig struct {
+	AccessSecret  string `mapstructure:"access_secret"`
+	RefreshSecret string `mapstructure:"refresh_secret"`
+	AccessExpire  int    `mapstructure:"access_expire"`  // 分钟
+	RefreshExpire int    `mapstructure:"refresh_expire"` // 小时
+	Issuer        string `mapstructure:"issuer"`
+}
+
 var (
 	config *Config
 	once   sync.Once
@@ -64,6 +74,10 @@ func Load(configPath string) (*Config, error) {
 
 		// 设置默认值
 		setDefaults()
+
+		// 启用环境变量支持
+		viper.AutomaticEnv()
+		viper.SetEnvPrefix("MYBLOG")
 
 		// 读取配置文件
 		if err = viper.ReadInConfig(); err != nil {
@@ -134,6 +148,12 @@ func setDefaults() {
 
 	viper.SetDefault("api.version", "v1")
 	viper.SetDefault("api.timeout", 30)
+
+	viper.SetDefault("jwt.access_secret", "myblog_access_secret_key_2025")
+	viper.SetDefault("jwt.refresh_secret", "myblog_refresh_secret_key_2025")
+	viper.SetDefault("jwt.access_expire", 15)
+	viper.SetDefault("jwt.refresh_expire", 168)
+	viper.SetDefault("jwt.issuer", "myblog")
 }
 
 // validateConfig 验证配置的有效性
@@ -152,6 +172,22 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.Database.DBName == "" {
 		return fmt.Errorf("数据库名不能为空")
+	}
+
+	if cfg.JWT.AccessSecret == "" {
+		return fmt.Errorf("JWT访问令牌密钥不能为空")
+	}
+
+	if cfg.JWT.RefreshSecret == "" {
+		return fmt.Errorf("JWT刷新令牌密钥不能为空")
+	}
+
+	if cfg.JWT.AccessExpire <= 0 {
+		return fmt.Errorf("JWT访问令牌过期时间必须大于0")
+	}
+
+	if cfg.JWT.RefreshExpire <= 0 {
+		return fmt.Errorf("JWT刷新令牌过期时间必须大于0")
 	}
 
 	return nil

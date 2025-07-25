@@ -9,10 +9,9 @@ import (
 
 // Response 统一响应结构
 type Response struct {
-	Code    int         `json:"code"`            // 响应码
-	Message string      `json:"message"`         // 响应消息
-	Data    interface{} `json:"data,omitempty"`  // 响应数据
-	Error   string      `json:"error,omitempty"` // 错误信息
+	Code    int         `json:"code"`           // 响应码
+	Message string      `json:"message"`        // 响应消息
+	Data    interface{} `json:"data,omitempty"` // 响应数据
 }
 
 // 预定义响应码
@@ -44,35 +43,34 @@ func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
 }
 
 // Error 错误响应
-func Error(c *gin.Context, code int, message string, err string) {
+func Error(c *gin.Context, code int, message string) {
 	c.JSON(http.StatusOK, Response{
 		Code:    code,
 		Message: message,
-		Error:   err,
 	})
 }
 
 // BadRequest 请求参数错误
 func BadRequest(c *gin.Context, message string) {
-	Error(c, CodeInvalid, message, "请求参数错误")
+	Error(c, CodeInvalid, message)
 }
 
 // InternalError 服务器内部错误
-func InternalError(c *gin.Context, err string) {
-	Error(c, CodeError, "服务器内部错误", err)
+func InternalError(c *gin.Context, message string) {
+	Error(c, CodeError, message)
 }
 
 // NotFound 资源不存在
 func NotFound(c *gin.Context, message string) {
-	Error(c, CodeNotFound, message, "资源不存在")
+	Error(c, CodeNotFound, message)
 }
 
 // Unauthorized 未授权
 func Unauthorized(c *gin.Context, message string) {
-	Error(c, CodeAuth, message, "认证失败")
+	Error(c, CodeAuth, message)
 }
 
 // Forbidden 权限不足
 func Forbidden(c *gin.Context, message string) {
-	Error(c, CodeForbid, message, "权限不足")
+	Error(c, CodeForbid, message)
 }

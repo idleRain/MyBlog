@@ -20,32 +20,57 @@ const loginSchema = z.object({
 })
 
 const form = superForm(data.form, {
-  validators: zodClient(loginSchema),
-  onUpdated: async ({ form }) => {
-    if (form.valid) {
-      // 调用 API 登录
-      try {
-        const response = await UserAPI.login({
-          username: form.data.username.trim(),
-          password: form.data.password.trim()
-        })
-
-        if (response.code === 200 && response.data) {
-          authStore.login(response.data.user, response.data.token)
-          toast.success('登录成功')
-          await goto('/')
-        } else {
-          toast.error(response.message || '登录失败')
-        }
-      } catch (error) {
-        console.error('Login error:', error)
-        toast.error('网络错误，请稍后重试')
-      }
-    }
-  }
+  validators: zodClient(loginSchema)
 })
 
-const { form: formData, enhance, submitting } = form
+const { form: formData } = form
+
+let isSubmitting = false
+
+// 手动处理登录提交
+async function handleLogin(e: SubmitEvent) {
+  e.preventDefault()
+
+  if (isSubmitting) return
+
+  // 验证表单数据
+  const validation = loginSchema.safeParse({
+    username: $formData.username,
+    password: $formData.password
+  })
+
+  if (!validation.success) {
+    toast.error('请检查输入信息')
+    return
+  }
+
+  isSubmitting = true
+
+  try {
+    const response = await UserAPI.login({
+      username: $formData.username.trim(),
+      password: $formData.password.trim()
+    })
+
+    if (response.code === 200 && response.data) {
+      authStore.login(
+        response.data.user,
+        response.data.accessToken,
+        response.data.refreshToken,
+        response.data.expiresIn
+      )
+      toast.success('登录成功')
+      await goto('/')
+    } else {
+      toast.error(response.message || '登录失败')
+    }
+  } catch (error) {
+    console.error('Login error:', error)
+    toast.error('网络错误，请稍后重试')
+  } finally {
+    isSubmitting = false
+  }
+}
 
 let showPassword = false
 
@@ -97,7 +122,7 @@ function togglePasswordVisibility() {
     <!-- Login Form -->
     <Card.Root>
       <Card.Content class="pt-6">
-        <form method="POST" use:enhance class="space-y-4">
+        <form onsubmit={handleLogin} class="space-y-4">
           <!-- Username Field -->
           <Form.Field {form} name="username">
             <Form.Control>
@@ -107,7 +132,7 @@ function togglePasswordVisibility() {
                   {...props}
                   type="text"
                   bind:value={$formData.username}
-                  disabled={$submitting}
+                  disabled={isSubmitting}
                   placeholder="请输入用户名或邮箱"
                   autocomplete="username"
                 />
@@ -126,7 +151,7 @@ function togglePasswordVisibility() {
                     {...props}
                     type={showPassword ? 'text' : 'password'}
                     bind:value={$formData.password}
-                    disabled={$submitting}
+                    disabled={isSubmitting}
                     placeholder="请输入密码"
                     autocomplete="current-password"
                     class="pr-10"
@@ -135,7 +160,7 @@ function togglePasswordVisibility() {
                     type="button"
                     onclick={togglePasswordVisibility}
                     class="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    disabled={$submitting}
+                    disabled={isSubmitting}
                   >
                     {#if showPassword}
                       <EyeOff class="h-4 w-4" />
@@ -150,8 +175,8 @@ function togglePasswordVisibility() {
           </Form.Field>
 
           <!-- Login Button -->
-          <Form.Button disabled={$submitting} class="w-full">
-            {#if $submitting}
+          <Form.Button disabled={isSubmitting} class="w-full">
+            {#if isSubmitting}
               <div
                 class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
               ></div>

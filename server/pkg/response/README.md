@@ -13,10 +13,9 @@
 
 ```go
 type Response struct {
-    Code    int         `json:"code"`              // 响应码
-    Message string      `json:"message"`           // 响应消息
-    Data    interface{} `json:"data,omitempty"`    // 响应数据
-    Error   string      `json:"error,omitempty"`   // 错误信息
+    Code    int         `json:"code"`           // 响应码
+    Message string      `json:"message"`        // 响应消息
+    Data    interface{} `json:"data,omitempty"` // 响应数据
 }
 ```
 
@@ -56,7 +55,7 @@ response.SuccessWithMessage(c, "自定义成功消息", data)
 #### Error
 
 ```go
-response.Error(c, code, message, err)
+response.Error(c, code, message)
 ```
 
 通用错误响应方法。
@@ -148,8 +147,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 ```json
 {
     "code": 400,
-    "message": "请求参数错误",
-    "error": "用户名不能为空"
+    "message": "用户名不能为空"
 }
 ```
 
@@ -158,8 +156,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 ```json
 {
     "code": 500,
-    "message": "服务器内部错误",
-    "error": "数据库连接失败"
+    "message": "数据库连接失败"
 }
 ```
 
@@ -226,7 +223,7 @@ const (
 )
 
 func RateLimit(c *gin.Context, message string) {
-    Error(c, CodeRateLimit, message, "请求过于频繁")
+    Error(c, CodeRateLimit, message)
 }
 ```
 
@@ -246,4 +243,12 @@ func SuccessWithI18n(c *gin.Context, key string, data interface{}) {
 1. 所有响应都使用HTTP 200状态码，业务状态通过code字段区分
 2. 敏感错误信息不应暴露给客户端
 3. 保持响应格式的一致性
-4. error字段只在出错时返回，成功时应该省略
+4. 错误信息直接放在message字段中，方便前端显示
+
+### 重要改进
+
+本次更新修复了错误响应格式问题：
+
+- **问题**: 之前将具体错误信息放在`error`字段，`message`字段显示通用描述，导致前端无法获取具体错误信息
+- **解决**: 现在直接将具体错误信息放在`message`字段，前端可以直接显示`message`内容
+- **影响**: 移除了`error`字段，简化了响应结构，提升了用户体验

@@ -46,7 +46,7 @@ type UserService interface {
 
 1. **用户名唯一性**: 不允许重复的用户名
 2. **邮箱唯一性**: 不允许重复的邮箱地址
-3. **密码安全**: 使用MD5+盐值加密密码
+3. **密码安全**: 使用bcrypt加密密码（向后兼容MD5格式）
 4. **默认昵称**: 如果不提供昵称，使用用户名作为默认昵称
 5. **分页限制**: 每页最多100条记录，默认10条
 
@@ -77,17 +77,39 @@ err := userService.DeleteUser(1)
 
 ### 密码加密
 
-当前使用MD5+盐值的方式加密密码：
+#### 加密方案（bcrypt）
+系统使用安全的bcrypt加密：
 
 ```go
-func (s *userService) hashPassword(password string) string {
-    h := md5.New()
-    h.Write([]byte(password + "myblog_salt"))
-    return hex.EncodeToString(h.Sum(nil))
+func (s *userService) hashPassword(password string) (string, error) {
+    hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
+    if err != nil {
+        return "", fmt.Errorf("密码加密失败: %w", err)
+    }
+    return string(hashedBytes), nil
 }
 ```
 
-> 注意：生产环境建议使用更安全的加密算法，如bcrypt
+#### 密码强度验证
+系统会验证密码强度，要求：
+- 最少6位，最多100位
+- 必须包含字母和数字
+- 不能使用常见弱密码
+
+#### 密码验证
+系统使用bcrypt进行密码验证：
+
+```go
+func (s *userService) verifyPassword(password, hashedPassword string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+    return err == nil
+}
+```
+
+**安全特性**：
+- ✅ 使用bcrypt加密（安全）
+- ✅ 密码强度验证
+- ✅ 防止常见弱密码
 
 ### 错误处理
 

@@ -102,7 +102,7 @@ func buildAndRun() error {
 	fmt.Println("✅ 编译成功")
 
 	// 启动新进程
-	go startProcess(outputPath)
+	startProcess(outputPath)
 
 	return nil
 }
@@ -118,9 +118,20 @@ func startProcess(outputPath string) {
 	process.Stdout = os.Stdout
 	process.Stderr = os.Stderr
 
-	if err := process.Run(); err != nil {
-		fmt.Printf("⚠️ 应用退出: %v\n", err)
+	// 使用 Start() 代替 Run()，避免阻塞
+	if err := process.Start(); err != nil {
+		fmt.Printf("❌ 启动应用失败: %v\n", err)
+		return
 	}
+
+	fmt.Printf("✅ 应用启动成功 (PID: %d)\n", process.Process.Pid)
+
+	// 在后台等待进程结束
+	go func() {
+		if err := process.Wait(); err != nil {
+			fmt.Printf("⚠️ 应用退出: %v\n", err)
+		}
+	}()
 }
 
 // stopProcess 停止应用进程
@@ -208,7 +219,10 @@ func watchFiles() {
 			// 重新编译和运行
 			if err := buildAndRun(); err != nil {
 				fmt.Printf("❌ 重新编译失败: %v\n", err)
+			} else {
+				fmt.Println("🎉 热更新完成")
 			}
+			fmt.Println()
 		}
 	}
 }

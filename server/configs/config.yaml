@@ -29,3 +29,11 @@ logger:
 api:
   version: "v1"
   timeout: 30  # 秒
+
+# JWT配置
+jwt:
+  access_secret: "${JWT_ACCESS_SECRET:myblog_access_secret_key_2025}"
+  refresh_secret: "${JWT_REFRESH_SECRET:myblog_refresh_secret_key_2025}"
+  access_expire: 15  # 分钟
+  refresh_expire: 168  # 小时（7天）
+  issuer: "myblog"

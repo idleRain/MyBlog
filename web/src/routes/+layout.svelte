@@ -1,6 +1,6 @@
 <script>
-import { Toaster } from '$ui/sonner'
 import { ModeWatcher } from 'mode-watcher'
+import { Toaster } from '$ui/sonner/index.js'
 import '@/app.css'
 
 let { children } = $props()
@@ -9,7 +9,4 @@ let { children } = $props()
 <ModeWatcher />
 <Toaster position="top-center" />
 
-<!-- 主内容区域 -->
-<main class="min-h-screen">
-  {@render children()}
-</main>
+{@render children()}

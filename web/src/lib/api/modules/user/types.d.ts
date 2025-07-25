@@ -31,7 +31,31 @@ export interface LoginRequest {
 // 登录响应数据
 export interface LoginData {
   user: User
-  token: string
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
+}
+
+// 获取用户信息请求参数
+export interface GetUserByIdRequest {
+  id: number
+}
+
+// 删除用户请求参数
+export interface DeleteUserRequest {
+  id: number
+}
+
+// 刷新令牌请求参数
+export interface RefreshTokenRequest {
+  refreshToken: string
+}
+
+// 刷新令牌响应数据
+export interface RefreshTokenData {
+  accessToken: string
+  refreshToken: string
+  expiresIn: number
 }
 
 // 注册请求参数
@@ -48,6 +72,8 @@ export type UserListResponse = ApiResponse<UserListData>
 export type LoginResponse = ApiResponse<LoginData>
 export type RegisterResponse = ApiResponse<User>
 export type UserResponse = ApiResponse<User>
+export type RefreshTokenResponse = ApiResponse<RefreshTokenData>
+export type LogoutResponse = ApiResponse<null>
 
 // 兼容旧接口
 export type Data = UserListData

@@ -43,11 +43,11 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 // GetUserByID 根据ID获取用户 POST /api/users/get
 func (h *UserHandler) GetUserByID(c *gin.Context) {
-	type GetUserRequest struct {
+	type GetUserByIDRequest struct {
 		ID uint `json:"id" binding:"required,min=1"`
 	}
 
-	var req GetUserRequest
+	var req GetUserByIDRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "请求参数错误: "+err.Error())
 		return
@@ -134,18 +134,68 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, token, err := h.userService.Login(req.Username, req.Password)
+	loginResp, err := h.userService.Login(req.Username, req.Password)
 	if err != nil {
 		response.Unauthorized(c, err.Error())
 		return
 	}
 
 	data := gin.H{
-		"user":  user.ToResponse(),
-		"token": token,
+		"user":         loginResp.User.ToResponse(),
+		"accessToken":  loginResp.AccessToken,
+		"refreshToken": loginResp.RefreshToken,
+		"expiresIn":    loginResp.ExpiresIn,
 	}
 
 	response.SuccessWithMessage(c, "登录成功", data)
+}
+
+// RefreshToken 刷新令牌 POST /api/auth/refresh
+func (h *UserHandler) RefreshToken(c *gin.Context) {
+	type RefreshTokenRequest struct {
+		RefreshToken string `json:"refreshToken" binding:"required"`
+	}
+
+	var req RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	tokenPair, err := h.userService.RefreshToken(req.RefreshToken)
+	if err != nil {
+		response.Unauthorized(c, err.Error())
+		return
+	}
+
+	data := gin.H{
+		"accessToken":  tokenPair.AccessToken,
+		"refreshToken": tokenPair.RefreshToken,
+		"expiresIn":    tokenPair.ExpiresIn,
+	}
+
+	response.SuccessWithMessage(c, "令牌刷新成功", data)
+}
+
+// Logout 用户登出 POST /api/auth/logout
+func (h *UserHandler) Logout(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		response.BadRequest(c, "未提供认证令牌")
+		return
+	}
+
+	// 移除 Bearer 前缀
+	if len(token) > 7 && token[:7] == "Bearer " {
+		token = token[7:]
+	}
+
+	if err := h.userService.Logout(token); err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "登出成功", nil)
 }
 
 // HealthCheck 健康检查 POST /api/health

@@ -7,10 +7,87 @@ const prefixUrl = import.meta.env.SSR
   ? import.meta.env.VITE_PROXY_URL + import.meta.env.VITE_BASE_URL
   : import.meta.env.VITE_BASE_URL
 
-// 请求拦截器 - 添加认证token
-const requestInterceptor: BeforeRequestHook = (request, options) => {
+// 令牌刷新状态
+let isRefreshing = false
+let refreshPromise: Promise<boolean> | null = null
+
+// 刷新令牌函数
+async function refreshTokenIfNeeded(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise
+  }
+
+  if (!authStore.shouldRefreshToken()) {
+    return true
+  }
+
+  const refreshToken = authStore.getRefreshToken()
+  if (!refreshToken) {
+    authStore.logout()
+    if (browser) {
+      await goto('/login')
+    }
+    return false
+  }
+
+  isRefreshing = true
+  refreshPromise = performTokenRefresh(refreshToken)
+
+  try {
+    const success = await refreshPromise
+    return success
+  } finally {
+    isRefreshing = false
+    refreshPromise = null
+  }
+}
+
+// 执行令牌刷新
+async function performTokenRefresh(refreshToken: string): Promise<boolean> {
+  try {
+    const response = await ky
+      .post(prefixUrl + 'auth/refresh', {
+        json: { refreshToken: refreshToken },
+        timeout: 10000
+      })
+      .json<{
+        code: number
+        data: {
+          accessToken: string
+          refreshToken: string
+          expiresIn: number
+        }
+      }>()
+
+    if (response.code === 200) {
+      authStore.updateTokens(
+        response.data.accessToken,
+        response.data.refreshToken,
+        response.data.expiresIn
+      )
+      return true
+    }
+  } catch (error) {
+    console.error('令牌刷新失败:', error)
+  }
+
+  // 刷新失败，清除认证状态
+  authStore.logout()
   if (browser) {
-    const token = authStore.getToken()
+    await goto('/login')
+  }
+  return false
+}
+
+// 请求拦截器 - 添加认证token和处理令牌刷新
+const requestInterceptor: BeforeRequestHook = async (request, options) => {
+  if (browser) {
+    // 检查是否需要刷新令牌
+    if (authStore.shouldRefreshToken()) {
+      await refreshTokenIfNeeded()
+    }
+
+    const token = authStore.getAccessToken()
     if (token) {
       request.headers.set('Authorization', `Bearer ${token}`)
     }
@@ -22,8 +99,12 @@ const responseInterceptor: AfterResponseHook = async (request, options, response
   // 处理401未认证错误
   if (response.status === 401) {
     if (browser) {
-      authStore.logout()
-      await goto('/login')
+      // 尝试刷新令牌
+      const refreshSuccess = await refreshTokenIfNeeded()
+      if (!refreshSuccess) {
+        authStore.logout()
+        await goto('/login')
+      }
     }
   }
 

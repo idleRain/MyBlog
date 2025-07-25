@@ -2,6 +2,7 @@ package router
 
 import (
 	"MyBlog/internal/middleware"
+	"MyBlog/internal/service"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,7 +46,7 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	// 注册用户相关路由
 	if deps.UserHandler != nil {
 		userHandler := deps.UserHandler.(UserHandlerInterface)
-		userRoutes := NewUserRoutes(userHandler)
+		userRoutes := NewUserRoutes(userHandler, deps.JWTService)
 		userRoutes.RegisterRoutes(api)
 	}
 
@@ -59,7 +60,8 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 
 // Dependencies 依赖注入结构
 type Dependencies struct {
-	UserHandler interface{} // 用户处理器接口
+	UserHandler interface{}        // 用户处理器接口
+	JWTService  service.JWTService // JWT服务
 	// 可以添加更多的依赖
 	// PostHandler interface{}
 	// AuthHandler interface{}
@@ -67,9 +69,11 @@ type Dependencies struct {
 
 // UserHandlerInterface 用户处理器接口
 type UserHandlerInterface interface {
-	CreateUser(c *gin.Context)
-	GetUserByID(c *gin.Context)
-	GetUserList(c *gin.Context)
-	DeleteUser(c *gin.Context)
-	Login(c *gin.Context)
+	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
+	GetUserByID(c *gin.Context)  // GET /api/users/:id - URL路径参数
+	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式（复杂参数）
+	DeleteUser(c *gin.Context)   // DELETE /api/users/:id - URL路径参数
+	Login(c *gin.Context)        // POST /api/users/login - JSON格式
+	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式
+	Logout(c *gin.Context)       // POST /api/auth/logout - Header中的Token
 }

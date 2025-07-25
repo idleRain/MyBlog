@@ -1,18 +1,23 @@
 package router
 
 import (
+	"MyBlog/internal/middleware"
+	"MyBlog/internal/service"
+
 	"github.com/gin-gonic/gin"
 )
 
 // UserRoutes 用户路由模块
 type UserRoutes struct {
-	handler UserHandlerInterface
+	handler    UserHandlerInterface
+	jwtService service.JWTService
 }
 
 // NewUserRoutes 创建用户路由模块
-func NewUserRoutes(handler UserHandlerInterface) *UserRoutes {
+func NewUserRoutes(handler UserHandlerInterface, jwtService service.JWTService) *UserRoutes {
 	return &UserRoutes{
-		handler: handler,
+		handler:    handler,
+		jwtService: jwtService,
 	}
 }
 
@@ -25,11 +30,27 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 		userGroup.POST("/create", ur.handler.CreateUser)
 		userGroup.POST("/login", ur.handler.Login)
 
-		// 用户管理相关路由
-		userGroup.POST("/get", ur.handler.GetUserByID)
-		userGroup.POST("/list", ur.handler.GetUserList)
-		userGroup.POST("/delete", ur.handler.DeleteUser)
+		// 用户管理相关路由（需要认证）
+		authenticatedGroup := userGroup.Group("")
+		authenticatedGroup.Use(middleware.Auth(ur.jwtService))
+		{
+			// 根据CLAUDE.md规范：统一使用POST方法
+			authenticatedGroup.POST("/get", ur.handler.GetUserByID)
+			authenticatedGroup.POST("/delete", ur.handler.DeleteUser)
+			authenticatedGroup.POST("/list", ur.handler.GetUserList)
+			{
 
-		// 可以在这里添加更多用户相关的路由
+			}
+		}
+	}
+
+	// JWT相关路由
+	authGroup := api.Group("/auth")
+	{
+		// 刷新令牌（无需认证）
+		authGroup.POST("/refresh", ur.handler.RefreshToken)
+
+		// 登出（需要认证）
+		authGroup.POST("/logout", middleware.Auth(ur.jwtService), ur.handler.Logout)
 	}
 }

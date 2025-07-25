@@ -130,7 +130,9 @@ const categories = [
           <a
             href="https://kit.svelte.dev"
             target="_blank"
-            class="transition-colors hover:text-blue-600">SvelteKit</a
+            class="transition-colors hover:text-blue-600"
+          >
+            SvelteKit</a
           >
         </span>
         <span class="hidden sm:block">•</span>
@@ -139,15 +141,21 @@ const categories = [
           <a
             href="https://tailwindcss.com"
             target="_blank"
-            class="transition-colors hover:text-blue-600">TailwindCSS</a
+            class="transition-colors hover:text-blue-600"
           >
+            TailwindCSS
+          </a>
         </span>
         <span class="hidden sm:block">•</span>
         <span class="flex items-center gap-1">
-          Hosted on
-          <a href="https://vercel.com" target="_blank" class="transition-colors hover:text-blue-600"
-            >Vercel</a
+          Service on
+          <a
+            href="https://golang.google.cn"
+            target="_blank"
+            class="transition-colors hover:text-blue-600"
           >
+            Go
+          </a>
         </span>
       </div>
     </div>
