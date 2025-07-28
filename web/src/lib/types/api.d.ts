@@ -1,6 +1,7 @@
 // API 相关类型增强
 
-import type { UserRole, UserStatus } from './auth'
+import type { UserStatus } from '$lib/api/modules/user/types'
+import type { UserRole } from './auth'
 
 /**
  * 基础 API 响应结构

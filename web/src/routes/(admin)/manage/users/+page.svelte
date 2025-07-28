@@ -1,41 +1,33 @@
 <script lang="ts">
 import { onMount } from 'svelte'
 import { authStore } from '$lib/stores/auth'
-import { Sidebar } from '$ui/sidebar'
-import { Breadcrumb } from '$ui/breadcrumb'
-import { Card } from '$ui/card'
-import { Button } from '$ui/button'
-import { Input } from '$ui/input'
-import { Badge } from '$ui/badge'
-import { Avatar } from '$ui/avatar'
 import {
+  Sidebar,
+  Breadcrumb,
+  Select,
+  Card,
+  Button,
+  Input,
+  Badge,
+  Avatar,
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '$ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '$ui/table'
-import { Label } from '$ui/label'
-import { Select } from '$ui/select'
+  Table,
+  Label
+} from '$ui'
 import {
   Plus,
   Search,
   Edit,
   Trash2,
-  User,
+  User as UserIcon,
   Mail,
   Calendar,
-  Shield,
-  MoreHorizontal
+  Shield
 } from '@lucide/svelte'
 import { UserAPI } from '$lib/api'
 import type { User } from '$lib/api/modules/user/types'
 
 // 权限检查
-let currentUser = $state(null)
 let userRole = $state('user')
 let hasPermission = $state(false)
 
@@ -406,7 +398,6 @@ onMount(() => {
   // 检查用户权限
   authStore.subscribe(state => {
     if (state.isAuthenticated && state.user) {
-      currentUser = state.user
       userRole = state.user.role || 'user'
       hasPermission = ['admin', 'superadmin'].includes(userRole)
 
@@ -459,8 +450,8 @@ onMount(() => {
         <p class="text-muted-foreground">管理系统用户，包括创建、编辑和删除操作</p>
       </div>
 
-      <Dialog bind:open={isCreateModalOpen}>
-        <DialogTrigger>
+      <Dialog.Root bind:open={isCreateModalOpen}>
+        <Dialog.Trigger>
           <Button
             onclick={() => {
               resetForm()
@@ -470,17 +461,17 @@ onMount(() => {
             <Plus class="mr-2 h-4 w-4" />
             创建用户
           </Button>
-        </DialogTrigger>
-        <DialogContent class="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>创建新用户</DialogTitle>
-            <DialogDescription>填写以下信息来创建新的系统用户</DialogDescription>
-          </DialogHeader>
+        </Dialog.Trigger>
+        <Dialog.Content class="sm:max-w-md">
+          <Dialog.Header>
+            <Dialog.Title>创建新用户</Dialog.Title>
+            <Dialog.Description>填写以下信息来创建新的系统用户</Dialog.Description>
+          </Dialog.Header>
 
           <div class="space-y-4">
             <div class="space-y-2">
-              <Label for="username">用户名 *</Label>
-              <Input
+              <Label.Root for="username">用户名 *</Label.Root>
+              <Input.Root
                 id="username"
                 bind:value={userForm.username}
                 placeholder="请输入用户名"
@@ -492,8 +483,8 @@ onMount(() => {
             </div>
 
             <div class="space-y-2">
-              <Label for="email">邮箱 *</Label>
-              <Input
+              <Label.Root for="email">邮箱 *</Label.Root>
+              <Input.Root
                 id="email"
                 type="email"
                 bind:value={userForm.email}
@@ -506,8 +497,8 @@ onMount(() => {
             </div>
 
             <div class="space-y-2">
-              <Label for="password">密码 *</Label>
-              <Input
+              <Label.Root for="password">密码 *</Label.Root>
+              <Input.Root
                 id="password"
                 type="password"
                 bind:value={userForm.password}
@@ -520,8 +511,8 @@ onMount(() => {
             </div>
 
             <div class="space-y-2">
-              <Label for="nickname">昵称</Label>
-              <Input
+              <Label.Root for="nickname">昵称</Label.Root>
+              <Input.Root
                 id="nickname"
                 bind:value={userForm.nickname}
                 placeholder="请输入昵称"
@@ -530,22 +521,25 @@ onMount(() => {
             </div>
 
             <div class="space-y-2">
-              <Label for="role">角色</Label>
-              <select
+              <Select.Root
                 bind:value={userForm.role}
                 class="bg-surface flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isSubmitting}
               >
-                <option value="user">用户</option>
-                <option value="editor">编辑者</option>
-                <option value="admin">管理员</option>
-                <option value="superadmin">超级管理员</option>
-              </select>
+                <Label.Root for="role">角色</Label.Root>
+                <Select.Trigger class="w-full">请选择角色</Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="user">用户</Select.Item>
+                  <Select.Item value="editor">编辑者</Select.Item>
+                  <Select.Item value="admin">管理员</Select.Item>
+                  <Select.Item value="superadmin">超级管理员</Select.Item>
+                </Select.Content>
+              </Select.Root>
             </div>
 
             <div class="space-y-2">
-              <Label for="birthday">生日</Label>
-              <Input
+              <Label.Root for="birthday">生日</Label.Root>
+              <Input.Root
                 id="birthday"
                 type="date"
                 bind:value={userForm.birthday}
@@ -554,7 +548,7 @@ onMount(() => {
             </div>
           </div>
 
-          <DialogFooter>
+          <Dialog.Footer>
             <Button variant="outline" onclick={() => (isCreateModalOpen = false)}>取消</Button>
             <Button onclick={createUser} disabled={isSubmitting}>
               {#if isSubmitting}
@@ -566,9 +560,9 @@ onMount(() => {
                 创建用户
               {/if}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Root>
     </div>
 
     <!-- 搜索和筛选 -->
@@ -579,7 +573,11 @@ onMount(() => {
             <Search
               class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             />
-            <Input placeholder="搜索用户名、邮箱或昵称..." bind:value={searchQuery} class="pl-9" />
+            <Input.Root
+              placeholder="搜索用户名、邮箱或昵称..."
+              bind:value={searchQuery}
+              class="pl-9"
+            />
           </div>
           <div class="text-sm text-muted-foreground">
             共 {totalUsers} 个用户
@@ -632,7 +630,7 @@ onMount(() => {
         {:else if filteredUsers.length === 0}
           <div class="flex h-48 items-center justify-center">
             <div class="text-center">
-              <User class="mx-auto h-12 w-12 text-muted-foreground" />
+              <UserIcon class="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 class="mt-4 text-lg font-medium">没有找到用户</h3>
               <p class="text-sm text-muted-foreground">
                 {searchQuery ? '请尝试其他搜索条件' : '开始创建第一个用户'}
@@ -641,41 +639,41 @@ onMount(() => {
           </div>
         {:else}
           <Table.Root>
-            <TableHeader>
-              <TableRow>
-                <TableHead class="w-12">
+            <Table.Header>
+              <Table.Row>
+                <Table.Head class="w-12">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
                     onchange={toggleSelectAll}
                     class="rounded border-gray-300"
                   />
-                </TableHead>
-                <TableHead>用户</TableHead>
-                <TableHead>邮箱</TableHead>
-                <TableHead>角色</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>创建时间</TableHead>
-                <TableHead class="text-right">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                </Table.Head>
+                <Table.Head>用户</Table.Head>
+                <Table.Head>邮箱</Table.Head>
+                <Table.Head>角色</Table.Head>
+                <Table.Head>状态</Table.Head>
+                <Table.Head>创建时间</Table.Head>
+                <Table.Head class="text-right">操作</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
               {#each filteredUsers as user (user.id)}
-                <TableRow>
-                  <TableCell>
+                <Table.Row>
+                  <Table.Cell>
                     <input
                       type="checkbox"
                       checked={selectedUserIds.includes(user.id)}
                       onchange={() => toggleSelectUser(user.id)}
                       class="rounded border-gray-300"
                     />
-                  </TableCell>
-                  <TableCell>
+                  </Table.Cell>
+                  <Table.Cell>
                     <div class="flex items-center space-x-3">
                       <Avatar.Root class="h-8 w-8">
                         <Avatar.Image src={user.avatar} alt={user.nickname || user.username} />
                         <Avatar.Fallback>
-                          <User class="h-4 w-4" />
+                          <UserIcon class="h-4 w-4" />
                         </Avatar.Fallback>
                       </Avatar.Root>
                       <div>
@@ -683,20 +681,20 @@ onMount(() => {
                         <p class="text-sm text-muted-foreground">@{user.username}</p>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
+                  </Table.Cell>
+                  <Table.Cell>
                     <div class="flex items-center space-x-2">
                       <Mail class="h-4 w-4 text-muted-foreground" />
                       <span>{user.email}</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
+                  </Table.Cell>
+                  <Table.Cell>
                     {@const roleInfo = getRoleInfo(user.role || 'user')}
                     <Badge variant={roleInfo.variant}>
                       {roleInfo.name}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
+                  </Table.Cell>
+                  <Table.Cell>
                     <button
                       onclick={() => toggleUserStatus(user)}
                       class="inline-flex cursor-pointer items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {user.status ===
@@ -706,16 +704,16 @@ onMount(() => {
                     >
                       {user.status === 1 ? '正常' : '禁用'}
                     </button>
-                  </TableCell>
-                  <TableCell>
+                  </Table.Cell>
+                  <Table.Cell>
                     <div class="flex items-center space-x-2">
                       <Calendar class="h-4 w-4 text-muted-foreground" />
                       <span class="text-sm">
                         {new Date(user.createdAt).toLocaleDateString('zh-CN')}
                       </span>
                     </div>
-                  </TableCell>
-                  <TableCell class="text-right">
+                  </Table.Cell>
+                  <Table.Cell class="text-right">
                     <div class="flex items-center justify-end space-x-2">
                       <Button variant="ghost" size="sm" onclick={() => openEditModal(user)}>
                         <Edit class="h-4 w-4" />
@@ -729,10 +727,10 @@ onMount(() => {
                         <Trash2 class="h-4 w-4" />
                       </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </Table.Cell>
+                </Table.Row>
               {/each}
-            </TableBody>
+            </Table.Body>
           </Table.Root>
         {/if}
       </Card.Content>
@@ -772,17 +770,17 @@ onMount(() => {
     {/if}
 
     <!-- 编辑用户模态框 -->
-    <Dialog bind:open={isEditModalOpen}>
-      <DialogContent class="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>编辑用户</DialogTitle>
-          <DialogDescription>修改用户信息</DialogDescription>
-        </DialogHeader>
+    <Dialog.Root bind:open={isEditModalOpen}>
+      <Dialog.Content class="sm:max-w-md">
+        <Dialog.Header>
+          <Dialog.Title>编辑用户</Dialog.Title>
+          <Dialog.Description>修改用户信息</Dialog.Description>
+        </Dialog.Header>
 
         <div class="space-y-4">
           <div class="space-y-2">
-            <Label for="edit-username">用户名 *</Label>
-            <Input
+            <Label.Root for="edit-username">用户名 *</Label.Root>
+            <Input.Root
               id="edit-username"
               bind:value={userForm.username}
               placeholder="请输入用户名"
@@ -794,8 +792,8 @@ onMount(() => {
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-email">邮箱 *</Label>
-            <Input
+            <Label.Root for="edit-email">邮箱 *</Label.Root>
+            <Input.Root
               id="edit-email"
               type="email"
               bind:value={userForm.email}
@@ -808,10 +806,10 @@ onMount(() => {
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-password"
-              >密码 <span class="text-xs text-muted-foreground">(留空则不修改)</span></Label
+            <Label.Root for="edit-password"
+              >密码 <span class="text-xs text-muted-foreground">(留空则不修改)</span></Label.Root
             >
-            <Input
+            <Input.Root
               id="edit-password"
               type="password"
               bind:value={userForm.password}
@@ -824,8 +822,8 @@ onMount(() => {
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-nickname">昵称</Label>
-            <Input
+            <Label.Root for="edit-nickname">昵称</Label.Root>
+            <Input.Root
               id="edit-nickname"
               bind:value={userForm.nickname}
               placeholder="请输入昵称"
@@ -834,22 +832,26 @@ onMount(() => {
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-role">角色</Label>
-            <select
+            <Select.Root
               bind:value={userForm.role}
               class="bg-surface flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               disabled={isSubmitting}
             >
-              <option value="user">用户</option>
-              <option value="editor">编辑者</option>
-              <option value="admin">管理员</option>
-              <option value="superadmin">超级管理员</option>
-            </select>
+              <Label.Root for="role">角色</Label.Root>
+              <Select.Trigger class="w-full">请选择角色</Select.Trigger>
+              <Select.Content>
+                <Select.Item value="user">用户</Select.Item>
+                <Select.Item value="editor">编辑者</Select.Item>
+                <Select.Item value="admin">管理员</Select.Item>
+                <Select.Item value="superadmin">超级管理员</Select.Item>
+              </Select.Content>
+            </Select.Root>
+            <Label.Root for="edit-role">角色</Label.Root>
           </div>
 
           <div class="space-y-2">
-            <Label for="edit-birthday">生日</Label>
-            <Input
+            <Label.Root for="edit-birthday">生日</Label.Root>
+            <Input.Root
               id="edit-birthday"
               type="date"
               bind:value={userForm.birthday}
@@ -858,7 +860,7 @@ onMount(() => {
           </div>
         </div>
 
-        <DialogFooter>
+        <Dialog.Footer>
           <Button variant="outline" onclick={() => (isEditModalOpen = false)}>取消</Button>
           <Button onclick={updateUser} disabled={isSubmitting}>
             {#if isSubmitting}
@@ -870,8 +872,8 @@ onMount(() => {
               更新用户
             {/if}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </Dialog.Footer>
+      </Dialog.Content>
+    </Dialog.Root>
   {/if}
 </main>

@@ -1,7 +1,7 @@
 // 权限管理工具函数
 
 import type { User, UserRole, UserPermissionContext, PermissionCheck, RoleInfo } from '$lib/types'
-import { ROLE_PERMISSIONS, ROLE_CONFIG } from '$lib/types/auth'
+import { ROLE_PERMISSIONS, ROLE_CONFIG } from '$lib/constants/auth.ts'
 
 /**
  * 检查用户是否拥有指定权限

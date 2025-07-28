@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 
 	"MyBlog/internal/config"
 	"MyBlog/internal/model"
@@ -14,28 +18,92 @@ import (
 	"gorm.io/gorm"
 )
 
-// RunMigrations 运行数据库迁移
-func RunMigrations(cfg *config.Config) error {
+// getMigrationsPath 获取迁移文件路径
+func getMigrationsPath() (string, error) {
+	// 可能的迁移文件路径
+	possiblePaths := []string{
+		"./migrations",      // 从 server 目录运行
+		"../migrations",     // 从 tmp 目录运行
+		"../../migrations",  // 从更深的子目录运行
+		"server/migrations", // 从项目根目录运行
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			absPath, err := filepath.Abs(path)
+			if err != nil {
+				continue
+			}
+
+			// 处理Windows路径格式
+			if runtime.GOOS == "windows" {
+				// 将反斜杠转换为正斜杠
+				absPath = strings.Replace(absPath, "\\", "/", -1)
+				// Windows文件URL格式
+				return fmt.Sprintf("file:///%s", absPath), nil
+			}
+
+			return fmt.Sprintf("file://%s", absPath), nil
+		}
+	}
+
+	// 如果都找不到，返回默认路径
+	return "file://./migrations", fmt.Errorf("未找到迁移文件目录")
+}
+
+// createMigrateInstance 创建migrate实例的通用函数
+func createMigrateInstance(cfg *config.Config) (*migrate.Migrate, error) {
 	// 连接数据库
 	db, err := sql.Open("mysql", cfg.GetDSN())
 	if err != nil {
-		return fmt.Errorf("连接数据库失败: %w", err)
+		return nil, fmt.Errorf("连接数据库失败: %w", err)
 	}
 	defer db.Close()
 
 	// 创建 MySQL 驱动实例
 	driver, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		return fmt.Errorf("创建MySQL驱动失败: %w", err)
+		return nil, fmt.Errorf("创建MySQL驱动失败: %w", err)
 	}
 
-	// 获取迁移文件路径
-	migrationsPath := "file://./migrations"
+	// 简化路径处理 - 寻找迁移目录
+	var migrationsPath string
+	possiblePaths := []string{
+		"./migrations",
+		"../migrations",
+		"../../migrations",
+		"server/migrations",
+	}
+
+	found := false
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			migrationsPath = fmt.Sprintf("file://%s", path)
+			found = true
+			log.Printf("使用迁移路径: %s", path)
+			break
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("未找到迁移文件目录，请确保 migrations 目录存在")
+	}
 
 	// 创建migrate实例
 	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "mysql", driver)
 	if err != nil {
-		return fmt.Errorf("创建migrate实例失败: %w", err)
+		return nil, fmt.Errorf("创建migrate实例失败: %w", err)
+	}
+
+	return m, nil
+}
+
+// RunMigrations 运行数据库迁移
+func RunMigrations(cfg *config.Config) error {
+	// 创建migrate实例
+	m, err := createMigrateInstance(cfg)
+	if err != nil {
+		return err
 	}
 	defer m.Close()
 

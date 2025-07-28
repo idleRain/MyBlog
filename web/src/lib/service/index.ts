@@ -10,7 +10,7 @@ const prefixUrl = import.meta.env.SSR
 
 // 令牌刷新状态管理
 let isRefreshing = false
-let refreshPromise: Promise<boolean> | null = null
+const refreshPromise: Promise<boolean> | null = null
 let failedQueue: Array<{
   resolve: (token: string | null) => void
   reject: (error: any) => void
@@ -51,7 +51,7 @@ async function refreshAccessToken(): Promise<string | null> {
     console.log('开始刷新访问令牌...')
 
     const response = await ky
-      .post(prefixUrl + 'auth/refresh', {
+      .post(prefixUrl + '/auth/refresh', {
         json: { refreshToken },
         timeout: 10000,
         retry: 0 // 刷新请求不重试

@@ -27,15 +27,23 @@ func main() {
 	// 设置Gin运行模式
 	gin.SetMode(cfg.Server.Mode)
 
-	// 运行数据库迁移
-	if err := database.RunMigrations(cfg); err != nil {
-		log.Fatal("数据库迁移失败:", err)
-	}
-
 	// 初始化数据库
 	db, err := database.InitMySQL(cfg)
 	if err != nil {
 		log.Fatal("数据库初始化失败:", err)
+	}
+
+	// 运行数据库迁移（仅在生产环境）
+	if cfg.Server.Mode != "debug" {
+		if err := database.RunMigrations(cfg); err != nil {
+			log.Fatal("数据库迁移失败:", err)
+		}
+	} else {
+		log.Println("开发模式：跳过golang-migrate迁移，使用GORM AutoMigrate")
+		// 开发模式使用GORM自动迁移
+		if err := database.AutoMigrateWithFix(db); err != nil {
+			log.Fatal("GORM自动迁移失败:", err)
+		}
 	}
 
 	// 初始化依赖注入

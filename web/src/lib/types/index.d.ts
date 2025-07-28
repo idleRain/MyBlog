@@ -25,14 +25,7 @@ export type {
   UserListData
 } from '$lib/api/modules/user/types'
 
-export type {
-  AuthState,
-  PermissionCheck,
-  UserPermissionContext,
-  PERMISSIONS,
-  ROLE_PERMISSIONS,
-  ROLE_CONFIG
-} from './auth'
+export type { AuthState, PermissionCheck, UserPermissionContext } from './auth'
 
 export type {
   SidebarMenuItem,
