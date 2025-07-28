@@ -12,6 +12,7 @@ type UserResponse struct {
 	Nickname  string            `json:"nickname"`
 	Avatar    string            `json:"avatar"`
 	Birthday  datetime.JSONDate `json:"birthday"`
+	Role      string            `json:"role"`
 	Status    int               `json:"status"`
 	CreatedAt datetime.JSONDate `json:"createdAt"`
 	UpdatedAt datetime.JSONDate `json:"updatedAt"`
@@ -26,6 +27,7 @@ func (u *User) ToResponse() *UserResponse {
 		Nickname:  u.Nickname,
 		Avatar:    u.Avatar,
 		Birthday:  u.Birthday,
+		Role:      u.Role,
 		Status:    u.Status,
 		CreatedAt: datetime.NewJSONDate(u.CreatedAt),
 		UpdatedAt: datetime.NewJSONDate(u.UpdatedAt),

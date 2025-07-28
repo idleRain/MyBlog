@@ -35,8 +35,12 @@ const createStorage = (getStorage: () => Storage | null): StorageType => ({
     }
 
     try {
-      const serialized = JSON.stringify(value)
-      storage.setItem(key, serialized)
+      if (typeof value === 'string') {
+        storage.setItem(key, value)
+      } else {
+        const serialized = JSON.stringify(value)
+        storage.setItem(key, serialized)
+      }
     } catch (error) {
       console.warn(`Failed to serialize data for key "${key}"`, error)
     }
@@ -55,8 +59,7 @@ const createStorage = (getStorage: () => Storage | null): StorageType => ({
 
       return JSON.parse(item) as T
     } catch (error) {
-      console.warn(`Failed to get storage item "${key}"`, error)
-      return null
+      return storage.getItem(key) as T | null
     }
   },
 

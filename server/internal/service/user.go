@@ -26,25 +26,31 @@ type LoginResponse struct {
 // UserService 用户服务接口
 type UserService interface {
 	CreateUser(req *repository.CreateUserRequest) (*repository.User, error)
+	UpdateUser(req *repository.UpdateUserRequest) (*repository.User, error)
 	GetUserByID(id uint) (*repository.User, error)
 	GetUserList(page, pageSize int) ([]*repository.User, int64, error)
 	DeleteUser(id uint) error
 	Login(username, password string) (*LoginResponse, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
 	Logout(accessToken string) error
+	// 权限相关方法
+	CanUserManageRole(managerRole, targetRole string) bool
+	ValidateRoleTransition(currentRole, newRole string) error
 }
 
 // userService 用户服务实现
 type userService struct {
-	userRepo   repository.UserRepository
-	jwtService JWTService
+	userRepo    repository.UserRepository
+	jwtService  JWTService
+	rbacService RBACService
 }
 
 // NewUserService 创建用户服务实例
 func NewUserService(userRepo repository.UserRepository, jwtService JWTService) UserService {
 	return &userService{
-		userRepo:   userRepo,
-		jwtService: jwtService,
+		userRepo:    userRepo,
+		jwtService:  jwtService,
+		rbacService: NewRBACService(),
 	}
 }
 
@@ -78,6 +84,7 @@ func (s *userService) CreateUser(req *repository.CreateUserRequest) (*repository
 		Password: hashedPassword,
 		Nickname: req.Nickname,
 		Birthday: req.Birthday,
+		Role:     req.Role,
 		Status:   1,
 	}
 
@@ -86,12 +93,91 @@ func (s *userService) CreateUser(req *repository.CreateUserRequest) (*repository
 		user.Nickname = user.Username
 	}
 
+	// 如果角色为空，设置默认角色为 user
+	if user.Role == "" {
+		user.Role = "user"
+	}
+
+	// 验证角色是否有效
+	if !s.rbacService.IsValidRole(user.Role) {
+		return nil, fmt.Errorf("无效的用户角色: %s", user.Role)
+	}
+
 	// 创建用户
 	if err := s.userRepo.Create(user); err != nil {
 		return nil, fmt.Errorf("创建用户失败: %w", err)
 	}
 
 	return user, nil
+}
+
+// UpdateUser 更新用户信息
+func (s *userService) UpdateUser(req *repository.UpdateUserRequest) (*repository.User, error) {
+	// 获取现有用户信息
+	existingUser, err := s.userRepo.GetByID(req.ID)
+	if err != nil {
+		return nil, fmt.Errorf("用户不存在: %w", err)
+	}
+
+	// 检查用户名是否被其他用户占用
+	if userByName, _ := s.userRepo.GetByUsername(req.Username); userByName != nil && userByName.ID != req.ID {
+		return nil, fmt.Errorf("用户名已被其他用户使用")
+	}
+
+	// 检查邮箱是否被其他用户占用
+	if userByEmail, _ := s.userRepo.GetByEmail(req.Email); userByEmail != nil && userByEmail.ID != req.ID {
+		return nil, fmt.Errorf("邮箱已被其他用户使用")
+	}
+
+	// 更新基本信息
+	existingUser.Username = req.Username
+	existingUser.Email = req.Email
+	existingUser.Nickname = req.Nickname
+	existingUser.Birthday = req.Birthday
+	existingUser.Role = req.Role
+
+	// 更新状态（如果提供了状态字段）
+	if req.Status == 0 || req.Status == 1 {
+		existingUser.Status = req.Status
+	}
+
+	// 如果昵称为空，使用用户名
+	if existingUser.Nickname == "" {
+		existingUser.Nickname = existingUser.Username
+	}
+
+	// 如果角色为空，设置默认角色为 user
+	if existingUser.Role == "" {
+		existingUser.Role = "user"
+	}
+
+	// 验证角色是否有效
+	if !s.rbacService.IsValidRole(existingUser.Role) {
+		return nil, fmt.Errorf("无效的用户角色: %s", existingUser.Role)
+	}
+
+	// 如果提供了新密码，则更新密码
+	if req.Password != "" {
+		// 验证密码强度
+		if err := s.validatePasswordStrength(req.Password); err != nil {
+			return nil, err
+		}
+
+		// 使用bcrypt加密密码
+		hashedPassword, err := s.hashPassword(req.Password)
+		if err != nil {
+			return nil, fmt.Errorf("密码加密失败: %w", err)
+		}
+
+		existingUser.Password = hashedPassword
+	}
+
+	// 更新用户
+	if err := s.userRepo.Update(existingUser); err != nil {
+		return nil, fmt.Errorf("更新用户失败: %w", err)
+	}
+
+	return existingUser, nil
 }
 
 // GetUserByID 根据ID获取用户
@@ -235,4 +321,34 @@ func (s *userService) RefreshToken(refreshToken string) (*TokenPair, error) {
 // Logout 用户登出
 func (s *userService) Logout(accessToken string) error {
 	return s.jwtService.RevokeToken(accessToken)
+}
+
+// CanUserManageRole 检查用户是否可以管理指定角色
+func (s *userService) CanUserManageRole(managerRole, targetRole string) bool {
+	return s.rbacService.CanManageUser(managerRole, targetRole)
+}
+
+// ValidateRoleTransition 验证角色转换是否有效
+func (s *userService) ValidateRoleTransition(currentRole, newRole string) error {
+	// 检查新角色是否有效
+	if !s.rbacService.IsValidRole(newRole) {
+		return fmt.Errorf("无效的目标角色: %s", newRole)
+	}
+
+	// 检查当前角色是否有效
+	if !s.rbacService.IsValidRole(currentRole) {
+		return fmt.Errorf("无效的当前角色: %s", currentRole)
+	}
+
+	// 超级管理员角色只能由系统设置，不能通过API变更
+	if newRole == string(RoleSuperAdmin) {
+		return fmt.Errorf("超级管理员角色只能通过系统管理员设置")
+	}
+
+	// 从超级管理员降级需要特殊处理
+	if currentRole == string(RoleSuperAdmin) {
+		return fmt.Errorf("超级管理员角色不能被降级")
+	}
+
+	return nil
 }

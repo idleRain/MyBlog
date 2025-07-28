@@ -20,6 +20,7 @@ type User struct {
 	Nickname  string            `json:"nickname" gorm:"size:50"`
 	Avatar    string            `json:"avatar" gorm:"size:255"`
 	Birthday  datetime.JSONDate `json:"birthday" gorm:"type:date"`
+	Role      string            `json:"role" gorm:"default:'user';size:20;comment:用户角色 superadmin/admin/editor/user"`
 	Status    int               `json:"status" gorm:"default:1;comment:状态 1-正常 0-禁用"`
 	CreatedAt time.Time         `json:"createdAt" gorm:"type:datetime(3)"`
 	UpdatedAt time.Time         `json:"updatedAt" gorm:"type:datetime(3)"`
@@ -32,7 +33,20 @@ type CreateUserRequest struct {
 	Email    string            `json:"email" binding:"required,email"`
 	Password string            `json:"password" binding:"required,min=6,max=100"`
 	Nickname string            `json:"nickname" binding:"max=50"`
+	Role     string            `json:"role" binding:"omitempty,oneof=user editor admin superadmin"`
 	Birthday datetime.JSONDate `json:"birthday" binding:"omitempty"`
+}
+
+// UpdateUserRequest 更新用户请求
+type UpdateUserRequest struct {
+	ID       uint              `json:"id" binding:"required"`
+	Username string            `json:"username" binding:"required,min=1,max=50"`
+	Email    string            `json:"email" binding:"required,email"`
+	Password string            `json:"password" binding:"omitempty,min=6,max=100"` // 可选，留空则不更新
+	Nickname string            `json:"nickname" binding:"max=50"`
+	Role     string            `json:"role" binding:"omitempty,oneof=user editor admin superadmin"`
+	Birthday datetime.JSONDate `json:"birthday" binding:"omitempty"`
+	Status   int               `json:"status" binding:"omitempty,oneof=0 1"` // 用户状态，可选
 }
 
 // UserRepository 用户仓库接口

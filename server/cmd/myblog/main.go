@@ -49,8 +49,9 @@ func main() {
 
 	// 设置依赖
 	deps := &router.Dependencies{
-		UserHandler: userHandler,
-		JWTService:  jwtService,
+		UserHandler:    userHandler,
+		JWTService:     jwtService,
+		UserRepository: userRepo,
 	}
 
 	// 注册路由

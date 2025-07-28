@@ -41,6 +41,60 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	response.SuccessWithMessage(c, "用户创建成功", user.ToResponse())
 }
 
+// UpdateUser 更新用户信息 POST /api/users/update
+func (h *UserHandler) UpdateUser(c *gin.Context) {
+	var req repository.UpdateUserRequest
+
+	// 绑定和验证请求参数
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	// 获取当前操作用户信息
+	currentUserRole, exists := c.Get("userRole")
+	if !exists {
+		response.Unauthorized(c, "无法获取用户权限信息")
+		return
+	}
+
+	// 获取目标用户当前信息（用于角色权限验证）
+	targetUser, err := h.userService.GetUserByID(req.ID)
+	if err != nil {
+		response.NotFound(c, err.Error())
+		return
+	}
+
+	// 检查是否可以管理目标用户角色
+	if !h.userService.CanUserManageRole(currentUserRole.(string), targetUser.Role) {
+		response.Forbidden(c, "权限不足，无法管理该角色的用户")
+		return
+	}
+
+	// 如果要修改角色，需要验证角色转换
+	if req.Role != "" && req.Role != targetUser.Role {
+		if err := h.userService.ValidateRoleTransition(targetUser.Role, req.Role); err != nil {
+			response.BadRequest(c, err.Error())
+			return
+		}
+
+		// 再次检查是否可以分配新角色
+		if !h.userService.CanUserManageRole(currentUserRole.(string), req.Role) {
+			response.Forbidden(c, "权限不足，无法分配该角色")
+			return
+		}
+	}
+
+	// 调用服务层更新用户
+	user, err := h.userService.UpdateUser(&req)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "用户更新成功", user.ToResponse())
+}
+
 // GetUserByID 根据ID获取用户 POST /api/users/get
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	type GetUserByIDRequest struct {
@@ -110,6 +164,38 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	var req DeleteUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	// 获取当前操作用户信息
+	currentUserRole, exists := c.Get("userRole")
+	if !exists {
+		response.Unauthorized(c, "无法获取用户权限信息")
+		return
+	}
+
+	currentUserID, userIDExists := c.Get("userID")
+	if !userIDExists {
+		response.Unauthorized(c, "无法获取用户ID信息")
+		return
+	}
+
+	// 防止用户删除自己
+	if currentUserID.(uint) == req.ID {
+		response.BadRequest(c, "不能删除自己的账户")
+		return
+	}
+
+	// 获取目标用户信息
+	targetUser, err := h.userService.GetUserByID(req.ID)
+	if err != nil {
+		response.NotFound(c, err.Error())
+		return
+	}
+
+	// 检查是否可以删除目标用户
+	if !h.userService.CanUserManageRole(currentUserRole.(string), targetUser.Role) {
+		response.Forbidden(c, "权限不足，无法删除该角色的用户")
 		return
 	}
 

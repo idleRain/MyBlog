@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 	"strings"
@@ -64,7 +65,7 @@ func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc {
 }
 
 // AdminAuth 管理员认证中间件
-func AdminAuth(jwtService service.JWTService) gin.HandlerFunc {
+func AdminAuth(jwtService service.JWTService, userRepo repository.UserRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 先验证基本认证
 		token := c.GetHeader("Authorization")
@@ -86,24 +87,97 @@ func AdminAuth(jwtService service.JWTService) gin.HandlerFunc {
 			return
 		}
 
+		// 从数据库查询用户信息验证管理员权限
+		user, err := userRepo.GetByID(claims.UserID)
+		if err != nil {
+			response.Unauthorized(c, "用户不存在")
+			c.Abort()
+			return
+		}
+
+		// 验证用户状态
+		if user.Status != 1 {
+			response.Forbidden(c, "用户已被禁用")
+			c.Abort()
+			return
+		}
+
 		// 验证管理员权限
-		if !isAdmin(claims.UserID) {
-			response.Forbidden(c, "权限不足")
+		if !isAdminRole(user.Role) {
+			response.Forbidden(c, "权限不足，需要管理员权限")
 			c.Abort()
 			return
 		}
 
 		c.Set("userID", claims.UserID)
-		// username已从 JWT 中移除
+		c.Set("userRole", user.Role)
 		c.Set("isAdmin", true)
 
 		c.Next()
 	}
 }
 
-// isAdmin 检查是否为管理员（简单实现，实际应该从数据库查询用户角色）
-func isAdmin(userID uint) bool {
-	// 这里可以根据用户ID查询数据库确定是否为管理员
-	// 暂时简单判断，实际应该有更完善的权限系统
-	return userID == 1 // 假设 ID为1的用户是管理员
+// isAdminRole 检查角色是否为管理员级别
+func isAdminRole(role string) bool {
+	return role == "admin" || role == "superadmin"
+}
+
+// RequireRole 角色验证中间件
+func RequireRole(jwtService service.JWTService, userRepo repository.UserRepository, allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 先验证基本认证
+		token := c.GetHeader("Authorization")
+
+		if token == "" {
+			response.Unauthorized(c, "未提供认证令牌")
+			c.Abort()
+			return
+		}
+
+		if strings.HasPrefix(token, "Bearer ") {
+			token = token[7:]
+		}
+
+		claims, err := jwtService.ValidateAccessToken(token)
+		if err != nil {
+			response.Unauthorized(c, "无效的认证令牌")
+			c.Abort()
+			return
+		}
+
+		// 从数据库查询用户信息
+		user, err := userRepo.GetByID(claims.UserID)
+		if err != nil {
+			response.Unauthorized(c, "用户不存在")
+			c.Abort()
+			return
+		}
+
+		// 验证用户状态
+		if user.Status != 1 {
+			response.Forbidden(c, "用户已被禁用")
+			c.Abort()
+			return
+		}
+
+		// 验证角色权限
+		hasPermission := false
+		for _, allowedRole := range allowedRoles {
+			if user.Role == allowedRole {
+				hasPermission = true
+				break
+			}
+		}
+
+		if !hasPermission {
+			response.Forbidden(c, "权限不足")
+			c.Abort()
+			return
+		}
+
+		c.Set("userID", claims.UserID)
+		c.Set("userRole", user.Role)
+
+		c.Next()
+	}
 }

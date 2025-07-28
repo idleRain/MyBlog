@@ -11,6 +11,8 @@ import { Input } from '$ui/input'
 import { Form, Card } from '$ui'
 import { EyeOff, Eye, LogIn } from '@lucide/svelte'
 import { UserAPI } from '$lib/api'
+import { safeApiCall } from '$lib/utils/request'
+import { onMount } from 'svelte'
 
 export let data: PageData
 
@@ -47,12 +49,19 @@ async function handleLogin(e: SubmitEvent) {
   isSubmitting = true
 
   try {
-    const response = await UserAPI.login({
-      username: $formData.username.trim(),
-      password: $formData.password.trim()
-    })
+    const { data: response, success } = await safeApiCall(
+      () =>
+        UserAPI.login({
+          username: $formData.username.trim(),
+          password: $formData.password.trim()
+        }),
+      {
+        showErrorToast: false, // 我们手动处理错误提示
+        redirectOnAuthError: false
+      }
+    )
 
-    if (response.code === 200 && response.data) {
+    if (success && response && response.code === 200 && response.data) {
       authStore.login(
         response.data.user,
         response.data.accessToken,
@@ -62,7 +71,7 @@ async function handleLogin(e: SubmitEvent) {
       toast.success('登录成功')
       await goto('/')
     } else {
-      toast.error(response.message || '登录失败')
+      toast.error(response?.message || '登录失败，请检查用户名和密码')
     }
   } catch (error) {
     console.error('Login error:', error)
@@ -75,8 +84,15 @@ async function handleLogin(e: SubmitEvent) {
 let showPassword = false
 
 // 如果已登录，重定向到首页
+onMount(async () => {
+  // 检查是否已登录
+  const { requireGuest } = await import('$lib/utils/auth-guard')
+  await requireGuest()
+})
+
+// 监听认证状态变化
 authStore.subscribe(state => {
-  if (state.isAuthenticated) {
+  if (state.isAuthenticated && state.user) {
     goto('/')
   }
 })
@@ -190,10 +206,7 @@ function togglePasswordVisibility() {
       </Card.Content>
     </Card.Root>
 
-    <!-- Register Link -->
-    <p class="px-8 text-center text-sm text-muted-foreground">
-      还没有账户？
-      <a href="/register" class="underline underline-offset-4 hover:text-primary"> 立即注册 </a>
-    </p>
+    <!-- System Info -->
+    <p class="px-8 text-center text-sm text-muted-foreground">请使用管理员提供的账户登录</p>
   </div>
 </div>

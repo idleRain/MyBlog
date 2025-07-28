@@ -37,3 +37,41 @@ jwt:
   access_expire: 15  # 分钟
   refresh_expire: 168  # 小时（7天）
   issuer: "myblog"
+
+# API安全配置
+security:
+  # 频率限制配置
+  rate_limit:
+    enabled: true
+    max_requests: 100          # IP级别最大请求数/分钟
+    window_minutes: 1          # 时间窗口（分钟）
+    user_max_requests: 300     # 用户级别最大请求数/分钟
+    user_window_minutes: 1     # 用户时间窗口（分钟）
+    
+  # 安全HTTP头配置
+  security_headers:
+    enabled: true
+    content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https:"
+    x_frame_options: "SAMEORIGIN"
+    x_content_type_options: "nosniff"
+    referrer_policy: "strict-origin-when-cross-origin"
+    strict_transport_security: "max-age=31536000; includeSubDomains"
+    
+  # 输入验证配置
+  input_validation:
+    enabled: true
+    max_request_size_mb: 10    # 最大请求体大小（MB）
+    blocked_user_agents:       # 阻止的User-Agent
+      - "curl"
+      - "wget"
+      - "python-requests"
+      - "bot"
+      - "crawler"
+      - "spider"
+      
+  # 管理员接口安全配置
+  admin_security:
+    enabled: true
+    max_requests: 30           # 管理员接口IP级别限制
+    user_max_requests: 50      # 管理员接口用户级别限制
+    ip_whitelist: []           # IP白名单（空表示不启用）

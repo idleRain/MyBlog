@@ -25,11 +25,17 @@ export default ts.config(
     }
   },
   {
+    // Svelte 特定规则
     rules: {
-      // Svelte 特定规则
       'svelte/html-self-closing': 'warn',
       'svelte/spaced-html-comment': 'warn',
       'svelte/valid-prop-names-in-kit-pages': 'off'
+    }
+  },
+  {
+    // Ts 特定规则
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off'
     }
   },
   {

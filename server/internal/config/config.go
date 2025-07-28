@@ -15,6 +15,7 @@ type Config struct {
 	Logger   LoggerConfig   `mapstructure:"logger"`
 	API      APIConfig      `mapstructure:"api"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
+	Security SecurityConfig `mapstructure:"security"`
 }
 
 // ServerConfig 服务器配置
@@ -58,6 +59,48 @@ type JWTConfig struct {
 	AccessExpire  int    `mapstructure:"access_expire"`  // 分钟
 	RefreshExpire int    `mapstructure:"refresh_expire"` // 小时
 	Issuer        string `mapstructure:"issuer"`
+}
+
+// SecurityConfig 安全配置
+type SecurityConfig struct {
+	RateLimit       RateLimitConfig       `mapstructure:"rate_limit"`
+	SecurityHeaders SecurityHeadersConfig `mapstructure:"security_headers"`
+	InputValidation InputValidationConfig `mapstructure:"input_validation"`
+	AdminSecurity   AdminSecurityConfig   `mapstructure:"admin_security"`
+}
+
+// RateLimitConfig 频率限制配置
+type RateLimitConfig struct {
+	Enabled           bool `mapstructure:"enabled"`
+	MaxRequests       int  `mapstructure:"max_requests"`
+	WindowMinutes     int  `mapstructure:"window_minutes"`
+	UserMaxRequests   int  `mapstructure:"user_max_requests"`
+	UserWindowMinutes int  `mapstructure:"user_window_minutes"`
+}
+
+// SecurityHeadersConfig 安全头配置
+type SecurityHeadersConfig struct {
+	Enabled                 bool   `mapstructure:"enabled"`
+	ContentSecurityPolicy   string `mapstructure:"content_security_policy"`
+	XFrameOptions           string `mapstructure:"x_frame_options"`
+	XContentTypeOptions     string `mapstructure:"x_content_type_options"`
+	ReferrerPolicy          string `mapstructure:"referrer_policy"`
+	StrictTransportSecurity string `mapstructure:"strict_transport_security"`
+}
+
+// InputValidationConfig 输入验证配置
+type InputValidationConfig struct {
+	Enabled           bool     `mapstructure:"enabled"`
+	MaxRequestSizeMB  int      `mapstructure:"max_request_size_mb"`
+	BlockedUserAgents []string `mapstructure:"blocked_user_agents"`
+}
+
+// AdminSecurityConfig 管理员安全配置
+type AdminSecurityConfig struct {
+	Enabled         bool     `mapstructure:"enabled"`
+	MaxRequests     int      `mapstructure:"max_requests"`
+	UserMaxRequests int      `mapstructure:"user_max_requests"`
+	IPWhitelist     []string `mapstructure:"ip_whitelist"`
 }
 
 var (
@@ -154,6 +197,27 @@ func setDefaults() {
 	viper.SetDefault("jwt.access_expire", 15)
 	viper.SetDefault("jwt.refresh_expire", 168)
 	viper.SetDefault("jwt.issuer", "myblog")
+
+	// 安全配置默认值
+	viper.SetDefault("security.rate_limit.enabled", true)
+	viper.SetDefault("security.rate_limit.max_requests", 100)
+	viper.SetDefault("security.rate_limit.window_minutes", 1)
+	viper.SetDefault("security.rate_limit.user_max_requests", 300)
+	viper.SetDefault("security.rate_limit.user_window_minutes", 1)
+
+	viper.SetDefault("security.security_headers.enabled", true)
+	viper.SetDefault("security.security_headers.content_security_policy", "default-src 'self'")
+	viper.SetDefault("security.security_headers.x_frame_options", "SAMEORIGIN")
+	viper.SetDefault("security.security_headers.x_content_type_options", "nosniff")
+	viper.SetDefault("security.security_headers.referrer_policy", "strict-origin-when-cross-origin")
+	viper.SetDefault("security.security_headers.strict_transport_security", "max-age=31536000; includeSubDomains")
+
+	viper.SetDefault("security.input_validation.enabled", true)
+	viper.SetDefault("security.input_validation.max_request_size_mb", 10)
+
+	viper.SetDefault("security.admin_security.enabled", true)
+	viper.SetDefault("security.admin_security.max_requests", 30)
+	viper.SetDefault("security.admin_security.user_max_requests", 50)
 }
 
 // validateConfig 验证配置的有效性

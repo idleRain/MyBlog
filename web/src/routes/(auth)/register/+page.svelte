@@ -252,4 +252,9 @@ function togglePasswordVisibility(field: 'password' | 'confirmPassword') {
       <a href="/login" class="underline underline-offset-4 hover:text-primary"> 立即登录 </a>
     </p>
   </div>
+
+  <!-- System Notice -->
+  <p class="px-8 text-center text-xs text-muted-foreground">
+    注册功能当前已禁用。如需创建账户，请联系管理员。
+  </p>
 </div>

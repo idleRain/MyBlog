@@ -64,6 +64,7 @@ const categories = [
         <!-- 社交媒体链接 -->
         <div class="flex space-x-4">
           {#each socialLinks as link, index (index)}
+            {@const IconComponent = link.icon}
             <a
               href={link.href}
               target="_blank"
@@ -71,7 +72,7 @@ const categories = [
               class="group rounded-lg bg-white/50 p-2 transition-all duration-200 hover:bg-white dark:bg-gray-800/50 dark:hover:bg-gray-800 {link.color}"
               aria-label={link.name}
             >
-              <svelte:component this={link.icon} class="h-5 w-5" />
+              <IconComponent class="h-5 w-5" />
             </a>
           {/each}
         </div>

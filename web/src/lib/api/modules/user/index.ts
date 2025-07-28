@@ -21,8 +21,19 @@ const UserAPI = {
       .json()
   },
 
-  // 用户注册
+  // 创建用户（仅管理员）
+  createUser(params: RegisterRequest): Promise<RegisterResponse> {
+    return request
+      .post('users/create', {
+        json: params
+      })
+      .json()
+  },
+
+  // 用户注册（已禁用，仅保留代码兼容性）
   register(params: RegisterRequest): Promise<RegisterResponse> {
+    // 注册功能已禁用，这个方法仅为保持代码完整性
+    // 实际调用会被后端拒绝或重定向
     return request
       .post('users/create', {
         json: params
@@ -47,6 +58,15 @@ const UserAPI = {
     return request
       .post('users/get', {
         json: { id }
+      })
+      .json()
+  },
+
+  // 更新用户（仅管理员）
+  updateUser(params: any): Promise<RegisterResponse> {
+    return request
+      .post('users/update', {
+        json: params
       })
       .json()
   },

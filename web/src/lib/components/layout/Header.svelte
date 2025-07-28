@@ -205,7 +205,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
             <Button
               variant="outline"
               size="sm"
-              onclick={() => goto('/admin')}
+              onclick={() => goto('/manage')}
               class="border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950"
             >
               <Settings class="mr-1 h-4 w-4" />

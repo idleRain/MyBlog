@@ -2,8 +2,8 @@ package router
 
 import (
 	"MyBlog/internal/middleware"
+	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,11 +18,11 @@ func NewRouter() *Router {
 	engine := gin.New()
 
 	// 设置全局中间件
-	engine.Use(middleware.Logger())                    // 自定义日志中间件
-	engine.Use(gin.Recovery())                         // 恢复中间件
-	engine.Use(middleware.RequestID())                 // 请求ID中间件
-	engine.Use(middleware.CORS())                      // CORS 中间件
-	engine.Use(middleware.RateLimit(100, time.Minute)) // 速率限制
+	engine.Use(middleware.Logger())                                               // 自定义日志中间件
+	engine.Use(gin.Recovery())                                                    // 恢复中间件
+	engine.Use(middleware.RequestID())                                            // 请求ID中间件
+	engine.Use(middleware.CORS())                                                 // CORS 中间件
+	engine.Use(middleware.SecurityMiddleware(middleware.DefaultSecurityConfig())) // 综合安全中间件
 
 	return &Router{
 		engine: engine,
@@ -46,7 +46,7 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	// 注册用户相关路由
 	if deps.UserHandler != nil {
 		userHandler := deps.UserHandler.(UserHandlerInterface)
-		userRoutes := NewUserRoutes(userHandler, deps.JWTService)
+		userRoutes := NewUserRoutes(userHandler, deps.JWTService, deps.UserRepository)
 		userRoutes.RegisterRoutes(api)
 	}
 
@@ -60,8 +60,9 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 
 // Dependencies 依赖注入结构
 type Dependencies struct {
-	UserHandler interface{}        // 用户处理器接口
-	JWTService  service.JWTService // JWT服务
+	UserHandler    interface{}               // 用户处理器接口
+	JWTService     service.JWTService        // JWT服务
+	UserRepository repository.UserRepository // 用户仓库
 	// 可以添加更多的依赖
 	// PostHandler interface{}
 	// AuthHandler interface{}
@@ -70,6 +71,7 @@ type Dependencies struct {
 // UserHandlerInterface 用户处理器接口
 type UserHandlerInterface interface {
 	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
+	UpdateUser(c *gin.Context)   // POST /api/users/update - JSON格式
 	GetUserByID(c *gin.Context)  // GET /api/users/:id - URL路径参数
 	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式（复杂参数）
 	DeleteUser(c *gin.Context)   // DELETE /api/users/:id - URL路径参数

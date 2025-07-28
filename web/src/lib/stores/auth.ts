@@ -51,8 +51,19 @@ function loadInitialState(): AuthState {
 function createAuthStore() {
   const { subscribe, set, update } = writable<AuthState>(loadInitialState())
 
+  // 获取当前状态的辅助函数
+  let currentState: AuthState = loadInitialState()
+  subscribe(state => {
+    currentState = state
+  })
+
   return {
     subscribe,
+
+    // 获取当前状态
+    getCurrentState(): AuthState {
+      return currentState
+    },
 
     // 登录
     login(user: User, accessToken: string, refreshToken: string, expiresIn: number) {
@@ -77,7 +88,34 @@ function createAuthStore() {
     },
 
     // 登出
-    logout() {
+    async logout(skipApiCall: boolean = false) {
+      // 如果不跳过 API 调用，先调用后端登出接口
+      if (!skipApiCall && browser && currentState.isAuthenticated) {
+        try {
+          // 动态导入避免循环依赖
+          const { UserAPI } = await import('$lib/api')
+          await UserAPI.logout()
+          console.log('成功调用后端登出接口')
+        } catch (error) {
+          console.warn('调用后端登出接口失败，继续清除本地状态:', error)
+          // 即使后端调用失败，也要清除本地状态
+        }
+      }
+
+      // 清除本地存储
+      if (browser) {
+        local.rm('auth_access_token')
+        local.rm('auth_refresh_token')
+        local.rm('auth_user')
+        local.rm('auth_expires_at')
+      }
+
+      // 重置状态
+      set(initialState)
+    },
+
+    // 仅清除本地状态（用于 401 错误等场景）
+    clearLocalState() {
       if (browser) {
         local.rm('auth_access_token')
         local.rm('auth_refresh_token')
@@ -125,36 +163,32 @@ function createAuthStore() {
 
     // 检查token是否有效
     isTokenValid(): boolean {
-      const state = loadInitialState()
-      if (!state.isAuthenticated || !state.accessToken || !state.expiresAt) {
+      if (!currentState.isAuthenticated || !currentState.accessToken || !currentState.expiresAt) {
         return false
       }
 
       // 检查是否过期（提前5分钟刷新）
-      return Date.now() < state.expiresAt - 5 * 60 * 1000
+      return Date.now() < currentState.expiresAt - 5 * 60 * 1000
     },
 
     // 检查是否需要刷新token
     shouldRefreshToken(): boolean {
-      const state = loadInitialState()
-      if (!state.isAuthenticated || !state.accessToken || !state.expiresAt) {
+      if (!currentState.isAuthenticated || !currentState.accessToken || !currentState.expiresAt) {
         return false
       }
 
       // 如果在5分钟内过期，需要刷新
-      return Date.now() >= state.expiresAt - 5 * 60 * 1000
+      return Date.now() >= currentState.expiresAt - 5 * 60 * 1000
     },
 
     // 获取访问令牌
     getAccessToken(): string | null {
-      if (!browser) return null
-      return local.get<string>('auth_access_token')
+      return currentState.accessToken
     },
 
     // 获取刷新令牌
     getRefreshToken(): string | null {
-      if (!browser) return null
-      return local.get<string>('auth_refresh_token')
+      return currentState.refreshToken
     },
 
     // 向后兼容：获取token（返回access token）
