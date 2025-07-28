@@ -93,8 +93,8 @@ type JWTService interface {
 // jwtService JWT服务实现
 type jwtService struct {
 	config *config.Config
-	// TODO: 实现token撤销存储（可以用Redis或数据库）
-	revokedTokens map[string]time.Time // 简单的内存存储，生产环境应使用Redis
+	// TODO: 实现token撤销存储（可以用MongoDB或MySQL数据库）
+	revokedTokens map[string]time.Time // 简单的内存存储，生产环境应使用MongoDB
 }
 
 // NewJWTService 创建JWT服务实例
@@ -263,7 +263,7 @@ func (j *jwtService) RefreshAccessToken(refreshTokenString string) (*TokenPair, 
 
 // RevokeToken 撤销令牌
 func (j *jwtService) RevokeToken(tokenString string) error {
-	// 简单的内存存储实现，生产环境应使用Redis等持久化存储
+	// 简单的内存存储实现，生产环境应使用MongoDB等持久化存储
 	j.revokedTokens[tokenString] = time.Now()
 
 	// TODO: 定期清理过期的撤销令牌，避免内存泄漏

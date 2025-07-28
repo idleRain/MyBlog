@@ -29,7 +29,8 @@ export default ts.config(
     rules: {
       'svelte/html-self-closing': 'warn',
       'svelte/spaced-html-comment': 'warn',
-      'svelte/valid-prop-names-in-kit-pages': 'off'
+      'svelte/valid-prop-names-in-kit-pages': 'off',
+      'svelte/css-unused-selector': 'off'
     }
   },
   {

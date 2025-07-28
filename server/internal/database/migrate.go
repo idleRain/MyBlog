@@ -1,84 +1,235 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/config"
+	"MyBlog/internal/model"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/gorm"
 )
 
-// AutoMigrateWithFix 自动迁移数据库表结构并修复字段类型
-func AutoMigrateWithFix(db *gorm.DB) error {
-	log.Println("开始数据库表结构迁移...")
+// RunMigrations 运行数据库迁移
+func RunMigrations(cfg *config.Config) error {
+	// 连接数据库
+	db, err := sql.Open("mysql", cfg.GetDSN())
+	if err != nil {
+		return fmt.Errorf("连接数据库失败: %w", err)
+	}
+	defer db.Close()
 
-	// 定义需要迁移的模型
-	models := []interface{}{
-		&repository.User{},
-		// 在这里添加其他模型
+	// 创建 MySQL 驱动实例
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		return fmt.Errorf("创建MySQL驱动失败: %w", err)
 	}
 
-	// 执行自动迁移
-	for _, model := range models {
-		if err := db.AutoMigrate(model); err != nil {
-			return fmt.Errorf("迁移模型 %T 失败: %w", model, err)
+	// 获取迁移文件路径
+	migrationsPath := "file://./migrations"
+
+	// 创建migrate实例
+	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "mysql", driver)
+	if err != nil {
+		return fmt.Errorf("创建migrate实例失败: %w", err)
+	}
+	defer m.Close()
+
+	// 运行迁移
+	log.Println("开始运行数据库迁移...")
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("运行迁移失败: %w", err)
+	}
+
+	// 获取当前版本
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		return fmt.Errorf("获取迁移版本失败: %w", err)
+	}
+
+	if err == migrate.ErrNilVersion {
+		log.Println("数据库迁移完成，当前版本: 无")
+	} else {
+		status := "clean"
+		if dirty {
+			status = "dirty"
 		}
-		log.Printf("成功迁移模型: %T", model)
+		log.Printf("数据库迁移完成，当前版本: %d (%s)", version, status)
 	}
 
-	// 修复现有的日期时间字段类型（只在首次运行时需要）
-	if err := fixDateTimeColumns(db); err != nil {
-		log.Printf("修复日期时间字段警告: %v", err)
-		// 不返回错误，因为可能是首次运行或已经修复过了
-	}
-
-	log.Println("数据库表结构迁移完成")
 	return nil
 }
 
-// fixDateTimeColumns 修复现有的日期时间字段类型
-func fixDateTimeColumns(db *gorm.DB) error {
-	// 检查是否需要修复 users 表的字段类型
-	var tableExists bool
-	if err := db.Raw("SELECT COUNT(*) > 0 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'users'").Scan(&tableExists).Error; err != nil {
-		return err
+// MigrateDown 回滚数据库迁移
+func MigrateDown(cfg *config.Config, steps int) error {
+	// 连接数据库
+	db, err := sql.Open("mysql", cfg.GetDSN())
+	if err != nil {
+		return fmt.Errorf("连接数据库失败: %w", err)
+	}
+	defer db.Close()
+
+	// 创建 MySQL 驱动实例
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		return fmt.Errorf("创建MySQL驱动失败: %w", err)
 	}
 
-	if !tableExists {
-		log.Println("users 表不存在，跳过字段类型修复")
-		return nil
+	// 获取迁移文件路径
+	migrationsPath := "file://./migrations"
+
+	// 创建migrate实例
+	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "mysql", driver)
+	if err != nil {
+		return fmt.Errorf("创建migrate实例失败: %w", err)
+	}
+	defer m.Close()
+
+	// 回滚迁移
+	log.Printf("开始回滚数据库迁移 %d 步...", steps)
+	if err := m.Steps(-steps); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("回滚迁移失败: %w", err)
 	}
 
-	// 检查 created_at 字段类型
-	var createdAtType string
-	if err := db.Raw("SELECT DATA_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'created_at'").Scan(&createdAtType).Error; err != nil {
-		return err
+	// 获取当前版本
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		return fmt.Errorf("获取迁移版本失败: %w", err)
 	}
 
-	// 如果字段类型是 date，则修复为 datetime
-	if createdAtType == "date" {
-		log.Println("检测到 created_at 字段类型为 date，正在修复为 datetime(3)...")
-		if err := db.Exec("ALTER TABLE users MODIFY COLUMN created_at DATETIME(3)").Error; err != nil {
-			return fmt.Errorf("修复 created_at 字段失败: %w", err)
+	if err == migrate.ErrNilVersion {
+		log.Println("数据库迁移回滚完成，当前版本: 无")
+	} else {
+		status := "clean"
+		if dirty {
+			status = "dirty"
 		}
-		log.Println("成功修复 created_at 字段类型")
+		log.Printf("数据库迁移回滚完成，当前版本: %d (%s)", version, status)
 	}
 
-	// 检查 updated_at 字段类型
-	var updatedAtType string
-	if err := db.Raw("SELECT DATA_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'users' AND column_name = 'updated_at'").Scan(&updatedAtType).Error; err != nil {
-		return err
+	return nil
+}
+
+// MigrateToVersion 迁移到指定版本
+func MigrateToVersion(cfg *config.Config, version uint) error {
+	// 连接数据库
+	db, err := sql.Open("mysql", cfg.GetDSN())
+	if err != nil {
+		return fmt.Errorf("连接数据库失败: %w", err)
+	}
+	defer db.Close()
+
+	// 创建 MySQL 驱动实例
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		return fmt.Errorf("创建MySQL驱动失败: %w", err)
 	}
 
-	// 如果字段类型是 date，则修复为 datetime
-	if updatedAtType == "date" {
-		log.Println("检测到 updated_at 字段类型为 date，正在修复为 datetime(3)...")
-		if err := db.Exec("ALTER TABLE users MODIFY COLUMN updated_at DATETIME(3)").Error; err != nil {
-			return fmt.Errorf("修复 updated_at 字段失败: %w", err)
+	// 获取迁移文件路径
+	migrationsPath := "file://./migrations"
+
+	// 创建migrate实例
+	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "mysql", driver)
+	if err != nil {
+		return fmt.Errorf("创建migrate实例失败: %w", err)
+	}
+	defer m.Close()
+
+	// 迁移到指定版本
+	log.Printf("开始迁移到版本 %d...", version)
+	if err := m.Migrate(version); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("迁移到版本 %d 失败: %w", version, err)
+	}
+
+	log.Printf("成功迁移到版本 %d", version)
+	return nil
+}
+
+// GetMigrationVersion 获取当前迁移版本
+func GetMigrationVersion(cfg *config.Config) (uint, bool, error) {
+	// 连接数据库
+	db, err := sql.Open("mysql", cfg.GetDSN())
+	if err != nil {
+		return 0, false, fmt.Errorf("连接数据库失败: %w", err)
+	}
+	defer db.Close()
+
+	// 创建 MySQL 驱动实例
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		return 0, false, fmt.Errorf("创建MySQL驱动失败: %w", err)
+	}
+
+	// 获取迁移文件路径
+	migrationsPath := "file://./migrations"
+
+	// 创建migrate实例
+	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "mysql", driver)
+	if err != nil {
+		return 0, false, fmt.Errorf("创建migrate实例失败: %w", err)
+	}
+	defer m.Close()
+
+	// 获取当前版本
+	version, dirty, err := m.Version()
+	if err != nil {
+		if err == migrate.ErrNilVersion {
+			return 0, false, nil
 		}
-		log.Println("成功修复 updated_at 字段类型")
+		return 0, false, fmt.Errorf("获取迁移版本失败: %w", err)
 	}
+
+	return version, dirty, nil
+}
+
+// ForceMigrationVersion 强制设置迁移版本（用于修复dirty状态）
+func ForceMigrationVersion(cfg *config.Config, version int) error {
+	// 连接数据库
+	db, err := sql.Open("mysql", cfg.GetDSN())
+	if err != nil {
+		return fmt.Errorf("连接数据库失败: %w", err)
+	}
+	defer db.Close()
+
+	// 创建 MySQL 驱动实例
+	driver, err := mysql.WithInstance(db, &mysql.Config{})
+	if err != nil {
+		return fmt.Errorf("创建MySQL驱动失败: %w", err)
+	}
+
+	// 获取迁移文件路径
+	migrationsPath := "file://./migrations"
+
+	// 创建migrate实例
+	m, err := migrate.NewWithDatabaseInstance(migrationsPath, "mysql", driver)
+	if err != nil {
+		return fmt.Errorf("创建migrate实例失败: %w", err)
+	}
+	defer m.Close()
+
+	// 强制设置版本
+	log.Printf("强制设置迁移版本为 %d...", version)
+	if err := m.Force(version); err != nil {
+		return fmt.Errorf("强制设置版本失败: %w", err)
+	}
+
+	log.Printf("成功强制设置迁移版本为 %d", version)
+	return nil
+}
+
+// AutoMigrateWithFix 保留原有的GORM自动迁移功能作为备用方案
+func AutoMigrateWithFix(db *gorm.DB) error {
+	log.Println("开始GORM自动迁移（仅用于开发环境）...")
+
+	// 使用新的模型结构进行迁移
+	if err := model.AutoMigrate(db); err != nil {
+		return fmt.Errorf("GORM自动迁移失败: %w", err)
+	}
+	log.Println("GORM自动迁移完成")
 
 	return nil
 }

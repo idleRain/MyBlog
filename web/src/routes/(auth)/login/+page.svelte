@@ -207,6 +207,9 @@ function togglePasswordVisibility() {
     </Card.Root>
 
     <!-- System Info -->
-    <p class="px-8 text-center text-sm text-muted-foreground">请使用管理员提供的账户登录</p>
+    <p class="px-8 text-center text-sm text-muted-foreground">
+      <span>请使用管理员提供的账户登录，或者</span>
+      <a href="/" class="underline underline-offset-4 hover:text-primary"> 返回首页 </a>
+    </p>
   </div>
 </div>

@@ -27,15 +27,15 @@ func main() {
 	// 设置Gin运行模式
 	gin.SetMode(cfg.Server.Mode)
 
+	// 运行数据库迁移
+	if err := database.RunMigrations(cfg); err != nil {
+		log.Fatal("数据库迁移失败:", err)
+	}
+
 	// 初始化数据库
 	db, err := database.InitMySQL(cfg)
 	if err != nil {
 		log.Fatal("数据库初始化失败:", err)
-	}
-
-	// 自动迁移数据库表
-	if err := database.AutoMigrate(&repository.User{}); err != nil {
-		log.Fatal("数据库表迁移失败:", err)
 	}
 
 	// 初始化依赖注入

@@ -27,16 +27,17 @@ type ServerConfig struct {
 
 // DatabaseConfig 数据库配置
 type DatabaseConfig struct {
-	Host         string `mapstructure:"host"`
-	Port         int    `mapstructure:"port"`
-	Username     string `mapstructure:"username"`
-	Password     string `mapstructure:"password"`
-	DBName       string `mapstructure:"dbname"`
-	Charset      string `mapstructure:"charset"`
-	ParseTime    bool   `mapstructure:"parse_time"`
-	Loc          string `mapstructure:"loc"`
-	MaxIdleConns int    `mapstructure:"max_idle_conns"`
-	MaxOpenConns int    `mapstructure:"max_open_conns"`
+	Host         string                 `mapstructure:"host"`
+	Port         int                    `mapstructure:"port"`
+	Username     string                 `mapstructure:"username"`
+	Password     string                 `mapstructure:"password"`
+	DBName       string                 `mapstructure:"dbname"`
+	Charset      string                 `mapstructure:"charset"`
+	ParseTime    bool                   `mapstructure:"parse_time"`
+	Loc          string                 `mapstructure:"loc"`
+	MaxIdleConns int                    `mapstructure:"max_idle_conns"`
+	MaxOpenConns int                    `mapstructure:"max_open_conns"`
+	MongoDB      map[string]interface{} `mapstructure:"mongodb"` // MongoDB配置
 }
 
 // LoggerConfig 日志配置

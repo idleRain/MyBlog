@@ -17,6 +17,8 @@ export const baseConfig = [
     rules: {
       // TypeScript 项目不需要 no-undef 规则
       'no-undef': 'off',
+      // 允许使用控制字符
+      'no-control-regex': 'off',
       // 启用 Prettier 格式检查
       'prettier/prettier': 'warn',
       // 允许使用 any 类型

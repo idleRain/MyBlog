@@ -37,6 +37,12 @@
     "quality": "bun run format && bun run lint && bun run test",
     "go:lint-install": "bun scripts/go-tools.ts lint-install",
     "go:quality": "bun scripts/go-tools.ts quality",
+    "migrate": "bun scripts/migrate.ts",
+    "migrate:create": "bun scripts/migrate.ts create",
+    "migrate:up": "bun scripts/migrate.ts up",
+    "migrate:down": "bun scripts/migrate.ts down",
+    "migrate:version": "bun scripts/migrate.ts version",
+    "migrate:help": "bun scripts/migrate.ts help",
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },

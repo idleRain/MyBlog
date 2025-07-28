@@ -18,6 +18,15 @@ database:
   loc: "Local"
   max_idle_conns: 10
   max_open_conns: 100
+  
+  # MongoDB缓存配置
+  mongodb:
+    host: "localhost"
+    port: "27017"
+    database: "myblog_cache"
+    username: ""
+    password: ""
+    auth_source: "admin"
 
 # 日志配置
 logger:
