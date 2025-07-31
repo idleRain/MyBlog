@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"strconv"
 
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
@@ -76,16 +75,14 @@ func (h *ArticleHandler) CreateArticle(c *gin.Context) {
 
 // GetArticle 获取文章详情
 func (h *ArticleHandler) GetArticle(c *gin.Context) {
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type GetArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req GetArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
@@ -97,7 +94,7 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 	}
 
 	// 获取文章
-	article, err := h.articleService.GetArticle(uint(id), userID)
+	article, err := h.articleService.GetArticle(req.ID, userID)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -108,10 +105,14 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 
 // GetArticleBySlug 根据Slug获取文章
 func (h *ArticleHandler) GetArticleBySlug(c *gin.Context) {
-	// 获取slug参数
-	slug := c.Param("slug")
-	if slug == "" {
-		response.Error(c, http.StatusBadRequest, "文章slug不能为空")
+	// 绑定请求参数
+	type GetArticleBySlugRequest struct {
+		Slug string `json:"slug" binding:"required"`
+	}
+
+	var req GetArticleBySlugRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
@@ -123,7 +124,7 @@ func (h *ArticleHandler) GetArticleBySlug(c *gin.Context) {
 	}
 
 	// 获取文章
-	article, err := h.articleService.GetArticleBySlug(slug, userID)
+	article, err := h.articleService.GetArticleBySlug(req.Slug, userID)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, err.Error())
 		return
@@ -141,28 +142,20 @@ func (h *ArticleHandler) UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
-	}
-
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
-		return
-	}
-
 	// 绑定请求参数
-	var req service.UpdateArticleRequest
+	type UpdateArticleRequestWithID struct {
+		ID uint `json:"id" binding:"required"`
+		service.UpdateArticleRequest
+	}
+
+	var req UpdateArticleRequestWithID
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 更新文章
-	article, err := h.articleService.UpdateArticle(uint(id), &req, userID.(uint))
+	article, err := h.articleService.UpdateArticle(req.ID, &req.UpdateArticleRequest, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -180,21 +173,19 @@ func (h *ArticleHandler) DeleteArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type DeleteArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req DeleteArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 删除文章
-	err = h.articleService.DeleteArticle(uint(id), userID.(uint))
+	err := h.articleService.DeleteArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -239,21 +230,13 @@ func (h *ArticleHandler) GetArticleList(c *gin.Context) {
 
 // GetArticlesByAuthor 获取指定作者的文章
 func (h *ArticleHandler) GetArticlesByAuthor(c *gin.Context) {
-	// 获取作者ID
-	authorIDParam := c.Param("authorId")
-	if authorIDParam == "" {
-		response.Error(c, http.StatusBadRequest, "作者ID不能为空")
-		return
-	}
-
-	authorID, err := strconv.ParseUint(authorIDParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的作者ID")
-		return
-	}
-
 	// 绑定请求参数
-	var req service.GetArticleListRequest
+	type GetArticlesByAuthorRequest struct {
+		AuthorID uint `json:"authorId" binding:"required"`
+		service.GetArticleListRequest
+	}
+
+	var req GetArticlesByAuthorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
@@ -268,7 +251,7 @@ func (h *ArticleHandler) GetArticlesByAuthor(c *gin.Context) {
 	}
 
 	// 获取文章列表
-	result, err := h.articleService.GetArticlesByAuthor(uint(authorID), &req)
+	result, err := h.articleService.GetArticlesByAuthor(req.AuthorID, &req.GetArticleListRequest)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -279,21 +262,13 @@ func (h *ArticleHandler) GetArticlesByAuthor(c *gin.Context) {
 
 // GetArticlesByCategory 获取指定分类的文章
 func (h *ArticleHandler) GetArticlesByCategory(c *gin.Context) {
-	// 获取分类ID
-	categoryIDParam := c.Param("categoryId")
-	if categoryIDParam == "" {
-		response.Error(c, http.StatusBadRequest, "分类ID不能为空")
-		return
-	}
-
-	categoryID, err := strconv.ParseUint(categoryIDParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的分类ID")
-		return
-	}
-
 	// 绑定请求参数
-	var req service.GetArticleListRequest
+	type GetArticlesByCategoryRequest struct {
+		CategoryID uint `json:"categoryId" binding:"required"`
+		service.GetArticleListRequest
+	}
+
+	var req GetArticlesByCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
@@ -308,7 +283,7 @@ func (h *ArticleHandler) GetArticlesByCategory(c *gin.Context) {
 	}
 
 	// 获取文章列表
-	result, err := h.articleService.GetArticlesByCategory(uint(categoryID), &req)
+	result, err := h.articleService.GetArticlesByCategory(req.CategoryID, &req.GetArticleListRequest)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -319,21 +294,13 @@ func (h *ArticleHandler) GetArticlesByCategory(c *gin.Context) {
 
 // GetArticlesByTag 获取指定标签的文章
 func (h *ArticleHandler) GetArticlesByTag(c *gin.Context) {
-	// 获取标签ID
-	tagIDParam := c.Param("tagId")
-	if tagIDParam == "" {
-		response.Error(c, http.StatusBadRequest, "标签ID不能为空")
-		return
-	}
-
-	tagID, err := strconv.ParseUint(tagIDParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的标签ID")
-		return
-	}
-
 	// 绑定请求参数
-	var req service.GetArticleListRequest
+	type GetArticlesByTagRequest struct {
+		TagID uint `json:"tagId" binding:"required"`
+		service.GetArticleListRequest
+	}
+
+	var req GetArticlesByTagRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
@@ -348,7 +315,7 @@ func (h *ArticleHandler) GetArticlesByTag(c *gin.Context) {
 	}
 
 	// 获取文章列表
-	result, err := h.articleService.GetArticlesByTag(uint(tagID), &req)
+	result, err := h.articleService.GetArticlesByTag(req.TagID, &req.GetArticleListRequest)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -445,21 +412,10 @@ func (h *ArticleHandler) GetRecentArticles(c *gin.Context) {
 
 // GetRelatedArticles 获取相关文章
 func (h *ArticleHandler) GetRelatedArticles(c *gin.Context) {
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
-	}
-
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
-		return
-	}
-
+	// 绑定请求参数
 	type RelatedRequest struct {
-		Limit int `json:"limit"`
+		ID    uint `json:"id" binding:"required"`
+		Limit int  `json:"limit"`
 	}
 
 	var req RelatedRequest
@@ -474,7 +430,7 @@ func (h *ArticleHandler) GetRelatedArticles(c *gin.Context) {
 	}
 
 	// 获取相关文章
-	articles, err := h.articleService.GetRelatedArticles(uint(id), req.Limit)
+	articles, err := h.articleService.GetRelatedArticles(req.ID, req.Limit)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -485,16 +441,14 @@ func (h *ArticleHandler) GetRelatedArticles(c *gin.Context) {
 
 // ViewArticle 记录文章浏览
 func (h *ArticleHandler) ViewArticle(c *gin.Context) {
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type ViewArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req ViewArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
@@ -510,7 +464,7 @@ func (h *ArticleHandler) ViewArticle(c *gin.Context) {
 	ipAddress := c.ClientIP()
 
 	// 记录浏览
-	err = h.articleService.ViewArticle(uint(id), userID, visitorID, ipAddress)
+	err := h.articleService.ViewArticle(req.ID, userID, visitorID, ipAddress)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -528,21 +482,19 @@ func (h *ArticleHandler) LikeArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type LikeArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req LikeArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 点赞文章
-	err = h.articleService.LikeArticle(uint(id), userID.(uint))
+	err := h.articleService.LikeArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -560,21 +512,19 @@ func (h *ArticleHandler) UnlikeArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type UnlikeArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req UnlikeArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 取消点赞文章
-	err = h.articleService.UnlikeArticle(uint(id), userID.(uint))
+	err := h.articleService.UnlikeArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -592,21 +542,19 @@ func (h *ArticleHandler) BookmarkArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type BookmarkArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req BookmarkArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 收藏文章
-	err = h.articleService.BookmarkArticle(uint(id), userID.(uint))
+	err := h.articleService.BookmarkArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -624,21 +572,19 @@ func (h *ArticleHandler) UnbookmarkArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type UnbookmarkArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req UnbookmarkArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 取消收藏文章
-	err = h.articleService.UnbookmarkArticle(uint(id), userID.(uint))
+	err := h.articleService.UnbookmarkArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -656,21 +602,19 @@ func (h *ArticleHandler) PublishArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type PublishArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req PublishArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 发布文章
-	err = h.articleService.PublishArticle(uint(id), userID.(uint))
+	err := h.articleService.PublishArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -688,21 +632,19 @@ func (h *ArticleHandler) UnpublishArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type UnpublishArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req UnpublishArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 取消发布文章
-	err = h.articleService.UnpublishArticle(uint(id), userID.(uint))
+	err := h.articleService.UnpublishArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -720,21 +662,19 @@ func (h *ArticleHandler) ArchiveArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type ArchiveArticleRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req ArchiveArticleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 归档文章
-	err = h.articleService.ArchiveArticle(uint(id), userID.(uint))
+	err := h.articleService.ArchiveArticle(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
@@ -752,21 +692,19 @@ func (h *ArticleHandler) SetArticlePrivate(c *gin.Context) {
 		return
 	}
 
-	// 获取文章ID
-	idParam := c.Param("id")
-	if idParam == "" {
-		response.Error(c, http.StatusBadRequest, "文章ID不能为空")
-		return
+	// 绑定请求参数
+	type SetArticlePrivateRequest struct {
+		ID uint `json:"id" binding:"required"`
 	}
 
-	id, err := strconv.ParseUint(idParam, 10, 32)
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的文章ID")
+	var req SetArticlePrivateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	// 设置文章为私有
-	err = h.articleService.SetArticlePrivate(uint(id), userID.(uint))
+	err := h.articleService.SetArticlePrivate(req.ID, userID.(uint))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
