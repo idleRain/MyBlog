@@ -16,7 +16,7 @@
 
 - 🏗️ **Monorepo 架构** - 统一管理前后端代码和依赖
 - 🎨 **现代化设计** - 基于 SvelteKit 的响应式前端界面
-- ⚡ **高性能后端** - Go 语言构建的 RESTful API 服务
+- ⚡ **高性能后端** - Go 语言构建的 POST-only API 服务
 - 🔧 **智能开发工具** - 自动化环境检查、热更新和健康监控
 - 📏 **代码质量保证** - 集成 ESLint、Prettier、golangci-lint
 - 🐙 **Git Hooks** - 自动代码检查和提交规范验证

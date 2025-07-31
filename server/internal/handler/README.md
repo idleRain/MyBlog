@@ -224,4 +224,4 @@ api.Use(authMiddleware())
 2. **参数验证**: 使用binding进行参数验证
 3. **错误处理**: 适当的错误分类和响应
 4. **轻量级**: Handler只做协议转换，不处理业务逻辑
-5. **RESTful**: 遵循RESTful API设计规范
+5. **POST**: 遵循POST-only API设计规范

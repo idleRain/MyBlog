@@ -271,8 +271,3 @@ response.Success(c, data)
 - Postman
 - curl
 - HTTPie
-
-### 文档生成工具
-
-- Swagger/OpenAPI
-- Postman Documentation
