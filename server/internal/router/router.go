@@ -50,22 +50,21 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		userRoutes.RegisterRoutes(api)
 	}
 
-	// 可以在这里添加更多的路由模块
-	// if deps.PostHandler != nil {
-	//     postHandler := deps.PostHandler.(PostHandlerInterface)
-	//     postRoutes := NewPostRoutes(postHandler)
-	//     postRoutes.RegisterRoutes(api)
-	// }
+	// 注册文章相关路由
+	if deps.ArticleHandler != nil {
+		articleHandler := deps.ArticleHandler.(ArticleHandlerInterface)
+		articleRoutes := NewArticleRoutes(articleHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		articleRoutes.RegisterRoutes(api)
+	}
 }
 
 // Dependencies 依赖注入结构
 type Dependencies struct {
 	UserHandler    interface{}               // 用户处理器接口
+	ArticleHandler interface{}               // 文章处理器接口
 	JWTService     service.JWTService        // JWT服务
 	UserRepository repository.UserRepository // 用户仓库
-	// 可以添加更多的依赖
-	// PostHandler interface{}
-	// AuthHandler interface{}
+	RBACService    service.RBACService       // RBAC权限服务
 }
 
 // UserHandlerInterface 用户处理器接口
@@ -78,4 +77,39 @@ type UserHandlerInterface interface {
 	Login(c *gin.Context)        // POST /api/users/login - JSON格式
 	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式
 	Logout(c *gin.Context)       // POST /api/auth/logout - Header中的Token
+}
+
+// ArticleHandlerInterface 文章处理器接口
+type ArticleHandlerInterface interface {
+	// 基础CRUD操作
+	CreateArticle(c *gin.Context)
+	GetArticle(c *gin.Context)
+	GetArticleBySlug(c *gin.Context)
+	UpdateArticle(c *gin.Context)
+	DeleteArticle(c *gin.Context)
+
+	// 查询操作
+	GetArticleList(c *gin.Context)
+	GetArticlesByAuthor(c *gin.Context)
+	GetArticlesByCategory(c *gin.Context)
+	GetArticlesByTag(c *gin.Context)
+	SearchArticles(c *gin.Context)
+
+	// 统计和推荐
+	GetPopularArticles(c *gin.Context)
+	GetRecentArticles(c *gin.Context)
+	GetRelatedArticles(c *gin.Context)
+
+	// 互动操作
+	ViewArticle(c *gin.Context)
+	LikeArticle(c *gin.Context)
+	UnlikeArticle(c *gin.Context)
+	BookmarkArticle(c *gin.Context)
+	UnbookmarkArticle(c *gin.Context)
+
+	// 状态管理
+	PublishArticle(c *gin.Context)
+	UnpublishArticle(c *gin.Context)
+	ArchiveArticle(c *gin.Context)
+	SetArticlePrivate(c *gin.Context)
 }

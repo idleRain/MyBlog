@@ -38,6 +38,7 @@ const (
 	PermissionArticleDelete  Permission = "article:delete"  // 删除文章
 	PermissionArticleList    Permission = "article:list"    // 文章列表
 	PermissionArticlePublish Permission = "article:publish" // 发布文章
+	PermissionArticleManage  Permission = "article:manage"  // 管理所有文章
 
 	// 分类标签权限
 	PermissionCategoryManage Permission = "category:manage" // 分类管理
@@ -62,7 +63,7 @@ var RolePermissions = map[Role][]Permission{
 		// 超级管理员拥有所有权限
 		PermissionSystemConfig, PermissionSystemLogs, PermissionSystemStats,
 		PermissionUserCreate, PermissionUserRead, PermissionUserUpdate, PermissionUserDelete, PermissionUserList,
-		PermissionArticleCreate, PermissionArticleRead, PermissionArticleUpdate, PermissionArticleDelete, PermissionArticleList, PermissionArticlePublish,
+		PermissionArticleCreate, PermissionArticleRead, PermissionArticleUpdate, PermissionArticleDelete, PermissionArticleList, PermissionArticlePublish, PermissionArticleManage,
 		PermissionCategoryManage, PermissionTagManage,
 		PermissionCommentCreate, PermissionCommentRead, PermissionCommentUpdate, PermissionCommentDelete, PermissionCommentModerate,
 		PermissionFileUpload, PermissionFileRead, PermissionFileDelete,
@@ -71,7 +72,7 @@ var RolePermissions = map[Role][]Permission{
 		// 管理员权限（除系统配置外的大部分权限）
 		PermissionSystemLogs, PermissionSystemStats,
 		PermissionUserCreate, PermissionUserRead, PermissionUserUpdate, PermissionUserDelete, PermissionUserList,
-		PermissionArticleCreate, PermissionArticleRead, PermissionArticleUpdate, PermissionArticleDelete, PermissionArticleList, PermissionArticlePublish,
+		PermissionArticleCreate, PermissionArticleRead, PermissionArticleUpdate, PermissionArticleDelete, PermissionArticleList, PermissionArticlePublish, PermissionArticleManage,
 		PermissionCategoryManage, PermissionTagManage,
 		PermissionCommentCreate, PermissionCommentRead, PermissionCommentUpdate, PermissionCommentDelete, PermissionCommentModerate,
 		PermissionFileUpload, PermissionFileRead, PermissionFileDelete,

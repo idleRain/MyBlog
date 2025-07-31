@@ -29,11 +29,18 @@ type User struct {
 	DeletedAt       gorm.DeletedAt    `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Articles   []Article      `json:"-" gorm:"foreignKey:AuthorID"`
-	Comments   []Comment      `json:"-" gorm:"foreignKey:UserID"`
-	MediaFiles []MediaFile    `json:"-" gorm:"foreignKey:UploaderID"`
-	Sessions   []UserSession  `json:"-" gorm:"foreignKey:UserID"`
-	Activities []UserActivity `json:"-" gorm:"foreignKey:UserID"`
+	Articles         []Article         `json:"-" gorm:"foreignKey:AuthorID"`
+	Comments         []Comment         `json:"-" gorm:"foreignKey:UserID"`
+	MediaFiles       []MediaFile       `json:"-" gorm:"foreignKey:UploaderID"`
+	Sessions         []UserSession     `json:"-" gorm:"foreignKey:UserID"`
+	Activities       []UserActivity    `json:"-" gorm:"foreignKey:UserID"`
+	ArticleLikes     []ArticleLike     `json:"-" gorm:"foreignKey:UserID"`
+	CommentLikes     []CommentLike     `json:"-" gorm:"foreignKey:UserID"`
+	ArticleBookmarks []ArticleBookmark `json:"-" gorm:"foreignKey:UserID"`
+	Notifications    []Notification    `json:"-" gorm:"foreignKey:UserID"`
+	SearchLogs       []SearchLog       `json:"-" gorm:"foreignKey:UserID"`
+	Followers        []UserFollow      `json:"-" gorm:"foreignKey:FollowingID"`
+	Following        []UserFollow      `json:"-" gorm:"foreignKey:FollowerID"`
 }
 
 // TableName 指定表名

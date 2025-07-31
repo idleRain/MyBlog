@@ -1,6 +1,10 @@
 package model
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Models 返回所有需要进行数据库迁移的模型
 func Models() []interface{} {
@@ -25,6 +29,17 @@ func Models() []interface{} {
 
 		// 系统设置模块
 		&Setting{},
+
+		// 增强功能模块
+		&ArticleCategory{},
+		&OperationLog{},
+		&ArticleLike{},
+		&CommentLike{},
+		&ArticleBookmark{},
+		&Notification{},
+		&SearchLog{},
+		&ContentStats{},
+		&UserFollow{},
 	}
 }
 
@@ -123,4 +138,67 @@ func WithUser(db *gorm.DB) *gorm.DB {
 // WithUploader 预加载上传者信息
 func WithUploader(db *gorm.DB) *gorm.DB {
 	return db.Preload("Uploader")
+}
+
+// ========== 增强功能查询作用域 ==========
+
+// Unread 查询未读通知
+func Unread(db *gorm.DB) *gorm.DB {
+	return db.Where("is_read = ?", false)
+}
+
+// ByAction 根据操作类型查询日志
+func ByAction(action string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("action = ?", action)
+	}
+}
+
+// ByContentType 根据内容类型查询统计
+func ByContentType(contentType string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("content_type = ?", contentType)
+	}
+}
+
+// ByStatType 根据统计类型查询
+func ByStatType(statType string) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("stat_type = ?", statType)
+	}
+}
+
+// ThisWeek 查询本周数据
+func ThisWeek(db *gorm.DB) *gorm.DB {
+	return db.Where("created_at >= ?", time.Now().AddDate(0, 0, -7))
+}
+
+// ThisMonth 查询本月数据
+func ThisMonth(db *gorm.DB) *gorm.DB {
+	return db.Where("created_at >= ?", time.Now().AddDate(0, -1, 0))
+}
+
+// WithFollower 预加载关注者信息
+func WithFollower(db *gorm.DB) *gorm.DB {
+	return db.Preload("Follower")
+}
+
+// WithFollowing 预加载被关注者信息
+func WithFollowing(db *gorm.DB) *gorm.DB {
+	return db.Preload("Following")
+}
+
+// WithRelated 预加载通知关联信息
+func WithRelated(db *gorm.DB) *gorm.DB {
+	return db.Preload("User")
+}
+
+// OrderByStatValue 按统计值排序
+func OrderByStatValue(desc bool) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if desc {
+			return db.Order("stat_value DESC")
+		}
+		return db.Order("stat_value ASC")
+	}
 }

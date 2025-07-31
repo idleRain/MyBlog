@@ -85,11 +85,14 @@ type Article struct {
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Author   User          `json:"author" gorm:"foreignKey:AuthorID;constraint:OnDelete:CASCADE"`
-	Category *Category     `json:"category,omitempty" gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL"`
-	Tags     []Tag         `json:"tags,omitempty" gorm:"many2many:article_tags"`
-	Comments []Comment     `json:"-" gorm:"foreignKey:ArticleID"`
-	Views    []ArticleView `json:"-" gorm:"foreignKey:ArticleID"`
+	Author     User              `json:"author" gorm:"foreignKey:AuthorID;constraint:OnDelete:CASCADE"`
+	Category   *Category         `json:"category,omitempty" gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL"`
+	Categories []Category        `json:"categories,omitempty" gorm:"many2many:article_categories"`
+	Tags       []Tag             `json:"tags,omitempty" gorm:"many2many:article_tags"`
+	Comments   []Comment         `json:"-" gorm:"foreignKey:ArticleID"`
+	Views      []ArticleView     `json:"-" gorm:"foreignKey:ArticleID"`
+	Likes      []ArticleLike     `json:"-" gorm:"foreignKey:ArticleID"`
+	Bookmarks  []ArticleBookmark `json:"-" gorm:"foreignKey:ArticleID"`
 }
 
 // TableName 指定表名

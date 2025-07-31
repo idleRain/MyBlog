@@ -31,11 +31,12 @@ type Comment struct {
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Article  Article   `json:"article" gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE"`
-	User     *User     `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
-	Parent   *Comment  `json:"parent,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:CASCADE"`
-	Root     *Comment  `json:"root,omitempty" gorm:"foreignKey:RootID;constraint:OnDelete:CASCADE"`
-	Children []Comment `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Article  Article       `json:"article" gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE"`
+	User     *User         `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
+	Parent   *Comment      `json:"parent,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:CASCADE"`
+	Root     *Comment      `json:"root,omitempty" gorm:"foreignKey:RootID;constraint:OnDelete:CASCADE"`
+	Children []Comment     `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Likes    []CommentLike `json:"-" gorm:"foreignKey:CommentID"`
 }
 
 // TableName 指定表名
