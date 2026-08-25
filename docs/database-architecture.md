@@ -675,7 +675,6 @@ PARTITION BY RANGE (YEAR(created_at) * 100 + MONTH(created_at)) (
 ```
 
 ### 3. 缓存策略
-- **MongoDB 缓存**：热点文章、用户会话、系统配置
 - **本地缓存**：不经常变化的配置信息
 - **CDN 缓存**：静态媒体文件
 
@@ -746,7 +745,6 @@ mysqlbinlog binlog.000001 | mysql myblog
 - ⏳ 统计分析API
 
 ### 阶段五：性能优化和扩展（⏳ 计划中）
-- ⏳ MongoDB缓存集成
 - ⏳ 搜索引擎集成（Elasticsearch）
 - ⏳ 分表分库策略
 - ⏳ CDN和静态资源优化
@@ -788,7 +786,7 @@ mysqlbinlog binlog.000001 | mysql myblog
 **高性能**：
 - **索引优化**：针对查询场景的复合索引和覆盖索引
 - **数据类型**：统一使用高效的 BIGINT UNSIGNED 和 DATETIME(3)
-- **缓存友好**：支持 MongoDB 和多级缓存策略
+- **缓存友好**：支持本地缓存与 CDN 的多级缓存策略
 - **分片准备**：为高并发场景预留分表分库能力
 
 **安全可靠**：

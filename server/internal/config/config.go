@@ -37,7 +37,6 @@ type DatabaseConfig struct {
 	Loc          string                 `mapstructure:"loc"`
 	MaxIdleConns int                    `mapstructure:"max_idle_conns"`
 	MaxOpenConns int                    `mapstructure:"max_open_conns"`
-	MongoDB      map[string]interface{} `mapstructure:"mongodb"` // MongoDB配置
 }
 
 // LoggerConfig 日志配置

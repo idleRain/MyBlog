@@ -317,13 +317,7 @@ INSERT INTO `settings` (`key_name`, `value`, `description`, `type`, `group_name`
 ('upload_max_size', '10485760', '文件上传最大大小（字节）', 'number', 'media', 0),
 ('allowed_file_types', '["jpg","jpeg","png","gif","pdf","doc","docx"]', '允许上传的文件类型', 'json', 'media', 0),
 ('cache_enabled', '1', '是否启用缓存系统', 'boolean', 'cache', 0),
-('cache_expire', '3600', '缓存过期时间（秒）', 'number', 'cache', 0),
-('mongo_host', 'localhost', 'MongoDB服务器地址', 'string', 'cache', 0),
-('mongo_port', '27017', 'MongoDB端口', 'string', 'cache', 0),
-('mongo_database', 'myblog_cache', 'MongoDB数据库名', 'string', 'cache', 0),
-('mongo_username', '', 'MongoDB用户名', 'string', 'cache', 0),
-('mongo_password', '', 'MongoDB密码', 'string', 'cache', 0),
-('mongo_auth_source', 'admin', 'MongoDB认证数据库', 'string', 'cache', 0);
+('cache_expire', '3600', '缓存过期时间（秒）', 'number', 'cache', 0);
 
 -- 插入默认分类
 INSERT INTO `categories` (`name`, `slug`, `description`, `sort_order`) VALUES
@@ -337,8 +331,7 @@ INSERT INTO `tags` (`name`, `slug`, `color`) VALUES
 ('JavaScript', 'javascript', '#F7DF1E'),
 ('TypeScript', 'typescript', '#3178C6'),
 ('Svelte', 'svelte', '#FF3E00'),
-('MySQL', 'mysql', '#4479A1'),
-('MongoDB', 'mongodb', '#47A248');
+('MySQL', 'mysql', '#4479A1');
 
 -- 恢复外键检查
 SET FOREIGN_KEY_CHECKS = 1;

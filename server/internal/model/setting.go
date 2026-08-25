@@ -90,14 +90,8 @@ const (
 	SettingPasswordMinLength = "password_min_length"
 
 	// 缓存设置
-	SettingCacheEnabled    = "cache_enabled"
-	SettingCacheExpire     = "cache_expire"
-	SettingMongoHost       = "mongo_host"
-	SettingMongoPort       = "mongo_port"
-	SettingMongoUsername   = "mongo_username"
-	SettingMongoPassword   = "mongo_password"
-	SettingMongoDatabase   = "mongo_database"
-	SettingMongoAuthSource = "mongo_auth_source"
+	SettingCacheEnabled = "cache_enabled"
+	SettingCacheExpire  = "cache_expire"
 
 	// 第三方集成
 	SettingAnalyticsCode   = "analytics_code"
@@ -282,7 +276,6 @@ func (s *Setting) GetDisplayValue() string {
 func (s *Setting) IsSensitive() bool {
 	sensitiveKeys := []string{
 		SettingMailPassword,
-		SettingMongoPassword,
 		"password",
 		"secret",
 		"key",
