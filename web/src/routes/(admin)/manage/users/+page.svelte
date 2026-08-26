@@ -25,7 +25,8 @@ import {
   Shield
 } from '@lucide/svelte'
 import { UserAPI } from '$lib/api'
-import type { User } from '$lib/api/modules/user/types'
+import type { UpdateUserRequest, User, UserRole } from '$lib/api/modules/user/types'
+import type { BadgeVariant } from '$ui/badge'
 
 // 权限检查
 let userRole = $state('user')
@@ -39,13 +40,13 @@ let isCreateModalOpen = $state(false)
 let isEditModalOpen = $state(false)
 let selectedUser = $state<User | null>(null)
 
-// 表单状态
+// 表单状态；role 受 UserRole 枚举约束，避免自由字符串流入 API 请求。
 let userForm = $state({
   username: '',
   email: '',
   password: '',
   nickname: '',
-  role: 'user',
+  role: 'user' as UserRole,
   birthday: ''
 })
 
@@ -149,7 +150,8 @@ async function updateUser() {
 
   try {
     isSubmitting = true
-    const updateData: any = {
+    // 更新载荷按接口契约类型化，密码仅在填写时提交。
+    const updateData: UpdateUserRequest = {
       id: selectedUser.id,
       username: userForm.username.trim(),
       email: userForm.email.trim(),
@@ -369,8 +371,8 @@ async function batchToggleStatus(status: number) {
   await loadUsers()
 }
 
-// 获取角色信息
-function getRoleInfo(role: string) {
+// 获取角色信息；variant 受 BadgeVariant 联合类型约束，与 ui 组件契约保持一致。
+function getRoleInfo(role: UserRole): { name: string; variant: BadgeVariant } {
   switch (role) {
     case 'superadmin':
       return { name: '超级管理员', variant: 'destructive' }
@@ -521,12 +523,8 @@ onMount(() => {
             </div>
 
             <div class="space-y-2">
-              <Select.Root
-                bind:value={userForm.role}
-                class="bg-surface flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isSubmitting}
-              >
-                <Label.Root for="role">角色</Label.Root>
+              <Label.Root for="role">角色</Label.Root>
+              <Select.Root type="single" bind:value={userForm.role} disabled={isSubmitting}>
                 <Select.Trigger class="w-full">请选择角色</Select.Trigger>
                 <Select.Content>
                   <Select.Item value="user">用户</Select.Item>
@@ -832,12 +830,8 @@ onMount(() => {
           </div>
 
           <div class="space-y-2">
-            <Select.Root
-              bind:value={userForm.role}
-              class="bg-surface flex h-10 w-full rounded-md border border-input px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isSubmitting}
-            >
-              <Label.Root for="role">角色</Label.Root>
+            <Label.Root for="edit-role">角色</Label.Root>
+            <Select.Root type="single" bind:value={userForm.role} disabled={isSubmitting}>
               <Select.Trigger class="w-full">请选择角色</Select.Trigger>
               <Select.Content>
                 <Select.Item value="user">用户</Select.Item>
@@ -846,7 +840,6 @@ onMount(() => {
                 <Select.Item value="superadmin">超级管理员</Select.Item>
               </Select.Content>
             </Select.Root>
-            <Label.Root for="edit-role">角色</Label.Root>
           </div>
 
           <div class="space-y-2">
