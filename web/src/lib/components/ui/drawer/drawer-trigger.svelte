@@ -1,7 +1,11 @@
 <script lang="ts">
-	import { Drawer as DrawerPrimitive } from "vaul-svelte";
+import { Drawer as DrawerPrimitive } from 'vaul-svelte'
 
-	let { ref = $bindable(null), ...restProps }: DrawerPrimitive.TriggerProps = $props();
+let {
+  ref = $bindable(null),
+  ...restProps
+}: DrawerPrimitive.TriggerProps & { ref?: HTMLButtonElement | null } = $props()
 </script>
 
-<DrawerPrimitive.Trigger bind:ref data-slot="drawer-trigger" {...restProps} />
+<!-- vaul-svelte 当前版本包装旧版 bits-ui，元素引用经 el 属性转发。 -->
+<DrawerPrimitive.Trigger el={ref ?? undefined} data-slot="drawer-trigger" {...restProps} />
