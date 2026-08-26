@@ -186,6 +186,16 @@
   }
 }
 
+/* 规格书坐标网格背景：登录与注册页复用的公共网格底纹。 */
+/* 网格单元边长 56px，与首屏 HeroSection 的网格保持一致的图纸密度。 */
+.spec-grid {
+  opacity: 0.4;
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
 /* 背景动画：供登录/注册页的模糊色块使用。 */
 @keyframes blob {
   0% {
