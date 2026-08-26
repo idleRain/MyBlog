@@ -138,10 +138,12 @@ export function createAsyncOperation<T, Args extends any[] = any[]>(
     }
   }
 
+  // 展开顺序保持 actions 在前：actions.execute 是未实现的占位实现，
+  // 必须让下方真实 execute 覆盖它，否则调用方永远只会得到占位错误。
   return {
     state,
-    execute,
     ...actions,
+    execute,
     derived
   }
 }

@@ -4,7 +4,6 @@ import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
-import { UserAPI } from '$lib/api'
 
 /**
  * 执行完整的退出登录流程

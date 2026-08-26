@@ -10,14 +10,14 @@ const prefixUrl = import.meta.env.SSR
 
 // 令牌刷新状态管理
 let isRefreshing = false
-const refreshPromise: Promise<boolean> | null = null
+// 等待刷新完成的请求队列，错误类型无法静态确定，统一收束为 unknown。
 let failedQueue: Array<{
   resolve: (token: string | null) => void
-  reject: (error: any) => void
+  reject: (error: unknown) => void
 }> = []
 
 // 处理队列中的请求
-function processQueue(error: any = null, token: string | null = null) {
+function processQueue(error: unknown = null, token: string | null = null) {
   failedQueue.forEach(({ resolve, reject }) => {
     if (error) {
       reject(error)

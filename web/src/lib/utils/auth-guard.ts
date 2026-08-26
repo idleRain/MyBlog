@@ -3,7 +3,6 @@
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
 import { goto } from '$app/navigation'
-import { get } from 'svelte/store'
 
 /**
  * 检查用户是否已认证

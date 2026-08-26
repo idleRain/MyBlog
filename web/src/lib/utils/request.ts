@@ -5,7 +5,6 @@ import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
-import request from '$lib/service'
 
 /**
  * 带自动重试的请求函数
