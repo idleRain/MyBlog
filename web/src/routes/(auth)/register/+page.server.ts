@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types'
 import { superValidate } from 'sveltekit-superforms'
-import { zod } from 'sveltekit-superforms/adapters'
-import { fail, redirect } from '@sveltejs/kit'
+import { zod4 } from 'sveltekit-superforms/adapters'
+import { fail } from '@sveltejs/kit'
 import { z } from 'zod'
 
 const registerSchema = z
@@ -20,16 +20,14 @@ const registerSchema = z
     path: ['confirmPassword']
   })
 
-// @ts-ignore
 export const load: PageServerLoad = async () => {
-  throw redirect(302, '/login')
-  const form = await superValidate(zod(registerSchema))
+  const form = await superValidate(zod4(registerSchema))
   return { form }
 }
 
 export const actions: Actions = {
   default: async event => {
-    const form = await superValidate(event, zod(registerSchema))
+    const form = await superValidate(event, zod4(registerSchema))
 
     if (!form.valid) {
       return fail(400, {

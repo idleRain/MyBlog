@@ -5,7 +5,7 @@
 		type ButtonVariant,
 		type ButtonSize,
 	} from "$lib/components/ui/button/index.js";
-	import { cn } from "$lib/utils/index.ts.js";
+	import { cn } from "$lib/utils";
 
 	let {
 		ref = $bindable(null),

@@ -1,6 +1,6 @@
 <script lang="ts">
 import { superForm } from 'sveltekit-superforms'
-import { zodClient } from 'sveltekit-superforms/adapters'
+import { zod4Client } from 'sveltekit-superforms/adapters'
 import { z } from 'zod'
 import type { PageData } from './$types'
 import { ThemeToggle } from '$lib/components'
@@ -31,7 +31,7 @@ const registerSchema = z
   })
 
 const form = superForm(data.form, {
-  validators: zodClient(registerSchema),
+  validators: zod4Client(registerSchema),
   onUpdated: async ({ form }) => {
     if (form.valid) {
       // 调用 API 注册

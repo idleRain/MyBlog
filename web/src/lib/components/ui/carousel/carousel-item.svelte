@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { cn, type WithElementRef } from "$lib/utils/index.ts.js";
+	import { cn, type WithElementRef } from "$lib/utils";
 	import { getEmblaContext } from "./context.js";
 	import type { HTMLAttributes } from "svelte/elements";
 

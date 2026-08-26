@@ -1,6 +1,6 @@
 <script lang="ts">
 import { superForm } from 'sveltekit-superforms'
-import { zodClient } from 'sveltekit-superforms/adapters'
+import { zod4Client } from 'sveltekit-superforms/adapters'
 import { z } from 'zod'
 import type { PageData } from './$types'
 import { authStore } from '$lib/stores/auth.ts'
@@ -22,7 +22,7 @@ const loginSchema = z.object({
 })
 
 const form = superForm(data.form, {
-  validators: zodClient(loginSchema)
+  validators: zod4Client(loginSchema)
 })
 
 const { form: formData } = form

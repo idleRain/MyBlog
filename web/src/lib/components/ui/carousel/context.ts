@@ -1,5 +1,5 @@
 import { getContext, hasContext, setContext } from "svelte";
-import type { WithElementRef } from "$lib/utils/index.ts.js";
+import type { WithElementRef } from "$lib/utils";
 import type {
 	EmblaCarouselSvelteType,
 	default as emblaCarouselSvelte,

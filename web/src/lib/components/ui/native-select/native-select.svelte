@@ -1,6 +1,6 @@
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
-	import { cn, type WithElementRef } from "$lib/utils/index.ts.js";
+	import { cn, type WithElementRef } from "$lib/utils";
 	import type { HTMLSelectAttributes } from "svelte/elements";
 
 	type NativeSelectProps = Omit<WithElementRef<HTMLSelectAttributes>, "size"> & {
