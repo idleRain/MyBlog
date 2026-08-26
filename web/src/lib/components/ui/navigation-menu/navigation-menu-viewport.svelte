@@ -1,22 +1,22 @@
 <script lang="ts">
-import { NavigationMenu as NavigationMenuPrimitive } from 'bits-ui'
-import { cn } from '$lib/utils'
+	import { NavigationMenu as NavigationMenuPrimitive } from "bits-ui";
+	import { cn } from "$lib/utils/index.ts.js";
 
-let {
-  ref = $bindable(null),
-  class: className,
-  ...restProps
-}: NavigationMenuPrimitive.ViewportProps = $props()
+	let {
+		ref = $bindable(null),
+		class: className,
+		...restProps
+	}: NavigationMenuPrimitive.ViewportProps = $props();
 </script>
 
-<div class={cn('absolute top-full left-0 isolate z-50 flex justify-center')}>
-  <NavigationMenuPrimitive.Viewport
-    bind:ref
-    data-slot="navigation-menu-viewport"
-    class={cn(
-      'origin-top-center relative mt-1.5 h-[var(--bits-navigation-menu-viewport-height)] w-full overflow-hidden rounded-md border bg-popover text-popover-foreground shadow data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:zoom-in-90 md:w-[var(--bits-navigation-menu-viewport-width)]',
-      className
-    )}
-    {...restProps}
-  />
+<div class={cn("absolute start-0 top-full isolate z-50 flex justify-center")}>
+	<NavigationMenuPrimitive.Viewport
+		bind:ref
+		data-slot="navigation-menu-viewport"
+		class={cn(
+			"rounded-lg bg-popover text-popover-foreground shadow ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:zoom-in-90 data-closed:animate-out data-closed:zoom-out-90 origin-top-center relative mt-1.5 h-[calc(var(--bits-navigation-menu-viewport-height)+1rem)] w-full overflow-hidden md:w-[calc(var(--bits-navigation-menu-viewport-width)+1rem)]",
+			className
+		)}
+		{...restProps}
+	/>
 </div>

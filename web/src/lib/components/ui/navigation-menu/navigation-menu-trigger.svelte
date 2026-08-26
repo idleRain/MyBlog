@@ -1,34 +1,29 @@
 <script lang="ts" module>
-import { cn } from '$lib/utils'
-import { tv } from 'tailwind-variants'
+	import { tv } from "tailwind-variants";
+	import { cn } from "$lib/utils/index.ts.js";
 
-export const navigationMenuTriggerStyle = tv({
-  base: 'bg-background hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[state=open]:hover:bg-accent data-[state=open]:text-accent-foreground data-[state=open]:focus:bg-accent data-[state=open]:bg-accent/50 focus-visible:ring-ring/50 group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium outline-none transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50'
-})
+	export const navigationMenuTriggerStyle = tv({
+		base: "rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all hover:bg-muted focus:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 disabled:opacity-50 data-popup-open:bg-muted/50 data-popup-open:hover:bg-muted data-open:bg-muted/50 data-open:hover:bg-muted data-open:focus:bg-muted group/navigation-menu-trigger inline-flex h-9 w-max items-center justify-center outline-none disabled:pointer-events-none",
+	});
 </script>
 
 <script lang="ts">
-import { NavigationMenu as NavigationMenuPrimitive } from 'bits-ui'
-import ChevronDownIcon from '@lucide/svelte/icons/chevron-down'
-
-let {
-  ref = $bindable(null),
-  class: className,
-  children,
-  ...restProps
-}: NavigationMenuPrimitive.TriggerProps = $props()
+	import { NavigationMenu as NavigationMenuPrimitive } from "bits-ui";
+	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		...restProps
+	}: NavigationMenuPrimitive.TriggerProps = $props();
 </script>
 
 <NavigationMenuPrimitive.Trigger
-  bind:ref
-  data-slot="navigation-menu-trigger"
-  class={cn(navigationMenuTriggerStyle(), 'group', className)}
-  {...restProps}
+	bind:ref
+	data-slot="navigation-menu-trigger"
+	class={cn(navigationMenuTriggerStyle(), "group", className)}
+	{...restProps}
 >
-  {@render children?.()}
-
-  <ChevronDownIcon
-    class="relative top-[1px] ml-1 size-3 transition duration-300 group-data-[state=open]:rotate-180"
-    aria-hidden="true"
-  />
+	{@render children?.()}
+	<ChevronDownIcon class="relative top-px ml-1 size-3 transition duration-300 group-data-popup-open/navigation-menu-trigger:rotate-180 group-data-open/navigation-menu-trigger:rotate-180" aria-hidden="true" />
 </NavigationMenuPrimitive.Trigger>
