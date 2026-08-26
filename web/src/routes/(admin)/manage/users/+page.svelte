@@ -564,7 +564,7 @@ onMount(() => {
     </div>
 
     <!-- 搜索和筛选 -->
-    <Card.Root>
+    <Card.Root class="rounded-none border-border ring-0">
       <Card.Content class="p-6">
         <div class="flex items-center space-x-4">
           <div class="relative flex-1">
@@ -586,7 +586,7 @@ onMount(() => {
 
     <!-- 批量操作栏 -->
     {#if selectedUserIds.length > 0}
-      <Card.Root>
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Content class="p-4">
           <div class="flex items-center justify-between">
             <div class="text-sm text-muted-foreground">
@@ -617,7 +617,7 @@ onMount(() => {
     {/if}
 
     <!-- 用户列表 -->
-    <Card.Root>
+    <Card.Root class="rounded-none border-border ring-0">
       <Card.Content class="p-0">
         {#if isLoading}
           <div class="flex h-48 items-center justify-center">
@@ -644,7 +644,7 @@ onMount(() => {
                     type="checkbox"
                     checked={isAllSelected}
                     onchange={toggleSelectAll}
-                    class="rounded border-gray-300"
+                    class="rounded border-input"
                   />
                 </Table.Head>
                 <Table.Head>用户</Table.Head>
@@ -663,7 +663,7 @@ onMount(() => {
                       type="checkbox"
                       checked={selectedUserIds.includes(user.id)}
                       onchange={() => toggleSelectUser(user.id)}
-                      class="rounded border-gray-300"
+                      class="rounded border-input"
                     />
                   </Table.Cell>
                   <Table.Cell>
@@ -688,17 +688,17 @@ onMount(() => {
                   </Table.Cell>
                   <Table.Cell>
                     {@const roleInfo = getRoleInfo(user.role || 'user')}
-                    <Badge variant={roleInfo.variant}>
+                    <Badge variant={roleInfo.variant} class="rounded-none">
                       {roleInfo.name}
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
                     <button
                       onclick={() => toggleUserStatus(user)}
-                      class="inline-flex cursor-pointer items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {user.status ===
+                      class="inline-flex cursor-pointer items-center rounded-none px-2.5 py-0.5 text-xs font-medium transition-colors {user.status ===
                       1
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}"
+                        ? 'bg-signal/10 text-signal hover:bg-signal/20'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/70'}"
                     >
                       {user.status === 1 ? '正常' : '禁用'}
                     </button>
