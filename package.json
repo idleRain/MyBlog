@@ -43,6 +43,7 @@
     "migrate:down": "bun scripts/migrate.ts down",
     "migrate:version": "bun scripts/migrate.ts version",
     "migrate:help": "bun scripts/migrate.ts help",
+    "seed:admin": "bun scripts/seed.ts",
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },

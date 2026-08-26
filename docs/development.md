@@ -36,7 +36,7 @@ MyBlog/
 ```
 ┌─────────────────┐
 │   HTTP Layer    │  cmd/myblog/main.go
-│   (Gin Router)  │  
+│   (Gin Router)  │
 ├─────────────────┤
 │  Handler Layer  │  internal/handler/
 │  (请求处理)      │  - 参数验证
@@ -51,7 +51,7 @@ MyBlog/
 │                 │  - 模型定义
 ├─────────────────┤
 │  Database Layer │  MySQL + GORM
-│                 │  
+│                 │
 └─────────────────┘
 ```
 
@@ -101,11 +101,11 @@ web/
 
 ### 环境要求
 
-| 工具    | 版本要求    | 说明                  |
-|-------|---------|---------------------|
-| Go    | 1.23+   | 后端开发语言              |
-| Bun   | 1.1.24+ | JavaScript 运行时和包管理器 |
-| MySQL | 8.0+    | 数据库服务               |
+| 工具  | 版本要求 | 说明                        |
+| ----- | -------- | --------------------------- |
+| Go    | 1.23+    | 后端开发语言                |
+| Bun   | 1.1.24+  | JavaScript 运行时和包管理器 |
+| MySQL | 8.0+     | 数据库服务                  |
 
 ### 快速启动
 
@@ -146,21 +146,42 @@ cd .. && bun run go:lint-install
 bun run dev
 ```
 
+### 初始化管理员账户
+
+数据库初始化不会自动创建管理员账户，需要通过种子命令创建超级管理员：
+
+```bash
+# 初始化默认超级管理员
+bun run seed:admin
+
+# 自定义用户名、密码、邮箱
+bun run seed:admin --username root --password Root@2025 --email root@myblog.local
+```
+
+- **默认账户**：用户名 `admin`，密码 `Admin@123456`，邮箱 `admin@myblog.local`
+- 密码规则：至少 6 位，且必须同时包含字母和数字
+- 命令幂等：账户已存在且为超级管理员时不重复创建；已存在但角色非超级管理员时自动提升为超级管理员
+- 相关实现：`server/cmd/seed/main.go`（命令行入口）、`server/internal/database/seed.go`（核心逻辑）
+- 登录接口：`POST /api/users/login`
+
 ## 开发工作流
 
 ### 日常开发流程
 
 1. **开始开发**
+
 ```bash
 # 启动所有服务
 bun run dev
 ```
 
 2. **代码开发**
+
 - 后端开发：编辑 `server/` 下的文件，自动热重载
 - 前端开发：编辑 `web/src/` 下的文件，自动热重载
 
 3. **代码提交前**
+
 ```bash
 # 自动代码检查 (通过 git hooks)
 git add .
@@ -168,6 +189,7 @@ git commit -m "feat: 添加新功能"
 ```
 
 4. **测试和质量检查**
+
 ```bash
 # 完整质量检查
 bun run quality
@@ -269,12 +291,12 @@ func NewUserService(userRepo UserRepository) UserService {
 // 统一错误响应
 func (h *UserHandler) CreateUser(c *gin.Context) {
   var req CreateUserRequest
-  
+
   if err := c.ShouldBindJSON(&req); err != nil {
     response.BadRequest(c, "请求参数错误: "+err.Error())
     return
   }
-  
+
   user, err := h.userService.CreateUser(&req)
   if err != nil {
     response.InternalError(c, err.Error())
@@ -306,13 +328,13 @@ type User struct {
   // 导入
   import type { User } from '$lib/types';
   import { userService } from '$lib/services';
-  
+
   // 属性
   export let user: User;
-  
+
   // 响应式变量
   let loading = false;
-  
+
   // 函数
   async function handleUpdate() {
     loading = true;
@@ -346,20 +368,20 @@ type User struct {
 
 ```typescript
 // src/service/api.ts
-import ky from 'ky';
+import ky from 'ky'
 
 const api = ky.create({
   prefixUrl: import.meta.env.VITE_API_URL,
   timeout: 15000,
   headers: {
-    'Content-Type': 'application/json',
-  },
-});
+    'Content-Type': 'application/json'
+  }
+})
 
 export interface ApiResponse<T = any> {
-  code: number;
-  message: string;
-  data: T;
+  code: number
+  message: string
+  data: T
 }
 
 export class ApiError extends Error {
@@ -368,28 +390,25 @@ export class ApiError extends Error {
     message: string,
     public data?: any
   ) {
-    super(message);
-    this.name = 'ApiError';
+    super(message)
+    this.name = 'ApiError'
   }
 }
 
-export async function apiPost<T>(
-  endpoint: string,
-  data?: any
-): Promise<T> {
+export async function apiPost<T>(endpoint: string, data?: any): Promise<T> {
   try {
-    const response = await api.post(endpoint, {json: data}).json<ApiResponse<T>>();
+    const response = await api.post(endpoint, { json: data }).json<ApiResponse<T>>()
 
     if (response.code !== 200) {
-      throw new ApiError(response.code, response.message, response.data);
+      throw new ApiError(response.code, response.message, response.data)
     }
 
-    return response.data;
+    return response.data
   } catch (error) {
     if (error instanceof ApiError) {
-      throw error;
+      throw error
     }
-    throw new ApiError(500, '网络请求失败', error);
+    throw new ApiError(500, '网络请求失败', error)
   }
 }
 ```

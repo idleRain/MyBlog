@@ -118,6 +118,19 @@ database:
 4. 如果数据库不存在，模块会自动创建
 5. 连接池参数可以根据实际需求调整
 
+## 种子数据初始化
+
+初始化默认超级管理员账户，通过根目录命令执行：
+
+```bash
+bun run seed:admin
+```
+
+- 默认账户：用户名 `admin`，密码 `Admin@123456`，邮箱 `admin@myblog.local`
+- 支持自定义参数：`--username`、`--password`、`--email`
+- 幂等操作：账户已存在且角色为超级管理员时不会重复创建；已存在但角色非超级管理员时会自动提升
+- 核心逻辑见 `seed.go` 的 `EnsureSuperAdmin`，命令行入口见 `server/cmd/seed/main.go`
+
 ## 错误处理
 
 模块提供详细的错误信息，包括：

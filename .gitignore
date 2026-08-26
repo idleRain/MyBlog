@@ -50,6 +50,7 @@ Thumbs.db
 *.tmp
 *.temp
 temp
+.tmp/
 
 # Air 热更新产生的临时文件
 air_tmp/
