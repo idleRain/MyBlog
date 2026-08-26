@@ -3,8 +3,13 @@ import { onMount, onDestroy } from 'svelte'
 import { getAuthStatus, manualRefreshToken, type AuthStatus } from '$lib/utils/jwt'
 import { toast } from 'svelte-sonner'
 
-export let showStatus = false // 是否显示状态信息
-export let autoRefresh = true // 是否自动刷新令牌
+// 是否显示状态信息浮层。
+export let showStatus = false
+// 是否在令牌临近过期时自动刷新。
+export let autoRefresh = true
+
+// 令牌状态检查间隔为 30 秒，每次检查后同步尝试自动刷新。
+const TOKEN_CHECK_INTERVAL_MS = 30 * 1000
 
 let interval: NodeJS.Timeout | null = null
 // 认证状态类型由 jwt.ts 的 AuthStatus 接口统一约束，令牌缺失时不含时间与用户字段。
@@ -39,11 +44,10 @@ async function handleAutoRefresh() {
 onMount(() => {
   updateAuthStatus()
 
-  // 每30秒检查一次令牌状态
   interval = setInterval(() => {
     updateAuthStatus()
     handleAutoRefresh()
-  }, 30 * 1000)
+  }, TOKEN_CHECK_INTERVAL_MS)
 })
 
 onDestroy(() => {
@@ -54,14 +58,15 @@ onDestroy(() => {
 </script>
 
 {#if showStatus && authStatus.isAuthenticated}
+  <!-- 状态浮层：直角实色卡片，状态点为功能性圆形。 -->
   <div
-    class="fixed right-4 bottom-4 z-50 rounded-lg border bg-background/80 p-3 shadow-md backdrop-blur-sm"
+    class="fixed right-4 bottom-4 z-50 rounded-none border border-border bg-background p-3 shadow-md"
   >
     <div class="space-y-1 text-xs">
       <div class="font-medium">令牌状态</div>
       <div class="flex items-center gap-2">
         <div
-          class="h-2 w-2 rounded-full {authStatus.tokenValid ? 'bg-green-500' : 'bg-red-500'}"
+          class="h-2 w-2 rounded-full {authStatus.tokenValid ? 'bg-signal' : 'bg-destructive'}"
         ></div>
         <span>{authStatus.tokenValid ? '有效' : '已过期'}</span>
       </div>
@@ -71,13 +76,8 @@ onDestroy(() => {
         </div>
       {/if}
       {#if authStatus.needsRefresh}
-        <div class="text-orange-500">需要刷新</div>
+        <div class="text-signal">需要刷新</div>
       {/if}
     </div>
   </div>
 {/if}
-
-<!-- 这个组件主要用于监控，不渲染可见内容 -->
-<style>
-/* 隐藏组件，仅用于逻辑 */
-</style>
