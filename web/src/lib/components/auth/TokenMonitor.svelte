@@ -1,19 +1,17 @@
 <script lang="ts">
 import { onMount, onDestroy } from 'svelte'
-import { authStore } from '$lib/stores/auth'
-import { getAuthStatus, manualRefreshToken } from '$lib/utils/jwt'
+import { getAuthStatus, manualRefreshToken, type AuthStatus } from '$lib/utils/jwt'
 import { toast } from 'svelte-sonner'
 
 export let showStatus = false // 是否显示状态信息
 export let autoRefresh = true // 是否自动刷新令牌
 
 let interval: NodeJS.Timeout | null = null
-let authStatus = {
+// 认证状态类型由 jwt.ts 的 AuthStatus 接口统一约束，令牌缺失时不含时间与用户字段。
+let authStatus: AuthStatus = {
   isAuthenticated: false,
   tokenValid: false,
-  needsRefresh: false,
-  expiresAt: new Date(),
-  user: null
+  needsRefresh: false
 }
 
 function updateAuthStatus() {
@@ -69,7 +67,7 @@ onDestroy(() => {
       </div>
       {#if authStatus.tokenValid}
         <div class="text-muted-foreground">
-          过期时间: {authStatus.expiresAt.toLocaleTimeString()}
+          过期时间: {authStatus.expiresAt?.toLocaleTimeString()}
         </div>
       {/if}
       {#if authStatus.needsRefresh}

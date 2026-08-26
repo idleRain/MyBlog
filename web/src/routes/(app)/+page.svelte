@@ -1,11 +1,8 @@
 <script lang="ts">
 import HeroSection from '$lib/components/layout/HeroSection.svelte'
 import ContentSection from '$lib/components/layout/ContentSection.svelte'
-import type { PageProps } from './$types'
 import { onMount } from 'svelte'
 
-let { data }: PageProps = $props()
-let currentSection = $state(0)
 let isScrolling = $state(false)
 
 onMount(() => {
@@ -44,14 +41,12 @@ onMount(() => {
 
       if (direction > 0) {
         // 向下滚动到Content区域
-        currentSection = 1
         const targetSection = document.getElementById('content-section')
         if (targetSection) {
           targetSection.scrollIntoView({ behavior: 'smooth' })
         }
       } else {
         // 向上滚动到Hero区域
-        currentSection = 0
         window.scrollTo({ top: 0, behavior: 'smooth' })
       }
 
@@ -78,7 +73,6 @@ onMount(() => {
       if (scrollY < windowHeight * 0.5) {
         e.preventDefault()
         isScrolling = true
-        currentSection = 1
         const targetSection = document.getElementById('content-section')
         if (targetSection) {
           targetSection.scrollIntoView({ behavior: 'smooth' })
@@ -91,7 +85,6 @@ onMount(() => {
       if (scrollY > windowHeight * 0.5) {
         e.preventDefault()
         isScrolling = true
-        currentSection = 0
         window.scrollTo({ top: 0, behavior: 'smooth' })
         setTimeout(() => {
           isScrolling = false
@@ -100,26 +93,12 @@ onMount(() => {
     }
   }
 
-  // 监听滚动事件来更新当前区域
-  const handleScroll = () => {
-    const scrollY = window.scrollY
-    const windowHeight = window.innerHeight
-
-    if (scrollY < windowHeight / 2) {
-      currentSection = 0
-    } else {
-      currentSection = 1
-    }
-  }
-
   window.addEventListener('wheel', handleWheel, { passive: false })
   window.addEventListener('keydown', handleKeyDown)
-  window.addEventListener('scroll', handleScroll)
 
   return () => {
     window.removeEventListener('wheel', handleWheel)
     window.removeEventListener('keydown', handleKeyDown)
-    window.removeEventListener('scroll', handleScroll)
     if (wheelTimeout) {
       clearTimeout(wheelTimeout)
     }

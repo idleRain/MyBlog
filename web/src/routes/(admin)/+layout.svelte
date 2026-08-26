@@ -1,6 +1,5 @@
 <script lang="ts">
 import { onMount } from 'svelte'
-import { authStore } from '$lib/stores/auth'
 import { Sidebar } from '$ui'
 import { AppSidebar } from '$lib/components/admin'
 import { Toaster } from '$ui/sonner'

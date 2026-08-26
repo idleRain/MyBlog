@@ -111,10 +111,22 @@ export function isAuthenticated(): boolean {
 }
 
 /**
+ * 认证状态结构；令牌缺失时 expiresAt 与 user 字段不会返回。
+ */
+export interface AuthStatus {
+  isAuthenticated: boolean
+  tokenValid: boolean
+  needsRefresh: boolean
+  expiresAt?: Date
+  /** 用户字段取自 JWT payload，具体结构无法静态确定，收束为 unknown。 */
+  user?: { id: unknown; username: unknown; tokenType: unknown } | null
+}
+
+/**
  * 获取当前用户的认证状态
  * @returns 认证状态信息
  */
-export function getAuthStatus() {
+export function getAuthStatus(): AuthStatus {
   const accessToken = authStore.getAccessToken()
   const refreshToken = authStore.getRefreshToken()
 
