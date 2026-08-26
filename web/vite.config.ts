@@ -1,4 +1,4 @@
-import { type ConfigEnv, defineConfig, loadEnv } from 'vite'
+import { type ConfigEnv, type PluginOption, defineConfig, loadEnv } from 'vite'
 import { paraglideVitePlugin } from '@inlang/paraglide-js'
 import devtoolsJson from 'vite-plugin-devtools-json'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -7,15 +7,23 @@ import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import ViteJson5 from 'vite-plugin-json5'
 
+// 环境变量缺失时的本地开发缺省值，与 web/.env 的默认配置保持一致。
+const DEFAULT_DEV_PORT = 8899
+const DEFAULT_BASE_URL = '/api'
+const DEFAULT_PROXY_TARGET = 'http://localhost:3000'
+
 export default ({ mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd())
+  // json5 插件自带嵌套的 vite 类型声明，与根版本存在 exactOptionalPropertyTypes 差异。
+  // 两个插件类型来自不同的 vite 实例，先经 unknown 中转再收束为当前 vite 的插件类型。
+  const json5Plugin = ViteJson5() as unknown as PluginOption
 
   return defineConfig({
     plugins: [
       tailwindcss(),
       sveltekit(),
       devtoolsJson(),
-      ViteJson5(),
+      json5Plugin,
       AutoImport({
         // 自动导入常用的 SvelteKit 和 Svelte 函数
         imports: [
@@ -61,11 +69,11 @@ export default ({ mode }: ConfigEnv) => {
       })
     ],
     server: {
-      port: Number(env.VITE_SERVER_PORT),
+      port: Number(env.VITE_SERVER_PORT) || DEFAULT_DEV_PORT,
       host: '0.0.0.0',
       proxy: {
-        [env.VITE_BASE_URL as string]: {
-          target: env.VITE_PROXY_URL,
+        [env.VITE_BASE_URL ?? DEFAULT_BASE_URL]: {
+          target: env.VITE_PROXY_URL ?? DEFAULT_PROXY_TARGET,
           ws: true,
           changeOrigin: true
           // rewrite: (path: string) => path.replace(new RegExp(`^${env.VITE_BASE_URL}`), '')
