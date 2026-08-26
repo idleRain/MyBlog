@@ -2,7 +2,8 @@
 import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { authStore } from '$lib/stores/auth'
-import { Globe, User, ExternalLink, Menu, LogIn, Settings, Github } from '@lucide/svelte'
+import { Globe, User, ExternalLink, Menu, LogIn, Settings } from '@lucide/svelte'
+import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import { goto } from '$app/navigation'
 import type { User as UserType } from '$lib/api/modules/user/types'
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
@@ -40,15 +41,10 @@ const setLanguage = (lang: 'zh' | 'en') => {
           <!-- 抽象几何Logo -->
           <div class="relative h-10 w-10">
             <div
-              class="absolute inset-0 rotate-3 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 transition-transform duration-300 group-hover:rotate-6"
+              class="absolute inset-0 border border-border transition-colors duration-200 group-hover:border-signal"
             ></div>
-            <div
-              class="absolute inset-0.5 flex items-center justify-center rounded-lg bg-white dark:bg-gray-950"
-            >
-              <span
-                class="bg-gradient-to-br from-blue-500 to-purple-600 bg-clip-text text-lg font-bold text-transparent"
-                >M</span
-              >
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="font-mono text-lg font-bold text-signal">M</span>
             </div>
           </div>
           <span class="hidden text-lg font-bold text-gray-900 sm:block dark:text-white">
@@ -63,29 +59,29 @@ const setLanguage = (lang: 'zh' | 'en') => {
       >
         <a
           href="/"
-          class="group relative text-gray-700 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+          class="group relative text-gray-700 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
         >
           博客
           <span
-            class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-blue-600 transition-transform duration-200 group-hover:scale-x-100"
+            class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-signal transition-transform duration-200 group-hover:scale-x-100"
           ></span>
         </a>
         <a
           href="/projects"
-          class="group relative text-gray-700 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+          class="group relative text-gray-700 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
         >
           项目
           <span
-            class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-blue-600 transition-transform duration-200 group-hover:scale-x-100"
+            class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-signal transition-transform duration-200 group-hover:scale-x-100"
           ></span>
         </a>
         <a
           href="/about"
-          class="group relative text-gray-700 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+          class="group relative text-gray-700 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
         >
           关于
           <span
-            class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-blue-600 transition-transform duration-200 group-hover:scale-x-100"
+            class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-signal transition-transform duration-200 group-hover:scale-x-100"
           ></span>
         </a>
       </nav>
@@ -121,7 +117,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
             class="group"
           >
             <Button variant="ghost" size="icon" class="h-9 w-9">
-              <Github class="h-4 w-4 transition-colors group-hover:text-blue-600" />
+              <GithubIcon class="h-4 w-4 transition-colors group-hover:text-signal" />
             </Button>
           </a>
 
@@ -141,9 +137,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
               </Dialog.Header>
               <div class="flex flex-col space-y-3">
                 <div class="flex items-center space-x-3">
-                  <div
-                    class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600"
-                  >
+                  <div class="flex h-12 w-12 items-center justify-center rounded-none bg-signal">
                     <span class="text-lg font-bold text-white">M</span>
                   </div>
                   <div>
@@ -206,7 +200,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
               variant="outline"
               size="sm"
               onclick={() => goto('/manage')}
-              class="border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950"
+              class="border-signal/30 text-signal hover:bg-signal/10 dark:border-signal/30 dark:text-signal dark:hover:bg-signal/10"
             >
               <Settings class="mr-1 h-4 w-4" />
               后台管理
@@ -216,9 +210,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
                 <Button variant="ghost" size="icon" class="h-9 w-9">
-                  <div
-                    class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600"
-                  >
+                  <div class="flex h-6 w-6 items-center justify-center rounded-none bg-signal">
                     <span class="text-xs font-bold text-white">
                       {currentUser?.username?.charAt(0)?.toUpperCase() || 'U'}
                     </span>
@@ -250,7 +242,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
             <Button
               size="sm"
               onclick={() => goto('/login')}
-              class="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+              class="bg-signal text-signal-foreground hover:bg-signal/90"
             >
               <LogIn class="mr-1 h-4 w-4" />
               登录
@@ -277,21 +269,21 @@ const setLanguage = (lang: 'zh' | 'en') => {
             <nav class="space-y-1">
               <a
                 href="/"
-                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-white dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
+                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-signal/10 hover:text-signal dark:text-white dark:hover:bg-signal/10 dark:hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
                 博客
               </a>
               <a
                 href="/projects"
-                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-white dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
+                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-signal/10 hover:text-signal dark:text-white dark:hover:bg-signal/10 dark:hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
                 项目
               </a>
               <a
                 href="/about"
-                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-white dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
+                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-signal/10 hover:text-signal dark:text-white dark:hover:bg-signal/10 dark:hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
                 关于
@@ -315,7 +307,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
                 class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2 transition-colors hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50"
               >
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">GitHub</span>
-                <Github class="h-4 w-4 text-gray-500" />
+                <GithubIcon class="h-4 w-4 text-gray-500" />
               </a>
 
               <div class="space-y-3">
@@ -339,9 +331,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
             <div class="mt-8 border-t border-gray-200/50 pt-6 dark:border-gray-700/50">
               {#if isAuthenticated}
                 <div class="space-y-3">
-                  <div
-                    class="rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3 dark:from-blue-950/30 dark:to-purple-950/30"
-                  >
+                  <div class="rounded-none bg-signal/5 px-4 py-3">
                     <p class="text-sm font-semibold text-gray-900 dark:text-white">
                       {currentUser?.username || '用户'}
                     </p>
@@ -352,7 +342,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
                   <Button
                     variant="outline"
                     size="sm"
-                    class="w-full justify-start border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                    class="w-full justify-start border-signal/30 text-signal hover:bg-signal/10 dark:border-signal/30 dark:text-signal dark:hover:bg-signal/10"
                     onclick={() => {
                       isMobileMenuOpen = false
                       goto('/admin')
@@ -376,7 +366,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
               {:else}
                 <Button
                   size="sm"
-                  class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:from-blue-700 hover:to-purple-700"
+                  class="w-full bg-signal text-signal-foreground hover:bg-signal/90"
                   onclick={() => {
                     isMobileMenuOpen = false
                     goto('/login')

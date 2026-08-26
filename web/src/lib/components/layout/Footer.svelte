@@ -1,13 +1,14 @@
 <script lang="ts">
 import { Separator } from '$lib/components/ui/separator'
-import { Github, Mail, Heart } from '@lucide/svelte'
+import { Mail, Heart } from '@lucide/svelte'
+import GithubIcon from '$lib/components/icons/github-icon.svelte'
 
 const currentYear = new Date().getFullYear()
 
 const socialLinks = [
   {
     name: 'GitHub',
-    icon: Github,
+    icon: GithubIcon,
     href: 'https://github.com/idleRain',
     color: 'hover:text-gray-900 dark:hover:text-white'
   },
@@ -41,16 +42,9 @@ const categories = [
       <div class="lg:col-span-2">
         <div class="mb-4 flex items-center space-x-3">
           <div class="relative h-10 w-10">
-            <div
-              class="absolute inset-0 rotate-3 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600"
-            ></div>
-            <div
-              class="absolute inset-0.5 flex items-center justify-center rounded-lg bg-white dark:bg-gray-950"
-            >
-              <span
-                class="bg-gradient-to-br from-blue-500 to-purple-600 bg-clip-text text-lg font-bold text-transparent"
-                >M</span
-              >
+            <div class="absolute inset-0 border border-border transition-colors duration-200"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="font-mono text-lg font-bold text-signal">M</span>
             </div>
           </div>
           <span class="text-xl font-bold text-gray-900 dark:text-white">MyBlog</span>
@@ -85,7 +79,7 @@ const categories = [
           {#each quickLinks as link, index (index)}
             <a
               href={link.href}
-              class="text-sm text-gray-600 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+              class="text-sm text-gray-600 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
             >
               {link.name}
             </a>
@@ -100,7 +94,7 @@ const categories = [
           {#each categories as category, index (index)}
             <a
               href={category.href}
-              class="text-sm text-gray-600 transition-colors duration-200 hover:text-blue-600 dark:text-gray-300 dark:hover:text-blue-400"
+              class="text-sm text-gray-600 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
             >
               {category.name}
             </a>
@@ -131,7 +125,7 @@ const categories = [
           <a
             href="https://kit.svelte.dev"
             target="_blank"
-            class="transition-colors hover:text-blue-600"
+            class="transition-colors hover:text-signal"
           >
             SvelteKit</a
           >
@@ -142,7 +136,7 @@ const categories = [
           <a
             href="https://tailwindcss.com"
             target="_blank"
-            class="transition-colors hover:text-blue-600"
+            class="transition-colors hover:text-signal"
           >
             TailwindCSS
           </a>
@@ -153,7 +147,7 @@ const categories = [
           <a
             href="https://golang.google.cn"
             target="_blank"
-            class="transition-colors hover:text-blue-600"
+            class="transition-colors hover:text-signal"
           >
             Go
           </a>
@@ -163,9 +157,7 @@ const categories = [
   </div>
 
   <!-- 装饰性背景元素 -->
-  <div
-    class="absolute top-0 left-0 h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-50"
-  ></div>
+  <div class="absolute top-0 left-0 h-0.5 w-full bg-signal"></div>
 </footer>
 
 <style>
