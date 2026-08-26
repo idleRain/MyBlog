@@ -30,17 +30,6 @@ const UserAPI = {
       .json()
   },
 
-  // 用户注册（已禁用，仅保留代码兼容性）
-  register(params: RegisterRequest): Promise<RegisterResponse> {
-    // 注册功能已禁用，这个方法仅为保持代码完整性
-    // 实际调用会被后端拒绝或重定向
-    return request
-      .post('users/create', {
-        json: params
-      })
-      .json()
-  },
-
   // 获取用户列表
   getUserList(page = 1, pageSize = 10): Promise<UserListResponse> {
     return request
