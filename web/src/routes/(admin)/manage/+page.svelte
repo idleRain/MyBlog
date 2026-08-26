@@ -50,7 +50,6 @@ let quickActions = $derived.by((): QuickAction[] => {
       description: '创建新的博客文章',
       icon: PlusCircle,
       action: () => goto('/manage/posts?action=create'),
-      color: 'bg-green-500',
       roles: ['editor', 'admin', 'superadmin']
     })
     actions.push({
@@ -59,7 +58,6 @@ let quickActions = $derived.by((): QuickAction[] => {
       description: '管理已发布的文章',
       icon: Edit,
       action: () => goto('/manage/posts'),
-      color: 'bg-blue-500',
       roles: ['editor', 'admin', 'superadmin']
     })
   }
@@ -72,7 +70,6 @@ let quickActions = $derived.by((): QuickAction[] => {
       description: '添加新的系统用户',
       icon: Users,
       action: () => goto('/manage/users?action=create'),
-      color: 'bg-purple-500',
       roles: ['admin', 'superadmin']
     })
   }
@@ -85,7 +82,6 @@ let quickActions = $derived.by((): QuickAction[] => {
       description: '管理系统配置',
       icon: Settings,
       action: () => goto('/manage/settings'),
-      color: 'bg-orange-500',
       roles: ['superadmin']
     })
   }
@@ -158,7 +154,7 @@ const recentActivities: RecentActivity[] = [
   <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
     <!-- 管理员和超级管理员可以看到用户统计 -->
     {#if ['admin', 'superadmin'].includes(userRole)}
-      <Card.Root>
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
           <Card.Title class="text-sm font-medium">总用户数</Card.Title>
           <Users class="h-4 w-4 text-muted-foreground" />
@@ -175,7 +171,7 @@ const recentActivities: RecentActivity[] = [
 
     <!-- 编辑及以上角色可以看到文章统计 -->
     {#if ['editor', 'admin', 'superadmin'].includes(userRole)}
-      <Card.Root>
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
           <Card.Title class="text-sm font-medium">文章总数</Card.Title>
           <FileText class="h-4 w-4 text-muted-foreground" />
@@ -192,7 +188,7 @@ const recentActivities: RecentActivity[] = [
 
     <!-- 管理员和超级管理员可以看到活跃用户 -->
     {#if ['admin', 'superadmin'].includes(userRole)}
-      <Card.Root>
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
           <Card.Title class="text-sm font-medium">活跃用户</Card.Title>
           <Activity class="h-4 w-4 text-muted-foreground" />
@@ -208,14 +204,14 @@ const recentActivities: RecentActivity[] = [
     {/if}
 
     <!-- 所有角色都可以看到系统状态 -->
-    <Card.Root>
+    <Card.Root class="rounded-none border-border ring-0">
       <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
         <Card.Title class="text-sm font-medium">系统状态</Card.Title>
         <Shield class="h-4 w-4 text-muted-foreground" />
       </Card.Header>
       <Card.Content>
         <div class="flex items-center space-x-2">
-          <Badge variant="default" class="bg-green-500">运行正常</Badge>
+          <Badge class="rounded-none bg-signal text-signal-foreground">运行正常</Badge>
         </div>
         <p class="mt-1 text-xs text-muted-foreground">所有服务正常运行</p>
       </Card.Content>
@@ -225,21 +221,21 @@ const recentActivities: RecentActivity[] = [
   <div class="grid gap-6 lg:grid-cols-3">
     <!-- 快速操作 -->
     <div class="lg:col-span-1">
-      <Card.Root>
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header>
           <Card.Title>快速操作</Card.Title>
           <Card.Description>常用的管理操作</Card.Description>
         </Card.Header>
         <Card.Content class="space-y-3">
-          {#each quickActions as action, index (index)}
+          {#each quickActions as action (action.id)}
             {@const IconComponent = action.icon}
             <Button
               variant="outline"
-              class="h-auto w-full justify-start p-4"
+              class="h-auto w-full justify-start rounded-none p-4"
               onclick={action.action}
             >
               <div class="flex items-start space-x-3">
-                <div class="rounded-md p-2 {action.color} text-white">
+                <div class="rounded-none bg-signal/10 p-2 text-signal">
                   <IconComponent class="h-4 w-4" />
                 </div>
                 <div class="text-left">
@@ -255,16 +251,16 @@ const recentActivities: RecentActivity[] = [
 
     <!-- 最近活动 -->
     <div class="lg:col-span-2">
-      <Card.Root>
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header>
           <Card.Title>最近活动</Card.Title>
           <Card.Description>系统最新的操作记录</Card.Description>
         </Card.Header>
         <Card.Content>
           <div class="space-y-4">
-            {#each recentActivities as activity, index (index)}
+            {#each recentActivities as activity (activity.id)}
               <div class="flex items-center space-x-3">
-                <div class="h-2 w-2 rounded-full bg-blue-500"></div>
+                <div class="h-2 w-2 rounded-full bg-signal"></div>
                 <div class="flex-1 space-y-1">
                   <p class="text-sm font-medium">
                     {activity.action}
@@ -272,7 +268,7 @@ const recentActivities: RecentActivity[] = [
                   </p>
                   <p class="text-xs text-muted-foreground">{activity.time}</p>
                 </div>
-                <Badge variant="outline" class="text-xs">
+                <Badge variant="outline" class="rounded-none text-xs">
                   {activity.type}
                 </Badge>
               </div>
