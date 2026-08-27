@@ -86,7 +86,7 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID（可选）
+	// 获取当前用户ID，未登录时为空。
 	var userID *uint
 	if uid, exists := c.Get("userID"); exists {
 		uidUint := uid.(uint)
@@ -116,7 +116,7 @@ func (h *ArticleHandler) GetArticleBySlug(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID（可选）
+	// 获取当前用户ID，未登录时为空。
 	var userID *uint
 	if uid, exists := c.Get("userID"); exists {
 		uidUint := uid.(uint)
@@ -211,7 +211,7 @@ func (h *ArticleHandler) GetArticleList(c *gin.Context) {
 		req.PageSize = 10
 	}
 
-	// 获取当前用户ID（可选）
+	// 获取当前用户ID，未登录时为空。
 	var userID *uint
 	if uid, exists := c.Get("userID"); exists {
 		uidUint := uid.(uint)
@@ -452,7 +452,7 @@ func (h *ArticleHandler) ViewArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID（可选）
+	// 获取当前用户ID，未登录时为空。
 	var userID *uint
 	if uid, exists := c.Get("userID"); exists {
 		uidUint := uid.(uint)

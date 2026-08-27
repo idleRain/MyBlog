@@ -36,7 +36,7 @@ func (hr *HealthRoutes) healthCheck(c *gin.Context) {
 	})
 }
 
-// versionCheck 版本检查处理函数（示例）
+// versionCheck 版本检查处理函数示例。
 func (hr *HealthRoutes) versionCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,
@@ -48,7 +48,7 @@ func (hr *HealthRoutes) versionCheck(c *gin.Context) {
 	})
 }
 
-// statusCheck 状态检查处理函数（示例）
+// statusCheck 状态检查处理函数示例。
 func (hr *HealthRoutes) statusCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    200,

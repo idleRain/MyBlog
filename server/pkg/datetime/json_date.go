@@ -84,7 +84,7 @@ func (jd *JSONDate) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
-	// 空字符串视为未设置，保证可选日期字段在前端留空时仍可提交。
+	// 空字符串视为未设置，确保可选日期字段在前端留空时仍可提交。
 	if string(data) == `""` {
 		jd.Time = time.Time{}
 		return nil

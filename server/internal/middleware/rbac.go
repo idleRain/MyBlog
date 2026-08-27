@@ -153,7 +153,7 @@ func RequireEditorOrAbove(jwtService service.JWTService, userRepo repository.Use
 }
 
 // RequireOwnershipOrAdmin 要求资源所有权或管理员权限的中间件
-// 用于检查用户是否可以操作特定资源（自己的资源或管理员权限）
+// 用于检查用户是否可以操作特定资源，支持资源所有者或管理员权限。
 func RequireOwnershipOrAdmin(jwtService service.JWTService, userRepo repository.UserRepository, getResourceOwnerID func(*gin.Context) (uint, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌

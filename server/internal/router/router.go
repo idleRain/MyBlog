@@ -72,7 +72,7 @@ type UserHandlerInterface interface {
 	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
 	UpdateUser(c *gin.Context)   // POST /api/users/update - JSON格式
 	GetUserByID(c *gin.Context)  // POST /api/users/get - JSON格式
-	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式（复杂参数）
+	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式，用于复杂参数查询
 	DeleteUser(c *gin.Context)   // POST /api/users/delete - JSON格式
 	Login(c *gin.Context)        // POST /api/users/login - JSON格式
 	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式

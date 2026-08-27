@@ -58,7 +58,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// 获取目标用户当前信息（用于角色权限验证）
+	// 获取目标用户当前信息，用于角色权限验证。
 	targetUser, err := h.userService.GetUserByID(req.ID)
 	if err != nil {
 		response.NotFound(c, err.Error())

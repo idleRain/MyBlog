@@ -225,7 +225,7 @@ func (a *Article) GetURL() string {
 	return "/articles/" + a.Slug
 }
 
-// CalculateReadingTime 计算阅读时间（基于字数，平均每分钟200字）
+// CalculateReadingTime 按字数估算阅读时间，平均每分钟阅读 200 字。
 func (a *Article) CalculateReadingTime() uint {
 	if a.WordCount == 0 {
 		return 1

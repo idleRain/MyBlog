@@ -72,7 +72,7 @@ func (c JWTClaims) GetAudience() (jwt.ClaimStrings, error) {
 type TokenPair struct {
 	AccessToken  string `json:"access_token"`  // 只包含payload部分
 	RefreshToken string `json:"refresh_token"` // 只包含payload部分
-	ExpiresIn    int64  `json:"expires_in"`    // access token过期时间（秒）
+	ExpiresIn    int64  `json:"expires_in"`    // access token 的有效期，单位秒。
 }
 
 // 固定的JWT Header（Base64编码）

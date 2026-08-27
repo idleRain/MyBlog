@@ -46,7 +46,7 @@ var tableComments = map[string]string{
 	"content_stats":  "内容统计表，多维度聚合指标",
 }
 
-// syncTableComments 在迁移完成后将表注释同步到数据库，保证库内自描述能力。
+// syncTableComments 在迁移完成后将表注释同步到数据库，确保库内自描述能力。
 // 表名与注释均来自上方常量表，不存在 SQL 注入面。
 func syncTableComments(db *gorm.DB) error {
 	for table, comment := range tableComments {

@@ -137,7 +137,7 @@ func (s *userService) UpdateUser(req *repository.UpdateUserRequest) (*repository
 	existingUser.Birthday = req.Birthday
 	existingUser.Role = req.Role
 
-	// 更新状态（如果提供了状态字段）
+	// 仅当提供了状态字段时更新用户状态。
 	if req.Status == 0 || req.Status == 1 {
 		existingUser.Status = req.Status
 	}

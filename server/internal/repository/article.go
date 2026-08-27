@@ -55,7 +55,7 @@ type ArticleListParams struct {
 	PageSize int                 `json:"pageSize"`
 	Status   model.ArticleStatus `json:"status"`
 	AuthorID uint                `json:"authorId"`
-	SortBy   string              `json:"sortBy"` // created_at, updated_at, published_at, view_count
+	SortBy   string              `json:"sortBy"` // 排序字段：created_at、updated_at、published_at、view_count、like_count
 	Order    string              `json:"order"`  // asc, desc
 	Search   string              `json:"search"`
 }
@@ -145,7 +145,7 @@ func (r *ArticleRepository) Update(article *model.Article) error {
 	return r.db.Save(article).Error
 }
 
-// Delete 删除文章（软删除）
+// Delete 删除文章，采用软删除。
 func (r *ArticleRepository) Delete(id uint) error {
 	return r.db.Delete(&model.Article{}, id).Error
 }
@@ -352,7 +352,7 @@ func (r *ArticleRepository) RemoveTag(articleID, tagID uint) error {
 		Delete(&model.ArticleTag{}).Error
 }
 
-// SyncTags 同步标签关联（替换所有标签）
+// SyncTags 同步标签关联，替换文章的全部标签。
 func (r *ArticleRepository) SyncTags(articleID uint, tagIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 删除现有关联
@@ -375,7 +375,7 @@ func (r *ArticleRepository) SyncTags(articleID uint, tagIDs []uint) error {
 	})
 }
 
-// SyncCategories 同步分类关联（替换所有分类）
+// SyncCategories 同步分类关联，替换文章的全部分类。
 func (r *ArticleRepository) SyncCategories(articleID uint, categoryIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		// 删除现有关联
@@ -468,7 +468,7 @@ func generateSlug(title string) string {
 	slug = strings.ReplaceAll(slug, " ", "-")
 	slug = strings.ReplaceAll(slug, "_", "-")
 
-	// 移除特殊字符（保留字母、数字、连字符）
+	// 移除特殊字符，仅保留字母、数字与连字符。
 	var result strings.Builder
 	for _, r := range slug {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
