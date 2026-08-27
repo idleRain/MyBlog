@@ -11,6 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrUserNotFound 用户不存在的哨兵错误，供 service 与 handler 层识别业务错误。
+var ErrUserNotFound = errors.New("用户不存在")
+
 // User 用户模型
 type User struct {
 	ID        uint              `json:"id" gorm:"primaryKey"`
@@ -83,7 +86,7 @@ func (r *userRepository) GetByID(id uint) (*User, error) {
 	var user User
 	if err := r.db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("用户不存在")
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
@@ -95,7 +98,7 @@ func (r *userRepository) GetByUsername(username string) (*User, error) {
 	var user User
 	if err := r.db.Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("用户不存在")
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
@@ -107,7 +110,7 @@ func (r *userRepository) GetByEmail(email string) (*User, error) {
 	var user User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, fmt.Errorf("用户不存在")
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}

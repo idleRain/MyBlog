@@ -21,7 +21,7 @@ const (
 	CodeInvalid  = 400 // 请求参数错误
 	CodeAuth     = 401 // 认证失败
 	CodeForbid   = 403 // 权限不足
-	CodeNotFound = 404 // 资源不存在
+	CodeNotFound = 404 // 接口不存在
 )
 
 // Success 成功响应
@@ -60,7 +60,7 @@ func InternalError(c *gin.Context, message string) {
 	Error(c, CodeError, message)
 }
 
-// NotFound 资源不存在
+// NotFound 接口不存在
 func NotFound(c *gin.Context, message string) {
 	Error(c, CodeNotFound, message)
 }

@@ -413,7 +413,7 @@ export function formatErrorMessage(error: ApiError): string {
     case 403:
       return '权限不足'
     case 404:
-      return '资源不存在'
+      return '接口不存在'
     case 408:
       return '请求超时'
     case 409:

@@ -2,12 +2,23 @@
 package handler
 
 import (
+	"errors"
+
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
+
+// handleUserQueryError 区分用户不存在的业务错误与系统错误，并返回对应响应。
+func handleUserQueryError(c *gin.Context, err error) {
+	if errors.Is(err, repository.ErrUserNotFound) {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.InternalError(c, err.Error())
+}
 
 // UserHandler 用户处理器
 type UserHandler struct {
@@ -61,7 +72,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	// 获取目标用户当前信息，用于角色权限验证。
 	targetUser, err := h.userService.GetUserByID(req.ID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		handleUserQueryError(c, err)
 		return
 	}
 
@@ -88,7 +99,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	// 调用服务层更新用户
 	user, err := h.userService.UpdateUser(&req)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		handleUserQueryError(c, err)
 		return
 	}
 
@@ -109,7 +120,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 
 	user, err := h.userService.GetUserByID(req.ID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		handleUserQueryError(c, err)
 		return
 	}
 
@@ -189,7 +200,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	// 获取目标用户信息
 	targetUser, err := h.userService.GetUserByID(req.ID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		handleUserQueryError(c, err)
 		return
 	}
 

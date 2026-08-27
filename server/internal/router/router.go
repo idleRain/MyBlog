@@ -1,9 +1,12 @@
 package router
 
 import (
+	"net/http"
+
 	"MyBlog/internal/middleware"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
+	"MyBlog/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +26,14 @@ func NewRouter() *Router {
 	engine.Use(middleware.RequestID())                                            // 请求ID中间件
 	engine.Use(middleware.CORS())                                                 // CORS 中间件
 	engine.Use(middleware.SecurityMiddleware(middleware.DefaultSecurityConfig())) // 综合安全中间件
+
+	// 统一处理未匹配路由，确保接口不存在时返回统一的 JSON 响应。
+	engine.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    response.CodeNotFound,
+			"message": "接口不存在",
+		})
+	})
 
 	return &Router{
 		engine: engine,
