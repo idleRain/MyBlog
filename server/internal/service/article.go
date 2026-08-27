@@ -60,10 +60,10 @@ type CreateArticleRequest struct {
 	CategoryID     *uint  `json:"categoryId"`
 	CategoryIDs    []uint `json:"categoryIds"`
 	TagIDs         []uint `json:"tagIds"`
-	Status         string `json:"status" binding:"oneof=draft published private"`
-	IsFeatured     bool   `json:"isFeatured"`
-	IsTop          bool   `json:"isTop"`
-	CommentEnabled bool   `json:"commentEnabled"`
+	Status         string `json:"status" binding:"omitempty,oneof=draft published private"`
+	IsFeatured     *bool  `json:"isFeatured"`
+	IsTop          *bool  `json:"isTop"`
+	CommentEnabled *bool  `json:"commentEnabled"`
 	SEOTitle       string `json:"seoTitle" binding:"max=100"`
 	SEODescription string `json:"seoDescription" binding:"max=255"`
 	SEOKeywords    string `json:"seoKeywords" binding:"max=200"`
@@ -78,10 +78,10 @@ type UpdateArticleRequest struct {
 	CategoryID     *uint  `json:"categoryId"`
 	CategoryIDs    []uint `json:"categoryIds"`
 	TagIDs         []uint `json:"tagIds"`
-	Status         string `json:"status" binding:"oneof=draft published archived private"`
-	IsFeatured     bool   `json:"isFeatured"`
-	IsTop          bool   `json:"isTop"`
-	CommentEnabled bool   `json:"commentEnabled"`
+	Status         string `json:"status" binding:"omitempty,oneof=draft published archived private"`
+	IsFeatured     *bool  `json:"isFeatured"`
+	IsTop          *bool  `json:"isTop"`
+	CommentEnabled *bool  `json:"commentEnabled"`
 	SEOTitle       string `json:"seoTitle" binding:"max=100"`
 	SEODescription string `json:"seoDescription" binding:"max=255"`
 	SEOKeywords    string `json:"seoKeywords" binding:"max=200"`
@@ -137,6 +137,26 @@ func (s *ArticleService) CreateArticle(req *CreateArticleRequest, authorID uint)
 		return nil, errors.New("没有创建文章的权限")
 	}
 
+	// 文章状态未指定时默认为草稿。
+	status := model.ArticleStatus(req.Status)
+	if status == "" {
+		status = model.ArticleStatusDraft
+	}
+
+	// 布尔开关未指定时使用模型默认值，精选与置顶为 false，允许评论为 true。
+	isFeatured := false
+	if req.IsFeatured != nil {
+		isFeatured = *req.IsFeatured
+	}
+	isTop := false
+	if req.IsTop != nil {
+		isTop = *req.IsTop
+	}
+	commentEnabled := true
+	if req.CommentEnabled != nil {
+		commentEnabled = *req.CommentEnabled
+	}
+
 	// 构建文章对象
 	article := &model.Article{
 		Title:          req.Title,
@@ -146,10 +166,10 @@ func (s *ArticleService) CreateArticle(req *CreateArticleRequest, authorID uint)
 		CoverImage:     req.CoverImage,
 		AuthorID:       authorID,
 		CategoryID:     req.CategoryID,
-		Status:         model.ArticleStatus(req.Status),
-		IsFeatured:     req.IsFeatured,
-		IsTop:          req.IsTop,
-		CommentEnabled: req.CommentEnabled,
+		Status:         status,
+		IsFeatured:     isFeatured,
+		IsTop:          isTop,
+		CommentEnabled: commentEnabled,
 		SEOTitle:       req.SEOTitle,
 		SEODescription: req.SEODescription,
 		SEOKeywords:    req.SEOKeywords,
@@ -233,10 +253,23 @@ func (s *ArticleService) UpdateArticle(id uint, req *UpdateArticleRequest, userI
 	article.Content = req.Content
 	article.CoverImage = req.CoverImage
 	article.CategoryID = req.CategoryID
-	article.Status = model.ArticleStatus(req.Status)
-	article.IsFeatured = req.IsFeatured
-	article.IsTop = req.IsTop
-	article.CommentEnabled = req.CommentEnabled
+
+	// 状态未指定时保留原状态，避免空字符串覆盖已有状态。
+	if req.Status != "" {
+		article.Status = model.ArticleStatus(req.Status)
+	}
+
+	// 布尔开关仅在显式传入时更新，未传入时保留原值。
+	if req.IsFeatured != nil {
+		article.IsFeatured = *req.IsFeatured
+	}
+	if req.IsTop != nil {
+		article.IsTop = *req.IsTop
+	}
+	if req.CommentEnabled != nil {
+		article.CommentEnabled = *req.CommentEnabled
+	}
+
 	article.SEOTitle = req.SEOTitle
 	article.SEODescription = req.SEODescription
 	article.SEOKeywords = req.SEOKeywords
@@ -650,7 +683,7 @@ func (s *ArticleService) processContent(article *model.Article) error {
 	// 计算字数
 	article.WordCount = uint(len(strings.Fields(article.Content)))
 
-	// 计算阅读时间（假设每分钟200字）
+	// 按每分钟阅读 200 字估算阅读时间。
 	article.ReadingTime = article.WordCount / 200
 	if article.ReadingTime == 0 {
 		article.ReadingTime = 1
