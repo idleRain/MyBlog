@@ -13,39 +13,50 @@ func Models() []interface{} {
 		&User{},
 		&UserSession{},
 		&UserActivity{},
+		&AuthToken{},
 
 		// 内容模块
 		&Category{},
 		&Tag{},
 		&Article{},
 		&ArticleTag{},
+		&ArticleCategory{},
 		&ArticleView{},
+		&ArticleRevision{},
 
 		// 评论模块
 		&Comment{},
+		&CommentLike{},
+
+		// 互动模块
+		&ArticleLike{},
+		&ArticleBookmark{},
+		&UserFollow{},
+		&Notification{},
 
 		// 媒体模块
 		&MediaFile{},
 
-		// 系统设置模块
+		// 站点运营模块
 		&Setting{},
+		&FriendlyLink{},
 
-		// 增强功能模块
-		&ArticleCategory{},
+		// 统计与日志模块
 		&OperationLog{},
-		&ArticleLike{},
-		&CommentLike{},
-		&ArticleBookmark{},
-		&Notification{},
 		&SearchLog{},
 		&ContentStats{},
-		&UserFollow{},
 	}
 }
 
-// AutoMigrate 执行自动迁移
+// mysqlTableOptions 建表时统一附加的物理选项，确保存储引擎与字符集在全部表上保持一致。
+const mysqlTableOptions = "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+
+// AutoMigrate 执行自动迁移，建表附加统一表选项，迁移完成后同步表注释。
 func AutoMigrate(db *gorm.DB) error {
-	return db.AutoMigrate(Models()...)
+	if err := db.Set("gorm:table_options", mysqlTableOptions).AutoMigrate(Models()...); err != nil {
+		return err
+	}
+	return syncTableComments(db)
 }
 
 // 定义常用的查询作用域

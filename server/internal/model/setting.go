@@ -10,18 +10,24 @@ import (
 // Setting 系统设置模型
 type Setting struct {
 	ID             uint        `json:"id" gorm:"primaryKey;comment:设置ID"`
-	KeyName        string      `json:"keyName" gorm:"uniqueIndex;not null;size:100;comment:配置键名"`
-	Value          string      `json:"value" gorm:"type:longtext;comment:配置值（支持JSON格式）"`
-	DefaultValue   string      `json:"defaultValue" gorm:"type:longtext;comment:默认值"`
+	KeyName        string      `json:"keyName" gorm:"uniqueIndex;not null;size:100;comment:配置键名，点分命名空间格式"`
+	Label          string      `json:"label" gorm:"size:100;comment:设置项显示名称，供管理界面渲染"`
+	Value          string      `json:"value" gorm:"type:longtext;comment:配置值，支持JSON格式"`
+	DefaultValue   string      `json:"defaultValue" gorm:"type:longtext;comment:默认值，用于还原出厂配置"`
 	Description    string      `json:"description" gorm:"size:255;comment:配置描述"`
-	Type           SettingType `json:"type" gorm:"default:string;comment:值类型"`
+	Type           SettingType `json:"type" gorm:"default:string;size:20;comment:值类型：string/number/boolean/json/array"`
 	GroupName      string      `json:"groupName" gorm:"default:general;size:50;index;comment:配置分组"`
-	IsPublic       bool        `json:"isPublic" gorm:"default:false;index;comment:是否公开（前端可访问）"`
-	IsReadonly     bool        `json:"isReadonly" gorm:"default:false;comment:是否只读"`
-	ValidationRule string      `json:"validationRule" gorm:"size:200;comment:验证规则"`
+	IsPublic       bool        `json:"isPublic" gorm:"default:false;index;comment:是否公开，公开项允许前端读取"`
+	IsReadonly     bool        `json:"isReadonly" gorm:"default:false;comment:是否只读，只读项由系统内部维护"`
+	IsSensitive    bool        `json:"isSensitive" gorm:"default:false;index;comment:是否敏感配置，输出时需要脱敏"`
+	ValidationRule string      `json:"validationRule" gorm:"size:200;comment:验证规则，如正则表达式或取值范围"`
 	SortOrder      int         `json:"sortOrder" gorm:"default:0;index;comment:排序权重"`
+	UpdatedBy      *uint       `json:"updatedBy" gorm:"index;comment:最后更新该配置的用户ID"`
 	CreatedAt      time.Time   `json:"createdAt" gorm:"type:datetime(3);comment:创建时间"`
 	UpdatedAt      time.Time   `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
+
+	// 关联关系
+	UpdatedByUser *User `json:"updatedByUser,omitempty" gorm:"foreignKey:UpdatedBy;constraint:OnDelete:SET NULL"`
 }
 
 // TableName 指定表名
@@ -260,10 +266,10 @@ func (s *Setting) Validate() error {
 	return nil
 }
 
-// GetDisplayValue 获取用于显示的值（隐藏敏感信息）
+// GetDisplayValue 获取用于显示的值，敏感配置输出掩码而非真实值。
 func (s *Setting) GetDisplayValue() string {
-	// 隐藏密码等敏感信息
-	if s.IsSensitive() {
+	// 显式标记与键名特征任一命中即视为敏感，避免新增键名遗漏掩码。
+	if s.IsSensitive || s.ContainsSensitiveKey() {
 		if s.Value == "" {
 			return ""
 		}
@@ -272,8 +278,8 @@ func (s *Setting) GetDisplayValue() string {
 	return s.Value
 }
 
-// IsSensitive 检查是否为敏感设置
-func (s *Setting) IsSensitive() bool {
+// ContainsSensitiveKey 检查配置键名是否包含敏感关键词，作为显式标记的后备判断。
+func (s *Setting) ContainsSensitiveKey() bool {
 	sensitiveKeys := []string{
 		SettingMailPassword,
 		"password",

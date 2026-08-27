@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
@@ -96,7 +97,7 @@ func AdminAuth(jwtService service.JWTService, userRepo repository.UserRepository
 		}
 
 		// 验证用户状态
-		if user.Status != 1 {
+		if user.Status != model.UserStatusActive {
 			response.Forbidden(c, "用户已被禁用")
 			c.Abort()
 			return
@@ -154,7 +155,7 @@ func RequireRole(jwtService service.JWTService, userRepo repository.UserReposito
 		}
 
 		// 验证用户状态
-		if user.Status != 1 {
+		if user.Status != model.UserStatusActive {
 			response.Forbidden(c, "用户已被禁用")
 			c.Abort()
 			return

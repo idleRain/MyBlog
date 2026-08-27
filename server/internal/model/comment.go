@@ -6,27 +6,29 @@ import (
 	"gorm.io/gorm"
 )
 
-// Comment 评论模型
+// Comment 评论模型，采用 parent_id、root_id、level 构建两级展开的评论树。
 type Comment struct {
 	ID            uint           `json:"id" gorm:"primaryKey;comment:评论ID"`
-	ArticleID     uint           `json:"articleId" gorm:"not null;index;comment:文章ID"`
-	UserID        *uint          `json:"userId" gorm:"index;comment:用户ID（注册用户）"`
-	ParentID      *uint          `json:"parentId" gorm:"index;comment:父评论ID（回复功能）"`
-	RootID        *uint          `json:"rootId" gorm:"index;comment:根评论ID（便于查询评论树）"`
-	Level         uint8          `json:"level" gorm:"default:1;comment:评论层级"`
+	ArticleID     uint           `json:"articleId" gorm:"not null;index;index:idx_article_status_created,priority:1;comment:文章ID"`
+	UserID        *uint          `json:"userId" gorm:"index;comment:用户ID，注册用户填写"`
+	ParentID      *uint          `json:"parentId" gorm:"index;comment:父评论ID，根评论为空"`
+	RootID        *uint          `json:"rootId" gorm:"index;comment:根评论ID，便于一次查询整棵评论树"`
+	Level         uint8          `json:"level" gorm:"default:1;comment:评论层级，根评论为 1"`
 	AuthorName    string         `json:"authorName" gorm:"size:50;comment:游客姓名"`
 	AuthorEmail   string         `json:"authorEmail" gorm:"size:100;comment:游客邮箱"`
 	AuthorWebsite string         `json:"authorWebsite" gorm:"size:255;comment:游客网站"`
-	AuthorIP      string         `json:"authorIP" gorm:"size:45;index;comment:评论者IP地址"`
-	Content       string         `json:"content" gorm:"type:text;not null;comment:评论内容"`
-	ContentHTML   string         `json:"contentHtml" gorm:"type:text;comment:评论内容（HTML格式，缓存用）"`
-	Status        CommentStatus  `json:"status" gorm:"default:pending;index;comment:审核状态"`
+	AuthorIP      string         `json:"authorIP" gorm:"size:45;index;comment:评论者IP地址，用于反垃圾与封禁"`
+	Content       string         `json:"content" gorm:"type:text;not null;comment:评论内容，Markdown 格式"`
+	ContentHTML   string         `json:"contentHtml" gorm:"type:text;comment:评论内容，渲染后的 HTML 缓存"`
+	Status        CommentStatus  `json:"status" gorm:"default:pending;size:20;index;index:idx_article_status_created,priority:2;comment:审核状态：pending/approved/rejected/spam/trash"`
 	LikeCount     uint           `json:"likeCount" gorm:"default:0;comment:点赞数"`
 	ReplyCount    uint           `json:"replyCount" gorm:"default:0;comment:回复数量"`
+	ReportedCount uint           `json:"reportedCount" gorm:"default:0;comment:被举报次数，达到阈值后进入待复核队列"`
 	UserAgent     string         `json:"userAgent" gorm:"type:text;comment:用户代理"`
 	IsAuthor      bool           `json:"isAuthor" gorm:"default:false;comment:是否为文章作者回复"`
-	IsPinned      bool           `json:"isPinned" gorm:"default:false;comment:是否置顶评论"`
-	CreatedAt     time.Time      `json:"createdAt" gorm:"type:datetime(3);index;comment:创建时间"`
+	IsPinned      bool           `json:"isPinned" gorm:"default:false;index;comment:是否置顶评论"`
+	EditedAt      *time.Time     `json:"editedAt" gorm:"type:datetime(3);comment:内容最后编辑时间，用于展示已编辑标记"`
+	CreatedAt     time.Time      `json:"createdAt" gorm:"type:datetime(3);index;index:idx_article_status_created,priority:3;comment:创建时间"`
 	UpdatedAt     time.Time      `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
@@ -91,7 +93,7 @@ func (c *Comment) GetAuthorAvatar() string {
 	if c.User != nil && c.User.Avatar != "" {
 		return c.User.Avatar
 	}
-	// 返回默认头像或基于邮箱生成的Gravatar
+	// 未绑定头像时返回空值，由前端使用默认头像展示。
 	return ""
 }
 

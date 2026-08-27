@@ -2,6 +2,7 @@
 package service
 
 import (
+	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"fmt"
 	"regexp"
@@ -295,7 +296,7 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 	}
 
 	// 检查用户状态
-	if user.Status != 1 {
+	if user.Status != model.UserStatusActive {
 		return nil, fmt.Errorf("用户已被禁用")
 	}
 

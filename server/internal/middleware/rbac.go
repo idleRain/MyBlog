@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
@@ -250,7 +251,7 @@ func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRe
 	}
 
 	// 验证用户状态
-	if user.Status != 1 {
+	if user.Status != model.UserStatusActive {
 		response.Forbidden(c, "用户已被禁用")
 		c.Abort()
 		return nil, fmt.Errorf("user disabled")

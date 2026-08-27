@@ -11,27 +11,31 @@ import (
 
 // MediaFile 媒体文件模型
 type MediaFile struct {
-	ID           uint           `json:"id" gorm:"primaryKey;comment:文件ID"`
-	Filename     string         `json:"filename" gorm:"not null;size:255;comment:原始文件名"`
-	StoredName   string         `json:"storedName" gorm:"uniqueIndex;not null;size:255;comment:存储文件名（UUID）"`
-	FilePath     string         `json:"filePath" gorm:"not null;size:500;comment:文件存储路径"`
-	FileURL      string         `json:"fileUrl" gorm:"not null;size:500;comment:文件访问URL"`
-	ThumbnailURL string         `json:"thumbnailUrl" gorm:"size:500;comment:缩略图URL"`
-	MimeType     string         `json:"mimeType" gorm:"not null;size:100;index;comment:MIME类型"`
-	FileSize     uint64         `json:"fileSize" gorm:"not null;comment:文件大小（字节）"`
-	FileHash     string         `json:"fileHash" gorm:"size:64;index;comment:文件SHA256哈希值"`
-	Width        *uint          `json:"width" gorm:"comment:图片宽度"`
-	Height       *uint          `json:"height" gorm:"comment:图片高度"`
-	AltText      string         `json:"altText" gorm:"size:255;comment:替代文本（SEO用）"`
-	UploaderID   uint           `json:"uploaderId" gorm:"not null;index;comment:上传者ID"`
-	UploadIP     string         `json:"uploadIP" gorm:"size:45;comment:上传IP地址"`
-	StorageType  StorageType    `json:"storageType" gorm:"default:local;index;comment:存储类型"`
-	Folder       string         `json:"folder" gorm:"size:100;index;comment:文件夹分类"`
-	UsageCount   uint           `json:"usageCount" gorm:"default:0;comment:使用次数"`
-	IsPublic     bool           `json:"isPublic" gorm:"default:true;comment:是否公开访问"`
-	CreatedAt    time.Time      `json:"createdAt" gorm:"type:datetime(3);comment:创建时间"`
-	UpdatedAt    time.Time      `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
-	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
+	ID              uint           `json:"id" gorm:"primaryKey;comment:文件ID"`
+	Filename        string         `json:"filename" gorm:"not null;size:255;comment:原始文件名"`
+	StoredName      string         `json:"storedName" gorm:"uniqueIndex;not null;size:255;comment:存储文件名，UUID 命名"`
+	FilePath        string         `json:"filePath" gorm:"not null;size:500;comment:文件存储路径"`
+	FileURL         string         `json:"fileUrl" gorm:"not null;size:500;comment:文件访问URL"`
+	ThumbnailURL    string         `json:"thumbnailUrl" gorm:"size:500;comment:缩略图URL"`
+	MimeType        string         `json:"mimeType" gorm:"not null;size:100;index;comment:MIME类型"`
+	FileSize        uint64         `json:"fileSize" gorm:"not null;comment:文件大小，单位字节"`
+	FileHash        string         `json:"fileHash" gorm:"size:64;index;comment:文件SHA256哈希值，用于秒传与去重"`
+	Width           *uint          `json:"width" gorm:"comment:图片宽度，单位像素"`
+	Height          *uint          `json:"height" gorm:"comment:图片高度，单位像素"`
+	DurationSeconds uint           `json:"durationSeconds" gorm:"default:0;comment:音视频时长，单位秒，非媒体文件为 0"`
+	AltText         string         `json:"altText" gorm:"size:255;comment:替代文本，用于无障碍与SEO"`
+	Status          MediaStatus    `json:"status" gorm:"size:20;default:active;index;comment:文件状态：active-可用 processing-处理中 failed-处理失败 lost-文件丢失"`
+	ProcessedAt     *time.Time     `json:"processedAt" gorm:"type:datetime(3);comment:缩略图等后处理完成时间，为空表示尚未处理"`
+	UploaderID      uint           `json:"uploaderId" gorm:"not null;index;comment:上传者ID"`
+	UploadIP        string         `json:"uploadIP" gorm:"size:45;comment:上传IP地址"`
+	StorageType     StorageType    `json:"storageType" gorm:"default:local;size:20;index;comment:存储类型：local/oss/s3/cos"`
+	Folder          string         `json:"folder" gorm:"size:100;index;comment:文件夹分类"`
+	UsageCount      uint           `json:"usageCount" gorm:"default:0;comment:被正文引用次数，删除前需要校验"`
+	DownloadCount   uint           `json:"downloadCount" gorm:"default:0;comment:累计下载次数"`
+	IsPublic        bool           `json:"isPublic" gorm:"default:true;index;comment:是否公开访问"`
+	CreatedAt       time.Time      `json:"createdAt" gorm:"type:datetime(3);comment:创建时间"`
+	UpdatedAt       time.Time      `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
+	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
 	Uploader User `json:"uploader" gorm:"foreignKey:UploaderID"`
@@ -51,6 +55,21 @@ const (
 	StorageTypeS3    StorageType = "s3"    // AWS S3
 	StorageTypeCOS   StorageType = "cos"   // 腾讯云COS
 )
+
+// 定义媒体文件状态枚举
+type MediaStatus string
+
+const (
+	MediaStatusActive     MediaStatus = "active"     // 可用
+	MediaStatusProcessing MediaStatus = "processing" // 处理中
+	MediaStatusFailed     MediaStatus = "failed"     // 处理失败
+	MediaStatusLost       MediaStatus = "lost"       // 文件丢失
+)
+
+// IsUsable 检查文件是否处于可对外提供服务的状态。
+func (m *MediaFile) IsUsable() bool {
+	return m.Status == MediaStatusActive
+}
 
 // 定义常用的MIME类型
 const (

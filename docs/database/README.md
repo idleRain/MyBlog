@@ -5,29 +5,35 @@
 ## 文件说明
 
 ### schema.sql
-**用途**: 数据库架构设计参考文档
+**用途**: 数据库架构设计参考文档，共 23 张业务表的完整 DDL
 **状态**: 仅供参考，不用于实际迁移
 
-包含完整的数据库表结构定义，包括：
-- 12张核心数据表的完整 DDL
-- 所有索引、外键约束和关联关系
+包含：
+- 23 张业务表的完整 DDL，覆盖用户、内容、评论、互动、媒体、运营、统计日志 7 个模块
+- 所有索引、复合唯一索引、检查约束与外键级联策略
 - 默认数据插入脚本
 
-### 重要说明
+### database-architecture.md
+**用途**: 数据库架构设计说明文档
+**状态**: 设计原则、表结构与演进约定的权威说明
+
+## 重要说明
 
 **⚠️ 实际数据库迁移方式**
 
 项目使用 **GORM 自动迁移** 作为数据库管理方式：
 
 1. **模型定义位置**: `server/internal/model/*.go`
-2. **迁移入口**: `server/internal/database/migrate.go`
-3. **执行方式**: 应用启动时自动执行
+2. **迁移入口**: `server/internal/database/migrate.go` 中的 `AutoMigrateWithFix`
+3. **执行方式**: 开发模式应用启动时自动执行
+4. **表注释同步**: 迁移完成后由 `model/table_comments.go` 统一同步表级注释
 
 **如何添加新表**:
 
 1. 在 `server/internal/model/` 中创建 Go 模型
 2. 在 `server/internal/model/models.go` 的 `Models()` 函数中注册
-3. 重启应用，GORM 会自动创建表结构
+3. 在 `server/internal/model/table_comments.go` 的表注释映射中补充
+4. 重启应用，GORM 会自动创建表结构
 
 **如何修改表结构**:
 
@@ -35,13 +41,13 @@
 2. 重启应用，GORM 会自动同步变更
 3. 注意：删除字段需要手动处理
 
-### 数据库连接
+## 数据库连接
 
 - **数据库**: MySQL 8.0 (通过 GORM)
 - **配置文件**: `server/configs/config.yaml`
 
-### 参考资源
+## 参考资源
 
-- [完整的数据库架构设计](./database-architecture.md)
+- [数据库架构设计](./database-architecture.md)
 - [GORM 模型定义](../server/internal/model/)
 - [数据库配置说明](../server/configs/config.yaml)
