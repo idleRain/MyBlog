@@ -133,7 +133,6 @@ async function validateSetup() {
       }
     }
 
-
     // 重新验证
     console.log('\n🔍 重新验证设置...')
     let allValid = true

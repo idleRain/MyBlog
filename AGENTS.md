@@ -56,8 +56,8 @@ bun run migrate [create|up|down|version|help]
 - 根 `prettier.config.js`：`semi: false`、`singleQuote: true`、`arrowParens: 'avoid'`、`printWidth: 100`、`tabWidth: 2`、`trailingComma: 'none'`。
 - 根 `eslint.config.js` 导出 `baseConfig` 供子项目继承；`web/eslint.config.js` 在其上叠加 Svelte/TS 规则。
 - Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `web/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
-- 更改文件后应运行 `bun run lint` 与 `bun run format` 保持静态零告警。项目名非 `lotus` 前缀，必须执行 lint 与 check。
-- 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度。type 枚举以 `commitlint.config.js` 为准，例如 `feat: 新增文章标签管理接口`。提交信息须简明描述本次变更的核心内容。
+- 更改文件后应运行 `bun run lint` 与 `bun run format` 保持静态零告警。
+- 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，type 枚举以 `commitlint.config.js` 为准。
 - 关键逻辑应配套单元测试，测试文件与被测文件同目录命名，Go 为 `*_test.go`，前端为 `*.test.ts`。当前仓库尚未引入测试，新增功能时应一并补齐。
 
 ## 4. 后端约定（server/）

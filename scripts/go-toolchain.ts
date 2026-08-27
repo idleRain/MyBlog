@@ -6,13 +6,14 @@
  * 供 go-tools.ts 导入复用，也可独立执行以确保工具就绪
  */
 
-import { spawn, execSync, type SpawnOptions } from 'child_process'
-import { join } from 'path'
+import { execSync, spawn, type SpawnOptions } from 'child_process'
 import { existsSync } from 'fs'
 import { platform } from 'os'
+import { join } from 'path'
 
 // golangci-lint 工具模块地址，安装时自动获取最新稳定版本
-export const golangciLintModule: string = 'github.com/golangci/golangci-lint/cmd/golangci-lint@latest'
+export const golangciLintModule: string =
+  'github.com/golangci/golangci-lint/cmd/golangci-lint@latest'
 
 // goimports 工具模块地址，安装时自动获取最新稳定版本
 export const goimportsModule: string = 'golang.org/x/tools/cmd/goimports@latest'
