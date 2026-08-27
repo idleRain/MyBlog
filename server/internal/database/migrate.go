@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"runtime"
-	"strings"
 
 	"MyBlog/internal/config"
 	"MyBlog/internal/model"
@@ -17,39 +14,6 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/gorm"
 )
-
-// getMigrationsPath 获取迁移文件路径
-func getMigrationsPath() (string, error) {
-	// 可能的迁移文件路径
-	possiblePaths := []string{
-		"./migrations",      // 从 server 目录运行
-		"../migrations",     // 从 tmp 目录运行
-		"../../migrations",  // 从更深的子目录运行
-		"server/migrations", // 从项目根目录运行
-	}
-
-	for _, path := range possiblePaths {
-		if _, err := os.Stat(path); err == nil {
-			absPath, err := filepath.Abs(path)
-			if err != nil {
-				continue
-			}
-
-			// 处理Windows路径格式
-			if runtime.GOOS == "windows" {
-				// 将反斜杠转换为正斜杠
-				absPath = strings.Replace(absPath, "\\", "/", -1)
-				// Windows文件URL格式
-				return fmt.Sprintf("file:///%s", absPath), nil
-			}
-
-			return fmt.Sprintf("file://%s", absPath), nil
-		}
-	}
-
-	// 如果都找不到，返回默认路径
-	return "file://./migrations", fmt.Errorf("未找到迁移文件目录")
-}
 
 // createMigrateInstance 创建migrate实例的通用函数
 func createMigrateInstance(cfg *config.Config) (*migrate.Migrate, error) {

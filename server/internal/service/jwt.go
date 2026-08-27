@@ -255,8 +255,8 @@ func (j *jwtService) RefreshAccessToken(refreshTokenString string) (*TokenPair, 
 		return nil, fmt.Errorf("生成新令牌对失败: %w", err)
 	}
 
-	// 撤销旧的刷新令牌
-	j.RevokeToken(refreshTokenString)
+	// 撤销旧的刷新令牌，内存实现无失败路径，显式忽略错误返回值
+	_ = j.RevokeToken(refreshTokenString)
 
 	return tokenPair, nil
 }

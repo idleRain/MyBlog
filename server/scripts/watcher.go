@@ -147,8 +147,8 @@ func stopProcess() {
 			fmt.Printf("⚠️ 停止进程失败: %v\n", err)
 		}
 
-		// 等待进程结束
-		process.Wait()
+		// 等待进程结束，进程已被终止时错误无意义，显式忽略返回值
+		_ = process.Wait()
 		process = nil
 	}
 }

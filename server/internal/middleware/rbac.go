@@ -229,10 +229,8 @@ func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRe
 		return nil, fmt.Errorf("no token")
 	}
 
-	// 移除 Bearer 前缀
-	if strings.HasPrefix(token, "Bearer ") {
-		token = token[7:]
-	}
+	// 移除 Bearer 前缀，无前缀时保持原值
+	token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 	// 验证访问令牌
 	claims, err := jwtService.ValidateAccessToken(token)

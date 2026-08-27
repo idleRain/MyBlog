@@ -10,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// bearerTokenPrefix 认证令牌的 Bearer 前缀，用于从请求头解析令牌
+const bearerTokenPrefix = "Bearer "
+
 // Auth 认证中间件
 func Auth(jwtService service.JWTService) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -21,10 +24,8 @@ func Auth(jwtService service.JWTService) gin.HandlerFunc {
 			return
 		}
 
-		// 移除 Bearer 前缀
-		if strings.HasPrefix(token, "Bearer ") {
-			token = token[7:]
-		}
+		// 移除 Bearer 前缀，无前缀时保持原值
+		token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 		// 验证访问令牌
 		claims, err := jwtService.ValidateAccessToken(token)
@@ -48,10 +49,8 @@ func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc {
 		token := c.GetHeader("Authorization")
 
 		if token != "" {
-			// 移除 Bearer 前缀
-			if strings.HasPrefix(token, "Bearer ") {
-				token = token[7:]
-			}
+			// 移除 Bearer 前缀，无前缀时保持原值
+			token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 			// 验证访问令牌
 			if claims, err := jwtService.ValidateAccessToken(token); err == nil {
@@ -77,9 +76,7 @@ func AdminAuth(jwtService service.JWTService, userRepo repository.UserRepository
 			return
 		}
 
-		if strings.HasPrefix(token, "Bearer ") {
-			token = token[7:]
-		}
+		token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 		claims, err := jwtService.ValidateAccessToken(token)
 		if err != nil {
@@ -135,9 +132,7 @@ func RequireRole(jwtService service.JWTService, userRepo repository.UserReposito
 			return
 		}
 
-		if strings.HasPrefix(token, "Bearer ") {
-			token = token[7:]
-		}
+		token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 		claims, err := jwtService.ValidateAccessToken(token)
 		if err != nil {

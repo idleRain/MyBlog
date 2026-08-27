@@ -6,6 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"gorm.io/gorm"
 )
 
@@ -264,5 +267,5 @@ func (m *MediaFile) GenerateAltText() string {
 	filename = strings.ReplaceAll(filename, "_", " ")
 	filename = strings.ReplaceAll(filename, "-", " ")
 
-	return strings.Title(filename)
+	return cases.Title(language.Und).String(filename)
 }

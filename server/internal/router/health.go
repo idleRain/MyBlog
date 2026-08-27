@@ -19,9 +19,7 @@ func (hr *HealthRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	// 健康检查路由
 	api.POST("/health", hr.healthCheck)
 
-	// 可以添加更多的健康检查相关路由
-	// api.GET("/version", hr.versionCheck)
-	// api.GET("/status", hr.statusCheck)
+	// 预留扩展更多健康检查相关路由的位置
 }
 
 // healthCheck 健康检查处理函数
@@ -32,31 +30,6 @@ func (hr *HealthRoutes) healthCheck(c *gin.Context) {
 		"data": gin.H{
 			"status":  "healthy",
 			"service": "MyBlog API",
-		},
-	})
-}
-
-// versionCheck 版本检查处理函数示例。
-func (hr *HealthRoutes) versionCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "版本信息",
-		"data": gin.H{
-			"version": "1.0.0",
-			"build":   "dev",
-		},
-	})
-}
-
-// statusCheck 状态检查处理函数示例。
-func (hr *HealthRoutes) statusCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "服务状态",
-		"data": gin.H{
-			"uptime":   "running",
-			"database": "connected",
-			"cache":    "available",
 		},
 	})
 }
