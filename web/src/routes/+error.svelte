@@ -1,6 +1,6 @@
 <script lang="ts">
-import { Button } from '$ui'
 import Header from '$lib/components/layout/Header.svelte'
+import { Button } from '$ui'
 import { ModeWatcher } from 'mode-watcher'
 import '../app.css'
 
@@ -95,7 +95,7 @@ const errorSubtitle = $derived(
       {:else}
         <Button
           href="/"
-          class="rounded-none bg-signal px-8 py-4 font-mono text-sm font-medium text-signal-foreground transition-colors duration-200 hover:bg-signal/90"
+          class="rounded-none bg-signal px-8 py-4 font-mono text-sm font-medium text-signal-foreground hover:bg-signal/90!"
         >
           返回安全基地
         </Button>
