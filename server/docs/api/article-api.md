@@ -80,6 +80,7 @@ curl -X POST http://localhost:3000/api/articles/get \
 | data.commentEnabled | boolean | 是 | 是否允许评论 |
 | data.viewCount | integer | 是 | 浏览量 |
 | data.likeCount | integer | 是 | 点赞数 |
+| data.bookmarkCount | integer | 是 | 收藏数 |
 | data.commentCount | integer | 是 | 评论数 |
 | data.wordCount | integer | 是 | 字数统计 |
 | data.readingTime | integer | 是 | 预计阅读时间（分钟） |
@@ -136,6 +137,7 @@ curl -X POST http://localhost:3000/api/articles/get \
     "commentEnabled": true,
     "viewCount": 100,
     "likeCount": 5,
+    "bookmarkCount": 2,
     "commentCount": 3,
     "wordCount": 1500,
     "readingTime": 8,
@@ -861,10 +863,10 @@ curl -X POST http://localhost:3000/api/articles/create \
 | categoryId | integer | 否 | 主分类ID | 大于0的整数 |
 | categoryIds | array | 否 | 分类ID列表 | 整数数组 |
 | tagIds | array | 否 | 标签ID列表 | 整数数组 |
-| status | string | 否 | 文章状态 | draft/published/archived/private |
-| isFeatured | boolean | 否 | 是否推荐 | 布尔值 |
-| isTop | boolean | 否 | 是否置顶 | 布尔值 |
-| commentEnabled | boolean | 否 | 是否允许评论 | 布尔值 |
+| status | string | 否 | 文章状态 | draft/published/archived/private，未传则保留原状态 |
+| isFeatured | boolean | 否 | 是否推荐 | 布尔值，未传则保留原值 |
+| isTop | boolean | 否 | 是否置顶 | 布尔值，未传则保留原值 |
+| commentEnabled | boolean | 否 | 是否允许评论 | 布尔值，未传则保留原值 |
 | seoTitle | string | 否 | SEO标题 | 长度0-100字符 |
 | seoDescription | string | 否 | SEO描述 | 长度0-255字符 |
 | seoKeywords | string | 否 | SEO关键词 | 长度0-200字符 |
@@ -1162,27 +1164,26 @@ curl -X POST http://localhost:3000/api/admin/articles/list \
 
 | 状态码 | 错误信息 | 说明 |
 |--------|----------|------|
-| 400 | 请求参数错误 | 参数格式或内容不正确 |
-| 401 | 未提供认证令牌 / 无效的认证令牌 | 需要登录或令牌已过期 |
+| 400 | 参数错误 | 参数格式或内容不正确 |
+| 401 | 未登录 | 需要登录 |
 | 403 | 权限不足 | 当前角色没有操作权限 |
 | 404 | 文章不存在 | 指定的文章ID不存在或已删除 |
-| 409 | 文章别名已存在 | slug重复 |
 | 500 | 服务器内部错误 | 服务器异常 |
+
+说明：slug 冲突不会报错，系统会自动追加 `-1`、`-2` 等后缀保证唯一。
 
 ### 错误响应示例
 
 ```json
 {
   "code": 404,
-  "message": "文章不存在",
-  "error": "article not found"
+  "message": "文章不存在"
 }
 ```
 
 ```json
 {
   "code": 403,
-  "message": "没有编辑此文章的权限",
-  "error": "insufficient permissions"
+  "message": "没有编辑此文章的权限"
 }
 ```

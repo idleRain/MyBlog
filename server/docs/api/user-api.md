@@ -2,7 +2,7 @@
 
 ## 概述
 
-用户管理模块提供用户注册、登录、信息管理等功能，支持基于角色的权限控制（RBAC）。
+用户管理模块提供用户登录、信息管理等功能，支持基于角色的权限控制（RBAC）。
 
 ## 角色权限说明
 
@@ -30,8 +30,8 @@
 
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
-| username | string | 是 | 用户名 | 长度1-50字符 |
-| password | string | 是 | 密码 | 长度6-100字符 |
+| username | string | 是 | 用户名或邮箱 | 非空字符串 |
+| password | string | 是 | 密码 | 非空字符串 |
 
 #### 请求示例
 
@@ -57,13 +57,14 @@ curl -X POST http://localhost:3000/api/users/login \
 | data.user.email | string | 是 | 邮箱 |
 | data.user.nickname | string | 是 | 昵称 |
 | data.user.avatar | string | 是 | 头像URL |
+| data.user.birthday | string | 否 | 生日，格式 YYYY-MM-DD |
 | data.user.role | string | 是 | 用户角色 |
 | data.user.status | integer | 是 | 用户状态，1启用0禁用 |
 | data.user.createdAt | string | 是 | 创建时间 |
 | data.user.updatedAt | string | 是 | 更新时间 |
 | data.accessToken | string | 是 | 访问令牌 |
 | data.refreshToken | string | 是 | 刷新令牌 |
-| data.expiresAt | integer | 是 | 访问令牌过期时间戳 |
+| data.expiresIn | integer | 是 | 访问令牌有效期，单位秒 |
 
 #### 响应示例
 
@@ -78,14 +79,15 @@ curl -X POST http://localhost:3000/api/users/login \
       "email": "admin@example.com",
       "nickname": "管理员",
       "avatar": "",
+      "birthday": "1990-01-01",
       "role": "admin",
       "status": 1,
-      "createdAt": "2024-01-01T10:00:00Z",
-      "updatedAt": "2024-01-01T10:00:00Z"
+      "createdAt": "2024-01-01 10:00:00",
+      "updatedAt": "2024-01-01 10:00:00"
     },
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresAt": 1704110400
+    "expiresIn": 3600
   }
 }
 ```
@@ -123,24 +125,25 @@ curl -X POST http://localhost:3000/api/users/get \
 
 #### 响应参数
 
-同登录接口的用户信息部分。
+用户信息字段与登录接口的 `data.user` 一致，直接返回在 `data` 下。
 
 #### 响应示例
 
 ```json
 {
   "code": 200,
-  "message": "获取成功",
+  "message": "操作成功",
   "data": {
     "id": 1,
     "username": "admin",
     "email": "admin@example.com",
     "nickname": "管理员",
     "avatar": "",
+    "birthday": "1990-01-01",
     "role": "admin",
     "status": 1,
-    "createdAt": "2024-01-01T10:00:00Z",
-    "updatedAt": "2024-01-01T10:00:00Z"
+    "createdAt": "2024-01-01 10:00:00",
+    "updatedAt": "2024-01-01 10:00:00"
   }
 }
 ```
@@ -165,11 +168,10 @@ curl -X POST http://localhost:3000/api/users/get \
 |--------|------|------|------|----------|
 | username | string | 是 | 用户名 | 长度1-50字符，唯一 |
 | email | string | 是 | 邮箱 | 有效邮箱格式，唯一 |
-| password | string | 是 | 密码 | 长度6-100字符 |
-| nickname | string | 否 | 昵称 | 长度0-100字符 |
-| avatar | string | 否 | 头像URL | 长度0-500字符 |
-| role | string | 是 | 用户角色 | user/editor/admin/superadmin |
-| status | integer | 否 | 用户状态 | 1启用0禁用，默认1 |
+| password | string | 是 | 密码 | 长度6-100字符，须包含字母和数字 |
+| nickname | string | 否 | 昵称 | 长度0-50字符，留空时使用用户名 |
+| role | string | 否 | 用户角色 | user/editor/admin/superadmin，默认user |
+| birthday | string | 否 | 生日 | 格式 YYYY-MM-DD |
 
 #### 请求示例
 
@@ -180,10 +182,10 @@ curl -X POST http://localhost:3000/api/users/create \
   -d '{
     "username": "newuser",
     "email": "newuser@example.com",
-    "password": "123456",
+    "password": "Newpass123",
     "nickname": "新用户",
     "role": "user",
-    "status": 1
+    "birthday": "1995-06-15"
   }'
 ```
 
@@ -199,10 +201,11 @@ curl -X POST http://localhost:3000/api/users/create \
     "email": "newuser@example.com",
     "nickname": "新用户",
     "avatar": "",
+    "birthday": "1995-06-15",
     "role": "user",
     "status": 1,
-    "createdAt": "2024-01-01T11:00:00Z",
-    "updatedAt": "2024-01-01T11:00:00Z"
+    "createdAt": "2024-01-01 11:00:00",
+    "updatedAt": "2024-01-01 11:00:00"
   }
 }
 ```
@@ -226,11 +229,12 @@ curl -X POST http://localhost:3000/api/users/create \
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
 | id | integer | 是 | 用户ID | 大于0的整数 |
-| username | string | 否 | 用户名 | 长度1-50字符，唯一 |
-| email | string | 否 | 邮箱 | 有效邮箱格式，唯一 |
-| nickname | string | 否 | 昵称 | 长度0-100字符 |
-| avatar | string | 否 | 头像URL | 长度0-500字符 |
+| username | string | 是 | 用户名 | 长度1-50字符，唯一 |
+| email | string | 是 | 邮箱 | 有效邮箱格式，唯一 |
+| password | string | 否 | 新密码 | 长度6-100字符，留空则不修改 |
+| nickname | string | 否 | 昵称 | 长度0-50字符，留空时使用用户名 |
 | role | string | 否 | 用户角色 | user/editor/admin/superadmin |
+| birthday | string | 否 | 生日 | 格式 YYYY-MM-DD |
 | status | integer | 否 | 用户状态 | 1启用0禁用 |
 
 #### 请求示例
@@ -241,6 +245,8 @@ curl -X POST http://localhost:3000/api/users/update \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -d '{
     "id": 2,
+    "username": "newuser",
+    "email": "newuser@example.com",
     "nickname": "更新的昵称",
     "status": 1
   }'
@@ -258,10 +264,11 @@ curl -X POST http://localhost:3000/api/users/update \
     "email": "newuser@example.com",
     "nickname": "更新的昵称",
     "avatar": "",
+    "birthday": "1995-06-15",
     "role": "user",
     "status": 1,
-    "createdAt": "2024-01-01T11:00:00Z",
-    "updatedAt": "2024-01-01T12:00:00Z"
+    "createdAt": "2024-01-01 11:00:00",
+    "updatedAt": "2024-01-01 12:00:00"
   }
 }
 ```
@@ -302,10 +309,11 @@ curl -X POST http://localhost:3000/api/users/delete \
 ```json
 {
   "code": 200,
-  "message": "用户删除成功",
-  "data": null
+  "message": "用户删除成功"
 }
 ```
+
+说明：删除类接口不返回 `data` 字段。
 
 ---
 
@@ -327,9 +335,6 @@ curl -X POST http://localhost:3000/api/users/delete \
 |--------|------|------|------|----------|
 | page | integer | 否 | 页码 | 大于0的整数，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100之间，默认10 |
-| search | string | 否 | 搜索关键词 | 搜索用户名、邮箱、昵称 |
-| role | string | 否 | 角色筛选 | user/editor/admin/superadmin |
-| status | integer | 否 | 状态筛选 | 1启用0禁用 |
 
 #### 请求示例
 
@@ -339,9 +344,7 @@ curl -X POST http://localhost:3000/api/users/list \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -d '{
     "page": 1,
-    "pageSize": 10,
-    "search": "admin",
-    "role": "admin"
+    "pageSize": 10
   }'
 ```
 
@@ -356,13 +359,14 @@ curl -X POST http://localhost:3000/api/users/list \
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
+| data.pages | integer | 是 | 总页数 |
 
 #### 响应示例
 
 ```json
 {
   "code": 200,
-  "message": "获取成功",
+  "message": "操作成功",
   "data": {
     "users": [
       {
@@ -371,15 +375,17 @@ curl -X POST http://localhost:3000/api/users/list \
         "email": "admin@example.com",
         "nickname": "管理员",
         "avatar": "",
+        "birthday": "1990-01-01",
         "role": "admin",
         "status": 1,
-        "createdAt": "2024-01-01T10:00:00Z",
-        "updatedAt": "2024-01-01T10:00:00Z"
+        "createdAt": "2024-01-01 10:00:00",
+        "updatedAt": "2024-01-01 10:00:00"
       }
     ],
     "total": 1,
     "page": 1,
-    "pageSize": 10
+    "pageSize": 10,
+    "pages": 1
   }
 }
 ```
@@ -422,7 +428,7 @@ curl -X POST http://localhost:3000/api/auth/refresh \
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresAt": 1704111300
+    "expiresIn": 3600
   }
 }
 ```
@@ -459,10 +465,11 @@ curl -X POST http://localhost:3000/api/auth/logout \
 ```json
 {
   "code": 200,
-  "message": "登出成功",
-  "data": null
+  "message": "登出成功"
 }
 ```
+
+说明：登出接口不返回 `data` 字段。
 
 ---
 
@@ -476,7 +483,7 @@ curl -X POST http://localhost:3000/api/auth/logout \
 | 401 | 未提供认证令牌 / 无效的认证令牌 | 需要登录或令牌已过期 |
 | 403 | 权限不足 | 当前角色没有操作权限 |
 | 404 | 用户不存在 | 指定的用户ID不存在 |
-| 409 | 用户名已存在 / 邮箱已存在 | 创建或更新时违反唯一性约束 |
+| 500 | 用户名已存在 / 邮箱已存在 | 创建或更新时违反唯一性约束 |
 | 500 | 服务器内部错误 | 服务器异常 |
 
 ### 错误响应示例
@@ -484,23 +491,27 @@ curl -X POST http://localhost:3000/api/auth/logout \
 ```json
 {
   "code": 400,
-  "message": "请求参数错误: username长度必须在1到50之间",
-  "error": "Key: 'CreateUserRequest.Username' Error:Field validation for 'Username' failed on the 'min' tag"
+  "message": "请求参数错误: 用户名长度必须在1到50之间"
 }
 ```
 
 ```json
 {
   "code": 401,
-  "message": "无效的认证令牌",
-  "error": "token is expired"
+  "message": "无效的认证令牌"
 }
 ```
 
 ```json
 {
   "code": 403,
-  "message": "权限不足，无法访问该资源",
-  "error": "insufficient permissions"
+  "message": "权限不足，无法访问该资源"
+}
+```
+
+```json
+{
+  "code": 500,
+  "message": "用户名已存在"
 }
 ```

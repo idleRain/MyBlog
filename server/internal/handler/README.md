@@ -15,7 +15,7 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 
 #### 创建用户
 
-- **路由**: `POST /api/v1/users/create`
+- **路由**: `POST /api/users/create`
 - **功能**: 创建新用户
 - **请求体**:
 
@@ -23,14 +23,14 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 {
     "username": "john_doe",
     "email": "john@example.com", 
-    "password": "123456",
+    "password": "Abc123456",
     "nickname": "John"
 }
 ```
 
 #### 获取用户
 
-- **路由**: `POST /api/v1/users/get`
+- **路由**: `POST /api/users/get`
 - **功能**: 根据ID获取用户信息
 - **请求体**:
 
@@ -42,20 +42,20 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 
 #### 用户列表
 
-- **路由**: `POST /api/v1/users/list`
+- **路由**: `POST /api/users/list`
 - **功能**: 分页获取用户列表
 - **请求体**:
 
 ```json
 {
     "page": 1,
-    "page_size": 10
+    "pageSize": 10
 }
 ```
 
 #### 删除用户
 
-- **路由**: `POST /api/v1/users/delete`
+- **路由**: `POST /api/users/delete`
 - **功能**: 删除指定用户
 - **请求体**:
 
@@ -67,7 +67,7 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 
 #### 健康检查
 
-- **路由**: `POST /api/v1/health`
+- **路由**: `POST /api/health`
 - **功能**: 服务健康状态检查
 - **请求体**: 无
 
@@ -79,8 +79,7 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 {
     "code": 200,
     "message": "操作成功",
-    "data": {...},
-    "error": ""
+    "data": {...}
 }
 ```
 
@@ -98,12 +97,12 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 #### 创建用户
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/users/create \
+curl -X POST http://localhost:3000/api/users/create \
   -H "Content-Type: application/json" \
   -d '{
     "username": "john_doe",
     "email": "john@example.com",
-    "password": "123456",
+    "password": "Abc123456",
     "nickname": "John"
   }'
 ```
@@ -119,9 +118,12 @@ curl -X POST http://localhost:8080/api/v1/users/create \
         "username": "john_doe",
         "email": "john@example.com",
         "nickname": "John",
+        "avatar": "",
+        "birthday": "1990-01-01",
+        "role": "user",
         "status": 1,
-        "created_at": "2024-01-01T10:00:00Z",
-        "updated_at": "2024-01-01T10:00:00Z"
+        "createdAt": "2024-01-01 10:00:00",
+        "updatedAt": "2024-01-01 10:00:00"
     }
 }
 ```
@@ -129,11 +131,11 @@ curl -X POST http://localhost:8080/api/v1/users/create \
 #### 获取用户列表
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/users/list \
+curl -X POST http://localhost:3000/api/users/list \
   -H "Content-Type: application/json" \
   -d '{
     "page": 1,
-    "page_size": 10
+    "pageSize": 10
   }'
 ```
 
@@ -147,7 +149,7 @@ curl -X POST http://localhost:8080/api/v1/users/list \
         "users": [...],
         "total": 50,
         "page": 1,
-        "page_size": 10,
+        "pageSize": 10,
         "pages": 5
     }
 }
@@ -156,7 +158,7 @@ curl -X POST http://localhost:8080/api/v1/users/list \
 #### 健康检查
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/health
+curl -X POST http://localhost:3000/api/health
 ```
 
 响应：
@@ -164,10 +166,10 @@ curl -X POST http://localhost:8080/api/v1/health
 ```json
 {
     "code": 200,
-    "message": "操作成功",
+    "message": "服务正常",
     "data": {
-        "status": "ok",
-        "message": "服务运行正常"
+        "status": "healthy",
+        "service": "MyBlog API"
     }
 }
 ```

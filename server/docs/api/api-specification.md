@@ -69,17 +69,15 @@ Content-Type: application/json
 {
     "code": 200,
     "message": "操作成功",
-    "data": {},
-    "error": ""
+    "data": {}
 }
 ```
 
 ### 响应字段说明
 
 - `code`: 业务状态码
-- `message`: 响应消息
-- `data`: 响应数据 (成功时包含)
-- `error`: 错误信息 (失败时包含)
+- `message`: 响应消息，失败时包含具体错误信息
+- `data`: 响应数据 (成功时包含，纯操作类接口可能省略)
 
 ### 状态码规范
 
@@ -103,8 +101,8 @@ Content-Type: application/json
         "nickname": "John",
         "avatar": "",
         "status": 1,
-        "createdAt": "2024-01-01T10:00:00Z",
-        "updatedAt": "2024-01-01T10:00:00Z"
+        "createdAt": "2024-01-01 10:00:00",
+        "updatedAt": "2024-01-01 10:00:00"
     }
 }
 ```
@@ -153,9 +151,13 @@ Content-Type: application/json
 
 ### 时间格式
 
-- **统一使用 YYYY-MM-DD 格式**
-- 示例: `"2024-01-01"`
-- 说明: 只包含日期，不包含具体时间
+时间字段分为两种序列化格式，与后端模型类型对应：
+
+- **JSONDate 类型字段**（如用户信息的 `createdAt`、`updatedAt`、`birthday`）输出 `YYYY-MM-DD HH:mm:ss` 格式
+- 示例: `"2024-01-01 10:00:00"`
+- JSONDate 字段当天零点时输出纯日期 `YYYY-MM-DD`，空时间输出 `null`
+- **time.Time 类型字段**（如文章信息的 `createdAt`、`publishedAt`、`updatedAt`）输出 RFC3339 格式
+- 示例: `"2024-01-01T10:00:00Z"`
 
 ## 错误处理规范
 
@@ -164,8 +166,7 @@ Content-Type: application/json
 ```json
 {
     "code": 400,
-    "message": "请求参数错误",
-    "error": "用户名不能为空"
+    "message": "请求参数错误: 用户名不能为空"
 }
 ```
 
@@ -196,10 +197,10 @@ Content-Type: application/json
 
 ### 状态字段
 
-- 统一使用 `status` 作为状态字段名
-- 类型为 `integer`
+- 用户状态统一使用 `status` 字段，类型为 `integer`
 - 1: 正常/启用
-- 0: 禁用/删除
+- 0: 禁用
+- 文章状态使用 `status` 字段，类型为 `string`，取值为 `draft`、`published`、`archived`、`private`
 
 ## 接口版本管理
 

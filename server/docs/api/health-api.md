@@ -37,19 +37,17 @@ curl -X POST http://localhost:3000/api/health \
 | message | string | 是 | 响应消息 |
 | data | object | 是 | 响应数据 |
 | data.status | string | 是 | 服务状态，"healthy"表示健康 |
-| data.timestamp | string | 是 | 响应时间戳 |
-| data.version | string | 是 | 服务版本信息 |
+| data.service | string | 是 | 服务名称 |
 
 #### 响应示例
 
 ```json
 {
   "code": 200,
-  "message": "服务器运行正常",
+  "message": "服务正常",
   "data": {
     "status": "healthy",
-    "timestamp": "2024-01-01T10:00:00Z",
-    "version": "1.0.0"
+    "service": "MyBlog API"
   }
 }
 ```
@@ -65,7 +63,6 @@ curl -X POST http://localhost:3000/api/health \
 ```json
 {
   "code": 500,
-  "message": "服务器内部错误",
-  "error": "数据库连接失败"
+  "message": "服务器内部错误"
 }
 ```

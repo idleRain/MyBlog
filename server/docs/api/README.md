@@ -15,10 +15,10 @@ MyBlog 后端 API 提供完整的博客系统功能，包括用户管理、文�
 - [健康检查 API](./health-api.md) - 服务器状态检查接口
 
 #### 用户管理
-- [用户管理 API](./user-api.md) - 用户注册、登录、CRUD操作和权限管理
+- [用户管理 API](./user-api.md) - 用户登录、CRUD操作和权限管理
 
 #### 内容管理  
-- [文章管理 API](./article-api.md) - 文章CRUD、搜索、分类、标签等完整功能
+- [文章管理 API](./article-api.md) - 文章CRUD、搜索、分类标签关联等完整功能
 
 ## API 统计
 
@@ -45,6 +45,7 @@ MyBlog 后端 API 提供完整的博客系统功能，包括用户管理、文�
 
 ### 文章管理
 #### 公开接口
+- `POST /api/articles/get` - 根据ID获取文章
 - `POST /api/articles/getBySlug` - 根据Slug获取文章
 - `POST /api/articles/list` - 获取文章列表
 - `POST /api/articles/byAuthor` - 获取作者文章
@@ -53,34 +54,32 @@ MyBlog 后端 API 提供完整的博客系统功能，包括用户管理、文�
 - `POST /api/articles/search` - 搜索文章
 - `POST /api/articles/popular` - 获取热门文章
 - `POST /api/articles/recent` - 获取最新文章
+- `POST /api/articles/related` - 获取相关文章
+- `POST /api/articles/view` - 记录浏览量
 
 #### 认证接口
-- `POST /api/articles/get` - 获取文章详情
 - `POST /api/articles/like` - 点赞文章
 - `POST /api/articles/unlike` - 取消点赞
+- `POST /api/articles/bookmark` - 收藏文章
+- `POST /api/articles/unbookmark` - 取消收藏
 
 #### 编辑权限接口
 - `POST /api/articles/create` - 创建文章
 - `POST /api/articles/update` - 更新文章
 - `POST /api/articles/delete` - 删除文章
 - `POST /api/articles/publish` - 发布文章
+- `POST /api/articles/unpublish` - 取消发布
 - `POST /api/articles/archive` - 归档文章
-- `POST /api/articles/draft` - 转为草稿
+- `POST /api/articles/private` - 设为私有
 
 #### 管理权限接口
-- `POST /api/articles/getAll` - 获取所有文章
-- `POST /api/articles/getStats` - 获取文章统计
-- `POST /api/articles/getByStatus` - 按状态获取文章
-
-### 分类标签管理
-- `POST /api/articles/categories/list` - 获取分类列表
-- `POST /api/articles/categories/create` - 创建分类
-- `POST /api/articles/categories/update` - 更新分类
-- `POST /api/articles/categories/delete` - 删除分类
-- `POST /api/articles/tags/list` - 获取标签列表
-- `POST /api/articles/tags/create` - 创建标签
-- `POST /api/articles/tags/update` - 更新标签
-- `POST /api/articles/tags/delete` - 删除标签
+- `POST /api/admin/articles/list` - 获取所有状态文章列表
+- `POST /api/admin/articles/update` - 更新任意文章
+- `POST /api/admin/articles/delete` - 删除任意文章
+- `POST /api/admin/articles/publish` - 发布任意文章
+- `POST /api/admin/articles/unpublish` - 取消发布任意文章
+- `POST /api/admin/articles/archive` - 归档任意文章
+- `POST /api/admin/articles/private` - 将任意文章设为私有
 
 ### 系统监控
 - `POST /api/health` - 健康检查
@@ -96,11 +95,12 @@ MyBlog 后端 API 提供完整的博客系统功能，包括用户管理、文�
 | user | 1 | 基础用户权限 |
 
 ### 权限模块
-- **用户管理**: `user:create`, `user:update`, `user:delete`, `user:list`
-- **文章管理**: `article:create`, `article:publish`, `article:manage`
-- **评论管理**: `comment:moderate`
-- **文件管理**: `file:upload`, `file:manage`
-- **系统管理**: `system:*`
+- **用户管理**: `user:create`, `user:read`, `user:update`, `user:delete`, `user:list`
+- **文章管理**: `article:create`, `article:read`, `article:update`, `article:delete`, `article:list`, `article:publish`, `article:manage`
+- **分类标签管理**: `category:manage`, `tag:manage`
+- **评论管理**: `comment:create`, `comment:read`, `comment:update`, `comment:delete`, `comment:moderate`
+- **文件管理**: `file:upload`, `file:read`, `file:delete`
+- **系统管理**: `system:config`, `system:logs`, `system:stats`
 
 ## 请求规范
 
@@ -114,8 +114,7 @@ MyBlog 后端 API 提供完整的博客系统功能，包括用户管理、文�
 {
   "code": 200,
   "message": "操作成功",
-  "data": {},
-  "error": ""
+  "data": {}
 }
 ```
 
@@ -149,8 +148,8 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 - ✅ 完整的用户认证和授权系统
 - ✅ 基于RBAC的权限控制
 - ✅ 完整的文章管理系统
-- ✅ 分类和标签管理
-- ✅ 全文搜索功能
+- ✅ 文章分类与标签关联
+- ✅ 文章关键词搜索
 - ✅ 文章统计和分析
 - ✅ 健康检查和监控
 
