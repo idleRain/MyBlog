@@ -195,3 +195,14 @@
     linear-gradient(to bottom, var(--border) 1px, transparent 1px);
   background-size: 56px 56px;
 }
+
+/* 后台主区域网格底纹：网格密度与 spec-grid 一致，透明度更低并向下渐隐， */
+/* 营造图纸氛围的同时不干扰表格与卡片等数据区的可读性。 */
+.admin-grid {
+  opacity: 0.3;
+  mask-image: linear-gradient(to bottom, black 45%, transparent 90%);
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
