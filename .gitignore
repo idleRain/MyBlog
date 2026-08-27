@@ -71,6 +71,7 @@ build
 
 # web
 node_modules
+project.inlang
 
 # Output
 .output

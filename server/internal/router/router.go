@@ -71,9 +71,9 @@ type Dependencies struct {
 type UserHandlerInterface interface {
 	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
 	UpdateUser(c *gin.Context)   // POST /api/users/update - JSON格式
-	GetUserByID(c *gin.Context)  // GET /api/users/:id - URL路径参数
+	GetUserByID(c *gin.Context)  // POST /api/users/get - JSON格式
 	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式（复杂参数）
-	DeleteUser(c *gin.Context)   // DELETE /api/users/:id - URL路径参数
+	DeleteUser(c *gin.Context)   // POST /api/users/delete - JSON格式
 	Login(c *gin.Context)        // POST /api/users/login - JSON格式
 	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式
 	Logout(c *gin.Context)       // POST /api/auth/logout - Header中的Token
