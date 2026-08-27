@@ -92,7 +92,7 @@
     ],
     "server/**/*.go": [
       "gofmt -w",
-      "goimports -w"
+      "bun scripts/lint-staged-goimports.ts"
     ]
   }
 }

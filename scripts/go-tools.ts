@@ -3,13 +3,19 @@
 /**
  * 跨平台 Go 工具脚本
  * 此脚本提供与 Makefile 相同的功能，但可在 Windows 环境中运行
- * 专为 Bun 运行时环境优化
+ * golangci-lint 与 goimports 的检测、安装与路径解析交由 go-toolchain.ts 处理
  */
 
-import { spawn, execSync, type SpawnOptions } from 'child_process'
+import { execSync } from 'child_process'
 import { join } from 'path'
 import { existsSync, mkdirSync } from 'fs'
 import { platform } from 'os'
+import {
+  ensureGolangciLint,
+  ensureGoimports,
+  golangciLintTimeout,
+  runCommand
+} from './go-toolchain'
 
 // 支持的命令类型
 type Command =
@@ -25,12 +31,6 @@ type Command =
   | 'quality'
   | 'quality-check'
 
-// 运行命令的选项接口
-interface RunCommandOptions extends Partial<SpawnOptions> {
-  stdio?: 'inherit' | 'ignore' | 'pipe'
-  cwd?: string
-}
-
 // 命令行参数
 const command: string = process.argv[2]
 const serverDir: string = join(process.cwd(), 'server')
@@ -45,34 +45,6 @@ function checkGo(): boolean {
     console.error('请安装 Go: https://golang.org/doc/install')
     return false
   }
-}
-
-// 运行命令的辅助函数
-function runCommand(
-  command: string,
-  args: string[],
-  options: RunCommandOptions = {}
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      stdio: options.stdio || 'inherit',
-      shell: true,
-      cwd: options.cwd || process.cwd(),
-      ...options
-    })
-
-    child.on('close', (code: number | null) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`命令 "${command} ${args.join(' ')}" 执行失败，退出码: ${code}`))
-      }
-    })
-
-    child.on('error', (error: Error) => {
-      reject(new Error(`无法执行命令 "${command}": ${error.message}`))
-    })
-  })
 }
 
 // 构建项目
@@ -107,51 +79,13 @@ async function updateDeps(): Promise<void> {
   console.log('✅ 依赖更新完成')
 }
 
-// 安装 golangci-lint
-async function installLint(): Promise<void> {
-  console.log('📦 安装 golangci-lint 工具...')
-
-  // 检查是否已安装
-  try {
-    await runCommand('golangci-lint', ['--version'], { stdio: 'ignore' })
-    console.log('golangci-lint 已安装')
-  } catch (error) {
-    console.log('正在下载并安装 golangci-lint...')
-
-    if (platform() === 'win32') {
-      // Windows 安装方法
-      console.log(
-        '请访问 https://golangci-lint.run/usage/install/#windows 下载并安装 golangci-lint'
-      )
-      console.log('或者使用 go install 安装:')
-      await runCommand('go', [
-        'install',
-        'github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2'
-      ])
-    } else {
-      // Linux/macOS 安装方法
-      const installScript =
-        'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2'
-      await runCommand(installScript, [], { shell: true })
-    }
-  }
-
-  console.log('✅ golangci-lint 安装完成')
-}
-
 // 运行 lint
 async function runLint(): Promise<void> {
   console.log('🔍 运行 golangci-lint 代码检查...')
-
-  // 检查是否已安装
-  try {
-    await runCommand('golangci-lint', ['--version'], { stdio: 'ignore' })
-  } catch (error) {
-    console.log('📦 golangci-lint 未安装，正在安装...')
-    await installLint()
-  }
-
-  await runCommand('golangci-lint', ['run'], { cwd: serverDir })
+  const golangciLintPath: string = await ensureGolangciLint()
+  await runCommand(golangciLintPath, ['run', '--timeout', golangciLintTimeout], {
+    cwd: serverDir
+  })
   console.log('✅ 代码检查完成')
 }
 
@@ -163,17 +97,12 @@ async function formatCode(): Promise<void> {
   console.log('运行 gofmt...')
   await runCommand('go', ['fmt', './...'], { cwd: serverDir })
 
-  // 检查并安装 goimports
+  // 解析 goimports 路径，未安装时自动安装
   console.log('运行 goimports...')
-  try {
-    await runCommand('goimports', ['--help'], { stdio: 'ignore' })
-  } catch (error) {
-    console.log('📦 正在安装 goimports...')
-    await runCommand('go', ['install', 'golang.org/x/tools/cmd/goimports@latest'])
-  }
+  const goimportsPath: string = await ensureGoimports()
 
   // 运行 goimports
-  await runCommand('goimports', ['-w', '.'], { cwd: serverDir })
+  await runCommand(goimportsPath, ['-w', '.'], { cwd: serverDir })
   console.log('✅ 代码格式化完成')
 }
 
@@ -218,7 +147,7 @@ function showHelp(): void {
   console.log('  build       - 编译项目')
   console.log('  test        - 运行测试')
   console.log('  deps        - 安装/更新依赖')
-  console.log('  lint-install- 安装 golangci-lint 工具')
+  console.log('  lint-install- 安装 golangci-lint 与 goimports 工具')
   console.log('  lint        - 运行代码检查 (golangci-lint)')
   console.log('  format      - 格式化代码 (gofmt + goimports)')
   console.log('  vet         - 运行 go vet 代码检查')
@@ -246,7 +175,8 @@ async function main(): Promise<void> {
         await updateDeps()
         break
       case 'lint-install':
-        await installLint()
+        await ensureGolangciLint()
+        await ensureGoimports()
         break
       case 'lint':
         await runLint()
