@@ -54,8 +54,6 @@ export type {
   PermissionGuardProps,
   DataTableProps,
   DynamicFormProps,
-  ConfirmDialogProps,
-  PageHeaderProps,
   NotificationProps,
   LoadingProps,
   EmptyStateProps,

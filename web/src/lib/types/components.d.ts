@@ -155,34 +155,6 @@ export interface DynamicFormProps<T = Record<string, any>> extends BaseComponent
 }
 
 /**
- * 确认对话框 Props
- */
-export interface ConfirmDialogProps {
-  open: boolean
-  title: string
-  message: string
-  confirmText?: string
-  cancelText?: string
-  variant?: 'default' | 'destructive'
-  onConfirm: () => Promise<void> | void
-  onCancel: () => void
-  loading?: boolean
-}
-
-/**
- * 页面头部 Props
- */
-export interface PageHeaderProps extends BaseComponentProps {
-  title: string
-  description?: string
-  breadcrumbs?: Array<{
-    label: string
-    href?: string
-  }>
-  actions?: Snippet
-}
-
-/**
  * 侧边栏菜单项组件 Props
  */
 export interface SidebarMenuItemProps extends BaseComponentProps {
