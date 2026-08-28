@@ -1,0 +1,228 @@
+@import '@fontsource/fira-mono/latin-400.css';
+@import '@fontsource/fira-mono/latin-500.css';
+@import '@fontsource/fira-mono/latin-700.css';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* 纳入 packages/ui 源码，Tailwind v4 默认不扫描 node_modules 与仓库外目录。 */
+@source '../../../../packages/ui/src';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * 设计基调：暖色纸墨 + 国际橙强调色。
+ * 中性色统一使用极低的黄色相，避免常见的冷灰偏蓝。
+ * 强调色 signal 为「国际橙」，以发丝线与等宽字体共同构成「工程规格书」质感。
+ */
+:root {
+  --radius: 0.25rem;
+  --background: oklch(0.982 0.004 95);
+  --foreground: oklch(0.18 0.012 85);
+  --card: oklch(0.992 0.002 95);
+  --card-foreground: oklch(0.18 0.012 85);
+  --popover: oklch(0.992 0.002 95);
+  --popover-foreground: oklch(0.18 0.012 85);
+  --primary: oklch(0.18 0.012 85);
+  --primary-foreground: oklch(0.982 0.004 95);
+  --secondary: oklch(0.945 0.006 95);
+  --secondary-foreground: oklch(0.26 0.014 85);
+  --muted: oklch(0.945 0.006 95);
+  --muted-foreground: oklch(0.5 0.016 85);
+  --accent: oklch(0.935 0.007 95);
+  --accent-foreground: oklch(0.18 0.012 85);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.882 0.007 95);
+  --input: oklch(0.882 0.007 95);
+  --ring: oklch(0.63 0.23 30);
+  --signal: oklch(0.63 0.23 30);
+  --signal-foreground: oklch(0.17 0.02 30);
+  --chart-1: oklch(0.63 0.23 30);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.945 0.006 95);
+  --sidebar-foreground: oklch(0.18 0.012 85);
+  --sidebar-primary: oklch(0.18 0.012 85);
+  --sidebar-primary-foreground: oklch(0.982 0.004 95);
+  --sidebar-accent: oklch(0.935 0.007 95);
+  --sidebar-accent-foreground: oklch(0.18 0.012 85);
+  --sidebar-border: oklch(0.882 0.007 95);
+  --sidebar-ring: oklch(0.63 0.23 30);
+}
+
+.dark {
+  --background: oklch(0.16 0.007 95);
+  --foreground: oklch(0.93 0.005 95);
+  --card: oklch(0.19 0.008 95);
+  --card-foreground: oklch(0.93 0.005 95);
+  --popover: oklch(0.19 0.008 95);
+  --popover-foreground: oklch(0.93 0.005 95);
+  --primary: oklch(0.93 0.005 95);
+  --primary-foreground: oklch(0.16 0.007 95);
+  --secondary: oklch(0.24 0.009 95);
+  --secondary-foreground: oklch(0.93 0.005 95);
+  --muted: oklch(0.24 0.009 95);
+  --muted-foreground: oklch(0.68 0.012 95);
+  --accent: oklch(0.24 0.009 95);
+  --accent-foreground: oklch(0.93 0.005 95);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.27 0.009 95);
+  --input: oklch(0.27 0.009 95);
+  --ring: oklch(0.68 0.21 32);
+  --signal: oklch(0.68 0.21 32);
+  --signal-foreground: oklch(0.15 0.02 32);
+  --chart-1: oklch(0.68 0.21 32);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.19 0.008 95);
+  --sidebar-foreground: oklch(0.93 0.005 95);
+  --sidebar-primary: oklch(0.68 0.21 32);
+  --sidebar-primary-foreground: oklch(0.16 0.007 95);
+  --sidebar-accent: oklch(0.24 0.009 95);
+  --sidebar-accent-foreground: oklch(0.93 0.005 95);
+  --sidebar-border: oklch(0.27 0.009 95);
+  --sidebar-ring: oklch(0.68 0.21 32);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* 等宽字体采用自托管的 Fira Mono，作为「技术标注」的专属声音。 */
+@theme {
+  --font-mono:
+    'Fira Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+      'Microsoft YaHei', sans-serif;
+  }
+
+  /* 标题字体与正文一致，依靠字号、字重与字距营造层级。 */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+      'Microsoft YaHei', sans-serif;
+  }
+
+  /* 平滑滚动 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 自定义滚动条 */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 0;
+    background: oklch(0.7 0.012 85);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.6 0.012 85);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.38 0.012 85);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.48 0.012 85);
+  }
+}
+
+/* 规格书坐标网格背景：登录页复用的公共网格底纹。 */
+/* 网格单元边长 56px，与首屏 HeroSection 的网格保持一致的图纸密度。 */
+.spec-grid {
+  opacity: 0.4;
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* 背景动画：登录页还原后恢复使用的模糊色块动效。 */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
