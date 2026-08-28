@@ -14,12 +14,6 @@
     "isolatedModules": true,
     "types": ["bun-types"]
   },
-  "include": [
-    "scripts/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "web",
-    "server"
-  ]
+  "include": ["scripts/**/*"],
+  "exclude": ["node_modules", "apps", "server"]
 }

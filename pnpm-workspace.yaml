@@ -1,8 +1,6 @@
 # pnpm 工作区配置。
-# 当前 web 应用尚未拆分为 apps/web，先纳入工作区以便 pnpm 统一管理依赖。
-# 拆分完成（Phase 4）后移除 web 条目，由 apps/* 通配符覆盖。
+# web 应用已在 Phase 4 拆分为 apps/web 与 apps/admin，由 apps/* 通配符覆盖。
 packages:
-  - web
   - apps/*
   - packages/*
 allowBuilds:

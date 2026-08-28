@@ -9,8 +9,12 @@
       "path": "./server"
     },
     {
-      "name": "🎨 Web (SvelteKit)",
-      "path": "./web"
+      "name": "🎨 Web (SvelteKit 前台)",
+      "path": "./apps/web"
+    },
+    {
+      "name": "🛠 Admin (SvelteKit 后台)",
+      "path": "./apps/admin"
     },
     {
       "name": "📜 Scripts",
@@ -49,7 +53,8 @@
     
     // 多根工作区特定设置
     "eslint.workingDirectories": [
-      "web"
+      "apps/web",
+      "apps/admin"
     ],
     
     // Go 设置
@@ -181,18 +186,26 @@
         "cwd": "${workspaceFolder}/server"
       },
       {
-        "name": "🎨 Debug SvelteKit",
+        "name": "🎨 Debug SvelteKit (前台)",
         "type": "node",
         "request": "launch",
-        "program": "${workspaceFolder}/web/node_modules/@sveltejs/kit/src/cli/index.js",
+        "program": "${workspaceFolder}/apps/web/node_modules/@sveltejs/kit/src/cli/index.js",
         "args": ["dev"],
-        "cwd": "${workspaceFolder}/web"
+        "cwd": "${workspaceFolder}/apps/web"
+      },
+      {
+        "name": "🛠 Debug SvelteKit (后台)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/apps/admin/node_modules/@sveltejs/kit/src/cli/index.js",
+        "args": ["dev"],
+        "cwd": "${workspaceFolder}/apps/admin"
       }
     ],
     "compounds": [
       {
         "name": "🚀 Debug Full Stack",
-        "configurations": ["🐹 Debug Go Server", "🎨 Debug SvelteKit"],
+        "configurations": ["🐹 Debug Go Server", "🎨 Debug SvelteKit (前台)", "🛠 Debug SvelteKit (后台)"],
         "stopAll": true
       }
     ]

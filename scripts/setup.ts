@@ -72,17 +72,32 @@ async function installDependencies() {
 function createEnvironmentFiles() {
   console.log('🔧 创建环境配置文件...')
 
-  // 检查并创建前端 .env 文件
-  const webEnvPath = join('web', '.env')
-  if (!existsSync(webEnvPath)) {
-    const webEnvContent = `# 前端环境配置
-VITE_API_URL=http://localhost:3000
-VITE_APP_TITLE=MyBlog
+  // 检查并创建两个应用的 .env 文件（前台 8899、后台 9988）。
+  const appEnvs = [
+    { dir: 'apps/web', port: 8899, label: '前台' },
+    { dir: 'apps/admin', port: 9988, label: '后台' }
+  ]
+
+  for (const appEnv of appEnvs) {
+    const envPath = join(appEnv.dir, '.env')
+    if (!existsSync(envPath)) {
+      const envContent = `# 服务端口
+VITE_SERVER_PORT=${appEnv.port}
+
+# 代理地址
+VITE_PROXY_URL=http://localhost:3000
+
+# 请求地址
+VITE_BASE_URL=/api
+
+# 请求超时时间
+VITE_REQUEST_TIMEOUT=15000
 `
-    writeFileSync(webEnvPath, webEnvContent)
-    console.log('✅ 创建 web/.env')
-  } else {
-    console.log('✅ web/.env 已存在')
+      writeFileSync(envPath, envContent)
+      console.log(`✅ 创建 ${appEnv.dir}/.env`)
+    } else {
+      console.log(`✅ ${appEnv.dir}/.env 已存在`)
+    }
   }
 
   // 检查后端配置文件
@@ -102,7 +117,8 @@ async function validateSetup() {
 
   const checks = [
     { name: 'package.json', path: 'package.json' },
-    { name: 'web/package.json', path: 'web/package.json' },
+    { name: 'apps/web/package.json', path: 'apps/web/package.json' },
+    { name: 'apps/admin/package.json', path: 'apps/admin/package.json' },
     { name: 'server/go.mod', path: 'server/go.mod' },
     { name: 'node_modules', path: 'node_modules' }
   ]

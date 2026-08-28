@@ -69,7 +69,7 @@ build
 *.key
 *.crt
 
-# web
+# 前端应用
 node_modules
 project.inlang
 

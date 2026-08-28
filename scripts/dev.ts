@@ -35,7 +35,12 @@ const HEALTH_CHECK_INTERVAL_MS = 1000
 const PORT_RELEASE_WAIT_MS = 1000
 
 // 环境要求的基础文件
-const REQUIRED_FILES = ['server/go.mod', 'web/package.json', 'server/configs/config.yaml']
+const REQUIRED_FILES = [
+  'server/go.mod',
+  'apps/web/package.json',
+  'apps/admin/package.json',
+  'server/configs/config.yaml'
+]
 
 // 无法获取进程名时的后备描述
 const UNKNOWN_PROCESS_NAME = '未知进程'
@@ -86,9 +91,9 @@ async function readServerPort(): Promise<number> {
   }
 }
 
-// 读取前端 Vite 开发服务器端口，来源为 web/.env 的 VITE_SERVER_PORT。
-function readWebPort(): number {
-  const envPath = join('web', '.env')
+// 读取应用 Vite 开发服务器端口，来源为 apps/<app>/.env 的 VITE_SERVER_PORT。
+function readAppPort(appDir: string): number {
+  const envPath = join(appDir, '.env')
   if (!existsSync(envPath)) {
     return DEFAULT_WEB_PORT
   }
@@ -107,7 +112,8 @@ function readWebPort(): number {
 // 组装前后端服务配置，包含各自端口的健康检查逻辑。
 async function getServices(): Promise<ServiceConfig[]> {
   const serverPort = await readServerPort()
-  const webPort = readWebPort()
+  const webPort = readAppPort('apps/web')
+  const adminPort = readAppPort('apps/admin')
 
   return [
     {
@@ -131,12 +137,27 @@ async function getServices(): Promise<ServiceConfig[]> {
     {
       name: 'WEB',
       command: ['pnpm', 'run', 'dev'],
-      cwd: 'web',
+      cwd: 'apps/web',
       color: 'green',
       port: webPort,
       healthCheck: async () => {
         try {
           const response = await fetch(`http://localhost:${webPort}/`)
+          return response.ok
+        } catch {
+          return false
+        }
+      }
+    },
+    {
+      name: 'ADMIN',
+      command: ['pnpm', 'run', 'dev'],
+      cwd: 'apps/admin',
+      color: 'yellow',
+      port: adminPort,
+      healthCheck: async () => {
+        try {
+          const response = await fetch(`http://localhost:${adminPort}/`)
           return response.ok
         } catch {
           return false
@@ -602,6 +623,9 @@ function displayServicesInfo(statusMap: Map<string, ServiceStatus>): void {
 
   const webPort = statusMap.get('WEB')?.port || DEFAULT_WEB_PORT
   console.log(`  ${COLORS.green}• WEB: http://localhost:${webPort}${COLORS.reset}`)
+
+  const adminPort = statusMap.get('ADMIN')?.port || DEFAULT_WEB_PORT
+  console.log(`  ${COLORS.yellow}• ADMIN: http://localhost:${adminPort}${COLORS.reset}`)
 
   console.log(`\n${COLORS.yellow}按 Ctrl+C 停止所有服务${COLORS.reset}\n`)
 }

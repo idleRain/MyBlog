@@ -99,7 +99,12 @@ async function checkEnvironment(): Promise<boolean> {
   }
 
   // 检查项目结构
-  const requiredPaths = ['server/cmd/myblog', 'web/package.json', 'server/go.mod']
+  const requiredPaths = [
+    'server/cmd/myblog',
+    'apps/web/package.json',
+    'apps/admin/package.json',
+    'server/go.mod'
+  ]
 
   for (const path of requiredPaths) {
     if (!existsSync(path)) {
@@ -118,7 +123,16 @@ async function cleanBuildFiles(options: BuildOptions): Promise<boolean> {
 
   console.log(`${colors.yellow}🧹 清理构建文件...${colors.reset}`)
 
-  const cleanPaths = ['server/bin', 'server/tmp', 'web/.svelte-kit', 'web/build', 'web/dist']
+  const cleanPaths = [
+    'server/bin',
+    'server/tmp',
+    'apps/web/.svelte-kit',
+    'apps/web/build',
+    'apps/web/dist',
+    'apps/admin/.svelte-kit',
+    'apps/admin/build',
+    'apps/admin/dist'
+  ]
 
   try {
     for (const path of cleanPaths) {
@@ -173,10 +187,16 @@ async function runQualityChecks(options: BuildOptions): Promise<boolean> {
   if (!options.serverOnly && !options.skipLint) {
     console.log(`${colors.yellow}  前端代码检查...${colors.reset}`)
 
-    // TypeScript 检查
-    const tsCheck = await runCommand('pnpm', ['run', 'check'], { cwd: 'web' })
-    if (!tsCheck.success) {
-      console.error(`${colors.red}❌ 前端 TypeScript 检查失败${colors.reset}`)
+    // TypeScript 检查（前台与后台两个应用）
+    const tsCheckWeb = await runCommand('pnpm', ['run', 'check'], { cwd: 'apps/web' })
+    if (!tsCheckWeb.success) {
+      console.error(`${colors.red}❌ 前台 TypeScript 检查失败${colors.reset}`)
+      return false
+    }
+
+    const tsCheckAdmin = await runCommand('pnpm', ['run', 'check'], { cwd: 'apps/admin' })
+    if (!tsCheckAdmin.success) {
+      console.error(`${colors.red}❌ 后台 TypeScript 检查失败${colors.reset}`)
       return false
     }
 
@@ -232,15 +252,21 @@ async function buildServer(): Promise<boolean> {
   return true
 }
 
-// 构建前端
+// 构建前端（前台与后台两个应用）
 async function buildWeb(options: BuildOptions): Promise<boolean> {
   console.log(`${colors.cyan}🔨 构建前端项目...${colors.reset}`)
 
   const buildCommand = options.production ? 'build' : 'build'
-  const result = await runCommand('pnpm', ['run', buildCommand], { cwd: 'web' })
 
-  if (!result.success) {
-    console.error(`${colors.red}❌ 前端构建失败${colors.reset}`)
+  const webResult = await runCommand('pnpm', ['run', buildCommand], { cwd: 'apps/web' })
+  if (!webResult.success) {
+    console.error(`${colors.red}❌ 前台构建失败${colors.reset}`)
+    return false
+  }
+
+  const adminResult = await runCommand('pnpm', ['run', buildCommand], { cwd: 'apps/admin' })
+  if (!adminResult.success) {
+    console.error(`${colors.red}❌ 后台构建失败${colors.reset}`)
     return false
   }
 
@@ -338,7 +364,8 @@ async function main(): Promise<void> {
       console.log(`  后端输出: server/bin/myblog`)
     }
     if (!options.serverOnly) {
-      console.log(`  前端输出: web/build/`)
+      console.log(`  前台输出: apps/web/build/`)
+      console.log(`  后台输出: apps/admin/build/`)
     }
 
     console.log(`\n${colors.yellow}💡 提示: 使用 'pnpm run dev' 启动开发服务器${colors.reset}`)
