@@ -14,8 +14,8 @@ const config = {
     adapter: adapter(),
     // 路径别名
     alias: {
-      $ui: './src/lib/components/ui',
-      '$ui/*': './src/lib/components/ui/*',
+      $ui: '../packages/ui/src',
+      '$ui/*': '../packages/ui/src/*',
       '~/*': './*',
       '#/*': './src/types/*',
       $i18n: './src/lib/paraglide/messages',

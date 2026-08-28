@@ -44,5 +44,9 @@ export default [
     languageOptions: {
       globals: { ...globals.node }
     }
+  },
+  {
+    // ui 包为 stock shadcn 第三方生成代码，不参与 lint。
+    ignores: ['packages/ui/**']
   }
 ]

@@ -5,7 +5,7 @@ import {
   safeExtractApiData,
   normalizeError,
   type BaseApiResponse
-} from './response'
+} from './response.ts'
 
 /**
  * HTTP 客户端认证相关回调集合。

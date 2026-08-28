@@ -52,6 +52,7 @@
     "@inlang/paraglide-js": "^2.24.1",
     "@myblog/http": "workspace:*",
     "@myblog/shared": "workspace:*",
+    "@myblog/ui": "workspace:*",
     "formsnap": "^2.0.1",
     "gsap": "^3.15.0",
     "ky": "^1.14.3",

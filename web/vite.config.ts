@@ -83,6 +83,10 @@ export default ({ mode }: ConfigEnv) => {
     css: {
       postcss: './postcss.config.js'
     },
+    ssr: {
+      // ui 包以源码直连方式被引用，需参与 SSR 编译以支持 .svelte 组件。
+      noExternal: ['@myblog/ui']
+    },
     resolve: {
       alias: {
         $lib: fileURLToPath(new URL('./src/lib', import.meta.url))
