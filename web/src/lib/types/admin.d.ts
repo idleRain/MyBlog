@@ -35,6 +35,7 @@ export interface QuickAction {
   description: string
   icon: any
   action: () => void
+  color: string
   roles: UserRole[]
 }
 
