@@ -7,8 +7,7 @@ import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 
 /**
- * 带自动重试的请求函数
- * 当遇到 401 错误时，会自动尝试刷新令牌并重试请求
+ * 带自动重试的请求函数，遇到 401 时尝试刷新令牌并重试。
  */
 export async function requestWithRetry<T = any>(
   requestFn: () => Promise<T>,
@@ -22,39 +21,33 @@ export async function requestWithRetry<T = any>(
     } catch (error: any) {
       lastError = error
 
-      // 如果是 401 错误且还有重试机会
+      // 401 错误且还有重试机会时尝试刷新令牌。
       if (error.response?.status === 401 && attempt < maxRetries) {
         console.log(`请求失败 (401)，尝试第 ${attempt + 1} 次重试...`)
 
         try {
-          // 尝试刷新令牌
           const newToken = await refreshAccessToken()
-
           if (newToken) {
             console.log('令牌刷新成功，重试请求')
-            continue // 继续下一次循环，重试请求
-          } else {
-            console.error('令牌刷新失败，停止重试')
-            break // 刷新失败，停止重试
+            continue
           }
+          console.error('令牌刷新失败，停止重试')
+          break
         } catch (refreshError) {
           console.error('令牌刷新过程中出错:', refreshError)
-          break // 刷新过程出错，停止重试
+          break
         }
       } else {
-        // 不是 401 错误或已达到最大重试次数
         break
       }
     }
   }
 
-  // 如果最终失败，抛出最后的错误
   throw lastError
 }
 
 /**
- * 安全的 API 调用包装器
- * 提供统一的错误处理和用户提示
+ * 安全的 API 调用包装器，提供统一错误处理与用户提示。
  */
 export async function safeApiCall<T = any>(
   apiCall: () => Promise<T>,
@@ -72,17 +65,17 @@ export async function safeApiCall<T = any>(
   } catch (error: any) {
     console.error('API 调用失败:', error)
 
-    // 处理认证错误
+    // 处理认证错误。
     if (error.response?.status === 401) {
       if (redirectOnAuthError && browser) {
-        authStore.clearLocalState() // 401 错误时只清除本地状态，不调用后端
+        authStore.clearLocalState()
         toast.error('登录已过期，请重新登录')
         await goto('/login')
       }
       return { data: null, error, success: false }
     }
 
-    // 显示错误提示
+    // 显示错误提示。
     if (showErrorToast && browser) {
       const message =
         errorMessage || error.response?.data?.message || error.message || '操作失败，请稍后重试'
@@ -94,29 +87,7 @@ export async function safeApiCall<T = any>(
 }
 
 /**
- * 检查响应是否成功
- */
-export function isApiSuccess(response: any): boolean {
-  return response?.code === 200
-}
-
-/**
- * 提取 API 响应数据
- */
-export function extractApiData<T>(response: any, defaultValue?: T): T {
-  if (isApiSuccess(response)) {
-    return response.data
-  }
-
-  if (defaultValue !== undefined) {
-    return defaultValue
-  }
-
-  throw new Error(response?.message || '请求失败')
-}
-
-/**
- * 创建带重试的 API 方法
+ * 创建带重试的 API 方法。
  */
 export function createRetryableApi<P extends any[], R>(
   originalMethod: (...params: P) => Promise<R>
@@ -125,7 +96,3 @@ export function createRetryableApi<P extends any[], R>(
     return requestWithRetry(() => originalMethod(...params))
   }
 }
-
-// 示例使用方法：
-// const safeUserList = createRetryableApi(UserAPI.getUserList)
-// const result = await safeApiCall(() => safeUserList(1, 10))

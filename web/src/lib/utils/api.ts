@@ -1,13 +1,8 @@
 // API 工具函数
 
-import type {
-  BaseApiResponse,
-  ApiError,
-  AsyncState,
-  AsyncStateActions,
-  RequestStatus
-} from '$lib/types'
+import type { BaseApiResponse, AsyncState, AsyncStateActions, RequestStatus } from '$lib/types'
 import { writable, derived, type Writable } from 'svelte/store'
+import { normalizeError, type ApiError } from '@myblog/http'
 
 /**
  * 创建异步状态管理
@@ -145,87 +140,6 @@ export function createAsyncOperation<T, Args extends any[] = any[]>(
     ...actions,
     execute,
     derived
-  }
-}
-
-/**
- * 标准化错误对象
- */
-export function normalizeError(error: any): ApiError {
-  if (isApiError(error)) {
-    return error
-  }
-
-  if (error?.response?.data) {
-    const { code, message, details, field } = error.response.data
-    return {
-      code: code || error.response.status || 500,
-      message: message || '请求失败',
-      details,
-      field,
-      timestamp: Date.now()
-    }
-  }
-
-  if (error instanceof Error) {
-    return {
-      code: 500,
-      message: error.message || '未知错误',
-      timestamp: Date.now()
-    }
-  }
-
-  return {
-    code: 500,
-    message: '未知错误',
-    timestamp: Date.now()
-  }
-}
-
-/**
- * 检查是否为 API 错误
- */
-export function isApiError(obj: any): obj is ApiError {
-  return (
-    obj &&
-    typeof obj === 'object' &&
-    typeof obj.code === 'number' &&
-    typeof obj.message === 'string' &&
-    typeof obj.timestamp === 'number'
-  )
-}
-
-/**
- * 检查 API 响应是否成功
- */
-export function isApiSuccess<T>(
-  response: BaseApiResponse<T>
-): response is BaseApiResponse<T> & { code: 200 } {
-  return response.code === 200
-}
-
-/**
- * 提取 API 响应数据
- */
-export function extractApiData<T>(response: BaseApiResponse<T>): T {
-  if (!isApiSuccess(response)) {
-    throw normalizeError({
-      code: response.code,
-      message: response.message,
-      timestamp: response.timestamp || Date.now()
-    })
-  }
-  return response.data
-}
-
-/**
- * 安全地提取 API 响应数据
- */
-export function safeExtractApiData<T>(response: BaseApiResponse<T>, defaultValue: T): T {
-  try {
-    return extractApiData(response)
-  } catch {
-    return defaultValue
   }
 }
 

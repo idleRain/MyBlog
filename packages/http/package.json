@@ -1,0 +1,17 @@
+{
+  "name": "@myblog/http",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MyBlog 纯 HTTP 请求器，ky 封装，认证逻辑经回调注入不依赖应用代码。",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@myblog/shared": "workspace:*",
+    "ky": "^1.14.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
