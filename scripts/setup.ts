@@ -55,7 +55,7 @@ async function installDependencies() {
   try {
     // 安装所有依赖 (包括 workspace 中的前端依赖)
     console.log('安装项目依赖 (monorepo + workspace)...')
-    await $`bun install`
+    await $`pnpm install`
 
     // 安装后端依赖
     console.log('安装后端依赖...')
@@ -126,7 +126,7 @@ async function validateSetup() {
     if (!existsSync('node_modules')) {
       try {
         console.log('安装根目录依赖...')
-        await $`bun install`
+        await $`pnpm install`
       } catch (error) {
         console.error('❌ 根目录依赖安装失败:', error)
         process.exit(1)
@@ -153,9 +153,9 @@ async function validateSetup() {
 
   console.log('\n🎉 环境设置完成！')
   console.log('\n📖 下一步:')
-  console.log('  bun run dev    # 启动开发服务器')
-  console.log('  bun run build  # 构建项目')
-  console.log('  bun run test   # 运行测试')
+  console.log('  pnpm run dev    # 启动开发服务器')
+  console.log('  pnpm run build  # 构建项目')
+  console.log('  pnpm run test   # 运行测试')
 }
 
 // 主函数

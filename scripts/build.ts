@@ -142,7 +142,7 @@ async function installDependencies(options: BuildOptions): Promise<boolean> {
   // 检查并安装根目录依赖
   if (!existsSync('node_modules')) {
     console.log(`${colors.yellow}  安装根目录依赖...${colors.reset}`)
-    const result = await runCommand('bun', ['install'])
+    const result = await runCommand('pnpm', ['install'])
     if (!result.success) {
       console.error(`${colors.red}❌ 根目录依赖安装失败${colors.reset}`)
       return false
@@ -174,7 +174,7 @@ async function runQualityChecks(options: BuildOptions): Promise<boolean> {
     console.log(`${colors.yellow}  前端代码检查...${colors.reset}`)
 
     // TypeScript 检查
-    const tsCheck = await runCommand('bun', ['run', 'check'], { cwd: 'web' })
+    const tsCheck = await runCommand('pnpm', ['run', 'check'], { cwd: 'web' })
     if (!tsCheck.success) {
       console.error(`${colors.red}❌ 前端 TypeScript 检查失败${colors.reset}`)
       return false
@@ -237,7 +237,7 @@ async function buildWeb(options: BuildOptions): Promise<boolean> {
   console.log(`${colors.cyan}🔨 构建前端项目...${colors.reset}`)
 
   const buildCommand = options.production ? 'build' : 'build'
-  const result = await runCommand('bun', ['run', buildCommand], { cwd: 'web' })
+  const result = await runCommand('pnpm', ['run', buildCommand], { cwd: 'web' })
 
   if (!result.success) {
     console.error(`${colors.red}❌ 前端构建失败${colors.reset}`)
@@ -341,7 +341,7 @@ async function main(): Promise<void> {
       console.log(`  前端输出: web/build/`)
     }
 
-    console.log(`\n${colors.yellow}💡 提示: 使用 'bun run dev' 启动开发服务器${colors.reset}`)
+    console.log(`\n${colors.yellow}💡 提示: 使用 'pnpm run dev' 启动开发服务器${colors.reset}`)
   } catch (error) {
     console.error(`\n${colors.red}❌ 构建失败:${colors.reset}`, error)
     process.exit(1)

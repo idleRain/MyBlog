@@ -130,7 +130,7 @@ async function getServices(): Promise<ServiceConfig[]> {
     },
     {
       name: 'WEB',
-      command: ['bun', 'run', 'dev'],
+      command: ['pnpm', 'run', 'dev'],
       cwd: 'web',
       color: 'green',
       port: webPort,
@@ -166,7 +166,7 @@ async function checkEnvironment(): Promise<void> {
 
   if (!existsSync('node_modules')) {
     console.log(`${COLORS.yellow}⚠️  根目录依赖未安装，正在安装...${COLORS.reset}`)
-    await $`bun install`
+    await $`pnpm install`
   }
 
   console.log('')

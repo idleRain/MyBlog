@@ -50,15 +50,15 @@ function showHelp(): void {
   console.log(colors.bold('\n📚 数据库种子数据工具'))
   console.log('\n用法:')
   console.log(
-    colors.green('  bun run seed:admin [--username <用户>] [--password <密码>] [--email <邮箱>]')
+    colors.green('  pnpm run seed:admin [--username <用户>] [--password <密码>] [--email <邮箱>]')
   )
   console.log('\n参数:')
   console.log(colors.green('  --username    超级管理员用户名（默认 admin）'))
   console.log(colors.green('  --password    超级管理员密码（默认 Admin@123456）'))
   console.log(colors.green('  --email       超级管理员邮箱（默认 admin@myblog.local）'))
   console.log('\n示例:')
-  console.log(colors.cyan('  bun run seed:admin'))
-  console.log(colors.cyan('  bun run seed:admin --username root --password Root@2025'))
+  console.log(colors.cyan('  pnpm run seed:admin'))
+  console.log(colors.cyan('  pnpm run seed:admin --username root --password Root@2025'))
 }
 
 // 主函数
