@@ -101,11 +101,11 @@ web/
 
 ### 环境要求
 
-| 工具  | 版本要求 | 说明                        |
-| ----- | -------- | --------------------------- |
-| Go    | 1.23+    | 后端开发语言                |
-| Bun   | 1.1.24+  | JavaScript 运行时和包管理器 |
-| MySQL | 8.0+     | 数据库服务                  |
+| 工具    | 版本要求 | 说明                            |
+| ------- | -------- | ------------------------------- |
+| Go      | 1.23+    | 后端开发语言                    |
+| Node.js | 20+      | JavaScript 运行时与脚本执行器   |
+| MySQL   | 8.0+     | 数据库服务                      |
 
 ### 快速启动
 
@@ -115,10 +115,10 @@ git clone <repository-url>
 cd MyBlog
 
 # 2. 自动环境设置
-bun run setup
+pnpm run setup
 
 # 3. 启动开发环境
-bun run dev
+pnpm run dev
 ```
 
 ### 手动设置步骤
@@ -127,23 +127,23 @@ bun run dev
 
 ```bash
 # 1. 安装根目录依赖
-bun install
+pnpm install
 
 # 2. 安装前端依赖
-cd web && bun install
+cd apps/web && pnpm install
 
 # 3. 安装后端依赖
 cd ../server && go mod tidy
 
 # 4. 安装 Go 代码检查工具
-cd .. && bun run go:lint-install
+cd .. && pnpm run go:lint-install
 
 # 5. 配置数据库
 # 确保 MySQL 服务运行
 # 检查 server/configs/config.yaml 中的数据库配置
 
 # 6. 启动开发服务
-bun run dev
+pnpm run dev
 ```
 
 ### 初始化管理员账户
@@ -152,10 +152,10 @@ bun run dev
 
 ```bash
 # 初始化默认超级管理员
-bun run seed:admin
+pnpm run seed:admin
 
 # 自定义用户名、密码、邮箱
-bun run seed:admin --username root --password Root@2025 --email root@myblog.local
+pnpm run seed:admin --username root --password Root@2025 --email root@myblog.local
 ```
 
 - **默认账户**：用户名 `admin`，密码 `Admin@123456`，邮箱 `admin@myblog.local`
@@ -172,7 +172,7 @@ bun run seed:admin --username root --password Root@2025 --email root@myblog.loca
 
 ```bash
 # 启动所有服务
-bun run dev
+pnpm run dev
 ```
 
 2. **代码开发**
@@ -192,12 +192,12 @@ git commit -m "feat: 添加新功能"
 
 ```bash
 # 完整质量检查
-bun run quality
+pnpm run quality
 
 # 分别运行
-bun run format    # 代码格式化
-bun run lint      # 代码检查
-bun run test      # 运行测试
+pnpm run format    # 代码格式化
+pnpm run lint      # 代码检查
+pnpm run test      # 运行测试
 ```
 
 ### Git 工作流
@@ -419,7 +419,7 @@ export async function apiPost<T>(endpoint: string, data?: any): Promise<T> {
 
 ```bash
 # 启动开发环境
-bun run dev
+pnpm run dev
 
 # 访问地址
 # 前端: http://localhost:8899
@@ -430,11 +430,11 @@ bun run dev
 
 ```bash
 # 构建所有服务
-bun run build
+pnpm run build
 
 # 分别构建
-bun run build:server  # 构建 Go 二进制文件
-bun run build:web     # 构建前端静态文件
+pnpm run build:server  # 构建 Go 二进制文件
+pnpm run build:web     # 构建前端静态文件
 ```
 
 ## 最佳实践

@@ -123,7 +123,7 @@ MyBlog 后端 API 提供完整的博客系统功能，包括用户管理、文�
 ### 本地测试
 ```bash
 # 启动开发服务器
-bun run dev
+pnpm run dev
 
 # 健康检查
 curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json" -d '{}'

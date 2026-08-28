@@ -9,54 +9,61 @@ MyBlog 是一个 Monorepo 全栈个人博客应用，采用 Go + SvelteKit 技�
 
 ```
 MyBlog/
-├── server/               # Go 后端服务（Gin + GORM + MySQL）
-├── web/                  # SvelteKit 前端应用（Svelte 5 + TS + TailwindCSS v4 + shadcn-svelte）
-├── scripts/              # 跨项目构建/开发脚本（Bun/TypeScript）
-├── docs/                 # 数据库架构、开发文档、schema.sql
-├── .husky/               # Git hooks（commitlint + lint-staged）
-└── package.json          # monorepo 根，workspaces = ["web"]
+├── apps/
+│   ├── web/                  # 前台应用（Svelte 5 + TS + TailwindCSS v4，公开博客 + demo + i18n）
+│   └── admin/                # 后台应用（SvelteKit，管理控制台 + 登录页，无 i18n）
+├── packages/
+│   ├── shared/               # 公共纯工具与通用类型
+│   ├── http/                 # HTTP 请求器（ky 封装，认证回调注入）
+│   ├── api/                  # 后端接口模块与响应类型
+│   └── ui/                   # shadcn-svelte 基础组件（stock，主题注入）
+├── server/                   # Go 后端服务（Gin + GORM + MySQL）
+├── scripts/                  # 跨项目构建/开发脚本（Node.js + tsx）
+├── docs/                     # 数据库架构、开发文档、schema.sql
+├── .husky/                   # Git hooks（commitlint + lint-staged）
+└── package.json              # monorepo 根，pnpm workspaces = ["apps/*", "packages/*"]
 ```
 
-- 包管理/运行时：**Bun**（根脚本）、Go 1.23（后端）。
-- 配置承载于 `web/.env` 与 `server/configs/config.yaml`，默认端口：前端 8899、后端 3000。
+- 包管理：**pnpm**；脚本运行时：**Node.js + tsx**；后端：Go 1.23。
+- 配置承载于 `apps/web/.env`、`apps/admin/.env` 与 `server/configs/config.yaml`，默认端口：前台 8899、后台 9988、后端 3000。
 
 ## 2. 常用命令
 
-均在仓库根目录通过 `bun run <script>` 执行（根 `package.json` 的 scripts）。
+均在仓库根目录通过 `pnpm run <script>` 执行（根 `package.json` 的 scripts）。
 
 ```bash
-bun run setup        # 一键环境设置
-bun run dev          # 智能启动（含环境检查、端口检查、健康监控）
-bun run dev:simple   # concurrently 并行启动 server 与 web
-bun run dev:server   # 仅 Go 后端热更新（air watcher）
-bun run dev:web      # 仅 SvelteKit 前端
+pnpm run setup        # 一键环境设置
+pnpm run dev          # 智能启动（含环境检查、端口检查、健康监控）
+pnpm run dev:simple   # concurrently 并行启动 server 与 web
+pnpm run dev:server   # 仅 Go 后端热更新（air watcher）
+pnpm run dev:web      # 仅 SvelteKit 前端
 
-bun run build        # 生产构建（可加 --clean / --production / --server-only / --web-only / --skip-tests --skip-lint）
-bun run build:server # 仅构建 Go 后端二进制
-bun run build:web    # 仅构建前端静态文件
-bun run build:clean  # 清理构建产物后构建
-bun run build:fast   # 跳过测试与 lint 的快速构建
-bun run test         # test:server + test:web
-bun run lint         # lint:web + lint:server（go vet + golangci-lint）
-bun run format       # format:web + format:server
-bun run quality      # format + lint + test
-bun run check        # 即 lint
-bun run clean        # 清理前后端构建产物
-bun run deps         # 安装前后端全部依赖
-bun run seed:admin   # 初始化或提升超级管理员账户，命令幂等
+pnpm run build        # 生产构建（可加 --clean / --production / --server-only / --web-only / --skip-tests --skip-lint）
+pnpm run build:server # 仅构建 Go 后端二进制
+pnpm run build:web    # 仅构建前端静态文件
+pnpm run build:clean  # 清理构建产物后构建
+pnpm run build:fast   # 跳过测试与 lint 的快速构建
+pnpm run test         # test:server + test:web
+pnpm run lint         # lint:web + lint:server（go vet + golangci-lint）
+pnpm run format       # format:web + format:server
+pnpm run quality      # format + lint + test
+pnpm run check        # 即 lint
+pnpm run clean        # 清理前后端构建产物
+pnpm run deps         # 安装前后端全部依赖
+pnpm run seed:admin   # 初始化或提升超级管理员账户，命令幂等
 
 # Go 专项
-bun run go:lint-install / go:quality
+pnpm run go:lint-install / go:quality
 # 数据库迁移
-bun run migrate [create|up|down|version|help]
+pnpm run migrate [create|up|down|version|help]
 ```
 
 ## 3. 代码质量与格式化约定
 
 - 根 `prettier.config.js`：`semi: false`、`singleQuote: true`、`arrowParens: 'avoid'`、`printWidth: 100`、`tabWidth: 2`、`trailingComma: 'none'`。
-- 根 `eslint.config.js` 导出 `baseConfig` 供子项目继承；`web/eslint.config.js` 在其上叠加 Svelte/TS 规则。
-- Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `web/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
-- 更改文件后应运行 `bun run lint` 与 `bun run format` 保持静态零告警。
+- 根 `eslint.config.js` 导出 `baseConfig` 供子项目继承；`apps/*/eslint.config.js` 在其上叠加 Svelte/TS 规则。
+- Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
+- 更改文件后应运行 `pnpm run lint` 与 `pnpm run format` 保持静态零告警。
 - 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，type 枚举以 `commitlint.config.js` 为准。
 - 关键逻辑应配套单元测试，测试文件与被测文件同目录命名，Go 为 `*_test.go`，前端为 `*.test.ts`。当前仓库尚未引入测试，新增功能时应一并补齐。
 
@@ -80,17 +87,17 @@ bun run migrate [create|up|down|version|help]
 - **接口定义位置**：接口统一声明在各层实现所在包，即 `handler`、`service`、`repository` 内；`router` 只引用各层接口完成依赖注入与类型断言，不得在 `router` 包重复定义接口。
 - **配置**：`internal/config` 包通过 Viper 读取 `configs/config.yaml`，支持 `${ENV:default}` 变量替换，如 JWT 密钥。
 
-## 5. 前端约定（web/）
+## 5. 前端约定（apps/）
 
-- **框架**：SvelteKit + Svelte 5 + TypeScript，`<script setup>` 等价于 Composition API 风格（Svelte 5 runes），**不使用 Options API**。
-- **组件库**：shadcn-svelte，组件位于 `src/lib/components/ui/*`（已忽略 ESLint）。别名见 `svelte.config.js`：`$lib`、`$ui`、`$i18n`（paraglide messages）、`@/*`（`src/*`）、`#/*`、`~/*`。
-- **样式**：TailwindCSS v4（`@tailwindcss/vite`），`src/app.css`；已引入 `tailwind-merge`、`tailwind-variants`、`tw-animate-css`。
-- **API 层**：`src/lib/service` 为核心请求封装（基于 `ky`），`src/lib/utils/request.ts` 提供 `requestWithRetry`（401 自动刷新令牌并重试）、`safeApiCall`（统一错误处理与 toast）、`isApiSuccess`、`extractApiData`。模块化 API 见 `src/lib/api/modules/*`，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。
-- **状态**：`src/lib/stores`（如 `auth`），token 刷新/失效处理见 `src/lib/utils/auth.ts`、`jwt.ts`、`logout.ts`。
-- **路由**：`src/routes` 使用分组路由 `(admin)`、`(app)`、`(auth)`、`demo`；服务端逻辑用 `+page.server.ts`，客户端逻辑用 `+page.ts` / `+page.svelte`。
-- **i18n**：`@inlang/paraglide-js`，`messages/` 目录，别名 `$i18n`。
-- **类型**：`src/types`、`src/lib/types`（`.d.ts`）。
-- 前端代码改动需运行 `cd web && bun run check`（svelte-check + svelte-kit sync）。
+- **框架**：SvelteKit + Svelte 5 + TypeScript，`<script setup>` 等价于 Composition API 风格（Svelte 5 runes），**不使用 Options API**。应用分 `apps/web`（前台 toC）与 `apps/admin`（后台 toB）。
+- **组件库**：shadcn-svelte 基础组件统一位于 `packages/ui`（保持 stock，主题经各应用 `app.css` token 注入），以 `$ui` 别名引入，由根级 eslint/prettier 排除。别名见各应用 `svelte.config.js`：`$lib`、`$ui`、`$i18n`（仅前台，paraglide messages）、`@/*`（`src/*`）、`#/*`、`~/*`。
+- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；前台 `apps/web/src/app.css`（规格书主题，含 `--signal`）、后台 `apps/admin/src/app.css`（原始主题，无 `--signal`）；`packages/ui` 不携带全局样式。
+- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 `createUserAPI` 工厂；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。
+- **状态**：`src/lib/stores/auth.ts` 认证 store 两应用各保留一份；认证域其余代码（`constants`/`guards`/`utils/auth*`/`jwt`/`logout`/`permissions`）仅内置 `apps/admin`。
+- **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`；后台使用 `(admin)`、`(auth)`（登录页归属后台）。服务端逻辑用 `+page.server.ts`，客户端逻辑用 `+page.ts` / `+page.svelte`。
+- **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。
+- **类型**：`src/types`、`src/lib/types`（`.d.ts`）；用户/接口类型统一来自 `@myblog/api`。
+- 前端代码改动需运行对应应用 `cd apps/web && pnpm run check` 或 `cd apps/admin && pnpm run check`（svelte-check + svelte-kit sync）。
 
 ## 6. 注释与代码规范硬约束
 
@@ -107,7 +114,7 @@ bun run migrate [create|up|down|version|help]
 ## 7. 环境配置
 
 - 后端：`server/configs/config.yaml`（数据库、服务器、日志、API、JWT、安全配置）。默认 MySQL `blog` 库，`root/123456`，含校验与沙箱占位。
-- 前端：`web/.env`（`VITE_SERVER_PORT=8899`、`VITE_PROXY_URL=http://localhost:3000`、`VITE_BASE_URL=/api`、`VITE_REQUEST_TIMEOUT=15000`）。
+- 前端：`apps/web/.env`（`VITE_SERVER_PORT=8899`）与 `apps/admin/.env`（`VITE_SERVER_PORT=9988`），均含 `VITE_PROXY_URL=http://localhost:3000`、`VITE_BASE_URL=/api`、`VITE_REQUEST_TIMEOUT=15000`。
 - 后端示例环境变量见 `server/.env.example`。
 
 ## 8. 开发进度概览

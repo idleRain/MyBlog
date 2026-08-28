@@ -25,6 +25,14 @@
 
 ```
 MyBlog/                   # Monorepo 根目录
+├── apps/                 # 前端应用
+│   ├── web/              # 前台应用（SvelteKit，公开博客 + demo + i18n）
+│   └── admin/            # 后台应用（SvelteKit，管理控制台 + 登录页）
+├── packages/             # 公共包
+│   ├── shared/           # 纯工具与通用类型
+│   ├── http/             # HTTP 请求器（ky 封装）
+│   ├── api/              # 后端接口模块
+│   └── ui/               # shadcn-svelte 基础组件（stock）
 ├── server/               # Go 后端服务
 │   ├── cmd/myblog/       # 应用程序入口
 │   ├── internal/         # 内部业务逻辑
@@ -36,14 +44,7 @@ MyBlog/                   # Monorepo 根目录
 │   ├── pkg/              # 公共包和工具
 │   ├── configs/          # 配置文件
 │   └── scripts/          # 后端专用脚本
-├── web/                  # SvelteKit 前端应用
-│   ├── src/              # 源代码
-│   │   ├── routes/       # 页面路由
-│   │   ├── lib/          # 可复用组件
-│   │   ├── service/      # API 调用服务
-│   │   └── utils/        # 工具函数
-│   └── static/           # 静态资源
-├── scripts/              # 跨项目构建脚本
+├── scripts/              # 跨项目构建脚本（Node.js + tsx）
 ├── .husky/               # Git hooks 配置
 └── docs/                 # 项目文档
 ```
@@ -58,7 +59,7 @@ MyBlog/                   # Monorepo 根目录
 - **MySQL** - 关系型数据库
 - **Viper** - 配置管理
 
-### 前端 (web/)
+### 前端 (apps/)
 
 - **SvelteKit** - 现代化前端框架
 - **TypeScript** - 类型安全的 JavaScript
@@ -67,7 +68,7 @@ MyBlog/                   # Monorepo 根目录
 
 ### 开发工具
 
-- **Bun** - 快速的 JavaScript 运行时和包管理器
+- **Node.js + tsx** - JavaScript 运行时与 TypeScript 执行器
 - **Husky** - Git hooks 管理
 - **lint-staged** - 暂存文件代码检查
 - **commitlint** - 提交信息规范验证
@@ -77,7 +78,7 @@ MyBlog/                   # Monorepo 根目录
 
 ### 环境要求
 - **Go 1.23+** - [下载安装](https://golang.org/)
-- **Bun 1.1.24+** - [下载安装](https://bun.sh/)
+- **Node.js 20+** - [下载安装](https://nodejs.org/)
 - **MySQL 8.0+** - [下载安装](https://dev.mysql.com/)
 
 ### 一键环境设置
@@ -88,26 +89,28 @@ git clone https://github.com/idleRain/MyBlog.git
 cd MyBlog
 
 # 自动环境设置 (推荐)
-bun run setup
+pnpm run setup
 ```
 
 ### 开发环境
 
 ```bash
 # 智能启动 (推荐) - 包含环境检查、端口检查、健康监控
-bun run dev
+pnpm run dev
 
 # 备选启动方式
-bun run dev:simple    # 使用 concurrently 简单启动
+pnpm run dev:simple    # 使用 concurrently 简单启动
 
 # 分别启动服务
-bun run dev:server    # Go 后端热更新
-bun run dev:web       # SvelteKit 前端开发服务器
+pnpm run dev:server    # Go 后端热更新
+pnpm run dev:web       # 前台应用（SvelteKit）开发服务器
+pnpm run dev:admin     # 后台应用（SvelteKit）开发服务器
 ```
 
 ### 访问应用
 
-- **前端应用**: http://localhost:8899 (可配置)
+- **前台应用**: http://localhost:8899 (可配置)
+- **后台应用**: http://localhost:9988 (可配置)
 - **后端 API**: http://localhost:3000 (可配置)
 - **API 健康检查**: http://localhost:3000/api/health
 
@@ -117,34 +120,35 @@ bun run dev:web       # SvelteKit 前端开发服务器
 
 ```bash
 # 环境和依赖管理
-bun run setup           # 初始化开发环境
-bun run deps            # 安装所有依赖
+pnpm run setup           # 初始化开发环境
+pnpm run deps            # 安装所有依赖
 
 # 开发和构建
-bun run dev             # 启动开发环境 (智能模式)
-bun run build           # 构建生产版本
-bun run test            # 运行所有测试
+pnpm run dev             # 启动开发环境 (智能模式)
+pnpm run build           # 构建生产版本
+pnpm run test            # 运行所有测试
 
 # 代码质量
-bun run lint            # 代码检查
-bun run format          # 代码格式化
-bun run quality         # 完整质量检查 (格式化 + 检查 + 测试)
+pnpm run lint            # 代码检查
+pnpm run format          # 代码格式化
+pnpm run quality         # 完整质量检查 (格式化 + 检查 + 测试)
 ```
 
 ### 专项命令
 
 ```bash
 # 前端专用
-bun run test:web        # 前端测试
-cd web && bun run check # SvelteKit 类型检查
+pnpm run test:web        # 前后台应用类型检查
+cd apps/web && pnpm run check   # 前台 SvelteKit 类型检查
+cd apps/admin && pnpm run check # 后台 SvelteKit 类型检查
 
 # 后端专用  
-bun run test:server     # 后端测试
+pnpm run test:server     # 后端测试
 cd server && go test -v ./...  # 详细测试输出
 
 # Go 工具链
-bun run go:lint-install # 安装 Go 代码检查工具
-bun run go:quality      # Go 完整质量检查
+pnpm run go:lint-install # 安装 Go 代码检查工具
+pnpm run go:quality      # Go 完整质量检查
 ```
 
 ## ⚙️ 配置管理
@@ -153,8 +157,8 @@ bun run go:quality      # Go 完整质量检查
 
 - **后端配置**: `server/configs/config.yaml`
   - 数据库连接、服务器端口、日志级别等
-- **前端环境**: `web/.env`
-  - API 地址、前端端口等
+- **前端环境**: `apps/web/.env`（前台，端口 8899）与 `apps/admin/.env`（后台，端口 9988）
+  - API 地址、应用端口等
 
 ### 默认配置
 
@@ -174,8 +178,8 @@ database:
 ```
 
 ```bash
-# web/.env
-VITE_SERVER_PORT=8899
+# apps/web/.env（前台）与 apps/admin/.env（后台）端口配置示例
+VITE_SERVER_PORT=8899   # 前台；后台为 9988
 VITE_PROXY_URL=http://localhost:3000
 VITE_BASE_URL=/api
 ```
@@ -184,13 +188,13 @@ VITE_BASE_URL=/api
 
 ```bash
 # 查看开发日志
-bun run dev  # 实时日志输出
+pnpm run dev  # 实时日志输出
 
 # Go 后端详细日志
 cd server && go run scripts/watcher.go
 
 # 前端开发日志  
-cd web && bun run dev
+cd apps/web && pnpm run dev
 ```
 
 ## 🏗️ 架构设计

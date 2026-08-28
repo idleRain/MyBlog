@@ -123,7 +123,7 @@ database:
 初始化默认超级管理员账户，通过根目录命令执行：
 
 ```bash
-bun run seed:admin
+pnpm run seed:admin
 ```
 
 - 默认账户：用户名 `admin`，密码 `Admin@123456`，邮箱 `admin@myblog.local`
