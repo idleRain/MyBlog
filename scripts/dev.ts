@@ -173,8 +173,8 @@ async function getServices(): Promise<ServiceConfig[]> {
 async function checkEnvironment(): Promise<void> {
   console.log(`${COLORS.cyan}🔍 检查开发环境...${COLORS.reset}\n`)
 
-  await checkCommandAvailable('Go', 'go')
-  await checkCommandAvailable('Node.js', 'node')
+  await checkCommandAvailable('Go', 'go version')
+  await checkCommandAvailable('Node.js', 'node --version')
   console.log(`${COLORS.green}✅ Node.js: ${process.version}${COLORS.reset}`)
 
   for (const file of REQUIRED_FILES) {
@@ -195,9 +195,10 @@ async function checkEnvironment(): Promise<void> {
 }
 
 // 检查指定命令行工具是否可用，不可用时退出进程。
-async function checkCommandAvailable(label: string, binary: string): Promise<void> {
+// 版本命令因工具而异，例如 go version 与 node --version，直接传入完整命令。
+async function checkCommandAvailable(label: string, versionCommand: string): Promise<void> {
   try {
-    execSync(`${binary} version`, { stdio: 'ignore' })
+    execSync(versionCommand, { stdio: 'ignore' })
     console.log(`${COLORS.green}✅ ${label}: 已安装${COLORS.reset}`)
   } catch {
     console.error(`${COLORS.red}❌ ${label} 未安装或不在 PATH 中${COLORS.reset}`)
@@ -425,9 +426,11 @@ async function startServices(services: ServiceConfig[]): Promise<void> {
   }
 
   for (const service of services) {
+    // shell 模式用于解析 Windows 下的 pnpm.cmd 等 shim，否则 spawn 报 ENOENT。
     const child = spawn(service.command[0], service.command.slice(1), {
       cwd: service.cwd,
-      stdio: ['inherit', 'pipe', 'pipe']
+      stdio: ['inherit', 'pipe', 'pipe'],
+      shell: true
     })
     processes.push(child)
 
