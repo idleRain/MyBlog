@@ -1,10 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 
-import { $ } from 'bun'
-import { spawn, type ChildProcess } from 'child_process'
+import { execSync, spawn, type ChildProcess } from 'child_process'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import yaml from 'yaml'
+import { isMainModule } from './lib/is-main'
 
 // ---------- 常量定义 ----------
 
@@ -174,7 +174,8 @@ async function checkEnvironment(): Promise<void> {
   console.log(`${COLORS.cyan}🔍 检查开发环境...${COLORS.reset}\n`)
 
   await checkCommandAvailable('Go', 'go')
-  console.log(`${COLORS.green}✅ Bun: ${Bun.version}${COLORS.reset}`)
+  await checkCommandAvailable('Node.js', 'node')
+  console.log(`${COLORS.green}✅ Node.js: ${process.version}${COLORS.reset}`)
 
   for (const file of REQUIRED_FILES) {
     if (existsSync(file)) {
@@ -187,7 +188,7 @@ async function checkEnvironment(): Promise<void> {
 
   if (!existsSync('node_modules')) {
     console.log(`${COLORS.yellow}⚠️  根目录依赖未安装，正在安装...${COLORS.reset}`)
-    await $`pnpm install`
+    execSync('pnpm install', { stdio: 'inherit' })
   }
 
   console.log('')
@@ -196,7 +197,7 @@ async function checkEnvironment(): Promise<void> {
 // 检查指定命令行工具是否可用，不可用时退出进程。
 async function checkCommandAvailable(label: string, binary: string): Promise<void> {
   try {
-    await $`${binary} version`.quiet()
+    execSync(`${binary} version`, { stdio: 'ignore' })
     console.log(`${COLORS.green}✅ ${label}: 已安装${COLORS.reset}`)
   } catch {
     console.error(`${COLORS.red}❌ ${label} 未安装或不在 PATH 中${COLORS.reset}`)
@@ -220,7 +221,7 @@ async function getListeningPid(port: number): Promise<number | null> {
 
 // 在 Windows 下通过 netstat 解析监听端口的进程 PID。
 async function getListeningPidOnWindows(port: number): Promise<number | null> {
-  const result = await $`netstat -ano -p tcp`.text()
+  const result = execSync('netstat -ano -p tcp', { encoding: 'utf8' })
   for (const line of result.split('\n')) {
     if (line.includes(`:${port} `) && line.includes('LISTENING')) {
       return parseLastColumnAsInt(line)
@@ -231,7 +232,7 @@ async function getListeningPidOnWindows(port: number): Promise<number | null> {
 
 // 在 Unix 下通过 lsof 获取监听端口的进程 PID。
 async function getListeningPidOnUnix(port: number): Promise<number | null> {
-  const result = await $`lsof -ti :${port}`.text()
+  const result = execSync(`lsof -ti :${port}`, { encoding: 'utf8' })
   const pid = result.trim().split('\n')[0]
   return pid ? parseInt(pid, 10) : null
 }
@@ -252,13 +253,13 @@ async function isPortInUse(port: number): Promise<boolean> {
 async function getProcessName(pid: number): Promise<string> {
   try {
     if (process.platform === 'win32') {
-      const result = await $`tasklist /FI "PID eq ${pid}" /FO CSV`.text()
+      const result = execSync(`tasklist /FI "PID eq ${pid}" /FO CSV`, { encoding: 'utf8' })
       const lines = result.trim().split('\n')
       if (lines.length > 1) {
         return lines[1].split(',')[0]?.replace(/"/g, '') || UNKNOWN_PROCESS_NAME
       }
     } else {
-      const result = await $`ps -p ${pid} -o comm=`.text()
+      const result = execSync(`ps -p ${pid} -o comm=`, { encoding: 'utf8' })
       const name = result.trim()
       if (name) {
         return name
@@ -274,9 +275,9 @@ async function getProcessName(pid: number): Promise<string> {
 async function killProcess(pid: number): Promise<boolean> {
   try {
     if (process.platform === 'win32') {
-      await $`taskkill /F /PID ${pid}`.quiet()
+      execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore' })
     } else {
-      await $`kill -9 ${pid}`.quiet()
+      execSync(`kill -9 ${pid}`, { stdio: 'ignore' })
     }
     return true
   } catch {
@@ -677,6 +678,6 @@ async function main(): Promise<void> {
 }
 
 // 直接运行时启动主流程。
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   await main()
 }

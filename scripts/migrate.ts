@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 
 /**
  * 数据库迁移管理工具
@@ -74,7 +74,7 @@ const commands = {
   async create(name: string) {
     if (!name) {
       console.error(colors.red('❌ 请提供迁移文件名'))
-      console.log(colors.yellow('用法: bun scripts/migrate.ts create <migration_name>'))
+      console.log(colors.yellow('用法: tsx scripts/migrate.ts create <migration_name>'))
       process.exit(1)
     }
 
@@ -130,7 +130,7 @@ const commands = {
   async goto(version: string) {
     if (!version) {
       console.error(colors.red('❌ 请提供目标版本号'))
-      console.log(colors.yellow('用法: bun scripts/migrate.ts goto <version>'))
+      console.log(colors.yellow('用法: tsx scripts/migrate.ts goto <version>'))
       process.exit(1)
     }
 
@@ -154,7 +154,7 @@ const commands = {
   async force(version: string) {
     if (!version) {
       console.error(colors.red('❌ 请提供版本号'))
-      console.log(colors.yellow('用法: bun scripts/migrate.ts force <version>'))
+      console.log(colors.yellow('用法: tsx scripts/migrate.ts force <version>'))
       process.exit(1)
     }
 
@@ -213,11 +213,11 @@ const commands = {
     console.log(colors.green('  help             ') + '显示此帮助信息')
 
     console.log('\n示例:')
-    console.log(colors.cyan('  bun scripts/migrate.ts create add_user_table'))
-    console.log(colors.cyan('  bun scripts/migrate.ts up'))
-    console.log(colors.cyan('  bun scripts/migrate.ts down 2'))
-    console.log(colors.cyan('  bun scripts/migrate.ts goto 1'))
-    console.log(colors.cyan('  bun scripts/migrate.ts version'))
+    console.log(colors.cyan('  tsx scripts/migrate.ts create add_user_table'))
+    console.log(colors.cyan('  tsx scripts/migrate.ts up'))
+    console.log(colors.cyan('  tsx scripts/migrate.ts down 2'))
+    console.log(colors.cyan('  tsx scripts/migrate.ts goto 1'))
+    console.log(colors.cyan('  tsx scripts/migrate.ts version'))
 
     console.log('\n环境变量:')
     console.log(colors.yellow('  DATABASE_URL     ') + '数据库连接字符串')

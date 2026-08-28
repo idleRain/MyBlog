@@ -12,7 +12,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["bun-types"]
+    "types": ["node"]
   },
   "include": ["scripts/**/*"],
   "exclude": ["node_modules", "apps", "server"]

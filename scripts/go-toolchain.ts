@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 
 /**
  * Go 工具链管理脚本
@@ -10,6 +10,7 @@ import { execSync, spawn, type SpawnOptions } from 'child_process'
 import { existsSync } from 'fs'
 import { platform } from 'os'
 import { join } from 'path'
+import { isMainModule } from './lib/is-main'
 
 // golangci-lint 工具模块地址，安装时自动获取最新稳定版本
 export const golangciLintModule: string =
@@ -148,6 +149,6 @@ async function main(): Promise<void> {
 }
 
 // 仅在直接运行时执行命令分发，作为模块被导入时不触发
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   void main()
 }

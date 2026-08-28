@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 
 /**
  * lint-staged 专用的 goimports 执行入口

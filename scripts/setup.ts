@@ -1,8 +1,9 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 
-import { $ } from 'bun'
+import { execSync } from 'child_process'
 import { existsSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { isMainModule } from './lib/is-main'
 
 console.log('🚀 开始设置 MyBlog 开发环境...\n')
 
@@ -11,21 +12,12 @@ async function checkSystemRequirements() {
   console.log('📋 检查系统要求...')
 
   try {
-    // 检查 Bun 版本
-    const bunVersion = Bun.version
-    console.log(`✅ Bun: ${bunVersion}`)
-
-    // 检查 Node.js 版本（如果存在）
-    try {
-      const nodeVersion = await $`node --version`.text()
-      console.log(`✅ Node.js: ${nodeVersion.trim()}`)
-    } catch {
-      console.log('ℹ️  Node.js: 未安装（使用 Bun 运行时）')
-    }
+    // 检查 Node.js 版本
+    console.log(`✅ Node.js: ${process.version}`)
 
     // 检查 Go 版本
     try {
-      const goVersion = await $`go version`.text()
+      const goVersion = execSync('go version', { encoding: 'utf8' })
       console.log(`✅ Go: ${goVersion.trim()}`)
     } catch (error) {
       console.error('❌ Go 未安装或不在 PATH 中')
@@ -35,7 +27,7 @@ async function checkSystemRequirements() {
 
     // 检查 MySQL（可选）
     try {
-      await $`mysql --version`.quiet()
+      execSync('mysql --version', { stdio: 'ignore' })
       console.log('✅ MySQL: 已安装')
     } catch {
       console.log('⚠️  MySQL: 未检测到，请确保 MySQL 服务正在运行')
@@ -55,11 +47,11 @@ async function installDependencies() {
   try {
     // 安装所有依赖 (包括 workspace 中的前端依赖)
     console.log('安装项目依赖 (monorepo + workspace)...')
-    await $`pnpm install`
+    await execSync('pnpm install', { stdio: 'inherit' })
 
     // 安装后端依赖
     console.log('安装后端依赖...')
-    await $`cd server && go mod tidy`
+    execSync('cd server && go mod tidy', { stdio: 'inherit' })
 
     console.log('✅ 所有依赖安装完成\n')
   } catch (error: any) {
@@ -142,7 +134,7 @@ async function validateSetup() {
     if (!existsSync('node_modules')) {
       try {
         console.log('安装根目录依赖...')
-        await $`pnpm install`
+        execSync('pnpm install', { stdio: 'inherit' })
       } catch (error) {
         console.error('❌ 根目录依赖安装失败:', error)
         process.exit(1)
@@ -188,6 +180,6 @@ async function main() {
 }
 
 // 如果直接运行此脚本
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   await main()
 }

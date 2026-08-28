@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env -S node --import tsx
 
 /**
  * 统一构建脚本
@@ -7,6 +7,7 @@
 
 import { spawn } from 'child_process'
 import { existsSync, rmSync } from 'fs'
+import { isMainModule } from './lib/is-main'
 
 // 颜色配置
 const colors = {
@@ -90,11 +91,11 @@ async function checkEnvironment(): Promise<boolean> {
   }
   console.log(`${colors.green}✅ Go: 已安装${colors.reset}`)
 
-  // 检查 Bun
+  // 检查 Node.js
   try {
-    console.log(`${colors.green}✅ Bun: ${Bun.version}${colors.reset}`)
+    console.log(`${colors.green}✅ Node.js: ${process.version}${colors.reset}`)
   } catch {
-    console.error(`${colors.red}❌ Bun 未安装${colors.reset}`)
+    console.error(`${colors.red}❌ Node.js 未安装${colors.reset}`)
     return false
   }
 
@@ -208,7 +209,7 @@ async function runQualityChecks(options: BuildOptions): Promise<boolean> {
   if (!options.webOnly && !options.skipLint) {
     console.log(`${colors.yellow}  后端代码检查...${colors.reset}`)
 
-    const result = await runCommand('bun', ['scripts/go-tools.ts', 'vet'])
+    const result = await runCommand('tsx', ['scripts/go-tools.ts', 'vet'])
     if (!result.success) {
       console.error(`${colors.red}❌ 后端代码检查失败${colors.reset}`)
       return false
@@ -226,7 +227,7 @@ async function runQualityChecks(options: BuildOptions): Promise<boolean> {
 
     // 后端测试
     if (!options.webOnly) {
-      const serverTest = await runCommand('bun', ['scripts/go-tools.ts', 'test'])
+      const serverTest = await runCommand('tsx', ['scripts/go-tools.ts', 'test'])
       if (!serverTest.success) {
         console.error(`${colors.red}❌ 后端测试失败${colors.reset}`)
         return false
@@ -242,7 +243,7 @@ async function runQualityChecks(options: BuildOptions): Promise<boolean> {
 async function buildServer(): Promise<boolean> {
   console.log(`${colors.cyan}🔨 构建后端项目...${colors.reset}`)
 
-  const result = await runCommand('bun', ['scripts/go-tools.ts', 'build'])
+  const result = await runCommand('tsx', ['scripts/go-tools.ts', 'build'])
   if (!result.success) {
     console.error(`${colors.red}❌ 后端构建失败${colors.reset}`)
     return false
@@ -292,7 +293,7 @@ function showHelp(): void {
   console.log(`${colors.bold}${colors.cyan}MyBlog 构建脚本${colors.reset}`)
   console.log('')
   console.log('使用方法:')
-  console.log('  bun scripts/build.ts [选项]')
+  console.log('  tsx scripts/build.ts [选项]')
   console.log('')
   console.log('选项:')
   console.log('  --clean, -c        构建前清理输出目录')
@@ -304,10 +305,10 @@ function showHelp(): void {
   console.log('  --help, -h         显示帮助信息')
   console.log('')
   console.log('示例:')
-  console.log('  bun scripts/build.ts                    # 标准构建')
-  console.log('  bun scripts/build.ts --clean --production  # 生产环境构建')
-  console.log('  bun scripts/build.ts --server-only      # 仅构建后端')
-  console.log('  bun scripts/build.ts --skip-tests       # 跳过测试的快速构建')
+  console.log('  tsx scripts/build.ts                    # 标准构建')
+  console.log('  tsx scripts/build.ts --clean --production  # 生产环境构建')
+  console.log('  tsx scripts/build.ts --server-only      # 仅构建后端')
+  console.log('  tsx scripts/build.ts --skip-tests       # 跳过测试的快速构建')
 }
 
 // 主函数
@@ -376,6 +377,6 @@ async function main(): Promise<void> {
 }
 
 // 如果直接运行此脚本
-if (import.meta.main) {
+if (isMainModule(import.meta.url)) {
   await main()
 }
