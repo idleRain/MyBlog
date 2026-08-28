@@ -4,7 +4,6 @@ import basePrettierConfig from '../prettier.config.js'
 const webPrettierConfig = {
   ...basePrettierConfig,
   // Svelte 特定配置
-  svelteStrictMode: false,
   svelteAllowShorthand: true,
   svelteIndentScriptAndStyle: false,
   // 插件
@@ -23,8 +22,7 @@ const webPrettierConfig = {
       }
     }
   ],
-  // Tailwind 配置
-  tailwindConfig: './tailwind.config.js',
+  // Tailwind v4 样式扫描基于样式表文件，v3 的 config 文件路径已废弃。
   tailwindStylesheet: './src/app.css',
   tailwindFunctions: ['clsx']
 }

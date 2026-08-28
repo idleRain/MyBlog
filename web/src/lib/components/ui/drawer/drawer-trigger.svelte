@@ -7,5 +7,5 @@ let {
 }: DrawerPrimitive.TriggerProps & { ref?: HTMLButtonElement | null } = $props()
 </script>
 
-<!-- vaul-svelte 当前版本包装旧版 bits-ui，元素引用经 el 属性转发。 -->
-<DrawerPrimitive.Trigger el={ref ?? undefined} data-slot="drawer-trigger" {...restProps} />
+<!-- 元素引用经 bind:ref 双向绑定，与 bits-ui 组件标准用法保持一致。 -->
+<DrawerPrimitive.Trigger bind:ref data-slot="drawer-trigger" {...restProps} />
