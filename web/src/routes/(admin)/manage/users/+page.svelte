@@ -1,6 +1,4 @@
 <script lang="ts">
-import { onMount } from 'svelte'
-import { authStore } from '$lib/stores/auth'
 import {
   Sidebar,
   Breadcrumb,
@@ -24,9 +22,11 @@ import {
   Calendar,
   Shield
 } from '@lucide/svelte'
-import { UserAPI } from '$lib/api'
 import type { UpdateUserRequest, User, UserRole } from '$lib/api/modules/user/types'
 import type { BadgeVariant } from '$ui/badge'
+import { authStore } from '$lib/stores/auth'
+import { UserAPI } from '$lib/api'
+import { onMount } from 'svelte'
 
 // 权限检查
 let userRole = $state('user')

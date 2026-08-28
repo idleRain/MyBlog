@@ -1,12 +1,12 @@
 <script lang="ts">
-import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
-import ThemeToggle from '$lib/components/theme-toggle.svelte'
-import { authStore } from '$lib/stores/auth'
 import { Globe, User, ExternalLink, Menu, LogIn, Settings } from '@lucide/svelte'
-import GithubIcon from '$lib/components/icons/github-icon.svelte'
-import { goto } from '$app/navigation'
 import type { User as UserType } from '$lib/api/modules/user/types'
+import GithubIcon from '$lib/components/icons/github-icon.svelte'
+import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
+import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
+import { authStore } from '$lib/stores/auth'
+import { goto } from '$app/navigation'
 
 let isMobileMenuOpen = $state(false)
 

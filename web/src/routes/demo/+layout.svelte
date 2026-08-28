@@ -1,6 +1,6 @@
 <script lang="ts">
-import '@/app.css'
 import { Header } from '$lib/components/layout'
+import '@/app.css'
 
 const { children } = $props()
 </script>

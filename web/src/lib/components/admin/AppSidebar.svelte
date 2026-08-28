@@ -1,9 +1,4 @@
 <script lang="ts">
-import { Button, Badge, Sidebar, Avatar, Separator } from '$ui'
-import { authStore } from '$lib/stores/auth'
-import { getRoleInfo } from '$lib/utils/permissions'
-import { performLogout } from '$lib/utils/logout'
-import type { User, UserRole, SidebarMenuItem } from '$lib/types'
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +9,11 @@ import {
   Shield,
   Home
 } from '@lucide/svelte'
+import type { User, UserRole, SidebarMenuItem } from '$lib/types'
+import { Button, Badge, Sidebar, Avatar, Separator } from '$ui'
+import { getRoleInfo } from '$lib/utils/permissions'
+import { performLogout } from '$lib/utils/logout'
+import { authStore } from '$lib/stores/auth'
 
 // 基础导航菜单配置
 const baseNavigation: SidebarMenuItem[] = [

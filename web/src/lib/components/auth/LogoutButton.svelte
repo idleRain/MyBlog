@@ -1,8 +1,8 @@
 <script lang="ts">
-import { Button } from '$ui/button'
-import { LogOut } from '@lucide/svelte'
 import { performLogout } from '$lib/utils/jwt'
+import { LogOut } from '@lucide/svelte'
 import { toast } from 'svelte-sonner'
+import { Button } from '$ui/button'
 
 export let variant: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive' = 'ghost'
 export let size: 'default' | 'sm' | 'lg' | 'icon' = 'default'

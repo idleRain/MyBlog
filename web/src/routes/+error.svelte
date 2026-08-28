@@ -1,7 +1,7 @@
 <script lang="ts">
 import Header from '$lib/components/layout/Header.svelte'
-import { Button } from '$ui'
 import { ModeWatcher } from 'mode-watcher'
+import { Button } from '$ui'
 import '../app.css'
 
 let { error, status }: { error: App.Error; status: number } = $props()

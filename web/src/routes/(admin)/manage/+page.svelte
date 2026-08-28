@@ -1,7 +1,4 @@
 <script lang="ts">
-import { Card, Button, Badge, Breadcrumb, Sidebar } from '$ui'
-import { authStore } from '$lib/stores/auth'
-import type { User, UserRole, DashboardStats, QuickAction, RecentActivity } from '$lib/types'
 import {
   Users,
   FileText,
@@ -13,6 +10,9 @@ import {
   PlusCircle,
   Edit
 } from '@lucide/svelte'
+import type { User, UserRole, DashboardStats, QuickAction, RecentActivity } from '$lib/types'
+import { Card, Button, Badge, Breadcrumb, Sidebar } from '$ui'
+import { authStore } from '$lib/stores/auth'
 
 // 用户角色和权限
 let currentUser = $state<User | null>(null)

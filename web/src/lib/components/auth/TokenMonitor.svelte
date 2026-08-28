@@ -1,6 +1,6 @@
 <script lang="ts">
-import { onMount, onDestroy } from 'svelte'
 import { getAuthStatus, manualRefreshToken, type AuthStatus } from '$lib/utils/jwt'
+import { onMount, onDestroy } from 'svelte'
 import { toast } from 'svelte-sonner'
 
 // 是否显示状态信息浮层。

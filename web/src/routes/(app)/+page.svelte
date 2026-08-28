@@ -1,6 +1,6 @@
 <script lang="ts">
-import HeroSection from '$lib/components/layout/HeroSection.svelte'
 import ContentSection from '$lib/components/layout/ContentSection.svelte'
+import HeroSection from '$lib/components/layout/HeroSection.svelte'
 import { onMount } from 'svelte'
 
 let isScrolling = $state(false)

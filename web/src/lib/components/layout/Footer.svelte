@@ -1,7 +1,7 @@
 <script lang="ts">
+import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import { Separator } from '$lib/components/ui/separator'
 import { Mail } from '@lucide/svelte'
-import GithubIcon from '$lib/components/icons/github-icon.svelte'
 
 // 当前年份用于版权声明，随时间自动更新。
 const currentYear = new Date().getFullYear()

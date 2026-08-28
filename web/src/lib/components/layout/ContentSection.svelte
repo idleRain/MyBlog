@@ -1,7 +1,7 @@
 <script lang="ts">
 import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-import { Badge } from '$lib/components/ui/badge'
 import { Calendar, Clock, Eye, Heart } from '@lucide/svelte'
+import { Badge } from '$lib/components/ui/badge'
 
 // 精选博客的展示数据，属于静态占位内容，接入文章接口后由真实数据替换。
 const featuredPosts = [

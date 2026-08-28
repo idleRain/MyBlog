@@ -1,10 +1,10 @@
 <script lang="ts">
+import { requireAuth, checkAuthOnLoad } from '$lib/utils/auth-guard'
+import { AppSidebar } from '$lib/components/admin'
+import { ModeWatcher } from 'mode-watcher'
+import { Toaster } from '$ui/sonner'
 import { onMount } from 'svelte'
 import { Sidebar } from '$ui'
-import { AppSidebar } from '$lib/components/admin'
-import { Toaster } from '$ui/sonner'
-import { ModeWatcher } from 'mode-watcher'
-import { requireAuth, checkAuthOnLoad } from '$lib/utils/auth-guard'
 
 interface Props {
   children: import('svelte').Snippet

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
-import { m } from '$i18n'
 import { Button } from '$ui'
+import { m } from '$i18n'
 
 console.log('Current locale:', getLocale())
 console.log('Available messages:', Object.keys(m))
