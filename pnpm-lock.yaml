@@ -85,6 +85,22 @@ importers:
         specifier: ^1.1.9
         version: 1.4.4(rollup@4.63.0)(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
 
+  packages/shared:
+    dependencies:
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      mitt:
+        specifier: ^3.0.1
+        version: 3.0.1
+      tailwind-merge:
+        specifier: ^3.6.0
+        version: 3.6.0
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   web:
     dependencies:
       '@inlang/paraglide-js':

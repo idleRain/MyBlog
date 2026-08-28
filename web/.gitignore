@@ -30,6 +30,7 @@ coverage/
 # Temporary files
 .tmp/
 .cache/
+.eslintcache
 
 # Paraglide
 src/lib/paraglide
