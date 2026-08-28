@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@inlang/paraglide-js": "^2.24.1",
+    "@myblog/api": "workspace:*",
     "@myblog/http": "workspace:*",
     "@myblog/shared": "workspace:*",
     "@myblog/ui": "workspace:*",

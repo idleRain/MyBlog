@@ -85,6 +85,22 @@ importers:
         specifier: ^1.1.9
         version: 1.4.4(rollup@4.63.0)(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
 
+  packages/api:
+    dependencies:
+      '@myblog/http':
+        specifier: workspace:*
+        version: link:../http
+      '@myblog/shared':
+        specifier: workspace:*
+        version: link:../shared
+      ky:
+        specifier: ^1.14.3
+        version: 1.14.3
+    devDependencies:
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+
   packages/http:
     dependencies:
       '@myblog/shared':
@@ -180,6 +196,9 @@ importers:
       '@inlang/paraglide-js':
         specifier: ^2.24.1
         version: 2.24.1(typescript@5.8.3)(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
+      '@myblog/api':
+        specifier: workspace:*
+        version: link:../packages/api
       '@myblog/http':
         specifier: workspace:*
         version: link:../packages/http

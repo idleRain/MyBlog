@@ -22,7 +22,7 @@ import {
   Calendar,
   Shield
 } from '@lucide/svelte'
-import type { UpdateUserRequest, User, UserRole } from '$lib/api/modules/user/types'
+import type { UpdateUserRequest, User, UserRole, UserStatus } from '$lib/api/modules/user/types'
 import type { BadgeVariant } from '$ui/badge'
 import { authStore } from '$lib/stores/auth'
 import { UserAPI } from '$lib/api'
@@ -346,7 +346,7 @@ async function batchToggleStatus(status: number) {
           nickname: user.nickname || '',
           role: user.role || 'user',
           birthday: user.birthday || '',
-          status: status
+          status: status as UserStatus
         })
         if (response.code === 200) {
           successCount++
