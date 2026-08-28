@@ -1,0 +1,19 @@
+{
+  "name": "@myblog/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MyBlog 公共纯工具、类型与常量，不依赖 SvelteKit 或 Svelte。",
+  "exports": {
+    ".": "./src/index.ts",
+    "./utils/*": "./src/utils/*"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "mitt": "^3.0.1",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
