@@ -60,10 +60,7 @@ const buttonProps = $derived({
   'data-slot': 'sidebar-menu-button',
   'data-sidebar': 'menu-button',
   'data-size': size,
-  // Svelte 会把 false 的 data 属性渲染为 "false" 字符串，而 Tailwind 的
-  // data-active: 变体按属性存在性匹配，导致未激活项也被命中激活样式。
-  // 此处仅在激活时输出属性，未激活时传 undefined 让 Svelte 省略该属性。
-  'data-active': isActive || undefined,
+  'data-active': isActive,
   ...restProps
 })
 </script>

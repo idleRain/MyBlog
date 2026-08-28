@@ -1,19 +1,17 @@
 <script lang="ts">
-import { Card, Badge } from '$ui'
-import { PageHeader } from '$lib/components/admin'
+import { Card, Button, Badge, Breadcrumb, Sidebar } from '$ui'
 import { authStore } from '$lib/stores/auth'
 import type { User, UserRole, DashboardStats, QuickAction, RecentActivity } from '$lib/types'
 import {
-  Activity,
-  ArrowUpRight,
-  Clock,
-  Edit,
+  Users,
   FileText,
-  PlusCircle,
   Settings,
-  Shield,
   TrendingUp,
-  Users as UsersIcon
+  Activity,
+  Clock,
+  Shield,
+  PlusCircle,
+  Edit
 } from '@lucide/svelte'
 
 // 用户角色和权限
@@ -38,32 +36,7 @@ $effect(() => {
   })
 })
 
-// 统计卡片规格行文案：按角色拼装欢迎语，避免模板内多层条件分支。
-let roleTitle = $derived.by(() => {
-  switch (userRole) {
-    case 'superadmin':
-      return '超级管理员仪表盘'
-    case 'admin':
-      return '管理员仪表盘'
-    case 'editor':
-      return '编辑工作台'
-    default:
-      return '个人工作台'
-  }
-})
-
-let roleHint = $derived.by(() => {
-  switch (userRole) {
-    case 'superadmin':
-      return '您拥有系统最高权限，请谨慎操作。'
-    case 'admin':
-      return '您可以管理用户和内容。'
-    case 'editor':
-      return '您可以创建和管理文章内容。'
-    default:
-      return '您可以查看系统概览。'
-  }
-})
+// 模拟数据（实际应该从API获取）
 
 // 根据用户角色显示不同的快速操作
 let quickActions = $derived.by((): QuickAction[] => {
@@ -95,7 +68,7 @@ let quickActions = $derived.by((): QuickAction[] => {
       id: 'create-user',
       title: '创建用户',
       description: '添加新的系统用户',
-      icon: UsersIcon,
+      icon: Users,
       action: () => goto('/manage/users?action=create'),
       roles: ['admin', 'superadmin']
     })
@@ -122,9 +95,6 @@ const recentActivities: RecentActivity[] = [
   { id: '3', action: '用户注册', user: 'system', time: '1小时前', type: 'register' },
   { id: '4', action: '修改设置', user: 'admin', time: '2小时前', type: 'update' }
 ]
-
-// 统计卡的规格编号：以两位等宽序号对应图纸条目编号。
-const STAT_CARD_WIDTH_CLASS = 'md:grid-cols-2 xl:grid-cols-4'
 </script>
 
 <svelte:head>
@@ -132,158 +102,173 @@ const STAT_CARD_WIDTH_CLASS = 'md:grid-cols-2 xl:grid-cols-4'
 </svelte:head>
 
 <!-- 头部导航 -->
-<PageHeader crumbs={[{ label: '管理后台', href: '/manage' }, { label: '仪表盘' }]} />
+<header class="flex h-16 shrink-0 items-center gap-2 border-b px-6">
+  <Sidebar.Trigger />
+  <Breadcrumb.Root>
+    <Breadcrumb.List>
+      <Breadcrumb.Item>
+        <Breadcrumb.Link href="/manage">管理后台</Breadcrumb.Link>
+      </Breadcrumb.Item>
+      <Breadcrumb.Separator />
+      <Breadcrumb.Item>
+        <Breadcrumb.Page>仪表盘</Breadcrumb.Page>
+      </Breadcrumb.Item>
+    </Breadcrumb.List>
+  </Breadcrumb.Root>
+</header>
 
-<!-- 主内容区域：网格底纹仅覆盖首屏，向下渐隐以保持数据区可读。 -->
-<div class="relative flex-1 overflow-y-auto">
-  <div class="admin-grid pointer-events-none absolute inset-0" aria-hidden="true"></div>
-  <div class="relative z-10 flex flex-col gap-6 p-4 sm:p-6">
-    <!-- 欢迎区域：等宽眉标加主标题，沿用前台规格书排版。 -->
-    <div class="flex flex-col gap-2">
-      <p class="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase">
-        <span class="text-signal">//</span> DASHBOARD - OVERVIEW
-      </p>
-      <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">{roleTitle}</h1>
-      <p class="text-sm text-muted-foreground">
-        {#if currentUser}
-          欢迎回来，{currentUser.nickname || currentUser.username}。{roleHint}
+<!-- 主内容区域 -->
+<main class="flex-1 space-y-6 p-6">
+  <!-- 欢迎区域 -->
+  <div class="flex flex-col space-y-2">
+    <h1 class="text-3xl font-bold tracking-tight">
+      {#if userRole === 'superadmin'}
+        超级管理员仪表盘
+      {:else if userRole === 'admin'}
+        管理员仪表盘
+      {:else if userRole === 'editor'}
+        编辑工作台
+      {:else}
+        个人工作台
+      {/if}
+    </h1>
+    <p class="text-muted-foreground">
+      {#if currentUser}
+        欢迎回来，{currentUser.nickname || currentUser.username}！
+        {#if userRole === 'superadmin'}
+          您拥有系统最高权限，请谨慎操作。
+        {:else if userRole === 'admin'}
+          您可以管理用户和内容。
+        {:else if userRole === 'editor'}
+          您可以创建和管理文章内容。
         {:else}
-          欢迎使用 MyBlog 管理后台。
+          您可以查看系统概览。
         {/if}
-      </p>
-    </div>
-
-    <!-- 统计卡片：mono 序号加 tabular 数字，构成规格书数据行。 -->
-    <div class="grid grid-cols-1 gap-4 {STAT_CARD_WIDTH_CLASS}">
-      {#if ['admin', 'superadmin'].includes(userRole)}
-        <Card.Root class="rounded-none border border-border ring-0">
-          <Card.Header class="flex-row items-start justify-between">
-            <Card.Title class="text-sm font-medium text-muted-foreground">总用户数</Card.Title>
-            <span class="font-mono text-xs text-muted-foreground/60">/ 01</span>
-          </Card.Header>
-          <Card.Content>
-            <div class="text-3xl font-bold tracking-tight tabular-nums">
-              {dashboardStats.totalUsers}
-            </div>
-            <p class="mt-2 flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-              <TrendingUp class="size-3 text-signal" />
-              较上月增长 12%
-            </p>
-          </Card.Content>
-        </Card.Root>
+      {:else}
+        欢迎使用 MyBlog 管理后台
       {/if}
+    </p>
+  </div>
 
-      {#if ['editor', 'admin', 'superadmin'].includes(userRole)}
-        <Card.Root class="rounded-none border border-border ring-0">
-          <Card.Header class="flex-row items-start justify-between">
-            <Card.Title class="text-sm font-medium text-muted-foreground">文章总数</Card.Title>
-            <span class="font-mono text-xs text-muted-foreground/60">/ 02</span>
-          </Card.Header>
-          <Card.Content>
-            <div class="text-3xl font-bold tracking-tight tabular-nums">
-              {dashboardStats.totalPosts}
-            </div>
-            <p class="mt-2 flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-              <TrendingUp class="size-3 text-signal" />
-              较上月增长 8%
-            </p>
-          </Card.Content>
-        </Card.Root>
-      {/if}
-
-      {#if ['admin', 'superadmin'].includes(userRole)}
-        <Card.Root class="rounded-none border border-border ring-0">
-          <Card.Header class="flex-row items-start justify-between">
-            <Card.Title class="text-sm font-medium text-muted-foreground">活跃用户</Card.Title>
-            <span class="font-mono text-xs text-muted-foreground/60">/ 03</span>
-          </Card.Header>
-          <Card.Content>
-            <div class="text-3xl font-bold tracking-tight tabular-nums">
-              {dashboardStats.activeUsers}
-            </div>
-            <p class="mt-2 flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
-              <Clock class="size-3 text-signal" />
-              过去 24 小时
-            </p>
-          </Card.Content>
-        </Card.Root>
-      {/if}
-
-      <!-- 所有角色都可以看到系统状态 -->
-      <Card.Root class="rounded-none border border-border ring-0">
-        <Card.Header class="flex-row items-start justify-between">
-          <Card.Title class="text-sm font-medium text-muted-foreground">系统状态</Card.Title>
-          <span class="font-mono text-xs text-muted-foreground/60">/ 04</span>
+  <!-- 统计卡片 -->
+  <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <!-- 管理员和超级管理员可以看到用户统计 -->
+    {#if ['admin', 'superadmin'].includes(userRole)}
+      <Card.Root class="rounded-none border-border ring-0">
+        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card.Title class="text-sm font-medium">总用户数</Card.Title>
+          <Users class="h-4 w-4 text-muted-foreground" />
         </Card.Header>
         <Card.Content>
-          <div class="flex h-9 items-center gap-2.5">
-            <!-- 状态点：signal 呼吸点与文字共同指示状态，不依赖单一颜色。 -->
-            <span class="relative flex size-2 shrink-0">
-              <span
-                class="absolute inline-flex size-full animate-ping rounded-full bg-signal opacity-60"
-              ></span>
-              <span class="relative inline-flex size-2 rounded-full bg-signal"></span>
-            </span>
-            <span class="text-lg font-semibold">运行正常</span>
-          </div>
-          <p class="mt-1 font-mono text-xs text-muted-foreground">所有服务正常运行</p>
+          <div class="text-2xl font-bold">{dashboardStats.totalUsers}</div>
+          <p class="text-xs text-muted-foreground">
+            <TrendingUp class="mr-1 inline h-3 w-3" />
+            较上月增长 12%
+          </p>
         </Card.Content>
       </Card.Root>
-    </div>
+    {/if}
 
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <!-- 快速操作 -->
-      <Card.Root class="rounded-none border border-border ring-0">
+    <!-- 编辑及以上角色可以看到文章统计 -->
+    {#if ['editor', 'admin', 'superadmin'].includes(userRole)}
+      <Card.Root class="rounded-none border-border ring-0">
+        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card.Title class="text-sm font-medium">文章总数</Card.Title>
+          <FileText class="h-4 w-4 text-muted-foreground" />
+        </Card.Header>
+        <Card.Content>
+          <div class="text-2xl font-bold">{dashboardStats.totalPosts}</div>
+          <p class="text-xs text-muted-foreground">
+            <TrendingUp class="mr-1 inline h-3 w-3" />
+            较上月增长 8%
+          </p>
+        </Card.Content>
+      </Card.Root>
+    {/if}
+
+    <!-- 管理员和超级管理员可以看到活跃用户 -->
+    {#if ['admin', 'superadmin'].includes(userRole)}
+      <Card.Root class="rounded-none border-border ring-0">
+        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card.Title class="text-sm font-medium">活跃用户</Card.Title>
+          <Activity class="h-4 w-4 text-muted-foreground" />
+        </Card.Header>
+        <Card.Content>
+          <div class="text-2xl font-bold">{dashboardStats.activeUsers}</div>
+          <p class="text-xs text-muted-foreground">
+            <Clock class="mr-1 inline h-3 w-3" />
+            过去24小时
+          </p>
+        </Card.Content>
+      </Card.Root>
+    {/if}
+
+    <!-- 所有角色都可以看到系统状态 -->
+    <Card.Root class="rounded-none border-border ring-0">
+      <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Card.Title class="text-sm font-medium">系统状态</Card.Title>
+        <Shield class="h-4 w-4 text-muted-foreground" />
+      </Card.Header>
+      <Card.Content>
+        <div class="flex items-center space-x-2">
+          <Badge class="rounded-none bg-signal text-signal-foreground">运行正常</Badge>
+        </div>
+        <p class="mt-1 text-xs text-muted-foreground">所有服务正常运行</p>
+      </Card.Content>
+    </Card.Root>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <!-- 快速操作 -->
+    <div class="lg:col-span-1">
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header>
           <Card.Title>快速操作</Card.Title>
           <Card.Description>常用的管理操作</Card.Description>
         </Card.Header>
-        <Card.Content class="flex flex-col gap-2">
+        <Card.Content class="space-y-3">
           {#each quickActions as action (action.id)}
             {@const IconComponent = action.icon}
-            <button
-              type="button"
-              class="group flex w-full cursor-pointer items-center gap-3 border border-border bg-card p-3 text-left transition-colors duration-200 outline-none hover:border-signal/50 hover:bg-signal/5 focus-visible:ring-2 focus-visible:ring-ring"
+            <Button
+              variant="outline"
+              class="h-auto w-full justify-start rounded-none p-4"
               onclick={action.action}
             >
-              <span
-                class="flex size-8 shrink-0 items-center justify-center bg-signal/10 text-signal [&_svg]:size-4"
-              >
-                <IconComponent />
-              </span>
-              <span class="flex min-w-0 flex-1 flex-col">
-                <span class="text-sm font-medium">{action.title}</span>
-                <span class="truncate text-xs text-muted-foreground">{action.description}</span>
-              </span>
-              <ArrowUpRight
-                class="size-3.5 shrink-0 text-muted-foreground transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-signal"
-              />
-            </button>
+              <div class="flex items-start space-x-3">
+                <div class="rounded-none bg-signal/10 p-2 text-signal">
+                  <IconComponent class="h-4 w-4" />
+                </div>
+                <div class="text-left">
+                  <p class="font-medium">{action.title}</p>
+                  <p class="text-sm text-muted-foreground">{action.description}</p>
+                </div>
+              </div>
+            </Button>
           {/each}
         </Card.Content>
       </Card.Root>
+    </div>
 
-      <!-- 最近活动：序号加时间的日志式排版，对应规格书修订记录。 -->
-      <Card.Root class="rounded-none border border-border ring-0 lg:col-span-2">
+    <!-- 最近活动 -->
+    <div class="lg:col-span-2">
+      <Card.Root class="rounded-none border-border ring-0">
         <Card.Header>
           <Card.Title>最近活动</Card.Title>
           <Card.Description>系统最新的操作记录</Card.Description>
         </Card.Header>
         <Card.Content>
-          <div class="flex flex-col">
-            {#each recentActivities as activity, index (activity.id)}
-              <div class="flex items-center gap-4 border-b border-border py-3 last:border-b-0">
-                <span class="w-8 shrink-0 font-mono text-xs text-muted-foreground/70">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="truncate text-sm">
+          <div class="space-y-4">
+            {#each recentActivities as activity (activity.id)}
+              <div class="flex items-center space-x-3">
+                <div class="h-2 w-2 rounded-full bg-signal"></div>
+                <div class="flex-1 space-y-1">
+                  <p class="text-sm font-medium">
                     {activity.action}
-                    <span class="text-muted-foreground"> · {activity.user}</span>
+                    <span class="text-muted-foreground">by {activity.user}</span>
                   </p>
-                  <p class="mt-0.5 font-mono text-xs text-muted-foreground">{activity.time}</p>
+                  <p class="text-xs text-muted-foreground">{activity.time}</p>
                 </div>
-                <Badge variant="outline" class="rounded-none font-mono text-xs">
+                <Badge variant="outline" class="rounded-none text-xs">
                   {activity.type}
                 </Badge>
               </div>
@@ -292,20 +277,5 @@ const STAT_CARD_WIDTH_CLASS = 'md:grid-cols-2 xl:grid-cols-4'
         </Card.Content>
       </Card.Root>
     </div>
-
-    <!-- 底部规格行：与首屏 Hero 的底部标注行同构，收束页面。 -->
-    <div
-      class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-border pt-4 font-mono text-xs text-muted-foreground"
-    >
-      <span>MyBlog ADMIN CONSOLE</span>
-      <span class="flex items-center gap-2">
-        <Activity class="size-3 text-signal" />
-        STATUS: <span class="text-foreground">OK</span>
-        <FileText class="ml-4 size-3 text-signal" />
-        RENDERED BY <span class="text-foreground">SVELTE 5</span>
-        <Shield class="ml-4 size-3 text-signal" />
-        RBAC: <span class="text-foreground">ON</span>
-      </span>
-    </div>
   </div>
-</div>
+</main>
