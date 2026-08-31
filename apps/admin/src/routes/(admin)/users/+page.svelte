@@ -23,6 +23,7 @@ import {
   Shield
 } from '@lucide/svelte'
 import type { UpdateUserRequest, User, UserRole, UserStatus } from '@myblog/api/modules/user/types'
+import { goto, toAdminPath } from '$lib/utils/navigation'
 import type { BadgeVariant } from '$ui/badge'
 import { authStore } from '$lib/stores/auth'
 import { UserAPI } from '$lib/api'
@@ -423,7 +424,7 @@ onMount(() => {
   <Breadcrumb.Root>
     <Breadcrumb.List>
       <Breadcrumb.Item>
-        <Breadcrumb.Link href="/manage">管理后台</Breadcrumb.Link>
+        <Breadcrumb.Link href={toAdminPath('/')}>管理后台</Breadcrumb.Link>
       </Breadcrumb.Item>
       <Breadcrumb.Separator />
       <Breadcrumb.Item>
@@ -441,7 +442,7 @@ onMount(() => {
         <Shield class="mx-auto h-16 w-16 text-muted-foreground" />
         <h2 class="mt-4 text-xl font-semibold">权限不足</h2>
         <p class="mt-2 text-sm text-muted-foreground">只有管理员和超级管理员才能访问用户管理功能</p>
-        <Button class="mt-4" onclick={() => goto('/manage')}>返回仪表盘</Button>
+        <Button class="mt-4" onclick={() => goto('/')}>返回仪表盘</Button>
       </div>
     </div>
   {:else}

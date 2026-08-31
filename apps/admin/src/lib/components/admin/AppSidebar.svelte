@@ -13,6 +13,7 @@ import type { User, UserRole, SidebarMenuItem } from '$lib/types'
 import { Button, Badge, Sidebar, Avatar, Separator } from '$ui'
 import { getRoleInfo } from '$lib/utils/permissions'
 import { performLogout } from '$lib/utils/logout'
+import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 
 // 基础导航菜单配置
@@ -21,14 +22,14 @@ const baseNavigation: SidebarMenuItem[] = [
     id: 'dashboard',
     title: '仪表盘',
     icon: LayoutDashboard,
-    url: '/manage',
+    url: '/',
     roles: ['user', 'editor', 'admin', 'superadmin']
   },
   {
     id: 'articles',
     title: '文章管理',
     icon: FileText,
-    url: '/manage/posts',
+    url: '/posts',
     roles: ['editor', 'admin', 'superadmin']
   }
 ]
@@ -39,14 +40,14 @@ const adminNavigation: SidebarMenuItem[] = [
     id: 'users',
     title: '用户管理',
     icon: Users,
-    url: '/manage/users',
+    url: '/users',
     roles: ['admin', 'superadmin']
   },
   {
     id: 'settings',
     title: '系统设置',
     icon: Settings,
-    url: '/manage/settings',
+    url: '/settings',
     roles: ['superadmin']
   }
 ]

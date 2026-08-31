@@ -12,6 +12,7 @@ import {
 } from '@lucide/svelte'
 import type { User, UserRole, DashboardStats, QuickAction, RecentActivity } from '$lib/types'
 import { Card, Button, Badge, Breadcrumb, Sidebar } from '$ui'
+import { goto, toAdminPath } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 
 // 用户角色和权限
@@ -49,7 +50,7 @@ let quickActions = $derived.by((): QuickAction[] => {
       title: '发布文章',
       description: '创建新的博客文章',
       icon: PlusCircle,
-      action: () => goto('/manage/posts?action=create'),
+      action: () => goto('/posts?action=create'),
       color: 'bg-green-500',
       roles: ['editor', 'admin', 'superadmin']
     })
@@ -58,7 +59,7 @@ let quickActions = $derived.by((): QuickAction[] => {
       title: '管理文章',
       description: '管理已发布的文章',
       icon: Edit,
-      action: () => goto('/manage/posts'),
+      action: () => goto('/posts'),
       color: 'bg-blue-500',
       roles: ['editor', 'admin', 'superadmin']
     })
@@ -71,7 +72,7 @@ let quickActions = $derived.by((): QuickAction[] => {
       title: '创建用户',
       description: '添加新的系统用户',
       icon: Users,
-      action: () => goto('/manage/users?action=create'),
+      action: () => goto('/users?action=create'),
       color: 'bg-purple-500',
       roles: ['admin', 'superadmin']
     })
@@ -84,7 +85,7 @@ let quickActions = $derived.by((): QuickAction[] => {
       title: '系统设置',
       description: '管理系统配置',
       icon: Settings,
-      action: () => goto('/manage/settings'),
+      action: () => goto('/settings'),
       color: 'bg-orange-500',
       roles: ['superadmin']
     })
@@ -111,7 +112,7 @@ const recentActivities: RecentActivity[] = [
   <Breadcrumb.Root>
     <Breadcrumb.List>
       <Breadcrumb.Item>
-        <Breadcrumb.Link href="/manage">管理后台</Breadcrumb.Link>
+        <Breadcrumb.Link href={toAdminPath('/')}>管理后台</Breadcrumb.Link>
       </Breadcrumb.Item>
       <Breadcrumb.Separator />
       <Breadcrumb.Item>

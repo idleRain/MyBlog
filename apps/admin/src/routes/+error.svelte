@@ -1,4 +1,5 @@
 <script lang="ts">
+import { toAdminPath } from '$lib/utils/navigation'
 import { ModeWatcher } from 'mode-watcher'
 import { Button } from '$ui'
 import '@/app.css'
@@ -35,6 +36,6 @@ const errorHint = $derived(isServerError ? '请稍后重试或联系系统管理
       <p class="mt-4 font-mono text-xs text-muted-foreground">{error.message}</p>
     {/if}
 
-    <Button href="/manage" class="mt-8">返回管理后台</Button>
+    <Button href={toAdminPath('/')} class="mt-8">返回管理后台</Button>
   </div>
 </section>
