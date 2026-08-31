@@ -27,10 +27,9 @@ export default ({ mode }: ConfigEnv) => {
         // 自动导入常用的 SvelteKit 和 Svelte 函数
         imports: [
           {
-            // SvelteKit 核心
+            // SvelteKit 核心；goto 由 $lib/utils/navigation 提供基准路径感知版本，故不在此自动导入。
             '$app/environment': ['browser', 'dev', 'building', 'version'],
             '$app/navigation': [
-              'goto',
               'invalidate',
               'invalidateAll',
               'preloadData',

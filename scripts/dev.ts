@@ -564,7 +564,8 @@ function displayServicesInfo(statusMap: Map<string, ServiceStatus>): void {
   console.log(`  ${COLORS.green}• WEB: http://localhost:${webPort}${COLORS.reset}`)
 
   const adminPort = statusMap.get('ADMIN')?.port || DEFAULT_WEB_PORT
-  console.log(`  ${COLORS.yellow}• ADMIN: http://localhost:${adminPort}${COLORS.reset}`)
+  // 后台已配置基准路径 /admin，访问地址需带子路径前缀。
+  console.log(`  ${COLORS.yellow}• ADMIN: http://localhost:${adminPort}/admin${COLORS.reset}`)
 
   console.log(`\n${COLORS.yellow}按 Ctrl+C 停止所有服务${COLORS.reset}\n`)
 }

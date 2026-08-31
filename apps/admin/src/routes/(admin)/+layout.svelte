@@ -1,6 +1,7 @@
 <script lang="ts">
 import { requireAuth, checkAuthOnLoad } from '$lib/utils/auth-guard'
 import { AppSidebar } from '$lib/components/admin'
+import { goto } from '$lib/utils/navigation'
 import { ModeWatcher } from 'mode-watcher'
 import { Toaster } from '$ui/sonner'
 import { onMount } from 'svelte'

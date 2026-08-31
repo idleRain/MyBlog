@@ -2,9 +2,9 @@
 // 此文件是应用层与请求器之间的适配层，负责接入认证 store 与界面提示。
 
 import { createHttpClient } from '@myblog/http'
+import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
-import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import ky from 'ky'
 

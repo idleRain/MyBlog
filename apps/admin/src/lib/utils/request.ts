@@ -1,9 +1,9 @@
 // 带自动重试和错误处理的请求工具
 
 import { refreshAccessToken } from '$lib/service'
+import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
-import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 
 /**

@@ -2,9 +2,9 @@
  * JWT 工具函数
  */
 
+import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
-import { goto } from '$app/navigation'
 import { UserAPI } from '$lib/api'
 
 /**

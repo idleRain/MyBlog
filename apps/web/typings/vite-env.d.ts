@@ -9,4 +9,6 @@ declare interface ImportMetaEnv {
   readonly VITE_BASE_URL: string
   // 请求超时时间
   readonly VITE_REQUEST_TIMEOUT: string
+  // 后台管理地址
+  readonly VITE_ADMIN_URL: string
 }

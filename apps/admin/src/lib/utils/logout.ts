@@ -1,8 +1,8 @@
 // 退出登录工具函数
 
+import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
-import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 
 /**

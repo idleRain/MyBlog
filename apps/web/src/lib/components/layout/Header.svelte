@@ -30,6 +30,14 @@ const setLanguage = (lang: 'zh' | 'en') => {
   if (getLocale() === lang) return
   setLocale(lang)
 }
+
+// 后台管理地址，开发环境为独立端口，生产环境为同源子路径。
+const adminUrl = import.meta.env.VITE_ADMIN_URL || '/admin'
+
+// 打开后台管理控制台，使用新标签页并禁用 opener 反向引用。
+function openAdminConsole() {
+  window.open(adminUrl, '_blank', 'noopener,noreferrer')
+}
 </script>
 
 <header class="fixed top-0 right-0 left-0 z-50">
@@ -199,7 +207,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
             <Button
               variant="outline"
               size="sm"
-              onclick={() => goto('/manage')}
+              onclick={openAdminConsole}
               class="border-signal/30 text-signal hover:bg-signal/10 dark:border-signal/30 dark:text-signal dark:hover:bg-signal/10"
             >
               <Settings class="mr-1 h-4 w-4" />
@@ -345,7 +353,7 @@ const setLanguage = (lang: 'zh' | 'en') => {
                     class="w-full justify-start border-signal/30 text-signal hover:bg-signal/10 dark:border-signal/30 dark:text-signal dark:hover:bg-signal/10"
                     onclick={() => {
                       isMobileMenuOpen = false
-                      goto('/admin')
+                      openAdminConsole()
                     }}
                   >
                     <Settings class="mr-2 h-4 w-4" />

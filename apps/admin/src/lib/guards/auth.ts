@@ -3,9 +3,9 @@
  */
 
 import { manualRefreshToken } from '$lib/utils/jwt'
+import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
-import { goto } from '$app/navigation'
 
 /**
  * 检查用户是否已认证，如果未认证则重定向到登录页
