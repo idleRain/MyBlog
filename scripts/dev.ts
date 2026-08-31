@@ -27,10 +27,6 @@ const DEFAULT_WEB_PORT = 5173
 const PORT_RANGE_MIN = 1000
 const PORT_RANGE_MAX = 65535
 
-// 健康检查参数
-const HEALTH_CHECK_MAX_RETRIES = 30
-const HEALTH_CHECK_INTERVAL_MS = 1000
-
 // 进程释放后的等待时间
 const PORT_RELEASE_WAIT_MS = 1000
 
@@ -57,13 +53,11 @@ interface ServiceConfig {
   cwd?: string
   color: keyof typeof COLORS
   port?: number
-  healthCheck?: () => Promise<boolean>
 }
 
 interface ServiceStatus {
   ready: boolean
   readyByOutput: boolean
-  readyByHealth: boolean
   port?: number
 }
 
@@ -109,7 +103,7 @@ function readAppPort(appDir: string): number {
 
 // ---------- 服务定义 ----------
 
-// 组装前后端服务配置，包含各自端口的健康检查逻辑。
+// 组装前后端服务配置。
 async function getServices(): Promise<ServiceConfig[]> {
   const serverPort = await readServerPort()
   const webPort = readAppPort('apps/web')
@@ -121,48 +115,21 @@ async function getServices(): Promise<ServiceConfig[]> {
       command: ['go', 'run', 'scripts/watcher.go'],
       cwd: 'server',
       color: 'blue',
-      port: serverPort,
-      // 健康路由仅接受 POST 请求。
-      healthCheck: async () => {
-        try {
-          const response = await fetch(`http://localhost:${serverPort}/api/health`, {
-            method: 'POST'
-          })
-          return response.ok
-        } catch {
-          return false
-        }
-      }
+      port: serverPort
     },
     {
       name: 'WEB',
       command: ['pnpm', 'run', 'dev'],
       cwd: 'apps/web',
       color: 'green',
-      port: webPort,
-      healthCheck: async () => {
-        try {
-          const response = await fetch(`http://localhost:${webPort}/`)
-          return response.ok
-        } catch {
-          return false
-        }
-      }
+      port: webPort
     },
     {
       name: 'ADMIN',
       command: ['pnpm', 'run', 'dev'],
       cwd: 'apps/admin',
       color: 'yellow',
-      port: adminPort,
-      healthCheck: async () => {
-        try {
-          const response = await fetch(`http://localhost:${adminPort}/`)
-          return response.ok
-        } catch {
-          return false
-        }
-      }
+      port: adminPort
     }
   ]
 }
@@ -409,7 +376,7 @@ async function checkBackendPort(serverPort: number): Promise<void> {
 
 // ---------- 服务启动与就绪 ----------
 
-// 启动全部服务，就绪信息由输出标志与健康检查共同驱动，并接管退出信号。
+// 启动全部服务，就绪信息由输出标志驱动，并接管退出信号。
 async function startServices(services: ServiceConfig[]): Promise<void> {
   console.log(`${COLORS.bold}${COLORS.cyan}🚀 启动开发服务器...${COLORS.reset}\n`)
 
@@ -420,7 +387,6 @@ async function startServices(services: ServiceConfig[]): Promise<void> {
     statusMap.set(service.name, {
       ready: false,
       readyByOutput: false,
-      readyByHealth: false,
       port: service.port
     })
   }
@@ -439,42 +405,11 @@ async function startServices(services: ServiceConfig[]): Promise<void> {
     child.on('exit', code => handleServiceExit(code, service, child, processes))
   }
 
-  // 并发发起健康检查轮询，与输出标志共同决定就绪，失败不阻断启动。
-  services.forEach(service => startHealthPolling(service, statusMap))
-
   setupSignalHandler(processes)
 
   await Promise.all(
     processes.map(child => new Promise<void>(resolve => child.on('exit', () => resolve())))
   )
-}
-
-// 轮询单个服务的健康检查，通过后标记就绪。
-async function startHealthPolling(
-  service: ServiceConfig,
-  statusMap: Map<string, ServiceStatus>
-): Promise<void> {
-  if (!service.healthCheck) {
-    markServiceReady(service.name, statusMap)
-    return
-  }
-
-  console.log(`${COLORS.cyan}🔍 等待 ${service.name} 启动...${COLORS.reset}`)
-  for (let attempt = 0; attempt < HEALTH_CHECK_MAX_RETRIES; attempt++) {
-    try {
-      if (await service.healthCheck()) {
-        markServiceReady(service.name, statusMap)
-        return
-      }
-    } catch {
-      // 单次探测异常不终止，继续重试。
-    }
-
-    await new Promise(resolve => setTimeout(resolve, HEALTH_CHECK_INTERVAL_MS))
-  }
-
-  // 达到重试上限仍未通过时仅提示，不阻断服务继续运行。
-  console.log(`${COLORS.yellow}⚠️  ${service.name} 健康检查未通过，仍会继续运行${COLORS.reset}`)
 }
 
 // 转发子进程标准输出，子进程输出统一按 UTF-8 解码。
