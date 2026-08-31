@@ -2,29 +2,7 @@
 @import 'tw-animate-css';
 
 /* 纳入 packages/ui 源码，Tailwind v4 默认不扫描 node_modules 与仓库外目录。 */
-@source '../../../../packages/ui/src';
-
-/* 本地字体定义 */
-/*@font-face {
-  font-family: 'Inter';
-  src: url('./lib/assets/font/InterBold.otf') format('opentype');
-  font-weight: 300 900;
-  font-display: swap;
-}*/
-
-/*@font-face {
-  font-family: 'Manrope';
-  src: url('./lib/assets/font/ManropeRegular.otf') format('opentype');
-  font-weight: 300 800;
-  font-display: swap;
-}*/
-
-/*@font-face {
-  font-family: 'PingFang SC';
-  src: url('./lib/assets/font/PingFang.ttf') format('truetype');
-  font-weight: normal;
-  font-display: swap;
-}*/
+@source '../../../packages/ui/src';
 
 @custom-variant dark (&:is(.dark *));
 

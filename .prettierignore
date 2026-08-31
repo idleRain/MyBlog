@@ -10,5 +10,7 @@ yarn.lock
 .husky
 .svelte-kit
 
-# ui 包为 stock shadcn 第三方生成代码，不参与格式化
+# 生成代码，不参与格式化
 packages/ui/
+.eslintrc-auto-import.js
+auto-imports.d.ts
