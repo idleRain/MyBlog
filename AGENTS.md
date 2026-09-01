@@ -19,7 +19,7 @@ MyBlog/
 │   └── ui/                   # shadcn-svelte 基础组件（stock，主题注入）
 ├── server/                   # Go 后端服务（Gin + GORM + MySQL）
 ├── scripts/                  # 跨项目构建/开发脚本（Node.js + tsx）
-├── docs/                     # 数据库架构、开发文档、schema.sql
+├── docs/                     # 数据库架构、开发文档、UI 设计系统、schema.sql
 ├── .husky/                   # Git hooks（commitlint + lint-staged）
 └── package.json              # monorepo 根，pnpm workspaces = ["apps/*", "packages/*"]
 ```
@@ -34,9 +34,9 @@ MyBlog/
 ```bash
 pnpm run setup        # 一键环境设置
 pnpm run dev          # 智能启动（含环境检查、端口检查、健康监控）
-pnpm run dev:simple   # concurrently 并行启动 server 与 web
-pnpm run dev:server   # 仅 Go 后端热更新（air watcher）
-pnpm run dev:web      # 仅 SvelteKit 前端
+pnpm run dev:server   # 仅 Go 后端（dev.ts --server）
+pnpm run dev:web      # 仅前台 SvelteKit 应用（dev.ts --web）
+pnpm run dev:admin    # 仅后台 SvelteKit 应用（dev.ts --admin）
 
 pnpm run build        # 生产构建（可加 --clean / --production / --server-only / --web-only / --skip-tests --skip-lint）
 pnpm run build:server # 仅构建 Go 后端二进制
@@ -47,7 +47,7 @@ pnpm run test         # test:server + test:web
 pnpm run lint         # lint:web + lint:server（go vet + golangci-lint）
 pnpm run format       # format:web + format:server
 pnpm run quality      # format + lint + test
-pnpm run check        # 即 lint
+pnpm run check        # 前后台 SvelteKit 类型检查（svelte-check）
 pnpm run clean        # 清理前后端构建产物
 pnpm run seed:admin   # 初始化或提升超级管理员账户，命令幂等
 
@@ -57,13 +57,15 @@ pnpm run go:lint-install / go:quality
 pnpm run migrate [create|up|down|version|help]
 ```
 
+> `scripts/` 下各脚本的用途、参数与 pnpm 入口对照见 `scripts/README.md`。
+
 ## 3. 代码质量与格式化约定
 
 - 根 `prettier.config.js`：`semi: false`、`singleQuote: true`、`arrowParens: 'avoid'`、`printWidth: 100`、`tabWidth: 2`、`trailingComma: 'none'`。
 - 根 `eslint.config.js` 导出 `baseConfig` 供子项目继承；`apps/*/eslint.config.js` 在其上叠加 Svelte/TS 规则。
 - Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
 - 更改文件后应运行 `pnpm run lint` 与 `pnpm run format` 保持静态零告警。
-- 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，type 枚举以 `commitlint.config.js` 为准。
+- 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，若单次提交跨度较大需补充 message 描述正文，type 枚举以 `commitlint.config.js` 为准。
 - 关键逻辑应配套单元测试，测试文件与被测文件同目录命名，Go 为 `*_test.go`，前端为 `*.test.ts`。当前仓库尚未引入测试，新增功能时应一并补齐。
 
 ## 4. 后端约定（server/）

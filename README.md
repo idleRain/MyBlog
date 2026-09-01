@@ -72,7 +72,6 @@ MyBlog/                   # Monorepo 根目录
 - **Husky** - Git hooks 管理
 - **lint-staged** - 暂存文件代码检查
 - **commitlint** - 提交信息规范验证
-- **Concurrently** - 并行运行多个命令
 
 ## 🚀 快速开始
 
@@ -98,13 +97,10 @@ pnpm run setup
 # 智能启动 (推荐) - 包含环境检查、端口检查、健康监控
 pnpm run dev
 
-# 备选启动方式
-pnpm run dev:simple    # 使用 concurrently 简单启动
-
-# 分别启动服务
-pnpm run dev:server    # Go 后端热更新
-pnpm run dev:web       # 前台应用（SvelteKit）开发服务器
-pnpm run dev:admin     # 后台应用（SvelteKit）开发服务器
+# 分别启动服务（同样经过环境与端口检查）
+pnpm run dev:server    # 仅 Go 后端
+pnpm run dev:web       # 仅前台应用
+pnpm run dev:admin     # 仅后台应用
 ```
 
 ### 访问应用
@@ -128,6 +124,7 @@ pnpm run build           # 构建生产版本
 pnpm run test            # 运行所有测试
 
 # 代码质量
+pnpm run check           # 前后台 SvelteKit 类型检查
 pnpm run lint            # 代码检查
 pnpm run format          # 代码格式化
 pnpm run quality         # 完整质量检查 (格式化 + 检查 + 测试)
@@ -137,7 +134,8 @@ pnpm run quality         # 完整质量检查 (格式化 + 检查 + 测试)
 
 ```bash
 # 前端专用
-pnpm run test:web        # 前后台应用类型检查
+pnpm run test:web        # 前后台应用类型检查（尚无前端测试，暂以类型检查代替）
+pnpm run check           # 与 test:web 相同，前后台类型检查
 cd apps/web && pnpm run check   # 前台 SvelteKit 类型检查
 cd apps/admin && pnpm run check # 后台 SvelteKit 类型检查
 
@@ -190,10 +188,10 @@ VITE_BASE_URL=/api
 pnpm run dev  # 实时日志输出
 
 # Go 后端详细日志
-cd server && go run scripts/watcher.go
+pnpm run dev:server
 
-# 前端开发日志  
-cd apps/web && pnpm run dev
+# 前端开发日志
+pnpm run dev:web
 ```
 
 ## 🏗️ 架构设计

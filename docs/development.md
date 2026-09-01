@@ -19,12 +19,20 @@ MyBlog 采用 Monorepo 架构，将前后端代码统一管理在一个仓库中
 
 ```
 MyBlog/
-├── server/           # Go 后端服务
-├── web/             # SvelteKit 前端应用
-├── scripts/         # 跨项目脚本
-├── docs/            # 项目文档
-├── .husky/          # Git hooks
-└── package.json     # 根配置文件
+├── apps/
+│   ├── web/                  # @myblog/web —— 前台 toC（公开博客 + demo + i18n）
+│   └── admin/                # @myblog/admin —— 后台 toB（管理控制台 + 登录，无 i18n）
+├── packages/
+│   ├── shared/               # @myblog/shared —— 框架无关工具、类型、常量
+│   ├── http/                 # @myblog/http —— 纯 HTTP 请求器（ky 封装）
+│   ├── api/                  # @myblog/api —— 后端接口模块与响应类型
+│   └── ui/                   # @myblog/ui —— shadcn-svelte 基础组件（stock，主题注入）
+├── server/                   # Go 后端服务
+├── scripts/                  # 跨项目脚本（Node.js + tsx）
+├── docs/                     # 项目文档
+├── .husky/                   # Git hooks
+├── pnpm-workspace.yaml       # pnpm 工作区配置
+└── package.json              # 根配置文件
 ```
 
 ### 后端架构 (server/)
@@ -73,29 +81,62 @@ userSvc := service.NewUserService(userRepo)
 userHandler := handler.NewUserHandler(userSvc)
 ```
 
-### 前端架构 (web/)
+### 前端架构（apps/ + packages/）
 
-基于 SvelteKit 的现代前端应用：
+前端在 web-split 重构后拆分为前台与后台两个独立 SvelteKit 应用，公共代码抽取为四个 package。
 
-#### 目录结构
+#### 应用拆分
+
+| 应用 | 定位 | 特性 | 开发端口 |
+| --- | --- | --- | --- |
+| `apps/web`（@myblog/web） | 前台 toC | 公开博客 + demo 页 + i18n（paraglide） | 8899 |
+| `apps/admin`（@myblog/admin） | 后台 toB | 管理控制台 + 登录页，基准路径 `/admin`，无 i18n | 9988 |
+
+#### 公共包
+
+| 包 | 职责 | 关键依赖 |
+| --- | --- | --- |
+| `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量，不依赖 SvelteKit/Svelte | clsx、tailwind-merge、mitt |
+| `@myblog/http` | `createHttpClient` 工厂（ky 封装，认证回调注入，401 刷新钩子） | ky、@myblog/shared |
+| `@myblog/api` | 后端接口模块与响应类型（`createUserAPI` 工厂，未来扩展 article/comment 等） | @myblog/http、@myblog/shared |
+| `@myblog/ui` | shadcn-svelte 基础组件，保持 stock，主题经各应用 `app.css` token 注入 | bits-ui、vaul-svelte 等 |
+
+依赖方向单向无环：应用 → `ui` → `shared`；应用 → `http` → `shared`；应用 → `api` → `http` + `shared`。
+
+#### 应用目录结构
 
 ```
-web/
-├── src/
-│   ├── routes/        # 页面路由 (基于文件系统)
-│   ├── lib/           # 可复用组件
-│   ├── service/       # API 调用服务
-│   └── utils/         # 工具函数
-├── static/            # 静态资源
-└── vite.config.ts     # 构建配置
+apps/web/src/                 # 前台
+├── routes/                   # 分组路由：(app) 前台主页、(demo) 组件演示
+├── lib/
+│   ├── api/                  # 接口实例化（createUserAPI 实例）
+│   ├── service/              # http 客户端创建（注入认证与提示回调）
+│   ├── components/           # 前台组件
+│   ├── stores/               # 认证状态 store
+│   └── paraglide/            # i18n 生成产物
+└── app.css                   # 规格书主题（含 --signal）
+
+apps/admin/src/               # 后台
+├── routes/                   # 分组路由：(admin) 后台页面、(auth) 登录页
+├── lib/
+│   ├── api/                  # 接口实例化
+│   ├── service/              # http 客户端创建
+│   ├── components/           # 后台组件
+│   ├── stores/               # 认证状态 store
+│   ├── constants/            # 权限与角色常量
+│   ├── guards/               # 路由守卫
+│   ├── types/                # 后台专用类型
+│   └── utils/                # 认证域工具（jwt / logout / permissions 等）
+└── app.css                   # 原始后台主题（无 --signal）
 ```
 
-#### 技术栈
+#### 关键技术配置
 
-- **SvelteKit** - 全栈框架，支持 SSR/SPA
-- **TypeScript** - 类型安全
-- **TailwindCSS** - 原子化 CSS
-- **Vite** - 快速构建工具
+- 路径别名见各应用 `svelte.config.js`：`$lib`、`$ui`（指向 `packages/ui/src` 源码）、`@/*`、`#/*`、`~/*`；前台另有 `$i18n`。
+- `packages/ui` 以**源码直连**方式被引用，各应用在 `vite.config.ts` 配置 `ssr.noExternal: ['@myblog/ui']` 参与 SSR 编译；Tailwind v4 在各应用 `app.css` 用 `@source` 显式纳入 `packages/ui/src` 扫描。
+- 后台在 `svelte.config.js` 配置 `paths.base = '/admin'` 与 `relative: false`，与前台同源区分部署。
+- 前台经 `@inlang/paraglide-js` 做 i18n，产物位于 `src/lib/paraglide`；后台不引入 i18n。
+- 两应用均使用 `unplugin-auto-import` 自动导入 SvelteKit / Svelte / toast 常用函数。
 
 ## 开发环境设置
 
@@ -108,6 +149,9 @@ web/
 | MySQL   | 8.0+     | 数据库服务                      |
 
 ### 快速启动
+
+> 根 `package.json` 的全部 scripts 均为 `scripts/` 目录下 TypeScript 脚本的薄封装，
+> 各脚本的用途、参数与 pnpm 入口对照见 [`scripts/README.md`](../scripts/README.md)。
 
 ```bash
 # 1. 克隆项目
@@ -126,23 +170,20 @@ pnpm run dev
 如果自动设置失败，可以手动执行以下步骤：
 
 ```bash
-# 1. 安装根目录依赖
+# 1. 安装根目录依赖（pnpm workspace 会一并安装 apps/ 与 packages/ 的全部依赖）
 pnpm install
 
-# 2. 安装前端依赖
-cd apps/web && pnpm install
+# 2. 安装后端依赖
+cd server && go mod tidy
 
-# 3. 安装后端依赖
-cd ../server && go mod tidy
-
-# 4. 安装 Go 代码检查工具
+# 3. 安装 Go 代码检查工具
 cd .. && pnpm run go:lint-install
 
-# 5. 配置数据库
+# 4. 配置数据库
 # 确保 MySQL 服务运行
 # 检查 server/configs/config.yaml 中的数据库配置
 
-# 6. 启动开发服务
+# 5. 启动开发服务
 pnpm run dev
 ```
 
@@ -178,7 +219,7 @@ pnpm run dev
 2. **代码开发**
 
 - 后端开发：编辑 `server/` 下的文件，自动热重载
-- 前端开发：编辑 `web/src/` 下的文件，自动热重载
+- 前端开发：编辑 `apps/web/src/`（前台）或 `apps/admin/src/`（后台）下的文件，自动热重载
 
 3. **代码提交前**
 
@@ -195,6 +236,7 @@ git commit -m "feat: 添加新功能"
 pnpm run quality
 
 # 分别运行
+pnpm run check     # 前后台 SvelteKit 类型检查
 pnpm run format    # 代码格式化
 pnpm run lint      # 代码检查
 pnpm run test      # 运行测试
@@ -326,24 +368,24 @@ type User struct {
 ```svelte
 <script lang="ts">
   // 导入
-  import type { User } from '$lib/types';
-  import { userService } from '$lib/services';
+  import type { User } from '@myblog/api'
+  import { UserAPI } from '$lib/api'
 
-  // 属性
-  export let user: User;
+  // 属性（Svelte 5 runes）
+  let { user }: { user: User } = $props()
 
-  // 响应式变量
-  let loading = false;
+  // 响应式状态
+  let loading = $state(false)
 
   // 函数
   async function handleUpdate() {
-    loading = true;
+    loading = true
     try {
-      await userService.updateUser(user.id, user);
+      await UserAPI.updateUser(user.id, { username: user.username })
     } catch (error) {
-      console.error('更新失败:', error);
+      console.error('更新失败:', error)
     } finally {
-      loading = false;
+      loading = false
     }
   }
 </script>
@@ -351,12 +393,12 @@ type User struct {
 <!-- HTML -->
 <div class="user-card">
   <h2>{user.username}</h2>
-  <button on:click={handleUpdate} disabled={loading}>
+  <button onclick={handleUpdate} disabled={loading}>
     {loading ? '更新中...' : '更新'}
   </button>
 </div>
 
-<!-- CSS -->
+<!-- CSS：优先使用 Tailwind 工具类，复杂样式才放 <style> -->
 <style>
   .user-card {
     @apply p-4 border rounded-lg shadow-sm;
@@ -367,50 +409,30 @@ type User struct {
 #### 2. API 服务
 
 ```typescript
-// src/service/api.ts
-import ky from 'ky'
+// packages/http 提供 createHttpClient 工厂（ky 封装，认证回调注入）
+// packages/api 提供 createUserAPI 接口模块工厂
 
-const api = ky.create({
-  prefixUrl: import.meta.env.VITE_API_URL,
-  timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+// 应用侧 src/lib/service/index.ts：创建客户端实例，注入认证与提示回调
+import { createHttpClient } from '@myblog/http'
+
+const request = createHttpClient({
+  prefixUrl: import.meta.env.VITE_BASE_URL,
+  timeout: +import.meta.env.VITE_REQUEST_TIMEOUT || 30000,
+  auth: {
+    getAccessToken: () => authStore.getCurrentState()?.accessToken ?? null,
+    refreshToken: async () => { /* 令牌接近过期时执行刷新 */ },
+    onAuthFailure: async message => { /* 清除认证状态并跳转登录页 */ }
+  },
+  onError: message => { toast.error(message) }
 })
 
-export interface ApiResponse<T = any> {
-  code: number
-  message: string
-  data: T
-}
+// 应用侧 src/lib/api/index.ts：实例化接口模块
+import { createUserAPI } from '@myblog/api'
+const UserAPI = createUserAPI(request)
 
-export class ApiError extends Error {
-  constructor(
-    public code: number,
-    message: string,
-    public data?: any
-  ) {
-    super(message)
-    this.name = 'ApiError'
-  }
-}
-
-export async function apiPost<T>(endpoint: string, data?: any): Promise<T> {
-  try {
-    const response = await api.post(endpoint, { json: data }).json<ApiResponse<T>>()
-
-    if (response.code !== 200) {
-      throw new ApiError(response.code, response.message, response.data)
-    }
-
-    return response.data
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error
-    }
-    throw new ApiError(500, '网络请求失败', error)
-  }
-}
+// 一律使用 POST 调用后端（与后端 POST-Only 规范呼应）
+const list = await UserAPI.getUserList(1, 10)
+const updated = await UserAPI.updateUser(user.id, { username: 'new-name' })
 ```
 
 ## 部署指南
@@ -422,7 +444,8 @@ export async function apiPost<T>(endpoint: string, data?: any): Promise<T> {
 pnpm run dev
 
 # 访问地址
-# 前端: http://localhost:8899
+# 前台: http://localhost:8899
+# 后台: http://localhost:9988/admin
 # 后端: http://localhost:3000
 ```
 
