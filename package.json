@@ -85,7 +85,7 @@
     "unplugin-auto-import": "catalog:",
     "vite": "catalog:",
     "vite-plugin-devtools-json": "catalog:",
-    "vite-plugin-json5": "^1.1.9"
+    "vite-plugin-json5": "^1.4.4"
   },
   "keywords": [
     "monorepo",
