@@ -9,11 +9,11 @@
     "./utils/*": "./src/utils/*"
   },
   "dependencies": {
-    "clsx": "^2.1.1",
-    "mitt": "^3.0.1",
-    "tailwind-merge": "^3.6.0"
+    "clsx": "catalog:",
+    "mitt": "catalog:",
+    "tailwind-merge": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }

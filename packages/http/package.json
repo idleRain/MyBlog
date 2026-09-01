@@ -9,9 +9,9 @@
   },
   "dependencies": {
     "@myblog/shared": "workspace:*",
-    "ky": "^1.14.3"
+    "ky": "catalog:"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "catalog:"
   }
 }
