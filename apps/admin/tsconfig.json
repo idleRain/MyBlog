@@ -68,8 +68,6 @@
     "src/**/*.json5", // 所有 JSON5 文件
     "typings/**/*.d.ts", // 全局类型声明
     "vite.config.ts", // Vite 配置文件
-    "tailwind.config.js", // Tailwind CSS 配置
-    "postcss.config.js", // PostCSS 配置
     "prettier.config.js", // Prettier 配置
     "eslint.config.js" // ESLint 配置
   ],

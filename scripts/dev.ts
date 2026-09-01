@@ -30,6 +30,10 @@ const PORT_RANGE_MAX = 65535
 // 进程释放后的等待时间
 const PORT_RELEASE_WAIT_MS = 1000
 
+// 可独立启动的服务目标，对应 ServiceConfig.name 的小写形式。
+const DEV_TARGETS = ['server', 'web', 'admin'] as const
+type DevTarget = (typeof DEV_TARGETS)[number]
+
 // 环境要求的基础文件
 const REQUIRED_FILES = [
   'server/go.mod',
@@ -103,13 +107,19 @@ function readAppPort(appDir: string): number {
 
 // ---------- 服务定义 ----------
 
-// 组装前后端服务配置。
-async function getServices(): Promise<ServiceConfig[]> {
+// 解析命令行参数中的目标服务，未指定任何目标时返回全部服务。
+function parseDevTargets(): DevTarget[] {
+  const selected = DEV_TARGETS.filter(target => process.argv.slice(2).includes(`--${target}`))
+  return selected.length > 0 ? selected : [...DEV_TARGETS]
+}
+
+// 组装前后端服务配置，并按指定目标过滤。
+async function getServices(targets: DevTarget[]): Promise<ServiceConfig[]> {
   const serverPort = await readServerPort()
   const webPort = readAppPort('apps/web')
   const adminPort = readAppPort('apps/admin')
 
-  return [
+  const services: ServiceConfig[] = [
     {
       name: 'SERVER',
       command: ['go', 'run', 'scripts/watcher.go'],
@@ -132,6 +142,9 @@ async function getServices(): Promise<ServiceConfig[]> {
       port: adminPort
     }
   ]
+  return services.filter(service =>
+    targets.includes(service.name.toLowerCase() as DevTarget)
+  )
 }
 
 // ---------- 环境检查 ----------
@@ -550,7 +563,7 @@ function setupSignalHandler(processes: ChildProcess[]): void {
   })
 }
 
-// 输出各服务的访问地址。
+// 输出各服务的访问地址，仅显示已启动的服务。
 function displayServicesInfo(statusMap: Map<string, ServiceStatus>): void {
   console.log(`\n${COLORS.bold}${COLORS.green}🎉 所有服务已启动！${COLORS.reset}`)
   console.log(`${COLORS.cyan}📖 可用服务:${COLORS.reset}`)
@@ -560,12 +573,19 @@ function displayServicesInfo(statusMap: Map<string, ServiceStatus>): void {
     console.log(`  ${COLORS.green}• SERVER: http://localhost:${serverStatus.port}${COLORS.reset}`)
   }
 
-  const webPort = statusMap.get('WEB')?.port || DEFAULT_WEB_PORT
-  console.log(`  ${COLORS.green}• WEB: http://localhost:${webPort}${COLORS.reset}`)
+  const webStatus = statusMap.get('WEB')
+  if (webStatus) {
+    console.log(
+      `  ${COLORS.green}• WEB: http://localhost:${webStatus.port || DEFAULT_WEB_PORT}${COLORS.reset}`
+    )
+  }
 
-  const adminPort = statusMap.get('ADMIN')?.port || DEFAULT_WEB_PORT
-  // 后台已配置基准路径 /admin，访问地址需带子路径前缀。
-  console.log(`  ${COLORS.yellow}• ADMIN: http://localhost:${adminPort}/admin${COLORS.reset}`)
+  const adminStatus = statusMap.get('ADMIN')
+  if (adminStatus) {
+    const adminPort = adminStatus.port || DEFAULT_WEB_PORT
+    // 后台已配置基准路径 /admin，访问地址需带子路径前缀。
+    console.log(`  ${COLORS.yellow}• ADMIN: http://localhost:${adminPort}/admin${COLORS.reset}`)
+  }
 
   console.log(`\n${COLORS.yellow}按 Ctrl+C 停止所有服务${COLORS.reset}\n`)
 }
@@ -606,9 +626,13 @@ function extractVitePort(line: string): number | null {
 async function main(): Promise<void> {
   try {
     await checkEnvironment()
-    const serverPort = await readServerPort()
-    await checkBackendPort(serverPort)
-    const services = await getServices()
+    const targets = parseDevTargets()
+    // 仅当本次启动包含后端服务时才检查后端端口占用。
+    if (targets.includes('server')) {
+      const serverPort = await readServerPort()
+      await checkBackendPort(serverPort)
+    }
+    const services = await getServices(targets)
     await startServices(services)
   } catch (error) {
     console.error(`${COLORS.red}❌ 启动失败:${COLORS.reset}`, error)
