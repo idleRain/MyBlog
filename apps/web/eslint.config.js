@@ -1,6 +1,6 @@
 import autoImportGlobals from './.eslintrc-auto-import.js'
-import { includeIgnoreFile } from '@eslint/compat'
 import { baseConfig } from '../../eslint.config.js'
+import { includeIgnoreFile } from '@eslint/compat'
 import svelteConfig from './svelte.config.js'
 import svelte from 'eslint-plugin-svelte'
 import { fileURLToPath } from 'node:url'
@@ -47,7 +47,6 @@ export default ts.config(
     files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
       parserOptions: {
-        projectService: true,
         extraFileExtensions: ['.svelte'],
         parser: ts.parser,
         svelteConfig

@@ -49,7 +49,6 @@ pnpm run format       # format:web + format:server
 pnpm run quality      # format + lint + test
 pnpm run check        # 即 lint
 pnpm run clean        # 清理前后端构建产物
-pnpm run deps         # 安装前后端全部依赖
 pnpm run seed:admin   # 初始化或提升超级管理员账户，命令幂等
 
 # Go 专项
@@ -103,12 +102,7 @@ pnpm run migrate [create|up|down|version|help]
 
 遵循全局 `~/.dsh/AGENTS.md`，在此强调项目内高频要求：
 
-- 与用户对话使用**简体中文**；代码注释同样使用简体中文。
-- 注释用完整技术陈述句并以句号结尾，不使用括号补充解释，不使用口语化/情绪化用词（如「兜底」「保证」「弄好」）。
-- 禁止魔法数字/字符串，提升为有意义的命名常量。
-- 函数遵守单一职责，函数体建议不超过 30 行；嵌套不超过 3 层。
-- 命名自解释，禁止无意义缩写。
-- 涉及外部 I/O、网络、用户输入处必须显式错误处理，不得使用裸的 `try-except: pass`。
+- 开发过程中中遇到可维护性差、建议重构或优化的代码，不要忽略，而是寻求是否确认是否进行顺带优化。
 - 非异步场景调用 async 函数需用 `void` 显式忽略返回的 Promise。
 
 ## 7. 环境配置
