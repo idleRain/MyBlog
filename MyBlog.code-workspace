@@ -26,7 +26,8 @@
     }
   ],
   "settings": {
-    // 工作区级别的设置
+    // 工作区级文件隐藏与搜索排除，对全部根 folder 生效；
+    // 语言、工具链、任务与调试设置统一由 .vscode/ 目录承载，避免双源重复。
     "files.exclude": {
       "**/node_modules": true,
       "**/tmp": true,
@@ -36,8 +37,6 @@
       "**/build": true,
       "**/.husky/_": true
     },
-    
-    // 搜索设置
     "search.exclude": {
       "**/node_modules": true,
       "**/tmp": true,
@@ -47,167 +46,7 @@
       "**/build": true,
       "**/vendor": true,
       "**/*.log": true,
-      "**/bun.lockb": true,
       "**/go.sum": true
-    },
-    
-    // 多根工作区特定设置
-    "eslint.workingDirectories": [
-      "apps/web",
-      "apps/admin"
-    ],
-    
-    // Go 设置
-    "go.gopath": "",
-    "go.inferGopath": false,
-    "go.toolsManagement.autoUpdate": true,
-    
-    // TypeScript 设置
-    "typescript.preferences.includePackageJsonAutoImports": "on",
-    "typescript.suggest.autoImports": true,
-    
-    // 编辑器设置
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit",
-      "source.organizeImports": "explicit"
-    },
-    
-    // Git 设置
-    "git.autofetch": true,
-    "git.enableSmartCommit": true,
-    
-    // 终端设置
-    "terminal.integrated.cwd": "${workspaceFolder}",
-    
-    // 文件关联
-    "files.associations": {
-      "*.yaml": "yaml",
-      "*.yml": "yaml",
-      "go.mod": "go",
-      "go.sum": "go",
-      ".air.toml": "toml",
-      "*.md": "markdown"
     }
-  },
-  "extensions": {
-    "recommendations": [
-      // 必须的扩展
-      "golang.go",
-      "svelte.svelte-vscode",
-      "dbaeumer.vscode-eslint",
-      "esbenp.prettier-vscode",
-      
-      // 推荐的扩展
-      "bradlc.vscode-tailwindcss",
-      "redhat.vscode-yaml",
-      "eamodio.gitlens",
-      "ms-vscode.vscode-typescript-next",
-      "PKief.material-icon-theme"
-    ]
-  },
-  "tasks": {
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "label": "🚀 Start Development (Full Stack)",
-        "type": "shell",
-        "command": "bun",
-        "args": ["run", "dev"],
-        "group": {
-          "kind": "build",
-          "isDefault": true
-        },
-        "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": false,
-          "panel": "shared"
-        },
-        "isBackground": true,
-        "problemMatcher": []
-      },
-      {
-        "label": "🔨 Build Project",
-        "type": "shell",
-        "command": "bun",
-        "args": ["run", "build"],
-        "group": "build",
-        "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": false,
-          "panel": "shared"
-        },
-        "problemMatcher": []
-      },
-      {
-        "label": "🧪 Run Tests",
-        "type": "shell",
-        "command": "bun",
-        "args": ["run", "test"],
-        "group": {
-          "kind": "test",
-          "isDefault": true
-        },
-        "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": false,
-          "panel": "shared"
-        },
-        "problemMatcher": []
-      },
-      {
-        "label": "✨ Quality Check",
-        "type": "shell",
-        "command": "bun",
-        "args": ["run", "quality"],
-        "group": "build",
-        "presentation": {
-          "echo": true,
-          "reveal": "always",
-          "focus": false,
-          "panel": "shared"
-        },
-        "problemMatcher": []
-      }
-    ]
-  },
-  "launch": {
-    "version": "0.2.0",
-    "configurations": [
-      {
-        "name": "🐹 Debug Go Server",
-        "type": "go",
-        "request": "launch",
-        "mode": "auto",
-        "program": "${workspaceFolder}/server/cmd/myblog",
-        "cwd": "${workspaceFolder}/server"
-      },
-      {
-        "name": "🎨 Debug SvelteKit (前台)",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/apps/web/node_modules/@sveltejs/kit/src/cli/index.js",
-        "args": ["dev"],
-        "cwd": "${workspaceFolder}/apps/web"
-      },
-      {
-        "name": "🛠 Debug SvelteKit (后台)",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/apps/admin/node_modules/@sveltejs/kit/src/cli/index.js",
-        "args": ["dev"],
-        "cwd": "${workspaceFolder}/apps/admin"
-      }
-    ],
-    "compounds": [
-      {
-        "name": "🚀 Debug Full Stack",
-        "configurations": ["🐹 Debug Go Server", "🎨 Debug SvelteKit (前台)", "🛠 Debug SvelteKit (后台)"],
-        "stopAll": true
-      }
-    ]
   }
 }

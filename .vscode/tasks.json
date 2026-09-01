@@ -4,7 +4,7 @@
     {
       "label": "Setup Project",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "setup"
@@ -24,12 +24,15 @@
     {
       "label": "Start Development",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "dev"
       ],
-      "group": "build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -53,33 +56,12 @@
           "endsPattern": "^.*所有服务已启动.*$"
         }
       },
-      "detail": "启动智能开发环境 (前后端)"
-    },
-    {
-      "label": "Start Development (Simple)",
-      "type": "shell",
-      "command": "bun",
-      "args": [
-        "run",
-        "dev:simple"
-      ],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "isBackground": true,
-      "problemMatcher": [],
-      "detail": "启动简单开发环境 (concurrently)"
+      "detail": "启动智能开发环境 (Go + Web + Admin)"
     },
     {
       "label": "Start Go Server",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "dev:server"
@@ -100,7 +82,7 @@
     {
       "label": "Start Web Server",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "dev:web"
@@ -116,20 +98,38 @@
       },
       "isBackground": true,
       "problemMatcher": [],
-      "detail": "仅启动 SvelteKit 前端服务"
+      "detail": "仅启动 SvelteKit 前台服务"
+    },
+    {
+      "label": "Start Admin Server",
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "run",
+        "dev:admin"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "detail": "仅启动 SvelteKit 后台服务"
     },
     {
       "label": "Build Project",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "build"
       ],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
+      "group": "build",
       "presentation": {
         "echo": true,
         "reveal": "always",
@@ -144,7 +144,7 @@
     {
       "label": "Build Go Server",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "build:server"
@@ -178,7 +178,7 @@
     {
       "label": "Build Web",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "build:web"
@@ -198,7 +198,7 @@
     {
       "label": "Run Tests",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "test"
@@ -216,12 +216,12 @@
         "clear": false
       },
       "problemMatcher": [],
-      "detail": "运行所有测试"
+      "detail": "运行所有测试 (Go + Web check)"
     },
     {
       "label": "Run Go Tests",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "test:server"
@@ -251,29 +251,9 @@
       "detail": "运行 Go 测试"
     },
     {
-      "label": "Run Web Tests",
-      "type": "shell",
-      "command": "bun",
-      "args": [
-        "run",
-        "test:web"
-      ],
-      "group": "test",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "problemMatcher": [],
-      "detail": "运行前端测试"
-    },
-    {
       "label": "Lint Code",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "lint"
@@ -309,29 +289,9 @@
       "detail": "运行代码检查"
     },
     {
-      "label": "Format Code",
-      "type": "shell",
-      "command": "bun",
-      "args": [
-        "run",
-        "format"
-      ],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "shared",
-        "showReuseMessage": true,
-        "clear": false
-      },
-      "problemMatcher": [],
-      "detail": "格式化代码"
-    },
-    {
       "label": "Quality Check",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "quality"
@@ -346,12 +306,12 @@
         "clear": false
       },
       "problemMatcher": [],
-      "detail": "完整质量检查 (格式化 + 检查 + 测试)"
+      "detail": "完整质量检查 (format + lint + test)"
     },
     {
       "label": "Clean Build",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "clean"
@@ -371,10 +331,9 @@
     {
       "label": "Install Dependencies",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
-        "run",
-        "deps"
+        "install"
       ],
       "group": "build",
       "presentation": {
@@ -391,7 +350,7 @@
     {
       "label": "Install Go Lint Tools",
       "type": "shell",
-      "command": "bun",
+      "command": "pnpm",
       "args": [
         "run",
         "go:lint-install"

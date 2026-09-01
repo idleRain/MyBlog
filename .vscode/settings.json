@@ -1,50 +1,38 @@
 {
-  // ESLint 配置
-  "eslint.validate": ["javascript", "typescript", "svelte"],
-  "eslint.workingDirectories": ["./web"],
-  "eslint.experimental.useFlatConfig": true,
-  
-  // Svelte 配置
+  // ESLint（flat config 自动检测；workingDirectories 供多根工作区定位子应用）
+  "eslint.workingDirectories": ["apps/web", "apps/admin"],
+
+  // Svelte
   "svelte.enable-ts-plugin": true,
-  
-  // Go 开发配置
-  "go.gocodeAutoBuild": true,
-  "go.lintOnSave": "package",
-  "go.vetOnSave": "package",
-  "go.formatTool": "goimports",
-  "go.useCodeSnippetsOnFunctionSuggest": true,
-  "go.inferGopath": false,
-  "go.gopath": "",
-  "go.goroot": "",
+
+  // Go（编辑器内诊断与格式化交给 gopls，lint 由 lint:server 的 golangci-lint 负责）
+  "go.formatTool": "default",
   "go.toolsManagement.autoUpdate": true,
-  
+
   // 文件关联
   "files.associations": {
     "*.yaml": "yaml",
     "*.yml": "yaml",
     "go.mod": "go",
     "go.sum": "go",
-    ".air.toml": "toml"
+    ".air.toml": "toml",
+    ".air.simple.toml": "toml"
   },
-  
-  // 编辑器设置
+
+  // 编辑器
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
-    "source.organizeImports": "explicit"
+    "source.fixAll.eslint": "explicit"
   },
   "editor.tabSize": 2,
   "editor.insertSpaces": true,
-  "editor.rulers": [80, 120],
-  "editor.wordWrap": "bounded",
-  "editor.wordWrapColumn": 120,
-  
-  // TypeScript 配置
-  "typescript.preferences.noSemicolons": false,
-  "typescript.format.insertSpaceAfterOpeningAndBeforeClosingNonemptyBraces": true,
+  "editor.rulers": [80, 100],
+
+  // TypeScript（与 prettier 无分号风格保持一致，import 排序交由 prettier 插件处理）
+  "typescript.preferences.noSemicolons": true,
   "typescript.updateImportsOnFileMove.enabled": "always",
-  
-  // Prettier 配置
+
+  // Prettier
   "prettier.configPath": "./prettier.config.js",
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
@@ -58,51 +46,20 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "[yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[go]": {
     "editor.defaultFormatter": "golang.go"
   },
-  
-  // 文件资源管理器
-  "explorer.excludeGitIgnore": true,
-  "files.exclude": {
-    "**/node_modules": true,
-    "**/tmp": true,
-    "**/bin": true,
-    "**/.svelte-kit": true,
-    "**/dist": true,
-    "**/build": true
-  },
-  
-  // 搜索设置
-  "search.exclude": {
-    "**/node_modules": true,
-    "**/tmp": true,
-    "**/bin": true,
-    "**/.svelte-kit": true,
-    "**/dist": true,
-    "**/build": true,
-    "**/vendor": true,
-    "**/*.log": true
-  },
-  
-  // Git 配置
+
+  // Git（仅保留自动拉取；智能提交与自动同步会引入误推风险，统一交由 Git hooks 管理）
   "git.autofetch": true,
-  "git.enableSmartCommit": true,
-  "git.confirmSync": false,
-  
-  // 终端配置
-  "terminal.integrated.defaultProfile.linux": "bash",
+
+  // 终端（PowerShell 7 的 Windows Terminal profile 名）
   "terminal.integrated.defaultProfile.windows": "PowerShell",
-  "terminal.integrated.cwd": "${workspaceFolder}",
-  
-  // 工作区推荐
-  "extensions.showRecommendationsOnlyOnDemand": false,
-  
-  // 多根工作区特定设置
-  "eslint.workingDirectories": ["web"],
-  "go.gopath": "",
-  "go.inferGopath": false
+  "terminal.integrated.cwd": "${workspaceFolder}"
 }

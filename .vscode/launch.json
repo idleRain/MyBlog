@@ -10,7 +10,6 @@
       "cwd": "${workspaceFolder}/server",
       "env": {},
       "args": [],
-      "showLog": true,
       "console": "integratedTerminal",
       "stopOnEntry": false
     },
@@ -22,16 +21,6 @@
       "remotePath": "${workspaceFolder}/server",
       "port": 2345,
       "host": "127.0.0.1",
-      "showLog": true,
-      "trace": "verbose"
-    },
-    {
-      "name": "Debug Current Go File",
-      "type": "go",
-      "request": "launch",
-      "mode": "debug",
-      "program": "${file}",
-      "cwd": "${workspaceFolder}/server",
       "showLog": true
     },
     {
@@ -41,21 +30,40 @@
       "mode": "test",
       "program": "${workspaceFolder}/server",
       "cwd": "${workspaceFolder}/server",
-      "showLog": true,
       "console": "integratedTerminal"
     },
     {
-      "name": "Launch SvelteKit",
+      "name": "Debug Web (SvelteKit 前台)",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/web/node_modules/@sveltejs/kit/src/cli/index.js",
+      "program": "${workspaceFolder}/node_modules/vite/bin/vite.js",
       "args": [
+        "dev",
+        "--mode",
         "dev"
       ],
-      "cwd": "${workspaceFolder}/web",
+      "cwd": "${workspaceFolder}/apps/web",
       "console": "integratedTerminal",
       "serverReadyAction": {
-        "pattern": "local:.*?(https?://[^\\s]+)",
+        "pattern": "[Ll]ocal:.*?(https?://[^\\s]+)",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "name": "Debug Admin (SvelteKit 后台)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/vite/bin/vite.js",
+      "args": [
+        "dev",
+        "--mode",
+        "dev"
+      ],
+      "cwd": "${workspaceFolder}/apps/admin",
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "[Ll]ocal:.*?(https?://[^\\s]+)",
         "uriFormat": "%s",
         "action": "openExternally"
       }
@@ -65,21 +73,24 @@
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:8899",
-      "webRoot": "${workspaceFolder}/web/src",
+      "webRoot": "${workspaceFolder}/apps/web/src",
       "sourceMaps": true,
       "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
       "runtimeArgs": [
-        "--disable-web-security",
-        "--disable-features=VizDisplayCompositor"
+        "--disable-web-security"
       ]
     },
     {
-      "name": "Attach to Chrome (Frontend)",
+      "name": "Debug Chrome (Admin)",
       "type": "chrome",
-      "request": "attach",
-      "port": 9222,
-      "webRoot": "${workspaceFolder}/web/src",
-      "sourceMaps": true
+      "request": "launch",
+      "url": "http://localhost:9988",
+      "webRoot": "${workspaceFolder}/apps/admin/src",
+      "sourceMaps": true,
+      "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile-admin",
+      "runtimeArgs": [
+        "--disable-web-security"
+      ]
     }
   ],
   "compounds": [
@@ -87,27 +98,18 @@
       "name": "Debug Full Stack",
       "configurations": [
         "Debug Go Server",
-        "Debug SvelteKit Dev Server"
+        "Debug Web (SvelteKit 前台)",
+        "Debug Admin (SvelteKit 后台)"
       ],
-      "stopAll": true,
-      "presentation": {
-        "hidden": false,
-        "group": "",
-        "order": 1
-      }
+      "stopAll": true
     },
     {
       "name": "Debug Frontend + Chrome",
       "configurations": [
-        "Debug SvelteKit Dev Server",
+        "Debug Web (SvelteKit 前台)",
         "Debug Chrome (Frontend)"
       ],
-      "stopAll": true,
-      "presentation": {
-        "hidden": false,
-        "group": "",
-        "order": 2
-      }
+      "stopAll": true
     }
   ]
 }
