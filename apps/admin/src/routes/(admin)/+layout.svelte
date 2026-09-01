@@ -1,9 +1,8 @@
 <script lang="ts">
-import { requireAuth, checkAuthOnLoad } from '$lib/utils/auth-guard'
+import { checkAuthOnLoad, requireAuth } from '$lib/utils/auth-guard'
 import { AppSidebar } from '$lib/components/admin'
 import { goto } from '$lib/utils/navigation'
 import { ModeWatcher } from 'mode-watcher'
-import { Toaster } from '$ui/sonner'
 import { onMount } from 'svelte'
 import { Sidebar } from '$ui'
 
@@ -46,7 +45,6 @@ onMount(async () => {
 </svelte:head>
 
 <ModeWatcher />
-<Toaster position="top-right" />
 
 {#if isLoading}
   <div class="flex h-screen items-center justify-center">

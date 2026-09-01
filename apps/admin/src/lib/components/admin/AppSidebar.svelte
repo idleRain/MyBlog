@@ -1,16 +1,16 @@
 <script lang="ts">
 import {
-  LayoutDashboard,
-  Users,
   FileText,
-  Settings,
+  Home,
+  LayoutDashboard,
   LogOut,
-  User as UserIcon,
+  Settings,
   Shield,
-  Home
+  User as UserIcon,
+  Users
 } from '@lucide/svelte'
-import type { User, UserRole, SidebarMenuItem } from '$lib/types'
-import { Button, Badge, Sidebar, Avatar, Separator } from '$ui'
+import type { SidebarMenuItem, User, UserRole } from '$lib/types'
+import { Avatar, Badge, Button, Separator, Sidebar } from '$ui'
 import { getRoleInfo } from '$lib/utils/permissions'
 import { performLogout } from '$lib/utils/logout'
 import { goto } from '$lib/utils/navigation'
@@ -83,8 +83,8 @@ let filteredNavigation = $derived(
 </script>
 
 <Sidebar.Root class="border-r">
-  <Sidebar.Header class="p-4">
-    <div class="flex items-center gap-3">
+  <Sidebar.Header class="flex h-16 items-center border-b pl-4">
+    <div class="flex w-full flex-1 items-center gap-3">
       <div
         class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground"
       >
@@ -96,8 +96,6 @@ let filteredNavigation = $derived(
       </div>
     </div>
   </Sidebar.Header>
-
-  <Separator.Root />
 
   <Sidebar.Content class="p-2">
     <!-- 用户信息卡片 -->

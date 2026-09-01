@@ -121,7 +121,6 @@ pnpm run dev:admin     # 后台应用（SvelteKit）开发服务器
 ```bash
 # 环境和依赖管理
 pnpm run setup           # 初始化开发环境
-pnpm run deps            # 安装所有依赖
 
 # 开发和构建
 pnpm run dev             # 启动开发环境 (智能模式)
