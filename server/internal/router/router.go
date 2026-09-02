@@ -88,6 +88,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		tagRoutes := NewTagRoutes(tagHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		tagRoutes.RegisterRoutes(api, adminAPI)
 	}
+
+	// 注册评论相关路由
+	if deps.CommentHandler != nil {
+		commentHandler := deps.CommentHandler.(CommentHandlerInterface)
+		commentRoutes := NewCommentRoutes(commentHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		commentRoutes.RegisterRoutes(api, adminAPI)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -96,9 +103,24 @@ type Dependencies struct {
 	ArticleHandler  interface{}               // 文章处理器接口
 	CategoryHandler interface{}               // 分类处理器接口
 	TagHandler      interface{}               // 标签处理器接口
+	CommentHandler  interface{}               // 评论处理器接口
 	JWTService      service.JWTService        // JWT服务
 	UserRepository  repository.UserRepository // 用户仓库
 	RBACService     service.RBACService       // RBAC权限服务
+}
+
+// CommentHandlerInterface 评论处理器接口
+type CommentHandlerInterface interface {
+	CreateComment(c *gin.Context)       // POST /api/comments/create
+	GetCommentsByArticle(c *gin.Context) // POST /api/comments/list
+	LikeComment(c *gin.Context)         // POST /api/comments/like
+	UnlikeComment(c *gin.Context)       // POST /api/comments/unlike
+	ApproveComment(c *gin.Context)      // POST /api/admin/comments/approve
+	RejectComment(c *gin.Context)       // POST /api/admin/comments/reject
+	MarkCommentSpam(c *gin.Context)     // POST /api/admin/comments/spam
+	TrashComment(c *gin.Context)        // POST /api/admin/comments/trash
+	DeleteComment(c *gin.Context)       // POST /api/admin/comments/delete
+	ListComments(c *gin.Context)        // POST /api/admin/comments/list
 }
 
 // TagHandlerInterface 标签处理器接口

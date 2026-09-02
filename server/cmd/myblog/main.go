@@ -51,16 +51,19 @@ func main() {
 	articleRepo := repository.NewArticleRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
 	tagRepo := repository.NewTagRepository(db)
+	commentRepo := repository.NewCommentRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 	userSvc := service.NewUserService(userRepo, jwtService)
 	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService)
 	categorySvc := service.NewCategoryService(categoryRepo)
 	tagSvc := service.NewTagService(tagRepo)
+	commentSvc := service.NewCommentService(commentRepo, articleRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
 	categoryHandler := handler.NewCategoryHandler(categorySvc)
 	tagHandler := handler.NewTagHandler(tagSvc)
+	commentHandler := handler.NewCommentHandler(commentSvc)
 
 	// 创建路由管理器
 	routerManager := router.NewRouter(cfg)
@@ -71,6 +74,7 @@ func main() {
 		ArticleHandler:  articleHandler,
 		CategoryHandler: categoryHandler,
 		TagHandler:      tagHandler,
+		CommentHandler:  commentHandler,
 		JWTService:      jwtService,
 		UserRepository:  userRepo,
 		RBACService:     rbacService,
