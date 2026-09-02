@@ -546,29 +546,52 @@ func (s *ArticleService) ViewArticle(articleID uint, userID *uint, visitorID str
 	return nil
 }
 
-// LikeArticle 点赞文章
+// LikeArticle 点赞文章，重复点赞保持幂等。
 func (s *ArticleService) LikeArticle(articleID uint, userID uint) error {
-	// TODO: 实现点赞逻辑，操作 article_likes 表
-	// 更新文章的点赞数
-	return s.articleRepo.UpdateLikeCount(articleID)
+	// 校验文章存在。
+	article, err := s.articleRepo.GetByID(articleID)
+	if err != nil {
+		return err
+	}
+
+	// 校验当前用户有查看权限，防止对不可见文章点赞。
+	if !s.CanView(article, &userID) {
+		return errors.New("没有查看此文章的权限")
+	}
+
+	// 写入点赞记录并维护计数，已点赞时静默忽略。
+	_, err = s.articleRepo.AddLike(articleID, userID)
+	return err
 }
 
-// UnlikeArticle 取消点赞文章
+// UnlikeArticle 取消点赞，未点赞时保持幂等。
 func (s *ArticleService) UnlikeArticle(articleID uint, userID uint) error {
-	// TODO: 实现取消点赞逻辑
-	return s.articleRepo.UpdateLikeCount(articleID)
+	_, err := s.articleRepo.RemoveLike(articleID, userID)
+	return err
 }
 
-// BookmarkArticle 收藏文章
+// BookmarkArticle 收藏文章，重复收藏保持幂等。
 func (s *ArticleService) BookmarkArticle(articleID uint, userID uint) error {
-	// TODO: 实现收藏逻辑，操作 article_bookmarks 表
-	return nil
+	// 校验文章存在。
+	article, err := s.articleRepo.GetByID(articleID)
+	if err != nil {
+		return err
+	}
+
+	// 校验当前用户有查看权限，防止对不可见文章收藏。
+	if !s.CanView(article, &userID) {
+		return errors.New("没有查看此文章的权限")
+	}
+
+	// 写入收藏记录并维护计数，已收藏时静默忽略。
+	_, err = s.articleRepo.AddBookmark(articleID, userID)
+	return err
 }
 
-// UnbookmarkArticle 取消收藏文章
+// UnbookmarkArticle 取消收藏，未收藏时保持幂等。
 func (s *ArticleService) UnbookmarkArticle(articleID uint, userID uint) error {
-	// TODO: 实现取消收藏逻辑
-	return nil
+	_, err := s.articleRepo.RemoveBookmark(articleID, userID)
+	return err
 }
 
 // PublishArticle 发布文章

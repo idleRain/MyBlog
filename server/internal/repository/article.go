@@ -10,7 +10,11 @@ import (
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
+
+// ErrArticleNotFound 文章不存在的哨兵错误，供 service 与 handler 层识别业务错误。
+var ErrArticleNotFound = errors.New("文章不存在")
 
 // ArticleRepositoryInterface 文章仓储接口
 type ArticleRepositoryInterface interface {
@@ -32,8 +36,13 @@ type ArticleRepositoryInterface interface {
 	GetPopular(limit int) ([]*model.Article, error)
 	GetRecent(limit int) ([]*model.Article, error)
 	IncrementViewCount(id uint) error
-	UpdateLikeCount(id uint) error
 	UpdateCommentCount(id uint) error
+
+	// 互动操作
+	AddLike(articleID, userID uint) (bool, error)
+	RemoveLike(articleID, userID uint) (bool, error)
+	AddBookmark(articleID, userID uint) (bool, error)
+	RemoveBookmark(articleID, userID uint) (bool, error)
 
 	// 分类和标签关联
 	AddCategory(articleID, categoryID uint) error
@@ -102,7 +111,7 @@ func (r *ArticleRepository) GetByID(id uint) (*model.Article, error) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("文章不存在")
+			return nil, ErrArticleNotFound
 		}
 		return nil, err
 	}
@@ -122,7 +131,7 @@ func (r *ArticleRepository) GetBySlug(slug string) (*model.Article, error) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("文章不存在")
+			return nil, ErrArticleNotFound
 		}
 		return nil, err
 	}
@@ -151,9 +160,42 @@ func (r *ArticleRepository) Update(article *model.Article) error {
 	return r.db.Save(article).Error
 }
 
-// Delete 删除文章，采用软删除。
+// Delete 删除文章，采用软删除，并在同一事务内清理关联关系与回滚分类标签计数。
 func (r *ArticleRepository) Delete(id uint) error {
-	return r.db.Delete(&model.Article{}, id).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 查询文章关联的分类与标签，用于回滚计数。
+		var categories []model.ArticleCategory
+		if err := tx.Where("article_id = ?", id).Find(&categories).Error; err != nil {
+			return err
+		}
+		var tags []model.ArticleTag
+		if err := tx.Where("article_id = ?", id).Find(&tags).Error; err != nil {
+			return err
+		}
+
+		// 删除文章关联的分类与标签记录。
+		if err := tx.Where("article_id = ?", id).Delete(&model.ArticleCategory{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("article_id = ?", id).Delete(&model.ArticleTag{}).Error; err != nil {
+			return err
+		}
+
+		// 回滚分类文章计数与标签使用计数。
+		for _, category := range categories {
+			if err := r.decrementCategoryCount(tx, category.CategoryID); err != nil {
+				return err
+			}
+		}
+		for _, tag := range tags {
+			if err := r.decrementTagCount(tx, tag.TagID); err != nil {
+				return err
+			}
+		}
+
+		// 软删除文章本体。
+		return tx.Delete(&model.Article{}, id).Error
+	})
 }
 
 // List 获取文章列表
@@ -314,18 +356,90 @@ func (r *ArticleRepository) IncrementViewCount(id uint) error {
 		UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error
 }
 
-// UpdateLikeCount 更新点赞数
-func (r *ArticleRepository) UpdateLikeCount(id uint) error {
-	return r.db.Model(&model.Article{}).
-		Where("id = ?", id).
-		UpdateColumn("like_count", gorm.Expr("(SELECT COUNT(*) FROM article_likes WHERE article_id = ?)", id)).Error
-}
-
 // UpdateCommentCount 更新评论数
 func (r *ArticleRepository) UpdateCommentCount(id uint) error {
 	return r.db.Model(&model.Article{}).
 		Where("id = ?", id).
 		UpdateColumn("comment_count", gorm.Expr("(SELECT COUNT(*) FROM comments WHERE article_id = ? AND deleted_at IS NULL)", id)).Error
+}
+
+// AddLike 添加点赞记录，依赖唯一索引防重复，返回是否新增并递增点赞计数。
+func (r *ArticleRepository) AddLike(articleID, userID uint) (bool, error) {
+	var added bool
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		// 依赖 (article_id, user_id) 唯一索引，重复点赞时静默忽略。
+		result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.ArticleLike{
+			ArticleID: articleID,
+			UserID:    userID,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		added = result.RowsAffected > 0
+		// 仅在真正新增时递增点赞计数，避免重复点赞导致计数虚高。
+		if added {
+			return r.incrementLikeCount(tx, articleID)
+		}
+		return nil
+	})
+	return added, err
+}
+
+// RemoveLike 移除点赞记录，返回是否实际删除并递减点赞计数。
+func (r *ArticleRepository) RemoveLike(articleID, userID uint) (bool, error) {
+	var removed bool
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("article_id = ? AND user_id = ?", articleID, userID).
+			Delete(&model.ArticleLike{})
+		if result.Error != nil {
+			return result.Error
+		}
+		removed = result.RowsAffected > 0
+		// 仅在真正删除时递减计数，未点赞时无需回滚。
+		if removed {
+			return r.decrementLikeCount(tx, articleID)
+		}
+		return nil
+	})
+	return removed, err
+}
+
+// AddBookmark 添加收藏记录，依赖唯一索引防重复，返回是否新增并递增收藏计数。
+func (r *ArticleRepository) AddBookmark(articleID, userID uint) (bool, error) {
+	var added bool
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.ArticleBookmark{
+			ArticleID: articleID,
+			UserID:    userID,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		added = result.RowsAffected > 0
+		if added {
+			return r.incrementBookmarkCount(tx, articleID)
+		}
+		return nil
+	})
+	return added, err
+}
+
+// RemoveBookmark 移除收藏记录，返回是否实际删除并递减收藏计数。
+func (r *ArticleRepository) RemoveBookmark(articleID, userID uint) (bool, error) {
+	var removed bool
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Where("article_id = ? AND user_id = ?", articleID, userID).
+			Delete(&model.ArticleBookmark{})
+		if result.Error != nil {
+			return result.Error
+		}
+		removed = result.RowsAffected > 0
+		if removed {
+			return r.decrementBookmarkCount(tx, articleID)
+		}
+		return nil
+	})
+	return removed, err
 }
 
 // AddCategory 添加分类关联
@@ -358,15 +472,28 @@ func (r *ArticleRepository) RemoveTag(articleID, tagID uint) error {
 		Delete(&model.ArticleTag{}).Error
 }
 
-// SyncTags 同步标签关联，替换文章的全部标签。
+// SyncTags 同步标签关联，替换文章的全部标签，并维护各标签使用计数。
 func (r *ArticleRepository) SyncTags(articleID uint, tagIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 查询现有标签关联，用于回滚被移除标签的使用计数。
+		var existingTags []model.ArticleTag
+		if err := tx.Where("article_id = ?", articleID).Find(&existingTags).Error; err != nil {
+			return err
+		}
+
 		// 删除现有关联
 		if err := tx.Where("article_id = ?", articleID).Delete(&model.ArticleTag{}).Error; err != nil {
 			return err
 		}
 
-		// 添加新关联
+		// 回滚被移除标签的使用计数
+		for _, existing := range existingTags {
+			if err := r.decrementTagCount(tx, existing.TagID); err != nil {
+				return err
+			}
+		}
+
+		// 添加新关联并递增对应标签的使用计数
 		for _, tagID := range tagIDs {
 			articleTag := &model.ArticleTag{
 				ArticleID: articleID,
@@ -375,27 +502,46 @@ func (r *ArticleRepository) SyncTags(articleID uint, tagIDs []uint) error {
 			if err := tx.Create(articleTag).Error; err != nil {
 				return err
 			}
+			if err := r.incrementTagCount(tx, tagID); err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
 }
 
-// SyncCategories 同步分类关联，替换文章的全部分类。
+// SyncCategories 同步分类关联，替换文章的全部分类，并维护各分类文章计数。
 func (r *ArticleRepository) SyncCategories(articleID uint, categoryIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 查询现有分类关联，用于回滚被移除分类的文章计数。
+		var existingCategories []model.ArticleCategory
+		if err := tx.Where("article_id = ?", articleID).Find(&existingCategories).Error; err != nil {
+			return err
+		}
+
 		// 删除现有关联
 		if err := tx.Where("article_id = ?", articleID).Delete(&model.ArticleCategory{}).Error; err != nil {
 			return err
 		}
 
-		// 添加新关联
+		// 回滚被移除分类的文章计数
+		for _, existing := range existingCategories {
+			if err := r.decrementCategoryCount(tx, existing.CategoryID); err != nil {
+				return err
+			}
+		}
+
+		// 添加新关联并递增对应分类的文章计数
 		for _, categoryID := range categoryIDs {
 			articleCategory := &model.ArticleCategory{
 				ArticleID:  articleID,
 				CategoryID: categoryID,
 			}
 			if err := tx.Create(articleCategory).Error; err != nil {
+				return err
+			}
+			if err := r.incrementCategoryCount(tx, categoryID); err != nil {
 				return err
 			}
 		}
@@ -465,6 +611,62 @@ func (r *ArticleRepository) ensureUniqueSlug(article *model.Article) error {
 	}
 
 	return nil
+}
+
+// incrementLikeCount 递增文章点赞计数，供点赞事务内调用。
+func (r *ArticleRepository) incrementLikeCount(tx *gorm.DB, articleID uint) error {
+	return tx.Model(&model.Article{}).
+		Where("id = ?", articleID).
+		UpdateColumn("like_count", gorm.Expr("like_count + 1")).Error
+}
+
+// decrementLikeCount 递减文章点赞计数，点赞数不小于零。
+func (r *ArticleRepository) decrementLikeCount(tx *gorm.DB, articleID uint) error {
+	return tx.Model(&model.Article{}).
+		Where("id = ?", articleID).
+		UpdateColumn("like_count", gorm.Expr("CASE WHEN like_count > 0 THEN like_count - 1 ELSE 0 END")).Error
+}
+
+// incrementBookmarkCount 递增文章收藏计数，供收藏事务内调用。
+func (r *ArticleRepository) incrementBookmarkCount(tx *gorm.DB, articleID uint) error {
+	return tx.Model(&model.Article{}).
+		Where("id = ?", articleID).
+		UpdateColumn("bookmark_count", gorm.Expr("bookmark_count + 1")).Error
+}
+
+// decrementBookmarkCount 递减文章收藏计数，收藏数不小于零。
+func (r *ArticleRepository) decrementBookmarkCount(tx *gorm.DB, articleID uint) error {
+	return tx.Model(&model.Article{}).
+		Where("id = ?", articleID).
+		UpdateColumn("bookmark_count", gorm.Expr("CASE WHEN bookmark_count > 0 THEN bookmark_count - 1 ELSE 0 END")).Error
+}
+
+// incrementTagCount 递增标签使用计数，供标签同步事务内调用。
+func (r *ArticleRepository) incrementTagCount(tx *gorm.DB, tagID uint) error {
+	return tx.Model(&model.Tag{}).
+		Where("id = ?", tagID).
+		UpdateColumn("usage_count", gorm.Expr("usage_count + 1")).Error
+}
+
+// decrementTagCount 递减标签使用计数，使用数不小于零。
+func (r *ArticleRepository) decrementTagCount(tx *gorm.DB, tagID uint) error {
+	return tx.Model(&model.Tag{}).
+		Where("id = ?", tagID).
+		UpdateColumn("usage_count", gorm.Expr("CASE WHEN usage_count > 0 THEN usage_count - 1 ELSE 0 END")).Error
+}
+
+// incrementCategoryCount 递增分类文章计数，供分类同步事务内调用。
+func (r *ArticleRepository) incrementCategoryCount(tx *gorm.DB, categoryID uint) error {
+	return tx.Model(&model.Category{}).
+		Where("id = ?", categoryID).
+		UpdateColumn("article_count", gorm.Expr("article_count + 1")).Error
+}
+
+// decrementCategoryCount 递减分类文章计数，文章数不小于零。
+func (r *ArticleRepository) decrementCategoryCount(tx *gorm.DB, categoryID uint) error {
+	return tx.Model(&model.Category{}).
+		Where("id = ?", categoryID).
+		UpdateColumn("article_count", gorm.Expr("CASE WHEN article_count > 0 THEN article_count - 1 ELSE 0 END")).Error
 }
 
 // generateSlug 从标题生成slug，中文标题过滤后为空时回退为基于时间戳的标识。
