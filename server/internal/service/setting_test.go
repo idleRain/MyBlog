@@ -52,13 +52,13 @@ func (f *fakeSettingRepo) Upsert(setting *model.Setting) error {
 func TestMaskSensitiveSettings(t *testing.T) {
 	settings := []*model.Setting{
 		{
-			KeyName:    model.SettingSiteName,
-			Value:      "MyBlog",
+			KeyName:     model.SettingSiteName,
+			Value:       "MyBlog",
 			IsSensitive: false,
 		},
 		{
-			KeyName:    model.SettingMailPassword,
-			Value:      "secret123",
+			KeyName:     model.SettingMailPassword,
+			Value:       "secret123",
 			IsSensitive: true,
 		},
 	}

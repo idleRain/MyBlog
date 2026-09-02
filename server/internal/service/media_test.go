@@ -15,9 +15,9 @@ import (
 // fakeMediaRepo 媒体仓储的测试替身。
 type fakeMediaRepo struct {
 	repository.MediaRepositoryInterface
-	media      []*model.MediaFile
-	getByHash  func(hash string) (*model.MediaFile, error)
-	getByID    func(id uint) (*model.MediaFile, error)
+	media     []*model.MediaFile
+	getByHash func(hash string) (*model.MediaFile, error)
+	getByID   func(id uint) (*model.MediaFile, error)
 }
 
 func (f *fakeMediaRepo) Create(media *model.MediaFile) error {

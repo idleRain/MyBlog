@@ -10,8 +10,8 @@ import (
 // fakeFollowRepo 用户关注仓储的测试替身。
 type fakeFollowRepo struct {
 	repository.UserFollowRepositoryInterface
-	follows    []*model.UserFollow
-	followFunc func(followerID, followingID uint) (bool, error)
+	follows      []*model.UserFollow
+	followFunc   func(followerID, followingID uint) (bool, error)
 	unfollowFunc func(followerID, followingID uint) (bool, error)
 }
 

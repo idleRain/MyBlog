@@ -11,8 +11,8 @@ import (
 // fakeCategoryRepo 分类仓储的测试替身，记录调用并返回可配置结果。
 type fakeCategoryRepo struct {
 	repository.CategoryRepositoryInterface
-	categories   []*model.Category
-	getByID      func(id uint) (*model.Category, error)
+	categories    []*model.Category
+	getByID       func(id uint) (*model.Category, error)
 	countByParent func(parentID uint) (int64, error)
 }
 
