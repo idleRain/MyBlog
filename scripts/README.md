@@ -22,18 +22,18 @@ pnpm run migrate -- goto 5
 
 ## 脚本一览
 
-| 脚本 | 用途 | 参数 | pnpm 入口 |
-| ---- | ---- | ---- | --------- |
-| `dev.ts` | 智能启动开发服务，含环境检查、端口检查、就绪监控，Ctrl+C 全部停止 | `--server` / `--web` / `--admin`，缺省则全部启动 | `pnpm run dev` / `dev:server` / `dev:web` / `dev:admin` |
-| `build.ts` | 统一构建后端与两个前端应用 | `--clean` / `--production` / `--server-only` / `--web-only` / `--skip-tests` / `--skip-lint` | `pnpm run build` 及 `build:clean` / `build:production` / `build:server` / `build:web` / `build:fast` |
-| `setup.ts` | 一键环境设置，含系统要求检查、依赖安装、环境文件生成 | 无 | `pnpm run setup` |
-| `clean-web.ts` | 跨平台清理前端各应用构建产物（`.svelte-kit` / `build` / `dist`） | 无 | `pnpm run clean:web` |
-| `go-tools.ts` | Go 侧构建、测试、lint、格式化、清理的统一入口 | `build` / `test` / `deps` / `lint-install` / `lint` / `format` / `fmt` / `vet` / `clean` / `quality` | `pnpm run test:server` / `lint:server` / `format:server` / `clean:server` / `go:lint-install` / `go:quality` |
-| `go-toolchain.ts` | golangci-lint 与 goimports 的检测、安装与路径解析，供其他脚本复用 | `ensure` / `golangci` / `goimports` | 经 `go-tools.ts` 间接使用 |
-| `lint-staged-goimports.ts` | lint-staged 专用 goimports 执行入口 | 由 lint-staged 传入文件列表 | 由 `.husky/pre-commit` 触发 |
-| `migrate.ts` | 基于 golang-migrate 的数据库迁移管理 | `create <name>` / `up` / `down [steps]` / `goto <version>` / `force <version>` / `version` / `drop` / `help` | `pnpm run migrate` 及 `migrate:create` / `migrate:up` / `migrate:down` / `migrate:version` |
-| `seed.ts` | 初始化或提升超级管理员账户，命令幂等 | `--username` / `--password` / `--email` / `--help` | `pnpm run seed:admin` |
-| `lib/is-main.ts` | 判断当前模块是否为直接运行的入口，供各脚本复用 | — | 内部工具 |
+| 脚本                       | 用途                                                                                                  | 参数                                                                                                         | pnpm 入口                                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `dev.ts`                   | 智能启动开发服务，含环境检查、端口检查、就绪监控，Ctrl+C 全部停止；后端热更新基于 air，缺失时自动安装 | `--server` / `--web` / `--admin`，缺省则全部启动                                                             | `pnpm run dev` / `dev:server` / `dev:web` / `dev:admin`                                                      |
+| `build.ts`                 | 统一构建后端与两个前端应用                                                                            | `--clean` / `--production` / `--server-only` / `--web-only` / `--skip-tests` / `--skip-lint`                 | `pnpm run build` 及 `build:clean` / `build:production` / `build:server` / `build:web` / `build:fast`         |
+| `setup.ts`                 | 一键环境设置，含系统要求检查、依赖安装、环境文件生成                                                  | 无                                                                                                           | `pnpm run setup`                                                                                             |
+| `clean-web.ts`             | 跨平台清理前端各应用构建产物（`.svelte-kit` / `build` / `dist`）                                      | 无                                                                                                           | `pnpm run clean:web`                                                                                         |
+| `go-tools.ts`              | Go 侧构建、测试、lint、格式化、清理的统一入口                                                         | `build` / `test` / `deps` / `lint-install` / `lint` / `format` / `fmt` / `vet` / `clean` / `quality`         | `pnpm run test:server` / `lint:server` / `format:server` / `clean:server` / `go:lint-install` / `go:quality` |
+| `go-toolchain.ts`          | golangci-lint 与 goimports 的检测、安装与路径解析，供其他脚本复用                                     | `ensure` / `golangci` / `goimports`                                                                          | 经 `go-tools.ts` 间接使用                                                                                    |
+| `lint-staged-goimports.ts` | lint-staged 专用 goimports 执行入口                                                                   | 由 lint-staged 传入文件列表                                                                                  | 由 `.husky/pre-commit` 触发                                                                                  |
+| `migrate.ts`               | 基于 golang-migrate 的数据库迁移管理                                                                  | `create <name>` / `up` / `down [steps]` / `goto <version>` / `force <version>` / `version` / `drop` / `help` | `pnpm run migrate` 及 `migrate:create` / `migrate:up` / `migrate:down` / `migrate:version`                   |
+| `seed.ts`                  | 初始化或提升超级管理员账户，命令幂等                                                                  | `--username` / `--password` / `--email` / `--help`                                                           | `pnpm run seed:admin`                                                                                        |
+| `lib/is-main.ts`           | 判断当前模块是否为直接运行的入口，供各脚本复用                                                        | —                                                                                                            | 内部工具                                                                                                     |
 
 ## 脚本设计约定
 

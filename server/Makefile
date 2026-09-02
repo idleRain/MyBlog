@@ -22,7 +22,7 @@ dev:
 	@echo "🚀 启动开发环境..."
 	@if ! command -v air > /dev/null; then \
 		echo "📦 正在安装 Air..."; \
-		go install github.com/cosmtrek/air@latest; \
+		go install github.com/air-verse/air@latest; \
 	fi
 	@mkdir -p tmp
 	@air -c .air.toml
@@ -60,7 +60,7 @@ deps:
 # 安装Air热更新工具
 air-install:
 	@echo "📦 安装 Air 热更新工具..."
-	@go install github.com/cosmtrek/air@latest
+	@go install github.com/air-verse/air@latest
 	@echo "✅ Air 安装完成"
 
 # 安装golangci-lint工具

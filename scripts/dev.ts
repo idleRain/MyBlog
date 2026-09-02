@@ -30,6 +30,9 @@ const PORT_RANGE_MAX = 65535
 // 进程释放后的等待时间
 const PORT_RELEASE_WAIT_MS = 1000
 
+// air 热更新工具模块地址，安装时自动获取最新稳定版本
+const AIR_MODULE = 'github.com/air-verse/air@latest'
+
 // 可独立启动的服务目标，对应 ServiceConfig.name 的小写形式。
 const DEV_TARGETS = ['server', 'web', 'admin'] as const
 type DevTarget = (typeof DEV_TARGETS)[number]
@@ -105,6 +108,68 @@ function readAppPort(appDir: string): number {
   }
 }
 
+// ---------- air 工具解析 ----------
+
+// air 可执行文件路径，由 ensureAir 在环境检查阶段解析
+let airExecutable = 'air'
+
+// 获取 Go 可执行文件安装目录，优先使用 GOBIN，未设置时退回 GOPATH/bin
+function getGoBinDir(): string {
+  const goBin = execSync('go env GOBIN').toString().trim()
+  if (goBin) {
+    return goBin
+  }
+  const goPath = execSync('go env GOPATH').toString().trim()
+  return join(goPath, 'bin')
+}
+
+// 获取当前平台下的可执行文件后缀，Windows 平台为 .exe
+function getExecutableSuffix(): string {
+  return process.platform === 'win32' ? '.exe' : ''
+}
+
+// 检测 air 是否已加入 PATH 中
+function isAirAvailable(): boolean {
+  try {
+    execSync('air -v', { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+// 确保 air 可用并解析其可执行文件路径，未安装时自动安装
+function ensureAir(): void {
+  if (isAirAvailable()) {
+    airExecutable = 'air'
+    console.log(`${COLORS.green}✅ Air: 已安装${COLORS.reset}`)
+    return
+  }
+
+  // air 不在 PATH 中时，检查 Go bin 目录下是否存在安装产物
+  const goBinPath = join(getGoBinDir(), `air${getExecutableSuffix()}`)
+  if (existsSync(goBinPath)) {
+    airExecutable = quoteForShell(goBinPath)
+    console.log(`${COLORS.green}✅ Air: ${goBinPath}${COLORS.reset}`)
+    return
+  }
+
+  console.log(`${COLORS.yellow}📦 未检测到 air，正在安装...${COLORS.reset}`)
+  execSync(`go install ${AIR_MODULE}`, { stdio: 'inherit' })
+  if (existsSync(goBinPath)) {
+    airExecutable = quoteForShell(goBinPath)
+    console.log(`${COLORS.green}✅ Air 安装完成: ${goBinPath}${COLORS.reset}`)
+    return
+  }
+  console.error(`${COLORS.red}❌ air 安装失败，请检查 Go 环境后重试${COLORS.reset}`)
+  process.exit(1)
+}
+
+// 对含空格的路径加引号，避免 shell 将命令路径拆分为多个参数
+function quoteForShell(command: string): string {
+  return command.includes(' ') ? `"${command}"` : command
+}
+
 // ---------- 服务定义 ----------
 
 // 解析命令行参数中的目标服务，未指定任何目标时返回全部服务。
@@ -122,7 +187,8 @@ async function getServices(targets: DevTarget[]): Promise<ServiceConfig[]> {
   const services: ServiceConfig[] = [
     {
       name: 'SERVER',
-      command: ['go', 'run', 'scripts/watcher.go'],
+      // 后端热更新由 air 承载，配置见 server/.air.toml
+      command: [airExecutable, '-c', '.air.toml'],
       cwd: 'server',
       color: 'blue',
       port: serverPort
@@ -142,9 +208,7 @@ async function getServices(targets: DevTarget[]): Promise<ServiceConfig[]> {
       port: adminPort
     }
   ]
-  return services.filter(service =>
-    targets.includes(service.name.toLowerCase() as DevTarget)
-  )
+  return services.filter(service => targets.includes(service.name.toLowerCase() as DevTarget))
 }
 
 // ---------- 环境检查 ----------
@@ -156,6 +220,8 @@ async function checkEnvironment(): Promise<void> {
   await checkCommandAvailable('Go', 'go version')
   await checkCommandAvailable('Node.js', 'node --version')
   console.log(`${COLORS.green}✅ Node.js: ${process.version}${COLORS.reset}`)
+
+  ensureAir()
 
   for (const file of REQUIRED_FILES) {
     if (existsSync(file)) {
