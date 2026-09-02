@@ -123,6 +123,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		statsRoutes := NewStatsRoutes(statsHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		statsRoutes.RegisterRoutes(adminAPI)
 	}
+
+	// 注册通知相关路由
+	if deps.NotificationHandler != nil {
+		notificationHandler := deps.NotificationHandler.(NotificationHandlerInterface)
+		notificationRoutes := NewNotificationRoutes(notificationHandler, deps.JWTService)
+		notificationRoutes.RegisterRoutes(api)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -136,9 +143,18 @@ type Dependencies struct {
 	SettingHandler      interface{}               // 设置处理器接口
 	FriendlyLinkHandler interface{}               // 友情链接处理器接口
 	StatsHandler        interface{}               // 站点统计处理器接口
+	NotificationHandler interface{}               // 通知处理器接口
 	JWTService          service.JWTService        // JWT服务
 	UserRepository      repository.UserRepository // 用户仓库
 	RBACService         service.RBACService       // RBAC权限服务
+}
+
+// NotificationHandlerInterface 通知处理器接口
+type NotificationHandlerInterface interface {
+	ListNotifications(c *gin.Context)        // POST /api/notifications/list
+	GetUnreadCount(c *gin.Context)           // POST /api/notifications/unread-count
+	MarkNotificationRead(c *gin.Context)     // POST /api/notifications/read
+	MarkAllNotificationsRead(c *gin.Context) // POST /api/notifications/read-all
 }
 
 // StatsHandlerInterface 站点统计处理器接口
