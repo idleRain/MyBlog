@@ -31,9 +31,9 @@ func (nr *NotificationRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	notifications := api.Group("/notifications")
 	notifications.Use(middleware.Auth(nr.jwtService))
 	{
-		notifications.POST("/list", nr.notificationHandler.ListNotifications)           // 通知列表
-		notifications.POST("/unread-count", nr.notificationHandler.GetUnreadCount)      // 未读数
-		notifications.POST("/read", nr.notificationHandler.MarkNotificationRead)        // 标记单条已读
+		notifications.POST("/list", nr.notificationHandler.ListNotifications)            // 通知列表
+		notifications.POST("/unread-count", nr.notificationHandler.GetUnreadCount)       // 未读数
+		notifications.POST("/read", nr.notificationHandler.MarkNotificationRead)         // 标记单条已读
 		notifications.POST("/read-all", nr.notificationHandler.MarkAllNotificationsRead) // 标记全部已读
 	}
 }

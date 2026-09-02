@@ -30,8 +30,8 @@ type FriendlyLinkRepositoryInterface interface {
 
 // FriendlyLinkListParams 友情链接列表查询参数
 type FriendlyLinkListParams struct {
-	Page     int            `json:"page"`
-	PageSize int            `json:"pageSize"`
+	Page     int              `json:"page"`
+	PageSize int              `json:"pageSize"`
 	Status   model.LinkStatus `json:"status"`
 }
 

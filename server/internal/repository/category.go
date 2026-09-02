@@ -36,9 +36,9 @@ type CategoryRepositoryInterface interface {
 
 // CategoryListParams 分类列表查询参数
 type CategoryListParams struct {
-	Page     int  `json:"page"`
-	PageSize int  `json:"pageSize"`
-	Status   *int `json:"status"`
+	Page     int    `json:"page"`
+	PageSize int    `json:"pageSize"`
+	Status   *int   `json:"status"`
 	Search   string `json:"search"`
 }
 

@@ -16,14 +16,14 @@ type StatsServiceInterface interface {
 
 // StatsOverview 站点统计概览
 type StatsOverview struct {
-	ArticleCount   int64 `json:"articleCount"`
-	PublishedCount int64 `json:"publishedCount"`
+	ArticleCount   int64  `json:"articleCount"`
+	PublishedCount int64  `json:"publishedCount"`
 	TotalViews     uint64 `json:"totalViews"`
 	TotalLikes     uint64 `json:"totalLikes"`
-	CommentCount   int64 `json:"commentCount"`
-	UserCount      int64 `json:"userCount"`
-	CategoryCount  int64 `json:"categoryCount"`
-	TagCount       int64 `json:"tagCount"`
+	CommentCount   int64  `json:"commentCount"`
+	UserCount      int64  `json:"userCount"`
+	CategoryCount  int64  `json:"categoryCount"`
+	TagCount       int64  `json:"tagCount"`
 }
 
 // TrendResponse 时间序列统计响应

@@ -39,10 +39,10 @@ type CommentRepositoryInterface interface {
 
 // CommentListParams 评论列表查询参数
 type CommentListParams struct {
-	Page     int                `json:"page"`
-	PageSize int                `json:"pageSize"`
+	Page     int                 `json:"page"`
+	PageSize int                 `json:"pageSize"`
 	Status   model.CommentStatus `json:"status"`
-	Keyword  string             `json:"keyword"`
+	Keyword  string              `json:"keyword"`
 }
 
 // CommentRepository 评论仓储实现

@@ -28,25 +28,25 @@ type FriendlyLinkServiceInterface interface {
 
 // CreateFriendlyLinkRequest 创建友情链接请求
 type CreateFriendlyLinkRequest struct {
-	Name          string `json:"name" binding:"required,min=1,max=50"`
-	URL           string `json:"url" binding:"required,max=255"`
-	Logo          string `json:"logo" binding:"omitempty,max=500"`
-	Description   string `json:"description" binding:"omitempty,max=255"`
-	ContactEmail  string `json:"contactEmail" binding:"omitempty,email,max=100"`
-	SortOrder     *int   `json:"sortOrder"`
-	IsReciprocal  *bool  `json:"isReciprocal"`
+	Name         string `json:"name" binding:"required,min=1,max=50"`
+	URL          string `json:"url" binding:"required,max=255"`
+	Logo         string `json:"logo" binding:"omitempty,max=500"`
+	Description  string `json:"description" binding:"omitempty,max=255"`
+	ContactEmail string `json:"contactEmail" binding:"omitempty,email,max=100"`
+	SortOrder    *int   `json:"sortOrder"`
+	IsReciprocal *bool  `json:"isReciprocal"`
 }
 
 // UpdateFriendlyLinkRequest 更新友情链接请求
 type UpdateFriendlyLinkRequest struct {
-	ID            uint    `json:"id" binding:"required"`
-	Name          *string `json:"name" binding:"omitempty,min=1,max=50"`
-	URL           *string `json:"url" binding:"omitempty,max=255"`
-	Logo          *string `json:"logo" binding:"omitempty,max=500"`
-	Description   *string `json:"description" binding:"omitempty,max=255"`
-	ContactEmail  *string `json:"contactEmail" binding:"omitempty,email,max=100"`
-	SortOrder     *int    `json:"sortOrder"`
-	IsReciprocal  *bool   `json:"isReciprocal"`
+	ID           uint    `json:"id" binding:"required"`
+	Name         *string `json:"name" binding:"omitempty,min=1,max=50"`
+	URL          *string `json:"url" binding:"omitempty,max=255"`
+	Logo         *string `json:"logo" binding:"omitempty,max=500"`
+	Description  *string `json:"description" binding:"omitempty,max=255"`
+	ContactEmail *string `json:"contactEmail" binding:"omitempty,email,max=100"`
+	SortOrder    *int    `json:"sortOrder"`
+	IsReciprocal *bool   `json:"isReciprocal"`
 }
 
 // ListFriendlyLinksRequest 友情链接列表请求

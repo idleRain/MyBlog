@@ -38,7 +38,7 @@ func (sr *StatsRoutes) RegisterRoutes(adminAPI *gin.RouterGroup) {
 	adminStats := adminAPI.Group("/stats")
 	adminStats.Use(middleware.RequirePermission(sr.jwtService, sr.userRepo, sr.rbacService, service.PermissionSystemStats))
 	{
-		adminStats.POST("/overview", sr.statsHandler.GetOverview)           // 站点统计概览
-		adminStats.POST("/articles", sr.statsHandler.GetArticleViewsTrend)  // 文章浏览量趋势
+		adminStats.POST("/overview", sr.statsHandler.GetOverview)          // 站点统计概览
+		adminStats.POST("/articles", sr.statsHandler.GetArticleViewsTrend) // 文章浏览量趋势
 	}
 }

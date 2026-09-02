@@ -31,8 +31,8 @@ func (uf *UserFollowRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	authUsers := api.Group("/users")
 	authUsers.Use(middleware.Auth(uf.jwtService))
 	{
-		authUsers.POST("/follow", uf.followHandler.Follow)         // 关注用户
-		authUsers.POST("/unfollow", uf.followHandler.Unfollow)     // 取消关注
+		authUsers.POST("/follow", uf.followHandler.Follow)     // 关注用户
+		authUsers.POST("/unfollow", uf.followHandler.Unfollow) // 取消关注
 	}
 
 	// 关注关系查询接口，公开可访问。

@@ -24,28 +24,28 @@ type CategoryServiceInterface interface {
 
 // CreateCategoryRequest 创建分类请求
 type CreateCategoryRequest struct {
-	Name        string `json:"name" binding:"required,min=1,max=50"`
-	Slug        string `json:"slug" binding:"omitempty,max=50"`
-	Description string `json:"description" binding:"omitempty,max=1000"`
-	CoverImage  string `json:"coverImage" binding:"omitempty,max=255"`
-	ParentID    *uint  `json:"parentId"`
-	SortOrder   *int   `json:"sortOrder"`
-	Status      *int   `json:"status" binding:"omitempty,oneof=0 1"`
-	IsFeatured  *bool  `json:"isFeatured"`
+	Name           string `json:"name" binding:"required,min=1,max=50"`
+	Slug           string `json:"slug" binding:"omitempty,max=50"`
+	Description    string `json:"description" binding:"omitempty,max=1000"`
+	CoverImage     string `json:"coverImage" binding:"omitempty,max=255"`
+	ParentID       *uint  `json:"parentId"`
+	SortOrder      *int   `json:"sortOrder"`
+	Status         *int   `json:"status" binding:"omitempty,oneof=0 1"`
+	IsFeatured     *bool  `json:"isFeatured"`
 	SEOTitle       string `json:"seoTitle" binding:"omitempty,max=100"`
 	SEODescription string `json:"seoDescription" binding:"omitempty,max=255"`
 }
 
 // UpdateCategoryRequest 更新分类请求
 type UpdateCategoryRequest struct {
-	ID          uint   `json:"id" binding:"required"`
-	Name        *string `json:"name" binding:"omitempty,min=1,max=50"`
-	Slug        *string `json:"slug" binding:"omitempty,max=50"`
-	Description *string `json:"description" binding:"omitempty,max=1000"`
-	CoverImage  *string `json:"coverImage" binding:"omitempty,max=255"`
-	SortOrder   *int   `json:"sortOrder"`
-	Status      *int   `json:"status" binding:"omitempty,oneof=0 1"`
-	IsFeatured  *bool  `json:"isFeatured"`
+	ID             uint    `json:"id" binding:"required"`
+	Name           *string `json:"name" binding:"omitempty,min=1,max=50"`
+	Slug           *string `json:"slug" binding:"omitempty,max=50"`
+	Description    *string `json:"description" binding:"omitempty,max=1000"`
+	CoverImage     *string `json:"coverImage" binding:"omitempty,max=255"`
+	SortOrder      *int    `json:"sortOrder"`
+	Status         *int    `json:"status" binding:"omitempty,oneof=0 1"`
+	IsFeatured     *bool   `json:"isFeatured"`
 	SEOTitle       *string `json:"seoTitle" binding:"omitempty,max=100"`
 	SEODescription *string `json:"seoDescription" binding:"omitempty,max=255"`
 }
@@ -107,15 +107,15 @@ func (s *CategoryService) CreateCategory(req *CreateCategoryRequest, operatorID 
 	}
 
 	category := &model.Category{
-		Name:        req.Name,
-		Slug:        req.Slug,
-		Description: req.Description,
-		CoverImage:  req.CoverImage,
-		ParentID:    req.ParentID,
-		SortOrder:   sortOrder,
-		Status:      status,
-		IsFeatured:  isFeatured,
-		SEOTitle:    req.SEOTitle,
+		Name:           req.Name,
+		Slug:           req.Slug,
+		Description:    req.Description,
+		CoverImage:     req.CoverImage,
+		ParentID:       req.ParentID,
+		SortOrder:      sortOrder,
+		Status:         status,
+		IsFeatured:     isFeatured,
+		SEOTitle:       req.SEOTitle,
 		SEODescription: req.SEODescription,
 	}
 

@@ -57,11 +57,11 @@ func (cr *CommentRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rout
 	adminComments := adminAPI.Group("/comments")
 	adminComments.Use(middleware.RequirePermission(cr.jwtService, cr.userRepo, cr.rbacService, service.PermissionCommentModerate))
 	{
-		adminComments.POST("/approve", cr.commentHandler.ApproveComment)     // 审核通过
-		adminComments.POST("/reject", cr.commentHandler.RejectComment)       // 拒绝评论
-		adminComments.POST("/spam", cr.commentHandler.MarkCommentSpam)       // 标记垃圾
-		adminComments.POST("/trash", cr.commentHandler.TrashComment)         // 移入回收站
-		adminComments.POST("/delete", cr.commentHandler.DeleteComment)       // 删除评论
-		adminComments.POST("/list", cr.commentHandler.ListComments)          // 评论列表
+		adminComments.POST("/approve", cr.commentHandler.ApproveComment) // 审核通过
+		adminComments.POST("/reject", cr.commentHandler.RejectComment)   // 拒绝评论
+		adminComments.POST("/spam", cr.commentHandler.MarkCommentSpam)   // 标记垃圾
+		adminComments.POST("/trash", cr.commentHandler.TrashComment)     // 移入回收站
+		adminComments.POST("/delete", cr.commentHandler.DeleteComment)   // 删除评论
+		adminComments.POST("/list", cr.commentHandler.ListComments)      // 评论列表
 	}
 }

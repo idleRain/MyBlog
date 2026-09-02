@@ -41,7 +41,7 @@ func (sr *SettingRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rout
 	adminSettings := adminAPI.Group("/settings")
 	adminSettings.Use(middleware.RequirePermission(sr.jwtService, sr.userRepo, sr.rbacService, service.PermissionSystemConfig))
 	{
-		adminSettings.POST("/list", sr.settingHandler.ListSettings)   // 设置项列表
+		adminSettings.POST("/list", sr.settingHandler.ListSettings)     // 设置项列表
 		adminSettings.POST("/update", sr.settingHandler.UpdateSettings) // 批量更新设置项
 	}
 }

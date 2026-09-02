@@ -159,10 +159,10 @@ type Dependencies struct {
 
 // UserFollowHandlerInterface 用户关注处理器接口
 type UserFollowHandlerInterface interface {
-	Follow(c *gin.Context)         // POST /api/users/follow
-	Unfollow(c *gin.Context)       // POST /api/users/unfollow
-	ListFollowers(c *gin.Context)  // POST /api/users/followers
-	ListFollowing(c *gin.Context)  // POST /api/users/following
+	Follow(c *gin.Context)        // POST /api/users/follow
+	Unfollow(c *gin.Context)      // POST /api/users/unfollow
+	ListFollowers(c *gin.Context) // POST /api/users/followers
+	ListFollowing(c *gin.Context) // POST /api/users/following
 }
 
 // NotificationHandlerInterface 通知处理器接口
@@ -181,13 +181,13 @@ type StatsHandlerInterface interface {
 
 // FriendlyLinkHandlerInterface 友情链接处理器接口
 type FriendlyLinkHandlerInterface interface {
-	CreateLink(c *gin.Context)    // POST /api/admin/friendly-links/create
-	UpdateLink(c *gin.Context)    // POST /api/admin/friendly-links/update
-	DeleteLink(c *gin.Context)    // POST /api/admin/friendly-links/delete
-	ApproveLink(c *gin.Context)   // POST /api/admin/friendly-links/approve
-	HideLink(c *gin.Context)      // POST /api/admin/friendly-links/hide
-	RejectLink(c *gin.Context)    // POST /api/admin/friendly-links/reject
-	ListLinks(c *gin.Context)     // POST /api/admin/friendly-links/list
+	CreateLink(c *gin.Context)       // POST /api/admin/friendly-links/create
+	UpdateLink(c *gin.Context)       // POST /api/admin/friendly-links/update
+	DeleteLink(c *gin.Context)       // POST /api/admin/friendly-links/delete
+	ApproveLink(c *gin.Context)      // POST /api/admin/friendly-links/approve
+	HideLink(c *gin.Context)         // POST /api/admin/friendly-links/hide
+	RejectLink(c *gin.Context)       // POST /api/admin/friendly-links/reject
+	ListLinks(c *gin.Context)        // POST /api/admin/friendly-links/list
 	ListVisibleLinks(c *gin.Context) // POST /api/friendly-links/list
 }
 
@@ -208,36 +208,36 @@ type MediaHandlerInterface interface {
 
 // CommentHandlerInterface 评论处理器接口
 type CommentHandlerInterface interface {
-	CreateComment(c *gin.Context)       // POST /api/comments/create
+	CreateComment(c *gin.Context)        // POST /api/comments/create
 	GetCommentsByArticle(c *gin.Context) // POST /api/comments/list
-	LikeComment(c *gin.Context)         // POST /api/comments/like
-	UnlikeComment(c *gin.Context)       // POST /api/comments/unlike
-	ApproveComment(c *gin.Context)      // POST /api/admin/comments/approve
-	RejectComment(c *gin.Context)       // POST /api/admin/comments/reject
-	MarkCommentSpam(c *gin.Context)     // POST /api/admin/comments/spam
-	TrashComment(c *gin.Context)        // POST /api/admin/comments/trash
-	DeleteComment(c *gin.Context)       // POST /api/admin/comments/delete
-	ListComments(c *gin.Context)        // POST /api/admin/comments/list
+	LikeComment(c *gin.Context)          // POST /api/comments/like
+	UnlikeComment(c *gin.Context)        // POST /api/comments/unlike
+	ApproveComment(c *gin.Context)       // POST /api/admin/comments/approve
+	RejectComment(c *gin.Context)        // POST /api/admin/comments/reject
+	MarkCommentSpam(c *gin.Context)      // POST /api/admin/comments/spam
+	TrashComment(c *gin.Context)         // POST /api/admin/comments/trash
+	DeleteComment(c *gin.Context)        // POST /api/admin/comments/delete
+	ListComments(c *gin.Context)         // POST /api/admin/comments/list
 }
 
 // TagHandlerInterface 标签处理器接口
 type TagHandlerInterface interface {
-	CreateTag(c *gin.Context)     // POST /api/admin/tags/create
-	UpdateTag(c *gin.Context)     // POST /api/admin/tags/update
-	DeleteTag(c *gin.Context)     // POST /api/admin/tags/delete
-	GetTag(c *gin.Context)        // POST /api/tags/get
-	ListTags(c *gin.Context)      // POST /api/admin/tags/list
+	CreateTag(c *gin.Context)      // POST /api/admin/tags/create
+	UpdateTag(c *gin.Context)      // POST /api/admin/tags/update
+	DeleteTag(c *gin.Context)      // POST /api/admin/tags/delete
+	GetTag(c *gin.Context)         // POST /api/tags/get
+	ListTags(c *gin.Context)       // POST /api/admin/tags/list
 	GetPopularTags(c *gin.Context) // POST /api/tags/popular
 }
 
 // CategoryHandlerInterface 分类处理器接口
 type CategoryHandlerInterface interface {
-	CreateCategory(c *gin.Context)   // POST /api/admin/categories/create
-	UpdateCategory(c *gin.Context)   // POST /api/admin/categories/update
-	DeleteCategory(c *gin.Context)   // POST /api/admin/categories/delete
-	GetCategory(c *gin.Context)      // POST /api/categories/get
-	ListCategories(c *gin.Context)   // POST /api/admin/categories/list
-	GetCategoryTree(c *gin.Context)  // POST /api/categories/tree
+	CreateCategory(c *gin.Context)  // POST /api/admin/categories/create
+	UpdateCategory(c *gin.Context)  // POST /api/admin/categories/update
+	DeleteCategory(c *gin.Context)  // POST /api/admin/categories/delete
+	GetCategory(c *gin.Context)     // POST /api/categories/get
+	ListCategories(c *gin.Context)  // POST /api/admin/categories/list
+	GetCategoryTree(c *gin.Context) // POST /api/categories/tree
 }
 
 // UserHandlerInterface 用户处理器接口

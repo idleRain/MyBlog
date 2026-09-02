@@ -37,8 +37,8 @@ func (tr *TagRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGr
 	// 公开标签接口，无需登录。
 	publicTags := api.Group("/tags")
 	{
-		publicTags.POST("/get", tr.tagHandler.GetTag)               // 根据ID获取标签
-		publicTags.POST("/popular", tr.tagHandler.GetPopularTags)   // 热门标签
+		publicTags.POST("/get", tr.tagHandler.GetTag)             // 根据ID获取标签
+		publicTags.POST("/popular", tr.tagHandler.GetPopularTags) // 热门标签
 	}
 
 	// 标签管理接口，需要标签管理权限。
@@ -48,6 +48,6 @@ func (tr *TagRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGr
 		adminTags.POST("/create", tr.tagHandler.CreateTag) // 创建标签
 		adminTags.POST("/update", tr.tagHandler.UpdateTag) // 更新标签
 		adminTags.POST("/delete", tr.tagHandler.DeleteTag) // 删除标签
-		adminTags.POST("/list", tr.tagHandler.ListTags)   // 标签列表
+		adminTags.POST("/list", tr.tagHandler.ListTags)    // 标签列表
 	}
 }
