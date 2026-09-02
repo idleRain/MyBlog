@@ -70,21 +70,21 @@ type CreateArticleRequest struct {
 }
 
 type UpdateArticleRequest struct {
-	Title          string `json:"title" binding:"required,min=1,max=200"`
-	Slug           string `json:"slug" binding:"max=200"`
-	Summary        string `json:"summary" binding:"max=500"`
-	Content        string `json:"content" binding:"required"`
-	CoverImage     string `json:"coverImage" binding:"max=500"`
-	CategoryID     *uint  `json:"categoryId"`
-	CategoryIDs    []uint `json:"categoryIds"`
-	TagIDs         []uint `json:"tagIds"`
-	Status         string `json:"status" binding:"omitempty,oneof=draft published archived private"`
-	IsFeatured     *bool  `json:"isFeatured"`
-	IsTop          *bool  `json:"isTop"`
-	CommentEnabled *bool  `json:"commentEnabled"`
-	SEOTitle       string `json:"seoTitle" binding:"max=100"`
-	SEODescription string `json:"seoDescription" binding:"max=255"`
-	SEOKeywords    string `json:"seoKeywords" binding:"max=200"`
+	Title          string  `json:"title" binding:"required,min=1,max=200"`
+	Slug           *string `json:"slug" binding:"omitempty,max=200"`
+	Summary        *string `json:"summary" binding:"omitempty,max=500"`
+	Content        string  `json:"content" binding:"required"`
+	CoverImage     *string `json:"coverImage" binding:"omitempty,max=500"`
+	CategoryID     *uint   `json:"categoryId"`
+	CategoryIDs    []uint  `json:"categoryIds"`
+	TagIDs         []uint  `json:"tagIds"`
+	Status         string  `json:"status" binding:"omitempty,oneof=draft published archived private"`
+	IsFeatured     *bool   `json:"isFeatured"`
+	IsTop          *bool   `json:"isTop"`
+	CommentEnabled *bool   `json:"commentEnabled"`
+	SEOTitle       *string `json:"seoTitle" binding:"omitempty,max=100"`
+	SEODescription *string `json:"seoDescription" binding:"omitempty,max=255"`
+	SEOKeywords    *string `json:"seoKeywords" binding:"omitempty,max=200"`
 }
 
 type GetArticleListRequest struct {
@@ -246,12 +246,18 @@ func (s *ArticleService) UpdateArticle(id uint, req *UpdateArticleRequest, userI
 		return nil, errors.New("没有编辑此文章的权限")
 	}
 
-	// 更新字段
+	// 更新字段，可选字符串字段仅在显式传入时赋值，省略时保留原值。
 	article.Title = req.Title
-	article.Slug = req.Slug
-	article.Summary = req.Summary
+	if req.Slug != nil {
+		article.Slug = *req.Slug
+	}
+	if req.Summary != nil {
+		article.Summary = *req.Summary
+	}
 	article.Content = req.Content
-	article.CoverImage = req.CoverImage
+	if req.CoverImage != nil {
+		article.CoverImage = *req.CoverImage
+	}
 	article.CategoryID = req.CategoryID
 
 	// 状态未指定时保留原状态，避免空字符串覆盖已有状态。
@@ -270,9 +276,16 @@ func (s *ArticleService) UpdateArticle(id uint, req *UpdateArticleRequest, userI
 		article.CommentEnabled = *req.CommentEnabled
 	}
 
-	article.SEOTitle = req.SEOTitle
-	article.SEODescription = req.SEODescription
-	article.SEOKeywords = req.SEOKeywords
+	// SEO 字段同样仅在显式传入时更新，省略时保留原值。
+	if req.SEOTitle != nil {
+		article.SEOTitle = *req.SEOTitle
+	}
+	if req.SEODescription != nil {
+		article.SEODescription = *req.SEODescription
+	}
+	if req.SEOKeywords != nil {
+		article.SEOKeywords = *req.SEOKeywords
+	}
 
 	// 处理内容
 	if err := s.processContent(article); err != nil {

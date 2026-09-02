@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -131,6 +132,11 @@ func (r *ArticleRepository) GetBySlug(slug string) (*model.Article, error) {
 
 // Update 更新文章
 func (r *ArticleRepository) Update(article *model.Article) error {
+	// 更新时若 slug 为空，回退为按标题生成，避免唯一索引写入空值。
+	if article.Slug == "" {
+		article.Slug = generateSlug(article.Title)
+	}
+
 	// 检查slug唯一性
 	if err := r.ensureUniqueSlug(article); err != nil {
 		return err
@@ -461,7 +467,7 @@ func (r *ArticleRepository) ensureUniqueSlug(article *model.Article) error {
 	return nil
 }
 
-// generateSlug 从标题生成slug
+// generateSlug 从标题生成slug，中文标题过滤后为空时回退为基于时间戳的标识。
 func generateSlug(title string) string {
 	// 简单的slug生成逻辑，实际项目中可能需要更复杂的处理
 	slug := strings.ToLower(title)
@@ -474,6 +480,11 @@ func generateSlug(title string) string {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
 			result.WriteRune(r)
 		}
+	}
+
+	// 中文标题过滤后结果可能为空，回退为 article-<纳秒时间戳>-<随机数>，确保 slug 非空且唯一。
+	if result.Len() == 0 {
+		return fmt.Sprintf("article-%d-%d", time.Now().UnixNano(), rand.IntN(1_000_000))
 	}
 
 	return result.String()
