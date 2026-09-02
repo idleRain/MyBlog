@@ -81,6 +81,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		categoryRoutes := NewCategoryRoutes(categoryHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		categoryRoutes.RegisterRoutes(api, adminAPI)
 	}
+
+	// 注册标签相关路由
+	if deps.TagHandler != nil {
+		tagHandler := deps.TagHandler.(TagHandlerInterface)
+		tagRoutes := NewTagRoutes(tagHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		tagRoutes.RegisterRoutes(api, adminAPI)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -88,9 +95,20 @@ type Dependencies struct {
 	UserHandler     interface{}               // 用户处理器接口
 	ArticleHandler  interface{}               // 文章处理器接口
 	CategoryHandler interface{}               // 分类处理器接口
+	TagHandler      interface{}               // 标签处理器接口
 	JWTService      service.JWTService        // JWT服务
 	UserRepository  repository.UserRepository // 用户仓库
 	RBACService     service.RBACService       // RBAC权限服务
+}
+
+// TagHandlerInterface 标签处理器接口
+type TagHandlerInterface interface {
+	CreateTag(c *gin.Context)     // POST /api/admin/tags/create
+	UpdateTag(c *gin.Context)     // POST /api/admin/tags/update
+	DeleteTag(c *gin.Context)     // POST /api/admin/tags/delete
+	GetTag(c *gin.Context)        // POST /api/tags/get
+	ListTags(c *gin.Context)      // POST /api/admin/tags/list
+	GetPopularTags(c *gin.Context) // POST /api/tags/popular
 }
 
 // CategoryHandlerInterface 分类处理器接口
