@@ -116,6 +116,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		linkRoutes := NewFriendlyLinkRoutes(linkHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		linkRoutes.RegisterRoutes(api, adminAPI)
 	}
+
+	// 注册站点统计相关路由
+	if deps.StatsHandler != nil {
+		statsHandler := deps.StatsHandler.(StatsHandlerInterface)
+		statsRoutes := NewStatsRoutes(statsHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		statsRoutes.RegisterRoutes(adminAPI)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -128,9 +135,16 @@ type Dependencies struct {
 	MediaHandler        interface{}               // 媒体处理器接口
 	SettingHandler      interface{}               // 设置处理器接口
 	FriendlyLinkHandler interface{}               // 友情链接处理器接口
+	StatsHandler        interface{}               // 站点统计处理器接口
 	JWTService          service.JWTService        // JWT服务
 	UserRepository      repository.UserRepository // 用户仓库
 	RBACService         service.RBACService       // RBAC权限服务
+}
+
+// StatsHandlerInterface 站点统计处理器接口
+type StatsHandlerInterface interface {
+	GetOverview(c *gin.Context)          // POST /api/admin/stats/overview
+	GetArticleViewsTrend(c *gin.Context) // POST /api/admin/stats/articles
 }
 
 // FriendlyLinkHandlerInterface 友情链接处理器接口

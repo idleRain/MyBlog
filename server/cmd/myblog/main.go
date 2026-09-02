@@ -55,6 +55,7 @@ func main() {
 	mediaRepo := repository.NewMediaRepository(db)
 	settingRepo := repository.NewSettingRepository(db)
 	linkRepo := repository.NewFriendlyLinkRepository(db)
+	statsRepo := repository.NewStatsRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 	userSvc := service.NewUserService(userRepo, jwtService)
@@ -65,6 +66,7 @@ func main() {
 	mediaSvc := service.NewMediaService(mediaRepo, cfg)
 	settingSvc := service.NewSettingService(settingRepo)
 	linkSvc := service.NewFriendlyLinkService(linkRepo)
+	statsSvc := service.NewStatsService(statsRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
 	categoryHandler := handler.NewCategoryHandler(categorySvc)
@@ -73,6 +75,7 @@ func main() {
 	mediaHandler := handler.NewMediaHandler(mediaSvc)
 	settingHandler := handler.NewSettingHandler(settingSvc)
 	linkHandler := handler.NewFriendlyLinkHandler(linkSvc)
+	statsHandler := handler.NewStatsHandler(statsSvc)
 
 	// 创建路由管理器
 	routerManager := router.NewRouter(cfg)
@@ -87,6 +90,7 @@ func main() {
 		MediaHandler:        mediaHandler,
 		SettingHandler:      settingHandler,
 		FriendlyLinkHandler: linkHandler,
+		StatsHandler:        statsHandler,
 		JWTService:          jwtService,
 		UserRepository:      userRepo,
 		RBACService:         rbacService,
