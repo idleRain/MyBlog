@@ -127,10 +127,6 @@ func Load(configPath string) (*Config, error) {
 		// 设置默认值
 		setDefaults()
 
-		// 启用环境变量支持
-		viper.AutomaticEnv()
-		viper.SetEnvPrefix("MYBLOG")
-
 		// 读取配置文件
 		if err = viper.ReadInConfig(); err != nil {
 			err = fmt.Errorf("读取配置文件失败: %w", err)

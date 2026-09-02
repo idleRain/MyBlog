@@ -86,7 +86,7 @@ pnpm run migrate [create|up|down|version|help]
 - **密码**：bcrypt（成本常量 `BcryptCost = 12`），密码强度校验在 `service/user.go`。
 - **命名**：Go 结构体字段与 JSON tag 使用小驼峰；接口与实现同包定义，命名统一为 `XxxInterface` 后缀，如 `ArticleHandlerInterface`、`ArticleServiceInterface`、`ArticleRepositoryInterface`。各层只依赖接口而非具体实现。
 - **接口定义位置**：接口统一声明在各层实现所在包，即 `handler`、`service`、`repository` 内；`router` 只引用各层接口完成依赖注入与类型断言，不得在 `router` 包重复定义接口。
-- **配置**：`internal/config` 包通过 Viper 读取 `configs/config.yaml`，支持 `${ENV:default}` 变量替换，如 JWT 密钥。
+- **配置**：`internal/config` 包通过 Viper 读取 `configs/config.yaml`，所有配置项均以 YAML 为唯一来源。
 
 ## 5. 前端约定（apps/）
 
@@ -111,7 +111,6 @@ pnpm run migrate [create|up|down|version|help]
 
 - 后端：`server/configs/config.yaml`（数据库、服务器、日志、API、JWT、安全配置）。默认 MySQL `blog` 库，`root/123456`，含校验与沙箱占位。
 - 前端：`apps/web/.env`（`VITE_SERVER_PORT=8899`）与 `apps/admin/.env`（`VITE_SERVER_PORT=9988`），均含 `VITE_PROXY_URL=http://localhost:3000`、`VITE_BASE_URL=/api`、`VITE_REQUEST_TIMEOUT=15000`。
-- 后端示例环境变量见 `server/.env.example`。
 
 ## 8. 开发进度概览
 

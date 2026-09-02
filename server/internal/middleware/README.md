@@ -371,7 +371,7 @@ limiter := middleware.NewRateLimiter(100, time.Minute)
 
 ### 1. 配置安全
 
-- **密钥管理**：JWT密钥应通过环境变量设置，不要硬编码
+- **密钥管理**：JWT密钥配置于 `server/configs/config.yaml` 的 `jwt` 段，请勿在代码中硬编码
 - **HTTPS强制**：生产环境必须启用HTTPS
 - **头部验证**：不要信任客户端提供的IP头（X-Forwarded-For等）
 
