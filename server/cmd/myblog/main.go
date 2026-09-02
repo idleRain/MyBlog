@@ -53,6 +53,7 @@ func main() {
 	tagRepo := repository.NewTagRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	mediaRepo := repository.NewMediaRepository(db)
+	settingRepo := repository.NewSettingRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 	userSvc := service.NewUserService(userRepo, jwtService)
@@ -61,12 +62,14 @@ func main() {
 	tagSvc := service.NewTagService(tagRepo)
 	commentSvc := service.NewCommentService(commentRepo, articleRepo)
 	mediaSvc := service.NewMediaService(mediaRepo, cfg)
+	settingSvc := service.NewSettingService(settingRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
 	categoryHandler := handler.NewCategoryHandler(categorySvc)
 	tagHandler := handler.NewTagHandler(tagSvc)
 	commentHandler := handler.NewCommentHandler(commentSvc)
 	mediaHandler := handler.NewMediaHandler(mediaSvc)
+	settingHandler := handler.NewSettingHandler(settingSvc)
 
 	// 创建路由管理器
 	routerManager := router.NewRouter(cfg)
@@ -79,6 +82,7 @@ func main() {
 		TagHandler:      tagHandler,
 		CommentHandler:  commentHandler,
 		MediaHandler:    mediaHandler,
+		SettingHandler:  settingHandler,
 		JWTService:      jwtService,
 		UserRepository:  userRepo,
 		RBACService:     rbacService,

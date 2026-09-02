@@ -102,6 +102,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		mediaRoutes := NewMediaRoutes(mediaHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		mediaRoutes.RegisterRoutes(api)
 	}
+
+	// 注册设置相关路由
+	if deps.SettingHandler != nil {
+		settingHandler := deps.SettingHandler.(SettingHandlerInterface)
+		settingRoutes := NewSettingRoutes(settingHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		settingRoutes.RegisterRoutes(api, adminAPI)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -112,9 +119,17 @@ type Dependencies struct {
 	TagHandler      interface{}               // 标签处理器接口
 	CommentHandler  interface{}               // 评论处理器接口
 	MediaHandler    interface{}               // 媒体处理器接口
+	SettingHandler  interface{}               // 设置处理器接口
 	JWTService      service.JWTService        // JWT服务
 	UserRepository  repository.UserRepository // 用户仓库
 	RBACService     service.RBACService       // RBAC权限服务
+}
+
+// SettingHandlerInterface 设置处理器接口
+type SettingHandlerInterface interface {
+	GetPublicSettings(c *gin.Context) // POST /api/settings/public
+	ListSettings(c *gin.Context)      // POST /api/admin/settings/list
+	UpdateSettings(c *gin.Context)    // POST /api/admin/settings/update
 }
 
 // MediaHandlerInterface 媒体处理器接口
