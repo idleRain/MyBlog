@@ -57,6 +57,7 @@ func main() {
 	linkRepo := repository.NewFriendlyLinkRepository(db)
 	statsRepo := repository.NewStatsRepository(db)
 	notificationRepo := repository.NewNotificationRepository(db)
+	followRepo := repository.NewUserFollowRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 	userSvc := service.NewUserService(userRepo, jwtService)
@@ -69,6 +70,7 @@ func main() {
 	linkSvc := service.NewFriendlyLinkService(linkRepo)
 	statsSvc := service.NewStatsService(statsRepo)
 	notificationSvc := service.NewNotificationService(notificationRepo)
+	followSvc := service.NewUserFollowService(followRepo, userRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
 	categoryHandler := handler.NewCategoryHandler(categorySvc)
@@ -79,6 +81,7 @@ func main() {
 	linkHandler := handler.NewFriendlyLinkHandler(linkSvc)
 	statsHandler := handler.NewStatsHandler(statsSvc)
 	notificationHandler := handler.NewNotificationHandler(notificationSvc)
+	followHandler := handler.NewUserFollowHandler(followSvc)
 
 	// 创建路由管理器
 	routerManager := router.NewRouter(cfg)
@@ -95,6 +98,7 @@ func main() {
 		FriendlyLinkHandler: linkHandler,
 		StatsHandler:        statsHandler,
 		NotificationHandler: notificationHandler,
+		UserFollowHandler:   followHandler,
 		JWTService:          jwtService,
 		UserRepository:      userRepo,
 		RBACService:         rbacService,

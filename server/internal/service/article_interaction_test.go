@@ -68,6 +68,10 @@ func (f *fakeUserRepo) GetByID(id uint) (*repository.User, error) {
 	if f.user == nil {
 		return nil, errors.New("用户不存在")
 	}
+	// 校验目标用户 ID 一致，模拟不存在的用户查询。
+	if f.user.ID != id {
+		return nil, errors.New("用户不存在")
+	}
 	return f.user, nil
 }
 

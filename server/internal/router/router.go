@@ -130,6 +130,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		notificationRoutes := NewNotificationRoutes(notificationHandler, deps.JWTService)
 		notificationRoutes.RegisterRoutes(api)
 	}
+
+	// 注册用户关注相关路由
+	if deps.UserFollowHandler != nil {
+		followHandler := deps.UserFollowHandler.(UserFollowHandlerInterface)
+		followRoutes := NewUserFollowRoutes(followHandler, deps.JWTService)
+		followRoutes.RegisterRoutes(api)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -144,9 +151,18 @@ type Dependencies struct {
 	FriendlyLinkHandler interface{}               // 友情链接处理器接口
 	StatsHandler        interface{}               // 站点统计处理器接口
 	NotificationHandler interface{}               // 通知处理器接口
+	UserFollowHandler   interface{}               // 用户关注处理器接口
 	JWTService          service.JWTService        // JWT服务
 	UserRepository      repository.UserRepository // 用户仓库
 	RBACService         service.RBACService       // RBAC权限服务
+}
+
+// UserFollowHandlerInterface 用户关注处理器接口
+type UserFollowHandlerInterface interface {
+	Follow(c *gin.Context)         // POST /api/users/follow
+	Unfollow(c *gin.Context)       // POST /api/users/unfollow
+	ListFollowers(c *gin.Context)  // POST /api/users/followers
+	ListFollowing(c *gin.Context)  // POST /api/users/following
 }
 
 // NotificationHandlerInterface 通知处理器接口
