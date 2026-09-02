@@ -69,6 +69,25 @@ MyBlog/
 - **Database** (`internal/database/`) - 数据库连接池和迁移管理
 - **Response** (`pkg/response/`) - 统一 API 响应格式
 - **DateTime** (`pkg/datetime/`) - 自定义时间类型处理
+- **Slug** (`pkg/slug/`) - URL 友好标识生成工具，供文章、分类、标签复用
+
+#### 业务模块
+
+后端按领域划分为以下业务模块，每个模块遵循 handler → service → repository 三层结构，接口统一定义在各层实现所在包：
+
+| 模块 | handler | service | repository | 说明 |
+|------|---------|---------|------------|------|
+| 用户管理 | `handler/user.go` | `service/user.go` | `repository/user.go` | 登录、CRUD、JWT 双 token |
+| 文章管理 | `handler/article.go` | `service/article.go` | `repository/article.go` | 文章 CRUD、发布归档、互动 |
+| 分类管理 | `handler/category.go` | `service/category.go` | `repository/category.go` | 分类树形管理 |
+| 标签管理 | `handler/tag.go` | `service/tag.go` | `repository/tag.go` | 标签与热门标签 |
+| 评论管理 | `handler/comment.go` | `service/comment.go` | `repository/comment.go` | 评论与审核状态机 |
+| 媒体文件 | `handler/media.go` | `service/media.go` | `repository/media.go` | 上传与管理 |
+| 系统设置 | `handler/setting.go` | `service/setting.go` | `repository/setting.go` | 配置与脱敏 |
+| 友情链接 | `handler/friendly_link.go` | `service/friendly_link.go` | `repository/friendly_link.go` | 友链申请与审核 |
+| 站点统计 | `handler/stats.go` | `service/stats.go` | `repository/stats.go` | 运营数据分析 |
+| 站内通知 | `handler/notification.go` | `service/notification.go` | `repository/notification.go` | 消息中心 |
+| 用户关注 | `handler/user_follow.go` | `service/user_follow.go` | `repository/user_follow.go` | 关注关系 |
 
 #### 依赖注入
 
@@ -80,6 +99,8 @@ userRepo := repository.NewUserRepository(db)
 userSvc := service.NewUserService(userRepo)
 userHandler := handler.NewUserHandler(userSvc)
 ```
+
+各模块在 `cmd/myblog/main.go` 中完成依赖装配，并通过 `router.Dependencies` 注入路由层。
 
 ### 前端架构（apps/ + packages/）
 
