@@ -568,11 +568,15 @@ func (r *ArticleRepository) Unpublish(id uint) error {
 		Update("status", model.ArticleStatusDraft).Error
 }
 
-// Archive 归档文章
+// Archive 归档文章，记录归档时间，保留发布时间供历史展示。
 func (r *ArticleRepository) Archive(id uint) error {
+	now := time.Now()
 	return r.db.Model(&model.Article{}).
 		Where("id = ?", id).
-		Update("status", model.ArticleStatusArchived).Error
+		Updates(map[string]interface{}{
+			"status":      model.ArticleStatusArchived,
+			"archived_at": &now,
+		}).Error
 }
 
 // SetPrivate 设置为私有文章

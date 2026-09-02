@@ -53,6 +53,11 @@ func (f *fakeArticleRepo) RemoveBookmark(articleID, userID uint) (bool, error) {
 	return false, nil
 }
 
+// Archive 记录归档操作，测试替身默认成功。
+func (f *fakeArticleRepo) Archive(id uint) error {
+	return nil
+}
+
 // fakeUserRepo 用户仓储的测试替身。
 type fakeUserRepo struct {
 	repository.UserRepository
@@ -77,7 +82,7 @@ func publishedArticle(id uint) *model.Article {
 
 // newArticleTestService 创建注入测试替身的文章服务实例。
 func newArticleTestService(articleRepo repository.ArticleRepositoryInterface) *ArticleService {
-	userRepo := &fakeUserRepo{user: &repository.User{ID: 1, Role: "user", Status: 1}}
+	userRepo := &fakeUserRepo{user: &repository.User{ID: 1, Role: "admin", Status: 1}}
 	svc := NewArticleService(articleRepo, userRepo, NewRBACService())
 	return svc.(*ArticleService)
 }
@@ -117,7 +122,9 @@ func TestLikeArticleRejectsInvisibleArticle(t *testing.T) {
 			return true, nil
 		},
 	}
-	svc := newArticleTestService(repo)
+	// 使用普通用户角色的服务实例，验证权限校验。
+	userRepo := &fakeUserRepo{user: &repository.User{ID: 1, Role: "user", Status: 1}}
+	svc := NewArticleService(repo, userRepo, NewRBACService()).(*ArticleService)
 
 	err := svc.LikeArticle(1, 1)
 	if err == nil {

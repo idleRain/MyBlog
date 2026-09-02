@@ -164,3 +164,23 @@ func TestDeleteRollsBackCountsSQL(t *testing.T) {
 		t.Errorf("未满足的 SQL 期望: %v", err)
 	}
 }
+
+// TestArchiveWritesArchivedAt 验证归档时写入状态与归档时间。
+func TestArchiveWritesArchivedAt(t *testing.T) {
+	repo, mock := newMockArticleRepo(t)
+
+	// 归档通过事务执行更新，updated_at 由 GORM 自动维护。
+	mock.ExpectBegin()
+	mock.ExpectExec("UPDATE `articles` SET `archived_at`=\\?,`status`=\\?,`updated_at`=\\? WHERE id = \\? AND `articles`.`deleted_at` IS NULL").
+		WithArgs(sqlmock.AnyArg(), "archived", sqlmock.AnyArg(), 100).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	if err := repo.Archive(100); err != nil {
+		t.Fatalf("Archive 失败: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("未满足的 SQL 期望: %v", err)
+	}
+}

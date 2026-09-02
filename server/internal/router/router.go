@@ -3,6 +3,7 @@ package router
 import (
 	"net/http"
 
+	"MyBlog/internal/config"
 	"MyBlog/internal/middleware"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
@@ -14,18 +15,19 @@ import (
 // Router 路由管理器
 type Router struct {
 	engine *gin.Engine
+	cfg    *config.Config
 }
 
 // NewRouter 创建新的路由管理器
-func NewRouter() *Router {
+func NewRouter(cfg *config.Config) *Router {
 	engine := gin.New()
 
 	// 设置全局中间件
-	engine.Use(middleware.Logger())                                               // 自定义日志中间件
-	engine.Use(gin.Recovery())                                                    // 恢复中间件
-	engine.Use(middleware.RequestID())                                            // 请求ID中间件
-	engine.Use(middleware.CORS())                                                 // CORS 中间件
-	engine.Use(middleware.SecurityMiddleware(middleware.DefaultSecurityConfig())) // 综合安全中间件
+	engine.Use(middleware.Logger())                          // 自定义日志中间件
+	engine.Use(gin.Recovery())                               // 恢复中间件
+	engine.Use(middleware.RequestID())                       // 请求ID中间件
+	engine.Use(middleware.CORS())                            // CORS 中间件
+	engine.Use(middleware.SecurityMiddlewareFromConfig(cfg)) // 综合安全中间件，规则与 config.yaml 保持一致
 
 	// 统一处理未匹配路由，确保接口不存在时返回统一的 JSON 响应。
 	engine.NoRoute(func(c *gin.Context) {
@@ -37,6 +39,7 @@ func NewRouter() *Router {
 
 	return &Router{
 		engine: engine,
+		cfg:    cfg,
 	}
 }
 
@@ -49,6 +52,10 @@ func (r *Router) GetEngine() *gin.Engine {
 func (r *Router) SetupRoutes(deps *Dependencies) {
 	// API 根分组
 	api := r.engine.Group("/api")
+
+	// 管理员接口分组，统一应用更严格的安全中间件。
+	adminAPI := api.Group("/admin")
+	adminAPI.Use(middleware.AdminSecurityMiddlewareFromConfig(r.cfg))
 
 	// 注册健康检查路由
 	healthRoutes := NewHealthRoutes()
@@ -65,7 +72,7 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	if deps.ArticleHandler != nil {
 		articleHandler := deps.ArticleHandler.(ArticleHandlerInterface)
 		articleRoutes := NewArticleRoutes(articleHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
-		articleRoutes.RegisterRoutes(api)
+		articleRoutes.RegisterRoutes(api, adminAPI)
 	}
 }
 

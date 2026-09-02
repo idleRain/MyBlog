@@ -4,7 +4,7 @@ import (
 	"errors"
 	"html"
 	"regexp"
-	"strings"
+	"unicode/utf8"
 
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
@@ -712,14 +712,15 @@ func (s *ArticleService) CanDelete(article *model.Article, userID uint) bool {
 
 // processContent 处理文章内容
 func (s *ArticleService) processContent(article *model.Article) error {
+	// 按 Unicode 字符数统计字数，中文按单字计数，避免空白分词导致的中文统计偏低。
+	wordCount := utf8.RuneCountInString(article.Content)
+
 	// 清理和转义内容
 	article.Content = html.EscapeString(article.Content)
 	article.Summary = html.EscapeString(article.Summary)
 
-	// 计算字数
-	article.WordCount = uint(len(strings.Fields(article.Content)))
-
-	// 按每分钟阅读 200 字估算阅读时间。
+	// 记录字数并据此估算阅读时间。
+	article.WordCount = uint(wordCount)
 	article.ReadingTime = article.WordCount / 200
 	if article.ReadingTime == 0 {
 		article.ReadingTime = 1

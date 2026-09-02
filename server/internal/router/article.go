@@ -33,7 +33,7 @@ func NewArticleRoutes(
 }
 
 // RegisterRoutes 注册文章相关路由
-func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup) {
+func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, adminAPI *gin.RouterGroup) {
 	// 公开访问的文章路由
 	publicArticles := rg.Group("/articles")
 	{
@@ -77,8 +77,8 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup) {
 		}
 	}
 
-	// 管理员文章管理路由
-	adminArticles := rg.Group("/admin/articles")
+	// 管理员文章管理路由，挂载到统一的管理员分组下。
+	adminArticles := adminAPI.Group("/articles")
 	adminArticles.Use(middleware.RequirePermission(ar.jwtService, ar.userRepo, ar.rbacService, service.PermissionArticleManage))
 	{
 		adminArticles.POST("/list", ar.articleHandler.GetArticleList)        // 管理员文章列表，包含所有状态。

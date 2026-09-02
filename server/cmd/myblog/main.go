@@ -57,7 +57,7 @@ func main() {
 	articleHandler := handler.NewArticleHandler(articleSvc)
 
 	// 创建路由管理器
-	routerManager := router.NewRouter()
+	routerManager := router.NewRouter(cfg)
 
 	// 设置依赖
 	deps := &router.Dependencies{
