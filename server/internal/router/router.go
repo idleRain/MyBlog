@@ -95,6 +95,13 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		commentRoutes := NewCommentRoutes(commentHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		commentRoutes.RegisterRoutes(api, adminAPI)
 	}
+
+	// 注册媒体相关路由
+	if deps.MediaHandler != nil {
+		mediaHandler := deps.MediaHandler.(MediaHandlerInterface)
+		mediaRoutes := NewMediaRoutes(mediaHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		mediaRoutes.RegisterRoutes(api)
+	}
 }
 
 // Dependencies 依赖注入结构
@@ -104,9 +111,18 @@ type Dependencies struct {
 	CategoryHandler interface{}               // 分类处理器接口
 	TagHandler      interface{}               // 标签处理器接口
 	CommentHandler  interface{}               // 评论处理器接口
+	MediaHandler    interface{}               // 媒体处理器接口
 	JWTService      service.JWTService        // JWT服务
 	UserRepository  repository.UserRepository // 用户仓库
 	RBACService     service.RBACService       // RBAC权限服务
+}
+
+// MediaHandlerInterface 媒体处理器接口
+type MediaHandlerInterface interface {
+	UploadFile(c *gin.Context)  // POST /api/media/upload - multipart
+	GetMedia(c *gin.Context)    // POST /api/media/get
+	ListMedia(c *gin.Context)   // POST /api/media/list
+	DeleteMedia(c *gin.Context) // POST /api/media/delete
 }
 
 // CommentHandlerInterface 评论处理器接口

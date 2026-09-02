@@ -16,6 +16,15 @@ type Config struct {
 	API      APIConfig      `mapstructure:"api"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Security SecurityConfig `mapstructure:"security"`
+	Media    MediaConfig    `mapstructure:"media"`
+}
+
+// MediaConfig 媒体文件存储配置
+type MediaConfig struct {
+	UploadDir    string   `mapstructure:"upload_dir"`    // 本地存储目录
+	BaseURL      string   `mapstructure:"base_url"`      // 文件访问 URL 前缀
+	MaxSizeMB    int      `mapstructure:"max_size_mb"`   // 单文件大小上限，单位 MB
+	AllowedTypes []string `mapstructure:"allowed_types"` // 允许的 MIME 类型，空表示不限制
 }
 
 // ServerConfig 服务器配置
@@ -218,6 +227,11 @@ func setDefaults() {
 	viper.SetDefault("security.admin_security.enabled", true)
 	viper.SetDefault("security.admin_security.max_requests", 30)
 	viper.SetDefault("security.admin_security.user_max_requests", 50)
+
+	// 媒体文件存储默认配置
+	viper.SetDefault("media.upload_dir", "uploads")
+	viper.SetDefault("media.base_url", "/uploads")
+	viper.SetDefault("media.max_size_mb", 10)
 }
 
 // validateConfig 验证配置的有效性

@@ -75,3 +75,10 @@ security:
     max_requests: 30           # 管理员接口IP级别限制
     user_max_requests: 50      # 管理员接口用户级别限制
     ip_whitelist: []           # IP白名单（空表示不启用）
+
+# 媒体文件存储配置
+media:
+  upload_dir: "uploads"        # 本地存储目录，相对服务运行目录
+  base_url: "/uploads"         # 文件访问URL前缀
+  max_size_mb: 10              # 单文件大小上限（MB）
+  allowed_types: []            # 允许的MIME类型（空表示不限制）
