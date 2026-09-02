@@ -74,15 +74,33 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		articleRoutes := NewArticleRoutes(articleHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		articleRoutes.RegisterRoutes(api, adminAPI)
 	}
+
+	// 注册分类相关路由
+	if deps.CategoryHandler != nil {
+		categoryHandler := deps.CategoryHandler.(CategoryHandlerInterface)
+		categoryRoutes := NewCategoryRoutes(categoryHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		categoryRoutes.RegisterRoutes(api, adminAPI)
+	}
 }
 
 // Dependencies 依赖注入结构
 type Dependencies struct {
-	UserHandler    interface{}               // 用户处理器接口
-	ArticleHandler interface{}               // 文章处理器接口
-	JWTService     service.JWTService        // JWT服务
-	UserRepository repository.UserRepository // 用户仓库
-	RBACService    service.RBACService       // RBAC权限服务
+	UserHandler     interface{}               // 用户处理器接口
+	ArticleHandler  interface{}               // 文章处理器接口
+	CategoryHandler interface{}               // 分类处理器接口
+	JWTService      service.JWTService        // JWT服务
+	UserRepository  repository.UserRepository // 用户仓库
+	RBACService     service.RBACService       // RBAC权限服务
+}
+
+// CategoryHandlerInterface 分类处理器接口
+type CategoryHandlerInterface interface {
+	CreateCategory(c *gin.Context)   // POST /api/admin/categories/create
+	UpdateCategory(c *gin.Context)   // POST /api/admin/categories/update
+	DeleteCategory(c *gin.Context)   // POST /api/admin/categories/delete
+	GetCategory(c *gin.Context)      // POST /api/categories/get
+	ListCategories(c *gin.Context)   // POST /api/admin/categories/list
+	GetCategoryTree(c *gin.Context)  // POST /api/categories/tree
 }
 
 // UserHandlerInterface 用户处理器接口

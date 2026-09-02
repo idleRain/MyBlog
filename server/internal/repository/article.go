@@ -3,11 +3,11 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"math/rand/v2"
 	"strings"
 	"time"
 
 	"MyBlog/internal/model"
+	"MyBlog/pkg/slug"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -673,27 +673,9 @@ func (r *ArticleRepository) decrementCategoryCount(tx *gorm.DB, categoryID uint)
 		UpdateColumn("article_count", gorm.Expr("CASE WHEN article_count > 0 THEN article_count - 1 ELSE 0 END")).Error
 }
 
-// generateSlug 从标题生成slug，中文标题过滤后为空时回退为基于时间戳的标识。
+// generateSlug 从标题生成 slug，委托给公共 slug 工具并固定文章前缀。
 func generateSlug(title string) string {
-	// 简单的slug生成逻辑，实际项目中可能需要更复杂的处理
-	slug := strings.ToLower(title)
-	slug = strings.ReplaceAll(slug, " ", "-")
-	slug = strings.ReplaceAll(slug, "_", "-")
-
-	// 移除特殊字符，仅保留字母、数字与连字符。
-	var result strings.Builder
-	for _, r := range slug {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
-			result.WriteRune(r)
-		}
-	}
-
-	// 中文标题过滤后结果可能为空，回退为 article-<纳秒时间戳>-<随机数>，确保 slug 非空且唯一。
-	if result.Len() == 0 {
-		return fmt.Sprintf("article-%d-%d", time.Now().UnixNano(), rand.IntN(1_000_000))
-	}
-
-	return result.String()
+	return slug.Generate("article", title)
 }
 
 // applyFilters 应用筛选条件

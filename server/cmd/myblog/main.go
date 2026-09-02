@@ -49,23 +49,27 @@ func main() {
 	// 初始化依赖注入
 	userRepo := repository.NewUserRepository(db)
 	articleRepo := repository.NewArticleRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 	userSvc := service.NewUserService(userRepo, jwtService)
 	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService)
+	categorySvc := service.NewCategoryService(categoryRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
+	categoryHandler := handler.NewCategoryHandler(categorySvc)
 
 	// 创建路由管理器
 	routerManager := router.NewRouter(cfg)
 
 	// 设置依赖
 	deps := &router.Dependencies{
-		UserHandler:    userHandler,
-		ArticleHandler: articleHandler,
-		JWTService:     jwtService,
-		UserRepository: userRepo,
-		RBACService:    rbacService,
+		UserHandler:     userHandler,
+		ArticleHandler:  articleHandler,
+		CategoryHandler: categoryHandler,
+		JWTService:      jwtService,
+		UserRepository:  userRepo,
+		RBACService:     rbacService,
 	}
 
 	// 注册路由
