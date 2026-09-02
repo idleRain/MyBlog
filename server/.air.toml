@@ -7,39 +7,49 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  # 编译命令，输出二进制到 tmp 目录
-  cmd = "go build -o ./tmp/main ./cmd/myblog"
-  # 运行入口，优先使用 entrypoint 而非已弃用的 bin 字段
-  entrypoint = ["./tmp/main"]
-  # 监听的文件扩展名，覆盖 Go 源码与配置文件
-  include_ext = ["go", "yaml", "yml", "json", "tpl", "tmpl", "html"]
-  # 排除的目录，避免监听构建产物与版本控制目录
-  exclude_dir = ["tmp", "vendor", "testdata", "logs", ".git", ".vscode", ".idea", "bin", "dist"]
-  # 排除的测试文件
-  exclude_regex = ["_test\\.go"]
-  # 变更防抖时间，单位毫秒，避免 IDE 连续保存触发多次重建
-  delay = 300
-  # 编译失败时保留旧二进制继续运行，避免服务意外下线
-  stop_on_error = false
+# 编译命令，输出二进制到 tmp 目录
+cmd = "go build -o ./tmp/main ./cmd/myblog"
+# 运行入口，优先使用 entrypoint 而非已弃用的 bin 字段
+entrypoint = ["./tmp/main"]
+# 触发重建的扩展名白名单，仅 Go 源码与配置文件会触发重新编译
+include_ext = ["go", "yaml", "yml", "json", "mod", "sum"]
+# 排除的目录，避免监听构建产物与版本控制目录
+exclude_dir = [
+  "tmp",
+  "vendor",
+  "testdata",
+  "logs",
+  ".git",
+  ".vscode",
+  ".idea",
+  "bin",
+  "dist",
+]
+# 排除的测试文件
+exclude_regex = ["_test\\.go"]
+# 变更防抖时间，单位毫秒，避免 IDE 连续保存触发多次重建
+delay = 300
+# 编译失败时保留旧二进制继续运行，避免服务意外下线
+stop_on_error = false
 
 # Windows 平台覆盖：输出二进制带 .exe 后缀，入口指向对应文件
 [build.windows]
-  cmd = "go build -o ./tmp/main.exe ./cmd/myblog"
-  entrypoint = ["tmp\\main.exe"]
+cmd = "go build -o ./tmp/main.exe ./cmd/myblog"
+entrypoint = ["tmp\\main.exe"]
 
 [log]
-  # 显示日志时间
-  time = false
-  # 只显示主要日志，静默 watcher 与 build 日志
-  main_only = false
+# 显示日志时间
+time = false
+# 只显示主要日志，静默 watcher 与 build 日志
+main_only = false
 
 [color]
-  # 自定义各模块日志颜色
-  main = "magenta"
-  watcher = "cyan"
-  build = "yellow"
-  runner = "green"
+# 自定义各模块日志颜色
+main = "magenta"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
 
 [misc]
-  # 退出时清理 tmp 目录
-  clean_on_exit = true
+# 退出时清理 tmp 目录
+clean_on_exit = true
