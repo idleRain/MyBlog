@@ -120,9 +120,8 @@ export function createHttpClient(options: CreateHttpClientOptions) {
   const client = ky.create({
     prefixUrl,
     timeout,
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    // 不设置全局 Content-Type，由 ky 按请求体类型自动生成；
+    // 否则 FormData 上传会沿用 application/json 而丢失 multipart 边界。
     hooks: {
       beforeRequest: [requestInterceptor],
       afterResponse: [responseInterceptor]
