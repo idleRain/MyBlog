@@ -109,20 +109,40 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 		settingRoutes := NewSettingRoutes(settingHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		settingRoutes.RegisterRoutes(api, adminAPI)
 	}
+
+	// 注册友情链接相关路由
+	if deps.FriendlyLinkHandler != nil {
+		linkHandler := deps.FriendlyLinkHandler.(FriendlyLinkHandlerInterface)
+		linkRoutes := NewFriendlyLinkRoutes(linkHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		linkRoutes.RegisterRoutes(api, adminAPI)
+	}
 }
 
 // Dependencies 依赖注入结构
 type Dependencies struct {
-	UserHandler     interface{}               // 用户处理器接口
-	ArticleHandler  interface{}               // 文章处理器接口
-	CategoryHandler interface{}               // 分类处理器接口
-	TagHandler      interface{}               // 标签处理器接口
-	CommentHandler  interface{}               // 评论处理器接口
-	MediaHandler    interface{}               // 媒体处理器接口
-	SettingHandler  interface{}               // 设置处理器接口
-	JWTService      service.JWTService        // JWT服务
-	UserRepository  repository.UserRepository // 用户仓库
-	RBACService     service.RBACService       // RBAC权限服务
+	UserHandler         interface{}               // 用户处理器接口
+	ArticleHandler      interface{}               // 文章处理器接口
+	CategoryHandler     interface{}               // 分类处理器接口
+	TagHandler          interface{}               // 标签处理器接口
+	CommentHandler      interface{}               // 评论处理器接口
+	MediaHandler        interface{}               // 媒体处理器接口
+	SettingHandler      interface{}               // 设置处理器接口
+	FriendlyLinkHandler interface{}               // 友情链接处理器接口
+	JWTService          service.JWTService        // JWT服务
+	UserRepository      repository.UserRepository // 用户仓库
+	RBACService         service.RBACService       // RBAC权限服务
+}
+
+// FriendlyLinkHandlerInterface 友情链接处理器接口
+type FriendlyLinkHandlerInterface interface {
+	CreateLink(c *gin.Context)    // POST /api/admin/friendly-links/create
+	UpdateLink(c *gin.Context)    // POST /api/admin/friendly-links/update
+	DeleteLink(c *gin.Context)    // POST /api/admin/friendly-links/delete
+	ApproveLink(c *gin.Context)   // POST /api/admin/friendly-links/approve
+	HideLink(c *gin.Context)      // POST /api/admin/friendly-links/hide
+	RejectLink(c *gin.Context)    // POST /api/admin/friendly-links/reject
+	ListLinks(c *gin.Context)     // POST /api/admin/friendly-links/list
+	ListVisibleLinks(c *gin.Context) // POST /api/friendly-links/list
 }
 
 // SettingHandlerInterface 设置处理器接口

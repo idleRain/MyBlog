@@ -54,6 +54,7 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	mediaRepo := repository.NewMediaRepository(db)
 	settingRepo := repository.NewSettingRepository(db)
+	linkRepo := repository.NewFriendlyLinkRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 	userSvc := service.NewUserService(userRepo, jwtService)
@@ -63,6 +64,7 @@ func main() {
 	commentSvc := service.NewCommentService(commentRepo, articleRepo)
 	mediaSvc := service.NewMediaService(mediaRepo, cfg)
 	settingSvc := service.NewSettingService(settingRepo)
+	linkSvc := service.NewFriendlyLinkService(linkRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
 	categoryHandler := handler.NewCategoryHandler(categorySvc)
@@ -70,22 +72,24 @@ func main() {
 	commentHandler := handler.NewCommentHandler(commentSvc)
 	mediaHandler := handler.NewMediaHandler(mediaSvc)
 	settingHandler := handler.NewSettingHandler(settingSvc)
+	linkHandler := handler.NewFriendlyLinkHandler(linkSvc)
 
 	// 创建路由管理器
 	routerManager := router.NewRouter(cfg)
 
 	// 设置依赖
 	deps := &router.Dependencies{
-		UserHandler:     userHandler,
-		ArticleHandler:  articleHandler,
-		CategoryHandler: categoryHandler,
-		TagHandler:      tagHandler,
-		CommentHandler:  commentHandler,
-		MediaHandler:    mediaHandler,
-		SettingHandler:  settingHandler,
-		JWTService:      jwtService,
-		UserRepository:  userRepo,
-		RBACService:     rbacService,
+		UserHandler:         userHandler,
+		ArticleHandler:      articleHandler,
+		CategoryHandler:     categoryHandler,
+		TagHandler:          tagHandler,
+		CommentHandler:      commentHandler,
+		MediaHandler:        mediaHandler,
+		SettingHandler:      settingHandler,
+		FriendlyLinkHandler: linkHandler,
+		JWTService:          jwtService,
+		UserRepository:      userRepo,
+		RBACService:         rbacService,
 	}
 
 	// 注册路由
