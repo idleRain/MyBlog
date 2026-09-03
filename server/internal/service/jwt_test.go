@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"MyBlog/internal/config"
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 )
 
 // newTestJWTService 构造携带最小合法配置的 JWT 服务实例。
@@ -68,7 +68,7 @@ func TestRevokeTokenConcurrent(t *testing.T) {
 func TestGenerateTokenPairRoundTrip(t *testing.T) {
 	svc := newTestJWTService(t)
 
-	user := &repository.User{ID: 42}
+	user := &domain.User{ID: 42}
 	pair, err := svc.GenerateTokenPair(user)
 	if err != nil {
 		t.Fatalf("生成令牌对失败: %v", err)

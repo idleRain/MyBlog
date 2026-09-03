@@ -3,7 +3,7 @@ package service
 
 import (
 	"MyBlog/internal/config"
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
@@ -81,7 +81,7 @@ const fixedJWTHeader = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
 
 // JWTService JWT服务接口
 type JWTService interface {
-	GenerateTokenPair(user *repository.User) (*TokenPair, error)
+	GenerateTokenPair(user *domain.User) (*TokenPair, error)
 	ValidateAccessToken(tokenString string) (*JWTClaims, error)
 	ValidateRefreshToken(tokenString string) (*JWTClaims, error)
 	RefreshAccessToken(refreshTokenString string) (*TokenPair, error)
@@ -110,7 +110,7 @@ func NewJWTService(cfg *config.Config) JWTService {
 }
 
 // GenerateTokenPair 生成访问令牌和刷新令牌对
-func (j *jwtService) GenerateTokenPair(user *repository.User) (*TokenPair, error) {
+func (j *jwtService) GenerateTokenPair(user *domain.User) (*TokenPair, error) {
 	now := time.Now()
 
 	// 生成访问令牌
@@ -135,7 +135,7 @@ func (j *jwtService) GenerateTokenPair(user *repository.User) (*TokenPair, error
 }
 
 // generateToken 生成指定类型的令牌 - 优化版：只返回payload部分
-func (j *jwtService) generateToken(user *repository.User, tokenType TokenType,
+func (j *jwtService) generateToken(user *domain.User, tokenType TokenType,
 	issuedAt time.Time, duration time.Duration) (string, error) {
 
 	claims := JWTClaims{
@@ -249,7 +249,7 @@ func (j *jwtService) RefreshAccessToken(refreshTokenString string) (*TokenPair, 
 	}
 
 	// 只需要UserID来生成新token，不需要其他用户信息
-	user := &repository.User{
+	user := &domain.User{
 		ID: claims.UserID,
 	}
 

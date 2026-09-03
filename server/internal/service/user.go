@@ -2,6 +2,7 @@
 package service
 
 import (
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"fmt"
@@ -18,18 +19,18 @@ const (
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	User         *repository.User `json:"user"`
-	AccessToken  string           `json:"access_token"`
-	RefreshToken string           `json:"refresh_token"`
-	ExpiresIn    int64            `json:"expires_in"`
+	User         *domain.User `json:"user"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+	ExpiresIn    int64        `json:"expires_in"`
 }
 
 // UserService 用户服务接口
 type UserService interface {
-	CreateUser(req *repository.CreateUserRequest) (*repository.User, error)
-	UpdateUser(req *repository.UpdateUserRequest) (*repository.User, error)
-	GetUserByID(id uint) (*repository.User, error)
-	GetUserList(page, pageSize int) ([]*repository.User, int64, error)
+	CreateUser(req *repository.CreateUserRequest) (*domain.User, error)
+	UpdateUser(req *repository.UpdateUserRequest) (*domain.User, error)
+	GetUserByID(id uint) (*domain.User, error)
+	GetUserList(page, pageSize int) ([]*domain.User, int64, error)
 	DeleteUser(id uint) error
 	Login(username, password string) (*LoginResponse, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
@@ -56,7 +57,7 @@ func NewUserService(userRepo repository.UserRepository, jwtService JWTService, r
 }
 
 // CreateUser 创建用户
-func (s *userService) CreateUser(req *repository.CreateUserRequest) (*repository.User, error) {
+func (s *userService) CreateUser(req *repository.CreateUserRequest) (*domain.User, error) {
 	// 检查用户名是否已存在
 	if existUser, _ := s.userRepo.GetByUsername(req.Username); existUser != nil {
 		return nil, fmt.Errorf("用户名已存在")
@@ -79,7 +80,7 @@ func (s *userService) CreateUser(req *repository.CreateUserRequest) (*repository
 	}
 
 	// 构建用户对象
-	user := &repository.User{
+	user := &domain.User{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashedPassword,
@@ -113,7 +114,7 @@ func (s *userService) CreateUser(req *repository.CreateUserRequest) (*repository
 }
 
 // UpdateUser 更新用户信息
-func (s *userService) UpdateUser(req *repository.UpdateUserRequest) (*repository.User, error) {
+func (s *userService) UpdateUser(req *repository.UpdateUserRequest) (*domain.User, error) {
 	// 获取现有用户信息
 	existingUser, err := s.userRepo.GetByID(req.ID)
 	if err != nil {
@@ -182,7 +183,7 @@ func (s *userService) UpdateUser(req *repository.UpdateUserRequest) (*repository
 }
 
 // GetUserByID 根据ID获取用户
-func (s *userService) GetUserByID(id uint) (*repository.User, error) {
+func (s *userService) GetUserByID(id uint) (*domain.User, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
 		return nil, err
@@ -191,7 +192,7 @@ func (s *userService) GetUserByID(id uint) (*repository.User, error) {
 }
 
 // GetUserList 获取用户列表
-func (s *userService) GetUserList(page, pageSize int) ([]*repository.User, int64, error) {
+func (s *userService) GetUserList(page, pageSize int) ([]*domain.User, int64, error) {
 	// 参数验证
 	if page < 1 {
 		page = 1

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -61,10 +62,10 @@ func (f *fakeArticleRepo) Archive(id uint) error {
 // fakeUserRepo 用户仓储的测试替身。
 type fakeUserRepo struct {
 	repository.UserRepository
-	user *repository.User
+	user *domain.User
 }
 
-func (f *fakeUserRepo) GetByID(id uint) (*repository.User, error) {
+func (f *fakeUserRepo) GetByID(id uint) (*domain.User, error) {
 	if f.user == nil {
 		return nil, errors.New("用户不存在")
 	}
@@ -86,7 +87,7 @@ func publishedArticle(id uint) *model.Article {
 
 // newArticleTestService 创建注入测试替身的文章服务实例。
 func newArticleTestService(articleRepo repository.ArticleRepositoryInterface) *ArticleService {
-	userRepo := &fakeUserRepo{user: &repository.User{ID: 1, Role: "admin", Status: 1}}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
 	svc := NewArticleService(articleRepo, userRepo, NewRBACService())
 	return svc.(*ArticleService)
 }
@@ -127,7 +128,7 @@ func TestLikeArticleRejectsInvisibleArticle(t *testing.T) {
 		},
 	}
 	// 使用普通用户角色的服务实例，验证权限校验。
-	userRepo := &fakeUserRepo{user: &repository.User{ID: 1, Role: "user", Status: 1}}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "user", Status: 1}}
 	svc := NewArticleService(repo, userRepo, NewRBACService()).(*ArticleService)
 
 	err := svc.LikeArticle(1, 1)

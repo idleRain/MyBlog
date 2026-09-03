@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -38,7 +39,7 @@ func (f *fakeFollowRepo) Unfollow(followerID, followingID uint) (bool, error) {
 
 // newTestFollowService 创建注入测试替身的关注服务实例。
 func newTestFollowService(followRepo repository.UserFollowRepositoryInterface) *UserFollowService {
-	userRepo := &fakeUserRepo{user: &repository.User{ID: 2, Role: "user", Status: 1}}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 2, Role: "user", Status: 1}}
 	return NewUserFollowService(followRepo, userRepo).(*UserFollowService)
 }
 
