@@ -1,0 +1,24 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@myblog.local",
+        "nickname": "admin",
+        "avatar": "",
+        "birthday": "",
+        "role": "superadmin",
+        "status": 1,
+        "createdAt": "2026-01-01T00:00:00+08:00",
+        "updatedAt": "2026-01-01T00:00:00+08:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "pageSize": 10,
+    "pages": 1
+  }
+}

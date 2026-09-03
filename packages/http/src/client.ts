@@ -53,16 +53,25 @@ export interface CreateHttpClientOptions {
   onError?: (message: string) => void
 }
 
-// 令牌刷新错误信息集合，用于识别需要重新登录的 401 响应。
-const TOKEN_ERROR_MESSAGES = ['无效的认证令牌', 'token expired', 'invalid token', 'unauthorized']
+// 令牌刷新与登录请求的路径标识，用于排除不应触发自动刷新的请求。
+const REFRESH_PATH = '/auth/refresh'
+const LOGIN_PATH = '/users/login'
 
 /**
- * 判断 401 错误信息是否与令牌失效相关。
+ * 解析响应体中的业务码与消息，解析失败时返回空值。
  */
-function isTokenError(message: string | undefined): boolean {
-  if (!message) return false
-  const normalized = message.toLowerCase()
-  return TOKEN_ERROR_MESSAGES.some(tokenMessage => normalized.includes(tokenMessage.toLowerCase()))
+async function parseResponseBody(
+  response: Response
+): Promise<{ code: number | undefined; message: string | undefined }> {
+  try {
+    const body = (await response.clone().json()) as {
+      code?: number
+      message?: string
+    }
+    return { code: body.code, message: body.message }
+  } catch {
+    return { code: undefined, message: undefined }
+  }
 }
 
 /**
@@ -80,14 +89,16 @@ export function createHttpClient(options: CreateHttpClientOptions) {
     }
   }
 
-  // 响应拦截器：处理 401 刷新与通用错误提示。
+  // 响应拦截器：以响应体业务码识别认证失效，处理令牌刷新与通用错误提示。
   const responseInterceptor: AfterResponseHook = async (request, _options, response) => {
-    if (response.status === 401 && auth) {
-      try {
-        const errorData = (await response.clone().json()) as { message?: string }
-        const isRefreshRequest = request.url.includes('/auth/refresh')
+    const { code, message } = await parseResponseBody(response)
+    const isAuthFailure = code === 401
+    const isRefreshRequest = request.url.includes(REFRESH_PATH)
+    const isLoginRequest = request.url.includes(LOGIN_PATH)
 
-        if (isTokenError(errorData.message) && !isRefreshRequest) {
+    if (isAuthFailure && auth && !isLoginRequest) {
+      try {
+        if (!isRefreshRequest) {
           const newToken = await auth.refreshToken()
           if (newToken) {
             // 令牌刷新成功后返回原响应，调用方依据新令牌重试。
@@ -96,20 +107,17 @@ export function createHttpClient(options: CreateHttpClientOptions) {
         }
 
         // 刷新失败或刷新请求自身 401，触发认证失效处理。
-        await auth.onAuthFailure?.('登录已过期，请重新登录')
+        await auth.onAuthFailure?.(message || '登录已过期，请重新登录')
       } catch {
         await auth.onAuthFailure?.('认证失败，请重新登录')
       }
     }
 
     // 其他错误响应统一提示。
-    if (!response.ok && response.status !== 401) {
-      try {
-        const errorData = (await response.clone().json()) as { message?: string }
-        if (errorData.message) {
-          onError?.(errorData.message)
-        }
-      } catch {
+    if (!response.ok && !isAuthFailure) {
+      if (message) {
+        onError?.(message)
+      } else {
         onError?.(`请求失败: ${response.statusText}`)
       }
     }

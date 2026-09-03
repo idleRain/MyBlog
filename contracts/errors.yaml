@@ -1,0 +1,37 @@
+# 错误码契约（C2）——唯一编辑点
+#
+# 本文件是前后端错误码的单一事实来源。规划中的生成目标：
+#   - 后端：pkg/errcode/errcode_gen.go（CI 从本文件重新生成，diff 非零即失败）
+#   - 前端：@myblog/shared/src/errors.ts（同上）
+# 现状（R0）：仅登记传输层错误码与业务码命名空间，业务码细分随阶段 C 落地。
+
+# 传输层错误码（与 pkg/response 预定义码一致，HTTP 状态恒为 200）
+transport:
+  200: 成功
+  400: 请求参数错误
+  401: 认证失败
+  403: 权限不足
+  404: 资源不存在
+  500: 服务器内部错误
+
+# 业务错误码命名空间（目标态细分）
+# 命名空间规则：1xxx 用户域、2xxx 文章域、3xxx 评论域、4xxx 分类/标签域、
+#              5xxx 媒体域、6xxx 设置/友链域、7xxx 通知域、8xxx 关注域
+namespaces:
+  user: 1xxx
+  article: 2xxx
+  comment: 3xxx
+  category: 4xxx
+  tag: 4xxx
+  media: 5xxx
+  setting: 6xxx
+  friendly_link: 6xxx
+  notification: 7xxx
+  follow: 8xxx
+
+# 已登记业务码示例（随 C2 逐条细化后由生成器产出双端常量）
+# 1001: 用户名已存在
+# 1002: 邮箱已存在
+# 1003: 密码错误
+# 2001: 文章不存在
+# 3001: 评论不存在
