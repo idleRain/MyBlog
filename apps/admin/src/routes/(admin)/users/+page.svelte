@@ -1,198 +1,99 @@
 <script lang="ts">
-import {
-  Sidebar,
-  Breadcrumb,
-  Select,
-  Card,
-  Button,
-  Input,
-  Badge,
-  Avatar,
-  Dialog,
-  Table,
-  Label
-} from '$ui'
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  User as UserIcon,
-  Mail,
-  Calendar,
-  Shield
-} from '@lucide/svelte'
-import type { UpdateUserRequest, User, UserRole, UserStatus } from '@myblog/api/modules/user/types'
-import { goto, toAdminPath } from '$lib/utils/navigation'
-import type { BadgeVariant } from '$ui/badge'
+import type {
+  CreateUserRequest,
+  UpdateUserRequest,
+  User,
+  UserRole
+} from '@myblog/api/modules/user/types'
+import UserFormDialog from '$lib/components/admin/user/user-form-dialog.svelte'
+import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
+import UserTable from '$lib/components/admin/user/user-table.svelte'
+import PageHeader from '$lib/components/admin/page-header.svelte'
+import Pagination from '$lib/components/admin/pagination.svelte'
+import { getAssignableRoles } from '$lib/utils/permissions'
+import { USER_PAGE_SIZE } from '$lib/constants/user'
+import { Plus, Search } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth'
+import { Button, Card, Input } from '$ui'
 import { UserAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
-// 权限检查
-let userRole = $state('user')
-let hasPermission = $state(false)
-
-// 用户列表状态
 let users = $state<User[]>([])
 let isLoading = $state(true)
-let searchQuery = $state('')
-let isCreateModalOpen = $state(false)
-let isEditModalOpen = $state(false)
-let selectedUser = $state<User | null>(null)
-
-// 表单状态；role 受 UserRole 枚举约束，避免自由字符串流入 API 请求。
-let userForm = $state({
-  username: '',
-  email: '',
-  password: '',
-  nickname: '',
-  role: 'user' as UserRole,
-  birthday: ''
-})
-
-let isSubmitting = $state(false)
-let formErrors = $state<Record<string, string>>({})
-
-// 分页状态
+let total = $state(0)
 let currentPage = $state(1)
-let totalPages = $state(1)
-let totalUsers = $state(0)
+let searchQuery = $state('')
 
-// 批量操作状态
-let selectedUserIds = $state<number[]>([])
-let isAllSelected = $state(false)
+// 批量选择状态
+let selectedIds = $state<number[]>([])
 
-// 加载用户列表
+// 弹窗与删除确认状态
+let isDialogOpen = $state(false)
+let dialogTarget = $state<User | null>(null)
+let deleteTarget = $state<User | null>(null)
+let isDeleting = $state(false)
+let isSubmitting = $state(false)
+
+// 当前用户可分配角色
+let assignableRoles = $state<UserRole[]>(['user', 'editor', 'admin', 'superadmin'])
+
+// 批量操作确认状态，用于 AlertDialog 二次确认。
+let batchConfirm = $state<{ action: 'enable' | 'disable' | 'delete' } | null>(null)
+let isBatchExecuting = $state(false)
+
+/**
+ * 加载用户列表并应用客户端搜索过滤。
+ */
 async function loadUsers() {
+  isLoading = true
   try {
-    isLoading = true
-    const response = await UserAPI.getUserList(currentPage, 10)
-
+    const response = await UserAPI.getUserList(currentPage, USER_PAGE_SIZE)
     if (response.code === 200 && response.data) {
-      users = response.data.users || []
-      totalPages = response.data.pages || 1
-      totalUsers = response.data.total || 0
+      users = response.data.users ?? []
+      total = response.data.total ?? 0
+      selectedIds = []
     } else {
       toast.error(response.message || '加载用户列表失败')
     }
   } catch (error) {
-    console.error('Load users error:', error)
+    console.error('加载用户列表失败:', error)
     toast.error('网络错误，请稍后重试')
   } finally {
     isLoading = false
   }
 }
 
-// 创建用户
-async function createUser() {
+/**
+ * 提交用户表单，新建与编辑分别调用对应接口。
+ */
+async function handleConfirm(payload: Record<string, unknown>) {
   if (isSubmitting) return
-
-  // 重置错误
-  formErrors = {}
-
-  // 简单验证
-  if (!userForm.username.trim()) {
-    formErrors.username = '请输入用户名'
-    return
-  }
-  if (!userForm.email.trim()) {
-    formErrors.email = '请输入邮箱'
-    return
-  }
-  if (!userForm.password.trim()) {
-    formErrors.password = '请输入密码'
-    return
-  }
-
+  isSubmitting = true
   try {
-    isSubmitting = true
-    const response = await UserAPI.createUser({
-      username: userForm.username.trim(),
-      email: userForm.email.trim(),
-      password: userForm.password.trim(),
-      nickname: userForm.nickname.trim(),
-      role: userForm.role,
-      birthday: userForm.birthday
-    })
-
-    if (response.code === 200) {
-      toast.success('用户创建成功')
-      isCreateModalOpen = false
-      resetForm()
-      await loadUsers()
+    const response = dialogTarget
+      ? await UserAPI.updateUser({ id: dialogTarget.id, ...payload } as UpdateUserRequest)
+      : await UserAPI.createUser(payload as unknown as CreateUserRequest)
+    if (response.code === 200 && response.data) {
+      toast.success(dialogTarget ? '用户更新成功' : '用户创建成功')
+      isDialogOpen = false
+      loadUsers()
     } else {
-      toast.error(response.message || '创建用户失败')
+      toast.error(response.message || '保存用户失败')
     }
   } catch (error) {
-    console.error('Create user error:', error)
+    console.error('保存用户失败:', error)
     toast.error('网络错误，请稍后重试')
   } finally {
     isSubmitting = false
   }
 }
 
-// 更新用户
-async function updateUser() {
-  if (isSubmitting || !selectedUser) return
-
-  // 重置错误
-  formErrors = {}
-
-  // 简单验证
-  if (!userForm.username.trim()) {
-    formErrors.username = '请输入用户名'
-    return
-  }
-  if (!userForm.email.trim()) {
-    formErrors.email = '请输入邮箱'
-    return
-  }
-
-  try {
-    isSubmitting = true
-    // 更新载荷按接口契约类型化，密码仅在填写时提交。
-    const updateData: UpdateUserRequest = {
-      id: selectedUser.id,
-      username: userForm.username.trim(),
-      email: userForm.email.trim(),
-      nickname: userForm.nickname.trim(),
-      role: userForm.role,
-      birthday: userForm.birthday
-    }
-
-    // 只有在密码不为空时才更新密码
-    if (userForm.password.trim()) {
-      updateData.password = userForm.password.trim()
-    }
-
-    const response = await UserAPI.updateUser(updateData)
-
-    if (response.code === 200) {
-      toast.success('用户更新成功')
-      isEditModalOpen = false
-      resetForm()
-      await loadUsers()
-    } else {
-      toast.error(response.message || '更新用户失败')
-    }
-  } catch (error) {
-    console.error('Update user error:', error)
-    toast.error('网络错误，请稍后重试')
-  } finally {
-    isSubmitting = false
-  }
-}
-
-// 切换用户状态
-async function toggleUserStatus(user: User) {
-  const newStatus = user.status === 1 ? 0 : 1
-  const action = newStatus === 1 ? '启用' : '禁用'
-
-  if (!confirm(`确定要${action}用户 "${user.username}" 吗？`)) {
-    return
-  }
-
+/**
+ * 切换用户启用与禁用状态。
+ */
+async function handleToggleStatus(user: User) {
+  const nextStatus = user.status === 1 ? 0 : 1
+  const action = nextStatus === 1 ? '启用' : '禁用'
   try {
     const response = await UserAPI.updateUser({
       id: user.id,
@@ -201,145 +102,80 @@ async function toggleUserStatus(user: User) {
       nickname: user.nickname || '',
       role: user.role || 'user',
       birthday: user.birthday || '',
-      status: newStatus
+      status: nextStatus
     })
-
     if (response.code === 200) {
       toast.success(`用户${action}成功`)
-      await loadUsers()
+      loadUsers()
     } else {
       toast.error(response.message || `${action}用户失败`)
     }
   } catch (error) {
-    console.error(`Toggle user status error:`, error)
+    console.error(`切换用户状态失败:`, error)
     toast.error('网络错误，请稍后重试')
   }
 }
 
-// 删除用户
-async function deleteUser(userId: number) {
-  if (!confirm('确定要删除此用户吗？此操作不可恢复。')) {
-    return
-  }
-
+/**
+ * 删除单个用户。
+ */
+async function handleDelete() {
+  if (!deleteTarget || isDeleting) return
+  isDeleting = true
   try {
-    const response = await UserAPI.deleteUser(userId)
-
+    const response = await UserAPI.deleteUser(deleteTarget.id)
     if (response.code === 200) {
       toast.success('用户删除成功')
-      await loadUsers()
+      deleteTarget = null
+      loadUsers()
     } else {
       toast.error(response.message || '删除用户失败')
     }
   } catch (error) {
-    console.error('Delete user error:', error)
+    console.error('删除用户失败:', error)
     toast.error('网络错误，请稍后重试')
+  } finally {
+    isDeleting = false
   }
 }
 
-// 重置表单
-function resetForm() {
-  userForm = {
-    username: '',
-    email: '',
-    password: '',
-    nickname: '',
-    role: 'user',
-    birthday: ''
-  }
-  formErrors = {}
+/**
+ * 请求批量切换状态，弹出确认对话框。
+ */
+function requestBatchStatus(status: 0 | 1) {
+  batchConfirm = { action: status === 1 ? 'enable' : 'disable' }
 }
 
-// 打开编辑模态框
-function openEditModal(user: User) {
-  selectedUser = user
-  userForm = {
-    username: user.username,
-    email: user.email,
-    password: '', // 编辑时不显示密码
-    nickname: user.nickname || '',
-    role: user.role || 'user',
-    birthday: user.birthday || ''
-  }
-  isEditModalOpen = true
+/**
+ * 请求批量删除，弹出确认对话框。
+ */
+function requestBatchDelete() {
+  batchConfirm = { action: 'delete' }
 }
 
-// 批量操作函数
-function toggleSelectAll() {
-  if (isAllSelected) {
-    selectedUserIds = []
-    isAllSelected = false
-  } else {
-    selectedUserIds = filteredUsers.map(user => user.id)
-    isAllSelected = true
-  }
-}
-
-function toggleSelectUser(userId: number) {
-  if (selectedUserIds.includes(userId)) {
-    selectedUserIds = selectedUserIds.filter(id => id !== userId)
-  } else {
-    selectedUserIds = [...selectedUserIds, userId]
-  }
-  isAllSelected = selectedUserIds.length === filteredUsers.length
-}
-
-async function batchDeleteUsers() {
-  if (selectedUserIds.length === 0) {
-    toast.error('请选择要删除的用户')
-    return
-  }
-
-  if (!confirm(`确定要删除选中的 ${selectedUserIds.length} 个用户吗？此操作不可恢复。`)) {
-    return
-  }
+/**
+ * 执行确认后的批量操作，按动作类型分发到状态切换或删除。
+ */
+async function executeBatch() {
+  if (!batchConfirm || isBatchExecuting) return
+  isBatchExecuting = true
 
   let successCount = 0
-  let failCount = 0
-
-  for (const userId of selectedUserIds) {
-    try {
-      const response = await UserAPI.deleteUser(userId)
-      if (response.code === 200) {
-        successCount++
-      } else {
-        failCount++
+  if (batchConfirm.action === 'delete') {
+    for (const userId of selectedIds) {
+      try {
+        const response = await UserAPI.deleteUser(userId)
+        if (response.code === 200) successCount++
+      } catch (error) {
+        console.error('批量删除失败:', error)
       }
-    } catch (error) {
-      failCount++
     }
-  }
-
-  if (successCount > 0) {
-    toast.success(`成功删除 ${successCount} 个用户`)
-  }
-  if (failCount > 0) {
-    toast.error(`删除失败 ${failCount} 个用户`)
-  }
-
-  selectedUserIds = []
-  isAllSelected = false
-  await loadUsers()
-}
-
-async function batchToggleStatus(status: number) {
-  if (selectedUserIds.length === 0) {
-    toast.error('请选择要操作的用户')
-    return
-  }
-
-  const action = status === 1 ? '启用' : '禁用'
-  if (!confirm(`确定要${action}选中的 ${selectedUserIds.length} 个用户吗？`)) {
-    return
-  }
-
-  let successCount = 0
-  let failCount = 0
-
-  for (const userId of selectedUserIds) {
-    try {
-      const user = users.find(u => u.id === userId)
-      if (user) {
+  } else {
+    const targetStatus = batchConfirm.action === 'enable' ? 1 : 0
+    for (const userId of selectedIds) {
+      const user = users.find(item => item.id === userId)
+      if (!user) continue
+      try {
         const response = await UserAPI.updateUser({
           id: user.id,
           username: user.username,
@@ -347,70 +183,59 @@ async function batchToggleStatus(status: number) {
           nickname: user.nickname || '',
           role: user.role || 'user',
           birthday: user.birthday || '',
-          status: status as UserStatus
+          status: targetStatus
         })
-        if (response.code === 200) {
-          successCount++
-        } else {
-          failCount++
-        }
+        if (response.code === 200) successCount++
+      } catch (error) {
+        console.error('批量切换状态失败:', error)
       }
-    } catch (error) {
-      failCount++
     }
   }
 
-  if (successCount > 0) {
-    toast.success(`成功${action} ${successCount} 个用户`)
-  }
-  if (failCount > 0) {
-    toast.error(`${action}失败 ${failCount} 个用户`)
-  }
-
-  selectedUserIds = []
-  isAllSelected = false
-  await loadUsers()
+  const label =
+    batchConfirm.action === 'delete' ? '删除' : batchConfirm.action === 'enable' ? '启用' : '禁用'
+  toast.success(`成功${label} ${successCount} 个用户`)
+  batchConfirm = null
+  isBatchExecuting = false
+  loadUsers()
 }
 
-// 获取角色信息；variant 受 BadgeVariant 联合类型约束，与 ui 组件契约保持一致。
-function getRoleInfo(role: UserRole): { name: string; variant: BadgeVariant } {
-  switch (role) {
-    case 'superadmin':
-      return { name: '超级管理员', variant: 'destructive' }
-    case 'admin':
-      return { name: '管理员', variant: 'default' }
-    case 'editor':
-      return { name: '编辑者', variant: 'secondary' }
-    default:
-      return { name: '用户', variant: 'outline' }
-  }
+function toggleSelectAll() {
+  selectedIds =
+    selectedIds.length === filteredUsers.length ? [] : filteredUsers.map(user => user.id)
 }
 
-// 过滤用户
-let filteredUsers = $derived(
-  users.filter(
-    user =>
-      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.nickname && user.nickname.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+function toggleSelect(id: number) {
+  selectedIds = selectedIds.includes(id)
+    ? selectedIds.filter(item => item !== id)
+    : [...selectedIds, id]
+}
+
+function handlePageChange(page: number) {
+  currentPage = page
+  loadUsers()
+}
+
+const filteredUsers = $derived(
+  users.filter(user => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return true
+    return (
+      user.username.toLowerCase().includes(query) ||
+      user.email.toLowerCase().includes(query) ||
+      (user.nickname ?? '').toLowerCase().includes(query)
+    )
+  })
 )
 
-// 组件挂载时检查权限和加载数据
-onMount(() => {
-  // 检查用户权限
-  authStore.subscribe(state => {
-    if (state.isAuthenticated && state.user) {
-      userRole = state.user.role || 'user'
-      hasPermission = ['admin', 'superadmin'].includes(userRole)
+const isAllSelected = $derived(
+  filteredUsers.length > 0 && selectedIds.length === filteredUsers.length
+)
 
-      if (hasPermission) {
-        loadUsers()
-      }
-    } else {
-      hasPermission = false
-    }
-  })
+onMount(() => {
+  const currentUser = authStore.getCurrentState().user
+  assignableRoles = getAssignableRoles(currentUser)
+  loadUsers()
 })
 </script>
 
@@ -418,456 +243,113 @@ onMount(() => {
   <title>用户管理 - MyBlog</title>
 </svelte:head>
 
-<!-- 头部导航 -->
-<header class="flex h-16 shrink-0 items-center gap-2 border-b px-6">
-  <Sidebar.Trigger />
-  <Breadcrumb.Root>
-    <Breadcrumb.List>
-      <Breadcrumb.Item>
-        <Breadcrumb.Link href={toAdminPath('/')}>管理后台</Breadcrumb.Link>
-      </Breadcrumb.Item>
-      <Breadcrumb.Separator />
-      <Breadcrumb.Item>
-        <Breadcrumb.Page>用户管理</Breadcrumb.Page>
-      </Breadcrumb.Item>
-    </Breadcrumb.List>
-  </Breadcrumb.Root>
-</header>
+<PageHeader title="用户管理" description="管理系统用户，包括创建、编辑与删除操作" crumb="用户管理">
+  {#snippet actions()}
+    <Button
+      onclick={() => {
+        dialogTarget = null
+        isDialogOpen = true
+      }}
+    >
+      <Plus data-icon="inline-start" />
+      创建用户
+    </Button>
+  {/snippet}
 
-<!-- 主内容区域 -->
-<main class="flex-1 space-y-6 p-6">
-  {#if !hasPermission}
-    <div class="flex h-96 items-center justify-center">
-      <div class="text-center">
-        <Shield class="mx-auto h-16 w-16 text-muted-foreground" />
-        <h2 class="mt-4 text-xl font-semibold">权限不足</h2>
-        <p class="mt-2 text-sm text-muted-foreground">只有管理员和超级管理员才能访问用户管理功能</p>
-        <Button class="mt-4" onclick={() => goto('/')}>返回仪表盘</Button>
+  <Card.Root>
+    <Card.Content class="p-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative min-w-52 flex-1">
+          <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input.Root
+            class="pl-9"
+            placeholder="搜索用户名、邮箱或昵称..."
+            bind:value={searchQuery}
+          />
+        </div>
+        <span class="text-sm text-muted-foreground">共 {total} 个用户</span>
       </div>
-    </div>
-  {:else}
-    <!-- 页面标题和操作 -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-3xl font-bold tracking-tight">用户管理</h1>
-        <p class="text-muted-foreground">管理系统用户，包括创建、编辑和删除操作</p>
-      </div>
+    </Card.Content>
+  </Card.Root>
 
-      <Dialog.Root bind:open={isCreateModalOpen}>
-        <Dialog.Trigger>
-          <Button
-            onclick={() => {
-              resetForm()
-              isCreateModalOpen = true
-            }}
-          >
-            <Plus class="mr-2 h-4 w-4" />
-            创建用户
-          </Button>
-        </Dialog.Trigger>
-        <Dialog.Content class="sm:max-w-md">
-          <Dialog.Header>
-            <Dialog.Title>创建新用户</Dialog.Title>
-            <Dialog.Description>填写以下信息来创建新的系统用户</Dialog.Description>
-          </Dialog.Header>
-
-          <div class="space-y-4">
-            <div class="space-y-2">
-              <Label.Root for="username">用户名 *</Label.Root>
-              <Input.Root
-                id="username"
-                bind:value={userForm.username}
-                placeholder="请输入用户名"
-                disabled={isSubmitting}
-              />
-              {#if formErrors.username}
-                <p class="text-sm text-destructive">{formErrors.username}</p>
-              {/if}
-            </div>
-
-            <div class="space-y-2">
-              <Label.Root for="email">邮箱 *</Label.Root>
-              <Input.Root
-                id="email"
-                type="email"
-                bind:value={userForm.email}
-                placeholder="请输入邮箱地址"
-                disabled={isSubmitting}
-              />
-              {#if formErrors.email}
-                <p class="text-sm text-destructive">{formErrors.email}</p>
-              {/if}
-            </div>
-
-            <div class="space-y-2">
-              <Label.Root for="password">密码 *</Label.Root>
-              <Input.Root
-                id="password"
-                type="password"
-                bind:value={userForm.password}
-                placeholder="请输入密码"
-                disabled={isSubmitting}
-              />
-              {#if formErrors.password}
-                <p class="text-sm text-destructive">{formErrors.password}</p>
-              {/if}
-            </div>
-
-            <div class="space-y-2">
-              <Label.Root for="nickname">昵称</Label.Root>
-              <Input.Root
-                id="nickname"
-                bind:value={userForm.nickname}
-                placeholder="请输入昵称"
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label.Root for="role">角色</Label.Root>
-              <Select.Root type="single" bind:value={userForm.role} disabled={isSubmitting}>
-                <Select.Trigger class="w-full">请选择角色</Select.Trigger>
-                <Select.Content>
-                  <Select.Item value="user">用户</Select.Item>
-                  <Select.Item value="editor">编辑者</Select.Item>
-                  <Select.Item value="admin">管理员</Select.Item>
-                  <Select.Item value="superadmin">超级管理员</Select.Item>
-                </Select.Content>
-              </Select.Root>
-            </div>
-
-            <div class="space-y-2">
-              <Label.Root for="birthday">生日</Label.Root>
-              <Input.Root
-                id="birthday"
-                type="date"
-                bind:value={userForm.birthday}
-                disabled={isSubmitting}
-              />
-            </div>
-          </div>
-
-          <Dialog.Footer>
-            <Button variant="outline" onclick={() => (isCreateModalOpen = false)}>取消</Button>
-            <Button onclick={createUser} disabled={isSubmitting}>
-              {#if isSubmitting}
-                <div
-                  class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-                ></div>
-                创建中...
-              {:else}
-                创建用户
-              {/if}
+  {#if selectedIds.length > 0}
+    <Card.Root>
+      <Card.Content class="p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <span class="text-sm text-muted-foreground">已选择 {selectedIds.length} 个用户</span>
+          <div class="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onclick={() => requestBatchStatus(1)}>
+              批量启用
             </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog.Root>
-    </div>
-
-    <!-- 搜索和筛选 -->
-    <Card.Root>
-      <Card.Content class="p-6">
-        <div class="flex items-center space-x-4">
-          <div class="relative flex-1">
-            <Search
-              class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input.Root
-              placeholder="搜索用户名、邮箱或昵称..."
-              bind:value={searchQuery}
-              class="pl-9"
-            />
-          </div>
-          <div class="text-sm text-muted-foreground">
-            共 {totalUsers} 个用户
+            <Button variant="outline" size="sm" onclick={() => requestBatchStatus(0)}>
+              批量禁用
+            </Button>
+            <Button variant="destructive" size="sm" onclick={requestBatchDelete}>批量删除</Button>
+            <Button variant="ghost" size="sm" onclick={() => (selectedIds = [])}>取消选择</Button>
           </div>
         </div>
       </Card.Content>
     </Card.Root>
-
-    <!-- 批量操作栏 -->
-    {#if selectedUserIds.length > 0}
-      <Card.Root>
-        <Card.Content class="p-4">
-          <div class="flex items-center justify-between">
-            <div class="text-sm text-muted-foreground">
-              已选择 {selectedUserIds.length} 个用户
-            </div>
-            <div class="flex items-center space-x-2">
-              <Button variant="outline" size="sm" onclick={() => batchToggleStatus(1)}>
-                批量启用
-              </Button>
-              <Button variant="outline" size="sm" onclick={() => batchToggleStatus(0)}>
-                批量禁用
-              </Button>
-              <Button variant="destructive" size="sm" onclick={batchDeleteUsers}>批量删除</Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onclick={() => {
-                  selectedUserIds = []
-                  isAllSelected = false
-                }}
-              >
-                取消选择
-              </Button>
-            </div>
-          </div>
-        </Card.Content>
-      </Card.Root>
-    {/if}
-
-    <!-- 用户列表 -->
-    <Card.Root>
-      <Card.Content class="p-0">
-        {#if isLoading}
-          <div class="flex h-48 items-center justify-center">
-            <div
-              class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-            ></div>
-          </div>
-        {:else if filteredUsers.length === 0}
-          <div class="flex h-48 items-center justify-center">
-            <div class="text-center">
-              <UserIcon class="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 class="mt-4 text-lg font-medium">没有找到用户</h3>
-              <p class="text-sm text-muted-foreground">
-                {searchQuery ? '请尝试其他搜索条件' : '开始创建第一个用户'}
-              </p>
-            </div>
-          </div>
-        {:else}
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head class="w-12">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onchange={toggleSelectAll}
-                    class="rounded border-gray-300"
-                  />
-                </Table.Head>
-                <Table.Head>用户</Table.Head>
-                <Table.Head>邮箱</Table.Head>
-                <Table.Head>角色</Table.Head>
-                <Table.Head>状态</Table.Head>
-                <Table.Head>创建时间</Table.Head>
-                <Table.Head class="text-right">操作</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each filteredUsers as user (user.id)}
-                <Table.Row>
-                  <Table.Cell>
-                    <input
-                      type="checkbox"
-                      checked={selectedUserIds.includes(user.id)}
-                      onchange={() => toggleSelectUser(user.id)}
-                      class="rounded border-gray-300"
-                    />
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div class="flex items-center space-x-3">
-                      <Avatar.Root class="h-8 w-8">
-                        <Avatar.Image src={user.avatar} alt={user.nickname || user.username} />
-                        <Avatar.Fallback>
-                          <UserIcon class="h-4 w-4" />
-                        </Avatar.Fallback>
-                      </Avatar.Root>
-                      <div>
-                        <p class="font-medium">{user.nickname || user.username}</p>
-                        <p class="text-sm text-muted-foreground">@{user.username}</p>
-                      </div>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div class="flex items-center space-x-2">
-                      <Mail class="h-4 w-4 text-muted-foreground" />
-                      <span>{user.email}</span>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell>
-                    {@const roleInfo = getRoleInfo(user.role || 'user')}
-                    <Badge variant={roleInfo.variant}>
-                      {roleInfo.name}
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <button
-                      onclick={() => toggleUserStatus(user)}
-                      class="inline-flex cursor-pointer items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors {user.status ===
-                      1
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'}"
-                    >
-                      {user.status === 1 ? '正常' : '禁用'}
-                    </button>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div class="flex items-center space-x-2">
-                      <Calendar class="h-4 w-4 text-muted-foreground" />
-                      <span class="text-sm">
-                        {new Date(user.createdAt).toLocaleDateString('zh-CN')}
-                      </span>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell class="text-right">
-                    <div class="flex items-center justify-end space-x-2">
-                      <Button variant="ghost" size="sm" onclick={() => openEditModal(user)}>
-                        <Edit class="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onclick={() => deleteUser(user.id)}
-                        class="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 class="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        {/if}
-      </Card.Content>
-    </Card.Root>
-
-    <!-- 分页 -->
-    {#if totalPages > 1}
-      <div class="flex items-center justify-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={currentPage <= 1}
-          onclick={() => {
-            currentPage = Math.max(1, currentPage - 1)
-            loadUsers()
-          }}
-        >
-          上一页
-        </Button>
-
-        <span class="text-sm text-muted-foreground">
-          第 {currentPage} 页，共 {totalPages} 页
-        </span>
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={currentPage >= totalPages}
-          onclick={() => {
-            currentPage = Math.min(totalPages, currentPage + 1)
-            loadUsers()
-          }}
-        >
-          下一页
-        </Button>
-      </div>
-    {/if}
-
-    <!-- 编辑用户模态框 -->
-    <Dialog.Root bind:open={isEditModalOpen}>
-      <Dialog.Content class="sm:max-w-md">
-        <Dialog.Header>
-          <Dialog.Title>编辑用户</Dialog.Title>
-          <Dialog.Description>修改用户信息</Dialog.Description>
-        </Dialog.Header>
-
-        <div class="space-y-4">
-          <div class="space-y-2">
-            <Label.Root for="edit-username">用户名 *</Label.Root>
-            <Input.Root
-              id="edit-username"
-              bind:value={userForm.username}
-              placeholder="请输入用户名"
-              disabled={isSubmitting}
-            />
-            {#if formErrors.username}
-              <p class="text-sm text-destructive">{formErrors.username}</p>
-            {/if}
-          </div>
-
-          <div class="space-y-2">
-            <Label.Root for="edit-email">邮箱 *</Label.Root>
-            <Input.Root
-              id="edit-email"
-              type="email"
-              bind:value={userForm.email}
-              placeholder="请输入邮箱地址"
-              disabled={isSubmitting}
-            />
-            {#if formErrors.email}
-              <p class="text-sm text-destructive">{formErrors.email}</p>
-            {/if}
-          </div>
-
-          <div class="space-y-2">
-            <Label.Root for="edit-password"
-              >密码 <span class="text-xs text-muted-foreground">(留空则不修改)</span></Label.Root
-            >
-            <Input.Root
-              id="edit-password"
-              type="password"
-              bind:value={userForm.password}
-              placeholder="留空则不修改密码"
-              disabled={isSubmitting}
-            />
-            {#if formErrors.password}
-              <p class="text-sm text-destructive">{formErrors.password}</p>
-            {/if}
-          </div>
-
-          <div class="space-y-2">
-            <Label.Root for="edit-nickname">昵称</Label.Root>
-            <Input.Root
-              id="edit-nickname"
-              bind:value={userForm.nickname}
-              placeholder="请输入昵称"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div class="space-y-2">
-            <Label.Root for="edit-role">角色</Label.Root>
-            <Select.Root type="single" bind:value={userForm.role} disabled={isSubmitting}>
-              <Select.Trigger class="w-full">请选择角色</Select.Trigger>
-              <Select.Content>
-                <Select.Item value="user">用户</Select.Item>
-                <Select.Item value="editor">编辑者</Select.Item>
-                <Select.Item value="admin">管理员</Select.Item>
-                <Select.Item value="superadmin">超级管理员</Select.Item>
-              </Select.Content>
-            </Select.Root>
-          </div>
-
-          <div class="space-y-2">
-            <Label.Root for="edit-birthday">生日</Label.Root>
-            <Input.Root
-              id="edit-birthday"
-              type="date"
-              bind:value={userForm.birthday}
-              disabled={isSubmitting}
-            />
-          </div>
-        </div>
-
-        <Dialog.Footer>
-          <Button variant="outline" onclick={() => (isEditModalOpen = false)}>取消</Button>
-          <Button onclick={updateUser} disabled={isSubmitting}>
-            {#if isSubmitting}
-              <div
-                class="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-              ></div>
-              更新中...
-            {:else}
-              更新用户
-            {/if}
-          </Button>
-        </Dialog.Footer>
-      </Dialog.Content>
-    </Dialog.Root>
   {/if}
-</main>
+
+  <UserTable
+    users={filteredUsers}
+    {selectedIds}
+    {isAllSelected}
+    {isLoading}
+    onToggleSelectAll={toggleSelectAll}
+    onToggleSelect={toggleSelect}
+    onEdit={user => {
+      dialogTarget = user
+      isDialogOpen = true
+    }}
+    onToggleStatus={handleToggleStatus}
+    onDelete={user => (deleteTarget = user)}
+  />
+
+  <Pagination
+    page={currentPage}
+    {total}
+    pageSize={USER_PAGE_SIZE}
+    onPageChange={handlePageChange}
+  />
+
+  <UserFormDialog
+    {isSubmitting}
+    {assignableRoles}
+    open={isDialogOpen}
+    target={dialogTarget}
+    onOpenChange={open => (isDialogOpen = open)}
+    onConfirm={handleConfirm}
+  />
+
+  <ConfirmDialog
+    title="删除用户"
+    description={deleteTarget ? `确定删除用户「${deleteTarget.username}」吗？此操作不可恢复。` : ''}
+    confirmText="删除"
+    destructive
+    isLoading={isDeleting}
+    open={deleteTarget !== null}
+    onOpenChange={open => {
+      if (!open && !isDeleting) deleteTarget = null
+    }}
+    onConfirm={handleDelete}
+  />
+
+  <ConfirmDialog
+    title={batchConfirm?.action === 'delete' ? '批量删除用户' : '批量切换状态'}
+    description={batchConfirm
+      ? batchConfirm.action === 'delete'
+        ? `确定删除选中的 ${selectedIds.length} 个用户吗？此操作不可恢复。`
+        : `确定${batchConfirm.action === 'enable' ? '启用' : '禁用'}选中的 ${selectedIds.length} 个用户吗？`
+      : ''}
+    confirmText={batchConfirm?.action === 'delete' ? '删除' : '确认'}
+    destructive={batchConfirm?.action === 'delete'}
+    isLoading={isBatchExecuting}
+    open={batchConfirm !== null}
+    onOpenChange={open => {
+      if (!open && !isBatchExecuting) batchConfirm = null
+    }}
+    onConfirm={executeBatch}
+  />
+</PageHeader>

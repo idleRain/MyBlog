@@ -3,8 +3,8 @@ import type { ApiResponse } from '@myblog/shared'
 // 用户角色枚举
 export type UserRole = 'user' | 'editor' | 'admin' | 'superadmin'
 
-// 用户状态枚举，0 表示禁用，1 表示正常。
-export type UserStatus = 0 | 1
+// 用户状态枚举，0 表示禁用，1 表示正常，2 表示锁定。
+export type UserStatus = 0 | 1 | 2
 
 // 用户角色信息
 export interface RoleInfo {

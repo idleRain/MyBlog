@@ -69,7 +69,8 @@ export function getUserStatus(user?: User | null): { status: UserStatus; statusT
 
   const statusMap: Record<UserStatus, string> = {
     0: '禁用',
-    1: '正常'
+    1: '正常',
+    2: '锁定'
   }
 
   return {
