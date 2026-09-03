@@ -11,7 +11,7 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write src",
-    "lint": "prettier --write src && eslint src --fix --ext .js,.ts,.svelte --cache"
+    "lint": "eslint src --ext .js,.ts,.svelte"
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^5.3.0",

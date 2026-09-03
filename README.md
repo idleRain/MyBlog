@@ -138,8 +138,8 @@ pnpm run quality         # 完整质量检查 (格式化 + 检查 + 测试)
 
 ```bash
 # 前端专用
-pnpm run test:web        # 前后台应用类型检查（尚无前端测试，暂以类型检查代替）
-pnpm run check           # 与 test:web 相同，前后台类型检查
+pnpm run typecheck:web  # 前后台应用类型检查（尚无前端测试，暂以类型检查代替）
+pnpm run check          # 与 typecheck:web 相同，前后台类型检查
 cd apps/web && pnpm run check   # 前台 SvelteKit 类型检查
 cd apps/admin && pnpm run check # 后台 SvelteKit 类型检查
 
