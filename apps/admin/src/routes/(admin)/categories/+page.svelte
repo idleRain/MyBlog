@@ -6,11 +6,11 @@ import type {
   UpdateCategoryRequest
 } from '@myblog/api/modules/category/types'
 import CategoryFormDialog from '$lib/components/admin/category/category-form-dialog.svelte'
-import { FolderTree, Plus, MoreHorizontal, Trash2, Pencil } from '@lucide/svelte'
+import { FolderTree, Plus, MoreHorizontal, Trash2, Pencil, Search } from '@lucide/svelte'
+import { Button, Card, Badge, DropdownMenu, Input, ToggleGroup } from '$ui'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { CATEGORY_STATUS_CONFIG } from '$lib/constants/category'
-import { Button, Card, Badge, DropdownMenu } from '$ui'
 import { CategoryAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -24,12 +24,37 @@ let rows = $state<CategoryRow[]>([])
 let flatCategories = $state<Category[]>([])
 let isLoading = $state(true)
 
+// 客户端筛选状态，'' 表示全部，'1' 仅显示，'0' 仅隐藏。
+let searchQuery = $state('')
+let statusFilter = $state('')
+
 // 弹窗与删除确认状态
 let isDialogOpen = $state(false)
 let dialogTarget = $state<Category | null>(null)
 let deleteTarget = $state<Category | null>(null)
 let isDeleting = $state(false)
 let isSubmitting = $state(false)
+
+/**
+ * 按名称/URL 标识与显示状态过滤分类树行，树数据为全量，无需服务端分页。
+ */
+const filteredRows = $derived(
+  rows.filter(row => {
+    const query = searchQuery.trim().toLowerCase()
+    const nameHit = !query || row.category.name.toLowerCase().includes(query)
+    const slugHit = !query || (row.category.slug ?? '').toLowerCase().includes(query)
+    const statusHit = statusFilter === '' || row.category.status === Number(statusFilter)
+    return (nameHit || slugHit) && statusHit
+  })
+)
+
+/**
+ * 重置筛选条件并清空搜索结果。
+ */
+function resetFilters() {
+  searchQuery = ''
+  statusFilter = ''
+}
 
 /**
  * 将分类树扁平化为带缩进深度的行序列。
@@ -139,6 +164,29 @@ onMount(loadCategories)
   {/snippet}
 
   <Card.Root>
+    <Card.Content class="p-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative min-w-52 flex-1">
+          <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input.Root
+            class="pl-9"
+            placeholder="搜索分类名称或 URL 标识..."
+            bind:value={searchQuery}
+          />
+        </div>
+
+        <ToggleGroup.Root type="single" bind:value={statusFilter} variant="outline" size="sm">
+          <ToggleGroup.Item value="">全部状态</ToggleGroup.Item>
+          <ToggleGroup.Item value="1">显示</ToggleGroup.Item>
+          <ToggleGroup.Item value="0">隐藏</ToggleGroup.Item>
+        </ToggleGroup.Root>
+
+        <Button variant="outline" onclick={resetFilters}>重置</Button>
+      </div>
+    </Card.Content>
+  </Card.Root>
+
+  <Card.Root>
     <Card.Content class="p-0">
       {#if isLoading}
         <div class="flex h-48 items-center justify-center">
@@ -146,17 +194,21 @@ onMount(loadCategories)
             class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
           ></span>
         </div>
-      {:else if rows.length === 0}
+      {:else if filteredRows.length === 0}
         <div class="flex h-48 items-center justify-center">
           <div class="text-center">
             <FolderTree class="mx-auto size-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">暂无分类</h3>
-            <p class="text-sm text-muted-foreground">创建第一个分类来组织文章</p>
+            <h3 class="mt-4 text-lg font-medium">
+              {rows.length === 0 ? '暂无分类' : '没有匹配的分类'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {rows.length === 0 ? '创建第一个分类来组织文章' : '调整筛选条件后再试'}
+            </p>
           </div>
         </div>
       {:else}
         <div class="divide-y">
-          {#each rows as row (row.category.id)}
+          {#each filteredRows as row (row.category.id)}
             {@const statusConfig = CATEGORY_STATUS_CONFIG[row.category.status]!}
             <div
               class="flex items-center gap-4 px-6 py-3"

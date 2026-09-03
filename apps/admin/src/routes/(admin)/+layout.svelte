@@ -1,8 +1,12 @@
 <script lang="ts">
 import { checkAuthOnLoad, requireAuth } from '$lib/utils/auth-guard'
+import { resolveAllowedRoles } from '$lib/constants/navigation'
+import type { UserRole } from '@myblog/api/modules/user/types'
 import { AppSidebar } from '$lib/components/admin'
 import { goto } from '$lib/utils/navigation'
+import { authStore } from '$lib/stores/auth'
 import { ModeWatcher } from 'mode-watcher'
+import { page } from '$app/stores'
 import { onMount } from 'svelte'
 import { Sidebar } from '$ui'
 
@@ -14,6 +18,7 @@ let { children }: Props = $props()
 
 let isAuthorized = $state(false)
 let isLoading = $state(true)
+let userRole = $state<UserRole>('user')
 
 onMount(async () => {
   try {
@@ -26,6 +31,7 @@ onMount(async () => {
     }
 
     isAuthorized = authResult.isAuthenticated
+    userRole = authStore.getCurrentState().user?.role ?? 'user'
     isLoading = false
 
     // 如果未认证，要求登录
@@ -36,6 +42,15 @@ onMount(async () => {
     console.error('认证检查失败:', error)
     isLoading = false
     await goto('/login')
+  }
+})
+
+// 路由级角色守卫：当前角色无权限访问路径时回到仪表盘，避免直接命中后端 403。
+$effect(() => {
+  if (!isAuthorized) return
+  const pathname = $page.url.pathname
+  if (!resolveAllowedRoles(pathname).includes(userRole)) {
+    void goto('/')
   }
 })
 </script>
