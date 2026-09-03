@@ -66,7 +66,7 @@ func (h *ArticleHandler) CreateArticle(c *gin.Context) {
 	// 创建文章
 	article, err := h.articleService.CreateArticle(&req, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -157,7 +157,7 @@ func (h *ArticleHandler) UpdateArticle(c *gin.Context) {
 	// 更新文章
 	article, err := h.articleService.UpdateArticle(req.ID, &req.UpdateArticleRequest, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -187,7 +187,7 @@ func (h *ArticleHandler) DeleteArticle(c *gin.Context) {
 	// 删除文章
 	err := h.articleService.DeleteArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -221,7 +221,7 @@ func (h *ArticleHandler) GetArticleList(c *gin.Context) {
 	// 获取文章列表
 	result, err := h.articleService.GetArticleList(&req, userID)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -253,7 +253,7 @@ func (h *ArticleHandler) GetArticlesByAuthor(c *gin.Context) {
 	// 获取文章列表
 	result, err := h.articleService.GetArticlesByAuthor(req.AuthorID, &req.GetArticleListRequest)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -285,7 +285,7 @@ func (h *ArticleHandler) GetArticlesByCategory(c *gin.Context) {
 	// 获取文章列表
 	result, err := h.articleService.GetArticlesByCategory(req.CategoryID, &req.GetArticleListRequest)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -317,7 +317,7 @@ func (h *ArticleHandler) GetArticlesByTag(c *gin.Context) {
 	// 获取文章列表
 	result, err := h.articleService.GetArticlesByTag(req.TagID, &req.GetArticleListRequest)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -349,7 +349,7 @@ func (h *ArticleHandler) SearchArticles(c *gin.Context) {
 	// 搜索文章
 	result, err := h.articleService.SearchArticles(req.Keyword, &req.GetArticleListRequest)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -376,7 +376,7 @@ func (h *ArticleHandler) GetPopularArticles(c *gin.Context) {
 	// 获取热门文章
 	articles, err := h.articleService.GetPopularArticles(req.Limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -403,7 +403,7 @@ func (h *ArticleHandler) GetRecentArticles(c *gin.Context) {
 	// 获取最新文章
 	articles, err := h.articleService.GetRecentArticles(req.Limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -432,7 +432,7 @@ func (h *ArticleHandler) GetRelatedArticles(c *gin.Context) {
 	// 获取相关文章
 	articles, err := h.articleService.GetRelatedArticles(req.ID, req.Limit)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -466,7 +466,7 @@ func (h *ArticleHandler) ViewArticle(c *gin.Context) {
 	// 记录浏览
 	err := h.articleService.ViewArticle(req.ID, userID, visitorID, ipAddress)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -496,7 +496,7 @@ func (h *ArticleHandler) LikeArticle(c *gin.Context) {
 	// 点赞文章
 	err := h.articleService.LikeArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -526,7 +526,7 @@ func (h *ArticleHandler) UnlikeArticle(c *gin.Context) {
 	// 取消点赞文章
 	err := h.articleService.UnlikeArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -556,7 +556,7 @@ func (h *ArticleHandler) BookmarkArticle(c *gin.Context) {
 	// 收藏文章
 	err := h.articleService.BookmarkArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -586,7 +586,7 @@ func (h *ArticleHandler) UnbookmarkArticle(c *gin.Context) {
 	// 取消收藏文章
 	err := h.articleService.UnbookmarkArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -616,7 +616,7 @@ func (h *ArticleHandler) PublishArticle(c *gin.Context) {
 	// 发布文章
 	err := h.articleService.PublishArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -646,7 +646,7 @@ func (h *ArticleHandler) UnpublishArticle(c *gin.Context) {
 	// 取消发布文章
 	err := h.articleService.UnpublishArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -676,7 +676,7 @@ func (h *ArticleHandler) ArchiveArticle(c *gin.Context) {
 	// 归档文章
 	err := h.articleService.ArchiveArticle(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -706,7 +706,7 @@ func (h *ArticleHandler) SetArticlePrivate(c *gin.Context) {
 	// 设置文章为私有
 	err := h.articleService.SetArticlePrivate(req.ID, userID.(uint))
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
