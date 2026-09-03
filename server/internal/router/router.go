@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"MyBlog/internal/config"
+	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
@@ -63,227 +64,85 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 
 	// 注册用户相关路由
 	if deps.UserHandler != nil {
-		userHandler := deps.UserHandler.(UserHandlerInterface)
-		userRoutes := NewUserRoutes(userHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		userRoutes := NewUserRoutes(deps.UserHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		userRoutes.RegisterRoutes(api)
 	}
 
 	// 注册文章相关路由
 	if deps.ArticleHandler != nil {
-		articleHandler := deps.ArticleHandler.(ArticleHandlerInterface)
-		articleRoutes := NewArticleRoutes(articleHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		articleRoutes := NewArticleRoutes(deps.ArticleHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		articleRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册分类相关路由
 	if deps.CategoryHandler != nil {
-		categoryHandler := deps.CategoryHandler.(CategoryHandlerInterface)
-		categoryRoutes := NewCategoryRoutes(categoryHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		categoryRoutes := NewCategoryRoutes(deps.CategoryHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		categoryRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册标签相关路由
 	if deps.TagHandler != nil {
-		tagHandler := deps.TagHandler.(TagHandlerInterface)
-		tagRoutes := NewTagRoutes(tagHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		tagRoutes := NewTagRoutes(deps.TagHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		tagRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册评论相关路由
 	if deps.CommentHandler != nil {
-		commentHandler := deps.CommentHandler.(CommentHandlerInterface)
-		commentRoutes := NewCommentRoutes(commentHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		commentRoutes := NewCommentRoutes(deps.CommentHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		commentRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册媒体相关路由
 	if deps.MediaHandler != nil {
-		mediaHandler := deps.MediaHandler.(MediaHandlerInterface)
-		mediaRoutes := NewMediaRoutes(mediaHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		mediaRoutes := NewMediaRoutes(deps.MediaHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		mediaRoutes.RegisterRoutes(api)
 	}
 
 	// 注册设置相关路由
 	if deps.SettingHandler != nil {
-		settingHandler := deps.SettingHandler.(SettingHandlerInterface)
-		settingRoutes := NewSettingRoutes(settingHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		settingRoutes := NewSettingRoutes(deps.SettingHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		settingRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册友情链接相关路由
 	if deps.FriendlyLinkHandler != nil {
-		linkHandler := deps.FriendlyLinkHandler.(FriendlyLinkHandlerInterface)
-		linkRoutes := NewFriendlyLinkRoutes(linkHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		linkRoutes := NewFriendlyLinkRoutes(deps.FriendlyLinkHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		linkRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册站点统计相关路由
 	if deps.StatsHandler != nil {
-		statsHandler := deps.StatsHandler.(StatsHandlerInterface)
-		statsRoutes := NewStatsRoutes(statsHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		statsRoutes := NewStatsRoutes(deps.StatsHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		statsRoutes.RegisterRoutes(adminAPI)
 	}
 
 	// 注册通知相关路由
 	if deps.NotificationHandler != nil {
-		notificationHandler := deps.NotificationHandler.(NotificationHandlerInterface)
-		notificationRoutes := NewNotificationRoutes(notificationHandler, deps.JWTService)
+		notificationRoutes := NewNotificationRoutes(deps.NotificationHandler, deps.JWTService)
 		notificationRoutes.RegisterRoutes(api)
 	}
 
 	// 注册用户关注相关路由
 	if deps.UserFollowHandler != nil {
-		followHandler := deps.UserFollowHandler.(UserFollowHandlerInterface)
-		followRoutes := NewUserFollowRoutes(followHandler, deps.JWTService)
+		followRoutes := NewUserFollowRoutes(deps.UserFollowHandler, deps.JWTService)
 		followRoutes.RegisterRoutes(api)
 	}
 }
 
-// Dependencies 依赖注入结构
+// Dependencies 依赖注入结构，handler 字段使用 handler 包内的具体接口类型，编译期即可校验注入正确性。
 type Dependencies struct {
-	UserHandler         interface{}               // 用户处理器接口
-	ArticleHandler      interface{}               // 文章处理器接口
-	CategoryHandler     interface{}               // 分类处理器接口
-	TagHandler          interface{}               // 标签处理器接口
-	CommentHandler      interface{}               // 评论处理器接口
-	MediaHandler        interface{}               // 媒体处理器接口
-	SettingHandler      interface{}               // 设置处理器接口
-	FriendlyLinkHandler interface{}               // 友情链接处理器接口
-	StatsHandler        interface{}               // 站点统计处理器接口
-	NotificationHandler interface{}               // 通知处理器接口
-	UserFollowHandler   interface{}               // 用户关注处理器接口
-	JWTService          service.JWTService        // JWT服务
-	UserRepository      repository.UserRepository // 用户仓库
-	RBACService         service.RBACService       // RBAC权限服务
-}
-
-// UserFollowHandlerInterface 用户关注处理器接口
-type UserFollowHandlerInterface interface {
-	Follow(c *gin.Context)        // POST /api/users/follow
-	Unfollow(c *gin.Context)      // POST /api/users/unfollow
-	ListFollowers(c *gin.Context) // POST /api/users/followers
-	ListFollowing(c *gin.Context) // POST /api/users/following
-}
-
-// NotificationHandlerInterface 通知处理器接口
-type NotificationHandlerInterface interface {
-	ListNotifications(c *gin.Context)        // POST /api/notifications/list
-	GetUnreadCount(c *gin.Context)           // POST /api/notifications/unread-count
-	MarkNotificationRead(c *gin.Context)     // POST /api/notifications/read
-	MarkAllNotificationsRead(c *gin.Context) // POST /api/notifications/read-all
-}
-
-// StatsHandlerInterface 站点统计处理器接口
-type StatsHandlerInterface interface {
-	GetOverview(c *gin.Context)          // POST /api/admin/stats/overview
-	GetArticleViewsTrend(c *gin.Context) // POST /api/admin/stats/articles
-}
-
-// FriendlyLinkHandlerInterface 友情链接处理器接口
-type FriendlyLinkHandlerInterface interface {
-	CreateLink(c *gin.Context)       // POST /api/admin/friendly-links/create
-	UpdateLink(c *gin.Context)       // POST /api/admin/friendly-links/update
-	DeleteLink(c *gin.Context)       // POST /api/admin/friendly-links/delete
-	ApproveLink(c *gin.Context)      // POST /api/admin/friendly-links/approve
-	HideLink(c *gin.Context)         // POST /api/admin/friendly-links/hide
-	RejectLink(c *gin.Context)       // POST /api/admin/friendly-links/reject
-	ListLinks(c *gin.Context)        // POST /api/admin/friendly-links/list
-	ListVisibleLinks(c *gin.Context) // POST /api/friendly-links/list
-}
-
-// SettingHandlerInterface 设置处理器接口
-type SettingHandlerInterface interface {
-	GetPublicSettings(c *gin.Context) // POST /api/settings/public
-	ListSettings(c *gin.Context)      // POST /api/admin/settings/list
-	UpdateSettings(c *gin.Context)    // POST /api/admin/settings/update
-}
-
-// MediaHandlerInterface 媒体处理器接口
-type MediaHandlerInterface interface {
-	UploadFile(c *gin.Context)  // POST /api/media/upload - multipart
-	GetMedia(c *gin.Context)    // POST /api/media/get
-	ListMedia(c *gin.Context)   // POST /api/media/list
-	DeleteMedia(c *gin.Context) // POST /api/media/delete
-}
-
-// CommentHandlerInterface 评论处理器接口
-type CommentHandlerInterface interface {
-	CreateComment(c *gin.Context)        // POST /api/comments/create
-	GetCommentsByArticle(c *gin.Context) // POST /api/comments/list
-	LikeComment(c *gin.Context)          // POST /api/comments/like
-	UnlikeComment(c *gin.Context)        // POST /api/comments/unlike
-	ApproveComment(c *gin.Context)       // POST /api/admin/comments/approve
-	RejectComment(c *gin.Context)        // POST /api/admin/comments/reject
-	MarkCommentSpam(c *gin.Context)      // POST /api/admin/comments/spam
-	TrashComment(c *gin.Context)         // POST /api/admin/comments/trash
-	DeleteComment(c *gin.Context)        // POST /api/admin/comments/delete
-	ListComments(c *gin.Context)         // POST /api/admin/comments/list
-}
-
-// TagHandlerInterface 标签处理器接口
-type TagHandlerInterface interface {
-	CreateTag(c *gin.Context)      // POST /api/admin/tags/create
-	UpdateTag(c *gin.Context)      // POST /api/admin/tags/update
-	DeleteTag(c *gin.Context)      // POST /api/admin/tags/delete
-	GetTag(c *gin.Context)         // POST /api/tags/get
-	ListTags(c *gin.Context)       // POST /api/admin/tags/list
-	GetPopularTags(c *gin.Context) // POST /api/tags/popular
-	ListAllTags(c *gin.Context)    // POST /api/tags/list
-}
-
-// CategoryHandlerInterface 分类处理器接口
-type CategoryHandlerInterface interface {
-	CreateCategory(c *gin.Context)  // POST /api/admin/categories/create
-	UpdateCategory(c *gin.Context)  // POST /api/admin/categories/update
-	DeleteCategory(c *gin.Context)  // POST /api/admin/categories/delete
-	GetCategory(c *gin.Context)     // POST /api/categories/get
-	ListCategories(c *gin.Context)  // POST /api/admin/categories/list
-	GetCategoryTree(c *gin.Context) // POST /api/categories/tree
-}
-
-// UserHandlerInterface 用户处理器接口
-type UserHandlerInterface interface {
-	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
-	UpdateUser(c *gin.Context)   // POST /api/users/update - JSON格式
-	GetUserByID(c *gin.Context)  // POST /api/users/get - JSON格式
-	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式，用于复杂参数查询
-	DeleteUser(c *gin.Context)   // POST /api/users/delete - JSON格式
-	Login(c *gin.Context)        // POST /api/users/login - JSON格式
-	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式
-	Logout(c *gin.Context)       // POST /api/auth/logout - Header中的Token
-}
-
-// ArticleHandlerInterface 文章处理器接口
-type ArticleHandlerInterface interface {
-	// 基础CRUD操作
-	CreateArticle(c *gin.Context)
-	GetArticle(c *gin.Context)
-	GetArticleBySlug(c *gin.Context)
-	UpdateArticle(c *gin.Context)
-	DeleteArticle(c *gin.Context)
-
-	// 查询操作
-	GetArticleList(c *gin.Context)
-	GetArticlesByAuthor(c *gin.Context)
-	GetArticlesByCategory(c *gin.Context)
-	GetArticlesByTag(c *gin.Context)
-	SearchArticles(c *gin.Context)
-
-	// 统计和推荐
-	GetPopularArticles(c *gin.Context)
-	GetRecentArticles(c *gin.Context)
-	GetRelatedArticles(c *gin.Context)
-
-	// 互动操作
-	ViewArticle(c *gin.Context)
-	LikeArticle(c *gin.Context)
-	UnlikeArticle(c *gin.Context)
-	BookmarkArticle(c *gin.Context)
-	UnbookmarkArticle(c *gin.Context)
-
-	// 状态管理
-	PublishArticle(c *gin.Context)
-	UnpublishArticle(c *gin.Context)
-	ArchiveArticle(c *gin.Context)
-	SetArticlePrivate(c *gin.Context)
+	UserHandler         handler.UserHandlerInterface         // 用户处理器接口
+	ArticleHandler      handler.ArticleHandlerInterface      // 文章处理器接口
+	CategoryHandler     handler.CategoryHandlerInterface     // 分类处理器接口
+	TagHandler          handler.TagHandlerInterface          // 标签处理器接口
+	CommentHandler      handler.CommentHandlerInterface      // 评论处理器接口
+	MediaHandler        handler.MediaHandlerInterface        // 媒体处理器接口
+	SettingHandler      handler.SettingHandlerInterface      // 设置处理器接口
+	FriendlyLinkHandler handler.FriendlyLinkHandlerInterface // 友情链接处理器接口
+	StatsHandler        handler.StatsHandlerInterface        // 站点统计处理器接口
+	NotificationHandler handler.NotificationHandlerInterface // 通知处理器接口
+	UserFollowHandler   handler.UserFollowHandlerInterface   // 用户关注处理器接口
+	JWTService          service.JWTService                   // JWT服务
+	UserRepository      repository.UserRepository            // 用户仓库
+	RBACService         service.RBACService                  // RBAC权限服务
 }

@@ -20,13 +20,25 @@ func handleUserQueryError(c *gin.Context, err error) {
 	response.InternalError(c, err.Error())
 }
 
+// UserHandlerInterface 用户处理器接口，由 router 层消费并注入。
+type UserHandlerInterface interface {
+	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
+	UpdateUser(c *gin.Context)   // POST /api/users/update - JSON格式
+	GetUserByID(c *gin.Context)  // POST /api/users/get - JSON格式
+	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式，用于复杂参数查询
+	DeleteUser(c *gin.Context)   // POST /api/users/delete - JSON格式
+	Login(c *gin.Context)        // POST /api/users/login - JSON格式
+	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式
+	Logout(c *gin.Context)       // POST /api/auth/logout - Header中的Token
+}
+
 // UserHandler 用户处理器
 type UserHandler struct {
 	userService service.UserService
 }
 
 // NewUserHandler 创建用户处理器实例
-func NewUserHandler(userService service.UserService) *UserHandler {
+func NewUserHandler(userService service.UserService) UserHandlerInterface {
 	return &UserHandler{
 		userService: userService,
 	}
