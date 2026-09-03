@@ -56,7 +56,7 @@ MyBlog/
 ├─────────────────┤
 │Repository Layer │  internal/repository/
 │  (数据访问)      │  - 数据库操作
-│                 │  - 模型定义
+│                 │  （实体定义见 internal/model/）
 ├─────────────────┤
 │  Database Layer │  MySQL + GORM
 │                 │
@@ -91,12 +91,13 @@ MyBlog/
 
 #### 依赖注入
 
-项目使用构造函数注入模式：
+项目使用构造函数注入模式，**组合根唯一**：依赖对象只能在 `cmd/myblog/main.go` 中构造并逐层注入，禁止在 service / router / middleware 内部私自 `New` 依赖服务（历史违例见 [`architecture-rules.md`](./architecture-rules.md) 债务 D4，只减不增）：
 
 ```go
-// 在 main.go 中
+// 在 main.go 中（组合根）
 userRepo := repository.NewUserRepository(db)
-userSvc := service.NewUserService(userRepo)
+jwtService := service.NewJWTService(cfg)
+userSvc := service.NewUserService(userRepo, jwtService)
 userHandler := handler.NewUserHandler(userSvc)
 ```
 
@@ -119,7 +120,7 @@ userHandler := handler.NewUserHandler(userSvc)
 | --- | --- | --- |
 | `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量，不依赖 SvelteKit/Svelte | clsx、tailwind-merge、mitt |
 | `@myblog/http` | `createHttpClient` 工厂（ky 封装，认证回调注入，401 刷新钩子） | ky、@myblog/shared |
-| `@myblog/api` | 后端接口模块与响应类型（`createUserAPI` 工厂，未来扩展 article/comment 等） | @myblog/http、@myblog/shared |
+| `@myblog/api` | 后端接口模块与响应类型（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification 共 10 个模块工厂） | @myblog/http、@myblog/shared |
 | `@myblog/ui` | shadcn-svelte 基础组件，保持 stock，主题经各应用 `app.css` token 注入 | bits-ui、vaul-svelte 等 |
 
 依赖方向单向无环：应用 → `ui` → `shared`；应用 → `http` → `shared`；应用 → `api` → `http` + `shared`。
@@ -309,6 +310,8 @@ git commit -m "chore: 清理无用文件"
 
 ## 代码规范
 
+> 本节仅覆盖风格约定。**架构层面的硬性规则（依赖方向、类型唯一真相源、契约先行、单一权威、禁止复制、数据加载）见 [`architecture-rules.md`](./architecture-rules.md) 与根目录 `AGENTS.md` 第 0 节，违反必须返工。**
+
 ### Go 代码规范
 
 #### 1. 包命名
@@ -343,7 +346,7 @@ type userService struct {
 
 func NewUserService(userRepo UserRepository) UserService {
   return &userService{
-    serRepo: userRepo,
+    userRepo: userRepo,
   }
 }
 ```
@@ -351,34 +354,49 @@ func NewUserService(userRepo UserRepository) UserService {
 #### 3. 错误处理
 
 ```go
-// 统一错误响应
-func (h *UserHandler) CreateUser(c *gin.Context) {
-  var req CreateUserRequest
+// 统一错误响应 + 错误分档：哨兵错误按语义映射状态码，禁止一律 500
+func (h *UserHandler) GetUserByID(c *gin.Context) {
+  var req GetUserRequest
 
   if err := c.ShouldBindJSON(&req); err != nil {
     response.BadRequest(c, "请求参数错误: "+err.Error())
     return
   }
 
-  user, err := h.userService.CreateUser(&req)
+  user, err := h.userService.GetUserByID(req.ID)
   if err != nil {
-    response.InternalError(c, err.Error())
+    switch {
+    case errors.Is(err, repository.ErrUserNotFound):
+      response.NotFound(c, "用户不存在")
+    default:
+      response.InternalError(c, "查询失败")
+    }
     return
   }
 
-  response.SuccessWithMessage(c, "用户创建成功", user)
+  response.Success(c, user)
 }
 ```
 
-#### 4. 结构体标签
+#### 4. 结构体标签（实体与请求 DTO 必须分离）
+
+实体只携带 `json` + `gorm` tag；`binding`（HTTP 校验）只出现在请求 DTO 上。**禁止把三类 tag 写进同一个结构体**——那会让存储结构、API 契约与请求校验互相锁死（历史教训见 [`architecture-rules.md`](./architecture-rules.md) 第 9 节）：
 
 ```go
+// 实体（internal/model）：持久化与对外输出，禁止 binding tag
 type User struct {
   ID        uint      `json:"id" gorm:"primaryKey"`
-  Username  string    `json:"username" gorm:"unique;not null" binding:"required,min=3,max=20"`
-  Email     string    `json:"email" gorm:"unique;not null" binding:"required,email"`
+  Username  string    `json:"username" gorm:"uniqueIndex;not null;size:50"`
+  Email     string    `json:"email" gorm:"uniqueIndex;not null;size:100"`
   CreatedAt time.Time `json:"createdAt"`
   UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// 请求 DTO（service 层）：承载校验，禁止 gorm tag
+type CreateUserRequest struct {
+  Username string `json:"username" binding:"required,min=3,max=20"`
+  Email    string `json:"email" binding:"required,email"`
+  Password string `json:"password" binding:"required,min=6,max=100"`
 }
 ```
 
@@ -486,8 +504,9 @@ pnpm run build:web     # 构建前端静态文件
 ### 1. 代码组织
 
 - **单一职责原则**: 每个函数、类只做一件事
-- **依赖注入**: 通过构造函数注入依赖，便于测试
+- **依赖注入**: 通过构造函数注入依赖，便于测试；依赖只在组合根（main.go）构造
 - **接口抽象**: 定义明确的接口，降低耦合
+- **架构铁律**: 依赖方向、类型唯一真相源等结构性约束见 [`architecture-rules.md`](./architecture-rules.md)
 
 ### 2. 错误处理
 
@@ -511,9 +530,9 @@ pnpm run build:web     # 构建前端静态文件
 ### 5. 可维护性
 
 - **代码注释**: 为复杂逻辑添加注释
-- **文档更新**: 保持文档与代码同步
+- **文档更新**: 保持文档与代码同步（架构规则变更须同步 `docs/architecture-rules.md` 债务登记表）
 - **版本控制**: 使用语义化版本号
-- **自动化测试**: 保持良好的测试覆盖率
+- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`
 
 ## 更多资源
 
