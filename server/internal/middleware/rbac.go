@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
@@ -220,7 +221,7 @@ func CanManageUserRole(jwtService service.JWTService, userRepo repository.UserRe
 }
 
 // validateUserFromToken 从JWT令牌验证用户身份
-func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRepo repository.UserRepository) (*repository.User, error) {
+func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRepo repository.UserRepository) (*domain.User, error) {
 	token := c.GetHeader("Authorization")
 
 	if token == "" {
@@ -266,7 +267,7 @@ func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRe
 }
 
 // setUserContext 设置用户上下文信息
-func setUserContext(c *gin.Context, user *repository.User) {
+func setUserContext(c *gin.Context, user *domain.User) {
 	c.Set("userID", user.ID)
 	c.Set("userRole", user.Role)
 	c.Set("username", user.Username)
@@ -276,9 +277,9 @@ func setUserContext(c *gin.Context, user *repository.User) {
 }
 
 // GetCurrentUser 从上下文获取当前用户信息
-func GetCurrentUser(c *gin.Context) (*repository.User, bool) {
+func GetCurrentUser(c *gin.Context) (*domain.User, bool) {
 	if user, exists := c.Get("user"); exists {
-		if u, ok := user.(*repository.User); ok {
+		if u, ok := user.(*domain.User); ok {
 			return u, true
 		}
 	}
