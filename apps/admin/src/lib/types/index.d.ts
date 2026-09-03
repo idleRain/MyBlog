@@ -9,9 +9,6 @@ export * from './auth'
 // 管理后台类型
 export * from './admin'
 
-// 组件类型
-export * from './components'
-
 // API相关类型
 export * from './api'
 export * from '@myblog/api/modules/user/types'
@@ -44,21 +41,6 @@ export type {
   NotificationMessage,
   FormState
 } from './common'
-
-export type {
-  BaseComponentProps,
-  ComponentWithChildren,
-  UserAvatarProps,
-  UserRoleBadgeProps,
-  UserStatusBadgeProps,
-  PermissionGuardProps,
-  DataTableProps,
-  DynamicFormProps,
-  NotificationProps,
-  LoadingProps,
-  EmptyStateProps,
-  StatsCardProps
-} from './components'
 
 export type {
   BaseApiResponse,
