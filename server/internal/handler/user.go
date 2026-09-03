@@ -4,6 +4,7 @@ package handler
 import (
 	"errors"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
@@ -168,7 +169,7 @@ func (h *UserHandler) GetUserList(c *gin.Context) {
 
 	// 构建响应数据
 	data := gin.H{
-		"users":    repository.ToResponseList(users),
+		"users":    domain.ToResponseList(users),
 		"total":    total,
 		"page":     req.Page,
 		"pageSize": req.PageSize,

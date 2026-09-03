@@ -1,10 +1,10 @@
-package repository
+package domain
 
 import (
 	"MyBlog/pkg/datetime"
 )
 
-// UserResponse 用户响应结构体 - 专门用于API响应
+// UserResponse 用户响应结构体，供登录与用户列表等接口输出，避免直接序列化完整实体。
 type UserResponse struct {
 	ID        uint              `json:"id"`
 	Username  string            `json:"username"`
@@ -18,7 +18,7 @@ type UserResponse struct {
 	UpdatedAt datetime.JSONDate `json:"updatedAt"`
 }
 
-// ToResponse 将 User 模型转换为响应格式
+// ToResponse 将用户实体转换为对外响应结构。
 func (u *User) ToResponse() *UserResponse {
 	return &UserResponse{
 		ID:        u.ID,
@@ -34,7 +34,7 @@ func (u *User) ToResponse() *UserResponse {
 	}
 }
 
-// ToResponseList 将用户列表转换为响应格式
+// ToResponseList 将用户实体列表转换为响应结构列表。
 func ToResponseList(users []*User) []*UserResponse {
 	responses := make([]*UserResponse, len(users))
 	for i, user := range users {

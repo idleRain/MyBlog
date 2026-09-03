@@ -4,8 +4,8 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"time"
 
+	"MyBlog/internal/domain"
 	"MyBlog/pkg/datetime"
 
 	"gorm.io/gorm"
@@ -14,21 +14,8 @@ import (
 // ErrUserNotFound 用户不存在的哨兵错误，供 service 与 handler 层识别业务错误。
 var ErrUserNotFound = errors.New("用户不存在")
 
-// User 用户模型
-type User struct {
-	ID        uint              `json:"id" gorm:"primaryKey"`
-	Username  string            `json:"username" gorm:"uniqueIndex;not null;size:50"`
-	Email     string            `json:"email" gorm:"uniqueIndex;not null;size:100"`
-	Password  string            `json:"-" gorm:"not null;size:255"`
-	Nickname  string            `json:"nickname" gorm:"size:50"`
-	Avatar    string            `json:"avatar" gorm:"size:255"`
-	Birthday  datetime.JSONDate `json:"birthday" gorm:"type:date"`
-	Role      string            `json:"role" gorm:"default:'user';size:20;comment:用户角色 superadmin/admin/editor/user"`
-	Status    int               `json:"status" gorm:"default:1;comment:状态 1-正常 0-禁用"`
-	CreatedAt time.Time         `json:"createdAt" gorm:"type:datetime(3)"`
-	UpdatedAt time.Time         `json:"updatedAt" gorm:"type:datetime(3)"`
-	DeletedAt gorm.DeletedAt    `json:"-" gorm:"index"`
-}
+// User 用户实体，已合并至 domain.User，此处保留类型别名以兼容既有引用与 GORM 持久化。
+type User = domain.User
 
 // CreateUserRequest 创建用户请求
 type CreateUserRequest struct {
