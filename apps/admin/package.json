@@ -26,6 +26,7 @@
     "@myblog/http": "workspace:*",
     "@myblog/shared": "workspace:*",
     "@myblog/ui": "workspace:*",
+    "@toast-ui/editor": "^3.2.2",
     "ky": "catalog:",
     "sveltekit-superforms": "catalog:",
     "zod": "catalog:"
