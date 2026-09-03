@@ -47,7 +47,7 @@ func NewUserHandler(userService service.UserService) UserHandlerInterface {
 
 // CreateUser 创建用户 POST /api/users/create
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var req repository.CreateUserRequest
+	var req domain.CreateUserRequest
 
 	// 绑定和验证请求参数
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -67,7 +67,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 // UpdateUser 更新用户信息 POST /api/users/update
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	var req repository.UpdateUserRequest
+	var req domain.UpdateUserRequest
 
 	// 绑定和验证请求参数
 	if err := c.ShouldBindJSON(&req); err != nil {

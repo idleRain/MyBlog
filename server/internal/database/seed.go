@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"golang.org/x/crypto/bcrypt"
@@ -22,7 +22,7 @@ type AdminSeedOptions struct {
 
 // EnsureSuperAdmin 确保指定账号的超级管理员存在，已存在则将其角色提升为超级管理员
 func EnsureSuperAdmin(db *gorm.DB, opts AdminSeedOptions) error {
-	var existingUser repository.User
+	var existingUser domain.User
 	queryErr := db.Where("username = ?", opts.Username).First(&existingUser).Error
 
 	switch {
@@ -48,7 +48,7 @@ func EnsureSuperAdmin(db *gorm.DB, opts AdminSeedOptions) error {
 		return fmt.Errorf("密码加密失败: %w", err)
 	}
 
-	superAdmin := repository.User{
+	superAdmin := domain.User{
 		Username: opts.Username,
 		Email:    opts.Email,
 		Password: string(hashedPassword),

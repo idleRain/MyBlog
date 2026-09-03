@@ -12,19 +12,12 @@
 
 ### 模型定义
 
+用户实体统一定义于 `internal/domain`（`domain.User`，含 GORM tag 与行为方法），repository 不再声明实体类型：
+
 ```go
-type User struct {
-    ID        uint           `json:"id" gorm:"primaryKey"`
-    Username  string         `json:"username" gorm:"uniqueIndex;not null;size:50"`
-    Email     string         `json:"email" gorm:"uniqueIndex;not null;size:100"`
-    Password  string         `json:"-" gorm:"not null;size:255"`
-    Nickname  string         `json:"nickname" gorm:"size:50"`
-    Avatar    string         `json:"avatar" gorm:"size:255"`
-    Status    int            `json:"status" gorm:"default:1;comment:状态 1-正常 0-禁用"`
-    CreatedAt time.Time      `json:"created_at"`
-    UpdatedAt time.Time      `json:"updated_at"`
-    DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
-}
+import "MyBlog/internal/domain"
+
+user := &domain.User{ /* 字段见 domain.User */ }
 ```
 
 ### 接口方法
@@ -55,7 +48,7 @@ type CreateUserRequest struct {
 userRepo := repository.NewUserRepository(db)
 
 // 创建用户
-user := &repository.User{
+user := &domain.User{
     Username: "john_doe",
     Email:    "john@example.com",
     Password: "hashed_password",

@@ -27,8 +27,8 @@ type LoginResponse struct {
 
 // UserService 用户服务接口
 type UserService interface {
-	CreateUser(req *repository.CreateUserRequest) (*domain.User, error)
-	UpdateUser(req *repository.UpdateUserRequest) (*domain.User, error)
+	CreateUser(req *domain.CreateUserRequest) (*domain.User, error)
+	UpdateUser(req *domain.UpdateUserRequest) (*domain.User, error)
 	GetUserByID(id uint) (*domain.User, error)
 	GetUserList(page, pageSize int) ([]*domain.User, int64, error)
 	DeleteUser(id uint) error
@@ -57,7 +57,7 @@ func NewUserService(userRepo repository.UserRepository, jwtService JWTService, r
 }
 
 // CreateUser 创建用户
-func (s *userService) CreateUser(req *repository.CreateUserRequest) (*domain.User, error) {
+func (s *userService) CreateUser(req *domain.CreateUserRequest) (*domain.User, error) {
 	// 检查用户名是否已存在
 	if existUser, _ := s.userRepo.GetByUsername(req.Username); existUser != nil {
 		return nil, fmt.Errorf("用户名已存在")
@@ -114,7 +114,7 @@ func (s *userService) CreateUser(req *repository.CreateUserRequest) (*domain.Use
 }
 
 // UpdateUser 更新用户信息
-func (s *userService) UpdateUser(req *repository.UpdateUserRequest) (*domain.User, error) {
+func (s *userService) UpdateUser(req *domain.UpdateUserRequest) (*domain.User, error) {
 	// 获取现有用户信息
 	existingUser, err := s.userRepo.GetByID(req.ID)
 	if err != nil {

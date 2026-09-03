@@ -39,7 +39,7 @@ func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc
 **Context 注入**：
 - `userID` (uint): 用户ID
 - `username` (string): 用户名
-- `user` (*repository.User): 完整用户对象
+- `user` (*domain.User): 完整用户对象
 
 **使用示例**：
 ```go

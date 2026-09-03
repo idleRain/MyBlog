@@ -15,9 +15,9 @@
 
 ```go
 type UserService interface {
-    CreateUser(req *repository.CreateUserRequest) (*repository.User, error)
-    GetUserByID(id uint) (*repository.User, error)
-    GetUserList(page, pageSize int) ([]*repository.User, int64, error)
+    CreateUser(req *domain.CreateUserRequest) (*domain.User, error)
+    GetUserByID(id uint) (*domain.User, error)
+    GetUserList(page, pageSize int) ([]*domain.User, int64, error)
     DeleteUser(id uint) error
 }
 ```
