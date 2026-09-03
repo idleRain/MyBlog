@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -93,8 +94,11 @@ type JWTService interface {
 // jwtService JWT服务实现
 type jwtService struct {
 	config *config.Config
+	// revokedTokens 记录已撤销令牌及其撤销时间，仅支持单实例部署场景。
 	// TODO: 实现 token 撤销的持久化存储，可使用 MySQL 数据库。
-	revokedTokens map[string]time.Time // 简单的内存存储，生产环境应使用数据库持久化实现。
+	revokedTokens map[string]time.Time
+	// mu 保护 revokedTokens 的并发读写，避免多请求同时撤销与校验时产生数据竞争。
+	mu sync.RWMutex
 }
 
 // NewJWTService 创建JWT服务实例
@@ -263,6 +267,9 @@ func (j *jwtService) RefreshAccessToken(refreshTokenString string) (*TokenPair, 
 
 // RevokeToken 撤销令牌
 func (j *jwtService) RevokeToken(tokenString string) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
 	// 简单的内存存储实现，生产环境应使用数据库等持久化存储。
 	j.revokedTokens[tokenString] = time.Now()
 
@@ -273,18 +280,9 @@ func (j *jwtService) RevokeToken(tokenString string) error {
 
 // IsTokenRevoked 检查令牌是否已被撤销
 func (j *jwtService) IsTokenRevoked(tokenString string) bool {
+	j.mu.RLock()
+	defer j.mu.RUnlock()
+
 	_, revoked := j.revokedTokens[tokenString]
 	return revoked
-}
-
-// 向后兼容的函数，保持现有代码正常工作
-
-// ValidateToken 验证JWT令牌（向后兼容）
-// Deprecated: 使用 ValidateAccessToken 替代
-func ValidateToken(tokenString string) (*JWTClaims, error) {
-	// 为了向后兼容，这里需要创建一个临时的服务实例
-	// 在实际使用中，应该使用依赖注入传递JWTService实例
-	cfg := config.Get()
-	service := NewJWTService(cfg)
-	return service.ValidateAccessToken(tokenString)
 }
