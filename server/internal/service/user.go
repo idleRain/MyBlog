@@ -46,12 +46,12 @@ type userService struct {
 	rbacService RBACService
 }
 
-// NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, jwtService JWTService) UserService {
+// NewUserService 创建用户服务实例，依赖由组合根注入，禁止内部私自实例化。
+func NewUserService(userRepo repository.UserRepository, jwtService JWTService, rbacService RBACService) UserService {
 	return &userService{
 		userRepo:    userRepo,
 		jwtService:  jwtService,
-		rbacService: NewRBACService(),
+		rbacService: rbacService,
 	}
 }
 

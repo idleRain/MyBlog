@@ -60,7 +60,7 @@ func main() {
 	followRepo := repository.NewUserFollowRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
-	userSvc := service.NewUserService(userRepo, jwtService)
+	userSvc := service.NewUserService(userRepo, jwtService, rbacService)
 	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService)
 	categorySvc := service.NewCategoryService(categoryRepo)
 	tagSvc := service.NewTagService(tagRepo)

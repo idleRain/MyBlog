@@ -182,10 +182,15 @@ func (s *rbacService) IsRoleHigherThan(roleA, roleB string) bool {
 	return levelA > levelB
 }
 
-// IsValidRole 检查是否为有效角色
-func (s *rbacService) IsValidRole(role string) bool {
+// IsValidRole 判断角色是否属于系统定义的角色集合，供无状态场景直接调用。
+func IsValidRole(role string) bool {
 	_, exists := RoleHierarchy[Role(role)]
 	return exists
+}
+
+// IsValidRole 检查是否为有效角色
+func (s *rbacService) IsValidRole(role string) bool {
+	return IsValidRole(role)
 }
 
 // CanManageUser 检查是否可以管理指定角色的用户

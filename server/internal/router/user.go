@@ -16,13 +16,13 @@ type UserRoutes struct {
 	rbacService service.RBACService
 }
 
-// NewUserRoutes 创建用户路由模块
-func NewUserRoutes(handler UserHandlerInterface, jwtService service.JWTService, userRepo repository.UserRepository) *UserRoutes {
+// NewUserRoutes 创建用户路由模块，RBAC 服务由组合根注入。
+func NewUserRoutes(handler UserHandlerInterface, jwtService service.JWTService, userRepo repository.UserRepository, rbacService service.RBACService) *UserRoutes {
 	return &UserRoutes{
 		handler:     handler,
 		jwtService:  jwtService,
 		userRepo:    userRepo,
-		rbacService: service.NewRBACService(),
+		rbacService: rbacService,
 	}
 }
 

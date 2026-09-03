@@ -255,9 +255,8 @@ func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRe
 		return nil, fmt.Errorf("user disabled")
 	}
 
-	// 验证角色有效性
-	rbacService := service.NewRBACService()
-	if !rbacService.IsValidRole(user.Role) {
+	// 验证角色有效性，角色表为无状态纯函数，无需实例化 RBAC 服务。
+	if !service.IsValidRole(user.Role) {
 		response.Forbidden(c, "用户角色无效")
 		c.Abort()
 		return nil, fmt.Errorf("invalid role")

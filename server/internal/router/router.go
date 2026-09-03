@@ -64,7 +64,7 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	// 注册用户相关路由
 	if deps.UserHandler != nil {
 		userHandler := deps.UserHandler.(UserHandlerInterface)
-		userRoutes := NewUserRoutes(userHandler, deps.JWTService, deps.UserRepository)
+		userRoutes := NewUserRoutes(userHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
 		userRoutes.RegisterRoutes(api)
 	}
 
