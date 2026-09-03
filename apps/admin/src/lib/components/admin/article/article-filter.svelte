@@ -13,6 +13,8 @@ interface Props {
   status?: ArticleStatus | ''
   sortBy?: string
   order?: 'asc' | 'desc'
+  // 编辑者被服务端强制只显示已发布文章，状态筛选无意义时禁用。
+  statusDisabled?: boolean
   onSearch: () => void
   onReset: () => void
 }
@@ -22,6 +24,7 @@ let {
   status = $bindable<ArticleStatus | ''>(''),
   sortBy = $bindable(''),
   order = $bindable<'asc' | 'desc'>('desc'),
+  statusDisabled = false,
   onSearch,
   onReset
 }: Props = $props()
@@ -44,7 +47,7 @@ let {
       </div>
 
       <!-- 状态筛选 -->
-      <Select.Root type="single" bind:value={status}>
+      <Select.Root type="single" bind:value={status} disabled={statusDisabled}>
         <Select.Trigger class="w-32">
           {status === ''
             ? '全部状态'
@@ -59,6 +62,11 @@ let {
           </Select.Group>
         </Select.Content>
       </Select.Root>
+      {#if statusDisabled}
+        <p class="w-full text-xs text-muted-foreground">
+          当前角色仅可查看已发布文章，状态筛选已禁用。
+        </p>
+      {/if}
 
       <!-- 排序字段 -->
       <Select.Root type="single" bind:value={sortBy}>

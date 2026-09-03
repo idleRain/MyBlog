@@ -8,16 +8,8 @@ import type {
   UpdateArticleRequest
 } from './types.ts'
 
-// 文章状态流转接口路径后缀，管理端与编辑者端点分别挂载。
-const ADMIN_ARTICLE_ACTION_PATHS = {
-  publish: 'admin/articles/publish',
-  unpublish: 'admin/articles/unpublish',
-  archive: 'admin/articles/archive',
-  private: 'admin/articles/private'
-} as const
-
-// 编辑者状态流转端点路径，调用方需具备文章创建或发布权限。
-const EDITOR_ARTICLE_ACTION_PATHS = {
+// 文章状态流转接口路径后缀，全部挂在 /api/articles 下，由后端按角色授权。
+const ARTICLE_ACTION_PATHS = {
   publish: 'articles/publish',
   unpublish: 'articles/unpublish',
   archive: 'articles/archive',
@@ -26,7 +18,7 @@ const EDITOR_ARTICLE_ACTION_PATHS = {
 
 /**
  * 创建文章接口模块，依赖注入的 http 客户端由调用方提供。
- * 编辑者端点挂 /api/articles 下，管理端点挂 /api/admin/articles 下。
+ * 接口全部挂 /api/articles 下，作者或管理员均可操作，权限由后端服务层统一判定。
  */
 export function createArticleAPI(request: KyInstance) {
   return {
@@ -40,74 +32,39 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/create', { json: params }).json()
     },
 
-    // 编辑者更新自己的文章。
+    // 更新文章，作者或管理员可更新。
     update(params: UpdateArticleRequest): Promise<ArticleResponse> {
       return request.post('articles/update', { json: params }).json()
     },
 
-    // 编辑者删除自己的文章。
+    // 删除文章，作者或管理员可删除。
     delete(id: number): Promise<ArticleActionResponse> {
       return request.post('articles/delete', { json: { id } }).json()
     },
 
-    // 文章列表，非管理员被服务端强制为已发布状态。
+    // 文章列表，管理员可查看全部状态，其他角色被服务端强制为已发布状态。
     list(params: GetArticleListRequest): Promise<ArticleListResponse> {
       return request.post('articles/list', { json: params }).json()
     },
 
-    // 编辑者发布自己的文章。
+    // 发布文章。
     publish(id: number): Promise<ArticleActionResponse> {
-      return request.post(EDITOR_ARTICLE_ACTION_PATHS.publish, { json: { id } }).json()
+      return request.post(ARTICLE_ACTION_PATHS.publish, { json: { id } }).json()
     },
 
-    // 编辑者取消发布自己的文章。
+    // 取消发布文章。
     unpublish(id: number): Promise<ArticleActionResponse> {
-      return request.post(EDITOR_ARTICLE_ACTION_PATHS.unpublish, { json: { id } }).json()
+      return request.post(ARTICLE_ACTION_PATHS.unpublish, { json: { id } }).json()
     },
 
-    // 编辑者归档自己的文章。
+    // 归档文章。
     archive(id: number): Promise<ArticleActionResponse> {
-      return request.post(EDITOR_ARTICLE_ACTION_PATHS.archive, { json: { id } }).json()
+      return request.post(ARTICLE_ACTION_PATHS.archive, { json: { id } }).json()
     },
 
-    // 编辑者设置自己的文章为私有。
+    // 设置文章为私有。
     private(id: number): Promise<ArticleActionResponse> {
-      return request.post(EDITOR_ARTICLE_ACTION_PATHS.private, { json: { id } }).json()
-    },
-
-    // 管理端：全量文章列表，可含全部状态并按状态筛选。
-    adminList(params: GetArticleListRequest): Promise<ArticleListResponse> {
-      return request.post('admin/articles/list', { json: params }).json()
-    },
-
-    // 管理端：更新任意文章。
-    adminUpdate(params: UpdateArticleRequest): Promise<ArticleResponse> {
-      return request.post('admin/articles/update', { json: params }).json()
-    },
-
-    // 管理端：删除任意文章。
-    adminDelete(id: number): Promise<ArticleActionResponse> {
-      return request.post('admin/articles/delete', { json: { id } }).json()
-    },
-
-    // 管理端：发布文章。
-    adminPublish(id: number): Promise<ArticleActionResponse> {
-      return request.post(ADMIN_ARTICLE_ACTION_PATHS.publish, { json: { id } }).json()
-    },
-
-    // 管理端：取消发布文章。
-    adminUnpublish(id: number): Promise<ArticleActionResponse> {
-      return request.post(ADMIN_ARTICLE_ACTION_PATHS.unpublish, { json: { id } }).json()
-    },
-
-    // 管理端：归档文章。
-    adminArchive(id: number): Promise<ArticleActionResponse> {
-      return request.post(ADMIN_ARTICLE_ACTION_PATHS.archive, { json: { id } }).json()
-    },
-
-    // 管理端：设置文章为私有。
-    adminPrivate(id: number): Promise<ArticleActionResponse> {
-      return request.post(ADMIN_ARTICLE_ACTION_PATHS.private, { json: { id } }).json()
+      return request.post(ARTICLE_ACTION_PATHS.private, { json: { id } }).json()
     }
   }
 }

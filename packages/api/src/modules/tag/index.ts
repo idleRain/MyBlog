@@ -24,6 +24,11 @@ export function createTagAPI(request: KyInstance) {
       return request.post('tags/popular', { json: { limit } }).json()
     },
 
+    // 获取全部标签，需登录且具备文章读取权限，供文章编辑选择使用。
+    listAll(): Promise<PopularTagsResponse> {
+      return request.post('tags/list', { json: {} }).json()
+    },
+
     // 管理端：分页查询标签列表
     adminList(params: ListTagsRequest): Promise<TagListResponse> {
       return request.post('admin/tags/list', { json: params }).json()

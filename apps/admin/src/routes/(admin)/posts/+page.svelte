@@ -1,7 +1,11 @@
 <script lang="ts">
+import type {
+  Article,
+  ArticleActionResponse,
+  ArticleStatus
+} from '@myblog/api/modules/article/types'
 import { ARTICLE_PAGE_SIZE, type ArticleStatusAction } from '$lib/constants/article'
 import ArticleFilter from '$lib/components/admin/article/article-filter.svelte'
-import type { Article, ArticleStatus } from '@myblog/api/modules/article/types'
 import ArticleTable from '$lib/components/admin/article/article-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import Pagination from '$lib/components/admin/pagination.svelte'
@@ -24,35 +28,28 @@ let sortBy = $state<
 >('created_at')
 let order = $state<'asc' | 'desc'>('desc')
 
-// 当前用户角色，决定调用管理端或编辑者端点。
+// 当前用户是否管理员，仅用于控制编辑者的状态筛选提示。
 let isAdmin = $state(false)
 
-/**
- * 依据当前用户角色选择文章列表接口，管理员可查看全部状态。
- */
-function resolveListAPI() {
-  return isAdmin ? ArticleAPI.adminList : ArticleAPI.list
-}
-
-/**
- * 按角色解析状态操作接口映射，管理端与编辑者端点一一对应。
- */
-function resolveStatusActions() {
-  return {
-    publish: isAdmin ? ArticleAPI.adminPublish : ArticleAPI.publish,
-    unpublish: isAdmin ? ArticleAPI.adminUnpublish : ArticleAPI.unpublish,
-    archive: isAdmin ? ArticleAPI.adminArchive : ArticleAPI.archive,
-    private: isAdmin ? ArticleAPI.adminPrivate : ArticleAPI.private
-  }
+// 文章状态操作到接口方法的映射，统一走 /api/articles 端点，权限由后端判定。
+const STATUS_ACTION_METHODS: Record<
+  ArticleStatusAction,
+  (id: number) => Promise<ArticleActionResponse>
+> = {
+  publish: ArticleAPI.publish,
+  unpublish: ArticleAPI.unpublish,
+  archive: ArticleAPI.archive,
+  private: ArticleAPI.private
 }
 
 /**
  * 加载文章列表，携带筛选、排序与分页参数。
+ * 管理员可查看全部状态，其他角色由服务端强制只返回已发布文章。
  */
 async function loadArticles() {
   isLoading = true
   try {
-    const response = await resolveListAPI()({
+    const response = await ArticleAPI.list({
       page: currentPage,
       pageSize: ARTICLE_PAGE_SIZE,
       status,
@@ -99,7 +96,7 @@ function handleReset() {
  */
 async function handleStatusAction(article: Article, action: ArticleStatusAction) {
   try {
-    const response = await resolveStatusActions()[action](article.id)
+    const response = await STATUS_ACTION_METHODS[action](article.id)
     if (response.code === 200) {
       toast.success(response.data?.message || '操作成功')
       loadArticles()
@@ -117,9 +114,7 @@ async function handleStatusAction(article: Article, action: ArticleStatusAction)
  */
 async function handleDelete(article: Article) {
   try {
-    const response = isAdmin
-      ? await ArticleAPI.adminDelete(article.id)
-      : await ArticleAPI.delete(article.id)
+    const response = await ArticleAPI.delete(article.id)
     if (response.code === 200) {
       toast.success('文章删除成功')
       loadArticles()
@@ -161,6 +156,7 @@ onMount(() => {
     bind:status
     bind:sortBy
     bind:order
+    statusDisabled={!isAdmin}
     onSearch={handleSearch}
     onReset={handleReset}
   />

@@ -31,12 +31,13 @@ function flattenTree(nodes: CategoryTreeNode[], depth = 0): Category[] {
 }
 
 /**
- * 并行加载分类树与标签列表，任一失败时按空数组处理。
+ * 并行加载分类树与全部标签，标签列表统一走 /api/tags/list，
+ * 能否读取与可看到哪些标签由后端按登录者权限判定，前端不做角色分派。
  */
 async function loadOptions() {
   const [categoryResult, tagResult] = await Promise.all([
     CategoryAPI.getTree().catch(() => null),
-    TagAPI.adminList({ page: 1, pageSize: 100, search: '' }).catch(() => null)
+    TagAPI.listAll().catch(() => null)
   ])
   categories = categoryResult?.data?.tree ? flattenTree(categoryResult.data.tree) : []
   tags = tagResult?.data?.tags ?? []

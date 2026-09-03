@@ -23,8 +23,9 @@ import { authStore } from '$lib/stores/auth'
 import { Button, Card } from '$ui'
 import { onMount } from 'svelte'
 
-// 当前用户角色与昵称
+// 当前用户角色与昵称，isAdmin 决定是否加载统计区块。
 let userRole = $state<UserRole>('user')
+let isAdmin = $state(false)
 let nickname = $state('')
 
 let overview = $state<StatsOverview | null>(null)
@@ -34,30 +35,38 @@ let trendValues = $state<number[]>([])
 let recentArticles = $state<Article[]>([])
 
 /**
- * 加载仪表盘所需的统计概览、趋势与最新文章数据。
+ * 加载仪表盘数据。
+ * 统计概览与趋势仅管理员可读取，按角色是否具备 system:stats 权限做前端区块裁剪；
+ * 最新文章列表对管理员与编辑者统一走 /api/articles/list，状态可见性由后端按角色判定。
  */
 async function loadDashboard() {
   isLoading = true
   try {
     const currentState = authStore.getCurrentState()
     userRole = currentState.user?.role ?? 'user'
+    isAdmin = userRole === 'admin' || userRole === 'superadmin'
     nickname = currentState.user?.nickname ?? ''
 
-    const [overviewResult, trendResult, articleResult] = await Promise.all([
-      StatsAPI.getOverview().catch(() => null),
-      StatsAPI.getArticleViewsTrend(7).catch(() => null),
-      ArticleAPI.adminList({ page: 1, pageSize: 5 }).catch(() => null)
-    ])
+    if (isAdmin) {
+      const [overviewResult, trendResult] = await Promise.all([
+        StatsAPI.getOverview().catch(() => null),
+        StatsAPI.getArticleViewsTrend(7).catch(() => null)
+      ])
 
-    if (overviewResult?.code === 200 && overviewResult.data) {
-      overview = overviewResult.data
+      if (overviewResult?.code === 200 && overviewResult.data) {
+        overview = overviewResult.data
+      }
+      if (trendResult?.code === 200 && trendResult.data) {
+        trendDates = trendResult.data.dates ?? []
+        trendValues = trendResult.data.values ?? []
+      }
     }
-    if (trendResult?.code === 200 && trendResult.data) {
-      trendDates = trendResult.data.dates ?? []
-      trendValues = trendResult.data.values ?? []
-    }
-    if (articleResult?.code === 200 && articleResult.data) {
-      recentArticles = articleResult.data.articles ?? []
+
+    if (isAdmin || userRole === 'editor') {
+      const articleResult = await ArticleAPI.list({ page: 1, pageSize: 5 }).catch(() => null)
+      if (articleResult?.code === 200 && articleResult.data) {
+        recentArticles = articleResult.data.articles ?? []
+      }
     }
   } catch (error) {
     console.error('加载仪表盘数据失败:', error)
@@ -92,37 +101,41 @@ onMount(loadDashboard)
   crumb="仪表盘"
   description={nickname ? `欢迎回来，${nickname}！` : '欢迎使用 MyBlog 管理后台'}
 >
-  {#if isLoading && !overview}
+  {#if isLoading}
     <div class="flex h-48 items-center justify-center">
       <span class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
       ></span>
     </div>
   {:else}
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard label="文章总数" value={overview?.articleCount ?? 0} icon={FileText} />
-      <StatCard label="已发布文章" value={overview?.publishedCount ?? 0} icon={Send} />
-      <StatCard label="总浏览量" value={overview?.totalViews ?? 0} icon={Eye} />
-      <StatCard label="总点赞" value={overview?.totalLikes ?? 0} icon={Heart} />
-      <StatCard label="评论总数" value={overview?.commentCount ?? 0} icon={MessageSquare} />
-      <StatCard label="用户总数" value={overview?.userCount ?? 0} icon={Users} />
-      <StatCard label="分类数" value={overview?.categoryCount ?? 0} icon={FolderTree} />
-      <StatCard label="标签数" value={overview?.tagCount ?? 0} icon={Tags} />
-    </div>
+    {#if overview}
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="文章总数" value={overview?.articleCount ?? 0} icon={FileText} />
+        <StatCard label="已发布文章" value={overview?.publishedCount ?? 0} icon={Send} />
+        <StatCard label="总浏览量" value={overview?.totalViews ?? 0} icon={Eye} />
+        <StatCard label="总点赞" value={overview?.totalLikes ?? 0} icon={Heart} />
+        <StatCard label="评论总数" value={overview?.commentCount ?? 0} icon={MessageSquare} />
+        <StatCard label="用户总数" value={overview?.userCount ?? 0} icon={Users} />
+        <StatCard label="分类数" value={overview?.categoryCount ?? 0} icon={FolderTree} />
+        <StatCard label="标签数" value={overview?.tagCount ?? 0} icon={Tags} />
+      </div>
+    {/if}
 
     <div class="grid gap-6 lg:grid-cols-3">
-      <div class="lg:col-span-2">
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>近 7 天浏览量趋势</Card.Title>
-            <Card.Description>每日文章访问量统计</Card.Description>
-          </Card.Header>
-          <Card.Content>
-            <ViewsTrendChart dates={trendDates} values={trendValues} />
-          </Card.Content>
-        </Card.Root>
-      </div>
+      {#if overview}
+        <div class="lg:col-span-2">
+          <Card.Root>
+            <Card.Header>
+              <Card.Title>近 7 天浏览量趋势</Card.Title>
+              <Card.Description>每日文章访问量统计</Card.Description>
+            </Card.Header>
+            <Card.Content>
+              <ViewsTrendChart dates={trendDates} values={trendValues} />
+            </Card.Content>
+          </Card.Root>
+        </div>
+      {/if}
 
-      <div class="space-y-6">
+      <div class="space-y-6 {overview ? '' : 'lg:col-span-3'}">
         <Card.Root>
           <Card.Header>
             <Card.Title>快速操作</Card.Title>
@@ -175,27 +188,29 @@ onMount(loadDashboard)
           </Card.Content>
         </Card.Root>
 
-        <Card.Root>
-          <Card.Header>
-            <Card.Title>最新文章</Card.Title>
-          </Card.Header>
-          <Card.Content class="space-y-3">
-            {#each recentArticles as article (article.id)}
-              <button
-                type="button"
-                onclick={() => goto(`/posts/${article.id}`)}
-                class="flex w-full items-center justify-between gap-2 text-left transition-colors hover:text-primary"
-              >
-                <span class="line-clamp-1 text-sm font-medium">{article.title}</span>
-                <span class="shrink-0 text-xs text-muted-foreground">
-                  {new Date(article.createdAt).toLocaleDateString('zh-CN')}
-                </span>
-              </button>
-            {:else}
-              <p class="text-sm text-muted-foreground">暂无文章</p>
-            {/each}
-          </Card.Content>
-        </Card.Root>
+        {#if isAdmin || userRole === 'editor'}
+          <Card.Root>
+            <Card.Header>
+              <Card.Title>最新文章</Card.Title>
+            </Card.Header>
+            <Card.Content class="space-y-3">
+              {#each recentArticles as article (article.id)}
+                <button
+                  type="button"
+                  onclick={() => goto(`/posts/${article.id}`)}
+                  class="flex w-full items-center justify-between gap-2 text-left transition-colors hover:text-primary"
+                >
+                  <span class="line-clamp-1 text-sm font-medium">{article.title}</span>
+                  <span class="shrink-0 text-xs text-muted-foreground">
+                    {new Date(article.createdAt).toLocaleDateString('zh-CN')}
+                  </span>
+                </button>
+              {:else}
+                <p class="text-sm text-muted-foreground">暂无文章</p>
+              {/each}
+            </Card.Content>
+          </Card.Root>
+        {/if}
       </div>
     </div>
   {/if}

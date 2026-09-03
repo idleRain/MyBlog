@@ -8,7 +8,6 @@ import type { Article } from '@myblog/api/modules/article/types'
 import { Button, Card, Input, Label, Switch } from '$ui'
 import { ArrowLeft, Save, Send } from '@lucide/svelte'
 import { goto } from '$lib/utils/navigation'
-import { authStore } from '$lib/stores/auth'
 import { ArticleAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -79,14 +78,6 @@ function validateForm(): string {
 }
 
 /**
- * 依据当前用户角色选择更新接口，管理员走管理端端点，编辑者走作者端点。
- */
-function resolveUpdateAPI() {
-  const role = authStore.getCurrentState().user?.role
-  return role === 'admin' || role === 'superadmin' ? ArticleAPI.adminUpdate : ArticleAPI.update
-}
-
-/**
  * 组装请求载荷，可选字段仅在非空时携带，适配 exactOptionalPropertyTypes 约束。
  */
 function buildPayload(status: 'draft' | 'published') {
@@ -110,7 +101,8 @@ function buildPayload(status: 'draft' | 'published') {
 }
 
 /**
- * 保存文章，按目标状态区分草稿与发布，新建与编辑分别走对应接口。
+ * 保存文章，按目标状态区分草稿与发布，新建与编辑分别调用对应接口。
+ * 更新接口由后端按作者或管理员身份统一授权，前端不做角色分派。
  */
 async function handleSave(targetStatus: 'draft' | 'published') {
   if (isSubmitting) return
@@ -124,7 +116,7 @@ async function handleSave(targetStatus: 'draft' | 'published') {
   try {
     const base = buildPayload(targetStatus)
     const response = isEditMode
-      ? await resolveUpdateAPI()({ ...base, id: article!.id })
+      ? await ArticleAPI.update({ ...base, id: article!.id })
       : await ArticleAPI.create(base)
 
     if (response.code === 200 && response.data) {
