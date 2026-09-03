@@ -19,6 +19,7 @@ type TagServiceInterface interface {
 	// 查询操作
 	ListTags(req *ListTagsRequest) (*TagListResponse, error)
 	GetPopularTags(limit int) ([]*model.Tag, error)
+	ListAllTags() ([]*model.Tag, error)
 }
 
 // CreateTagRequest 创建标签请求
@@ -199,4 +200,9 @@ func (s *TagService) GetPopularTags(limit int) ([]*model.Tag, error) {
 		limit = 10
 	}
 	return s.tagRepo.GetPopular(limit)
+}
+
+// ListAllTags 获取全部标签，供文章编辑选择使用，不含分页。
+func (s *TagService) ListAllTags() ([]*model.Tag, error) {
+	return s.tagRepo.ListAll()
 }

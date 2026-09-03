@@ -39,15 +39,15 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 用户管理 | 8 | 用户认证和管理 |
 | 用户关注 | 4 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
-| 文章管理 | 29 | 文章内容管理 |
+| 文章管理 | 22 | 文章内容管理 |
 | 分类管理 | 6 | 分类树形管理 |
-| 标签管理 | 6 | 标签与热门标签 |
+| 标签管理 | 7 | 标签与热门标签 |
 | 评论管理 | 10 | 评论与审核 |
 | 媒体文件 | 4 | 文件上传与管理 |
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 8 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **85** | **完整的博客系统 API** |
+| **总计** | **79** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -76,7 +76,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/notifications/read-all` - 标记全部已读
 
 ### 文章管理
-#### 公开接口
+#### 公开接口（可选认证，登录则按角色决定可见范围）
 - `POST /api/articles/get` - 根据ID获取文章
 - `POST /api/articles/getBySlug` - 根据Slug获取文章
 - `POST /api/articles/list` - 获取文章列表
@@ -95,7 +95,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/articles/bookmark` - 收藏文章
 - `POST /api/articles/unbookmark` - 取消收藏
 
-#### 编辑权限接口
+#### 文章操作接口（作者或有 article:manage 的管理员，服务端统一授权）
 - `POST /api/articles/create` - 创建文章
 - `POST /api/articles/update` - 更新文章
 - `POST /api/articles/delete` - 删除文章
@@ -103,15 +103,6 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/articles/unpublish` - 取消发布
 - `POST /api/articles/archive` - 归档文章
 - `POST /api/articles/private` - 设为私有
-
-#### 管理权限接口
-- `POST /api/admin/articles/list` - 获取所有状态文章列表
-- `POST /api/admin/articles/update` - 更新任意文章
-- `POST /api/admin/articles/delete` - 删除任意文章
-- `POST /api/admin/articles/publish` - 发布任意文章
-- `POST /api/admin/articles/unpublish` - 取消发布任意文章
-- `POST /api/admin/articles/archive` - 归档任意文章
-- `POST /api/admin/articles/private` - 将任意文章设为私有
 
 ### 分类管理
 - `POST /api/categories/get` - 获取分类详情（公开）
@@ -124,6 +115,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 ### 标签管理
 - `POST /api/tags/get` - 获取标签详情（公开）
 - `POST /api/tags/popular` - 获取热门标签（公开）
+- `POST /api/tags/list` - 全部标签列表（登录，article:read，供文章编辑选择）
 - `POST /api/admin/tags/create` - 创建标签
 - `POST /api/admin/tags/update` - 更新标签
 - `POST /api/admin/tags/delete` - 删除标签
@@ -229,7 +221,12 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 
 ## 更新日志
 
-### v1.1.0 (当前版本)
+### v1.2.0 (当前版本)
+- ♻️ 文章接口收敛为单一路径：移除 `/api/admin/articles/*` 冗余端点，创建/更新/删除/状态流转统一走 `/api/articles/*`，授权由服务端按作者或 `article:manage` 统一判定
+- ♻️ 公开文章读接口（get/getBySlug/list 等）支持可选认证，具备 `article:manage` 的管理员可按任意状态读取，其他角色强制只返回已发布文章
+- ✅ 新增 `POST /api/tags/list`：文章编辑选择使用的全部标签列表（登录 + `article:read`）
+
+### v1.1.0
 - ✅ 分类管理与分类树
 - ✅ 标签管理与热门标签
 - ✅ 评论系统与审核状态机

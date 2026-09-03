@@ -9,6 +9,7 @@
 | 操作 | 所需权限 | 角色要求 |
 |------|----------|----------|
 | 获取标签详情 / 热门标签 | 无 | 无 |
+| 全部标签列表（文章编辑选择） | `article:read` | 登录，editor及以上 |
 | 创建 / 更新 / 删除标签 | `tag:manage` | admin及以上 |
 | 标签列表 | `tag:manage` | admin及以上 |
 
@@ -124,11 +125,61 @@ curl -X POST http://localhost:3000/api/tags/popular \
 }
 ```
 
+## 登录可读接口（需要 article:read 权限）
+
+> 供文章编辑时选择标签使用，返回全部标签（含启用与隐藏），按使用次数倒序排列。该接口是文章编辑选择的唯一标签列表来源，权限由服务端按登录者判定，前端不做角色分派。
+
+### 3. 全部标签列表
+
+#### 请求信息
+
+- **接口地址**: `/api/tags/list`
+- **请求方式**: `POST`
+- **权限要求**: `article:read`（需登录）
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+无。
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/tags/list \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {accessToken}" \
+  -d '{}'
+```
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "tags": [
+      {
+        "id": 1,
+        "name": "Go语言",
+        "usageCount": 3
+      },
+      {
+        "id": 2,
+        "name": "Gin框架",
+        "usageCount": 1
+      }
+    ]
+  }
+}
+```
+
 ## 管理接口（需要 tag:manage 权限）
 
 管理接口需在请求头携带 `Authorization: Bearer {accessToken}`，且操作者角色为 admin 及以上。
 
-### 3. 创建标签
+### 4. 创建标签
 
 #### 请求信息
 
@@ -183,7 +234,7 @@ curl -X POST http://localhost:3000/api/admin/tags/create \
 |--------|------|
 | 400 | 标签名称已存在 |
 
-### 4. 更新标签
+### 5. 更新标签
 
 #### 请求信息
 
@@ -225,7 +276,7 @@ curl -X POST http://localhost:3000/api/admin/tags/update \
 | 400 | 标签名称已存在 |
 | 404 | 标签不存在 |
 
-### 5. 删除标签
+### 6. 删除标签
 
 #### 请求信息
 
@@ -260,7 +311,7 @@ curl -X POST http://localhost:3000/api/admin/tags/delete \
 }
 ```
 
-### 6. 标签列表
+### 7. 标签列表
 
 #### 请求信息
 

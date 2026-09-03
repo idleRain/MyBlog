@@ -23,7 +23,9 @@
 | 管理所有文章 | `article:manage` | admin及以上 |
 | 点赞收藏 | 登录 | user及以上 |
 
-## 公开接口（无需认证）
+## 公开接口（可选认证）
+
+> 公开接口携带有效 `Authorization` 令牌时，服务端注入登录者身份并按角色决定可见范围；未携带或令牌无效时按游客处理。文章读接口与列表的"按角色可见"逻辑由服务端统一判定。
 
 ### 1. 获取文章详情
 
@@ -33,7 +35,7 @@
 
 - **接口地址**: `/api/articles/get`
 - **请求方式**: `POST`
-- **权限要求**: 无需认证
+- **权限要求**: 可选认证，未发布文章仅作者或具备 `article:manage` 的管理员可见
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -161,7 +163,7 @@ curl -X POST http://localhost:3000/api/articles/get \
 
 - **接口地址**: `/api/articles/getBySlug`
 - **请求方式**: `POST`
-- **权限要求**: 无需认证
+- **权限要求**: 可选认证，未发布文章仅作者或具备 `article:manage` 的管理员可见
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -194,7 +196,7 @@ curl -X POST http://localhost:3000/api/articles/getBySlug \
 
 - **接口地址**: `/api/articles/list`
 - **请求方式**: `POST`
-- **权限要求**: 无需认证
+- **权限要求**: 可选认证；具备 `article:manage` 的管理员可按任意状态筛选，其他角色由服务端强制只返回已发布文章
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -775,7 +777,9 @@ curl -X POST http://localhost:3000/api/articles/unbookmark \
 
 ---
 
-## 编辑者接口（需要编辑权限）
+## 文章操作接口（需要文章创建或管理权限）
+
+> 创建、更新、删除与状态流转接口统一挂在 `/api/articles` 下，授权由服务端统一判定：作者（具备 `article:create`）可操作自己的文章，具备 `article:manage` 的管理员可操作任意文章。前端不再按角色切换接口。
 
 ### 16. 创建文章
 
@@ -1103,58 +1107,6 @@ curl -X POST http://localhost:3000/api/articles/private \
   }
 }
 ```
-
----
-
-## 管理员接口（需要管理权限）
-
-### 23. 管理员文章列表
-
-获取所有状态的文章列表（管理员专用）。
-
-#### 请求信息
-
-- **接口地址**: `/api/admin/articles/list`
-- **请求方式**: `POST`
-- **权限要求**: `article:manage` 权限
-- **Content-Type**: `application/json`
-- **Authorization**: `Bearer {accessToken}`
-
-#### 请求参数
-
-参数同"获取文章列表"接口，但可以查看所有状态的文章。
-
-#### 请求示例
-
-```bash
-curl -X POST http://localhost:3000/api/admin/articles/list \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -d '{
-    "page": 1,
-    "pageSize": 10,
-    "status": "draft"
-  }'
-```
-
-#### 响应示例
-
-响应格式同"获取文章列表"接口。
-
----
-
-### 24-29. 管理员文章操作
-
-管理员可以对任意文章执行以下操作：
-
-- `POST /api/admin/articles/update` - 更新任意文章
-- `POST /api/admin/articles/delete` - 删除任意文章  
-- `POST /api/admin/articles/publish` - 发布任意文章
-- `POST /api/admin/articles/unpublish` - 取消发布任意文章
-- `POST /api/admin/articles/archive` - 归档任意文章
-- `POST /api/admin/articles/private` - 设置任意文章为私有
-
-请求参数和响应格式与对应的编辑者接口相同，区别在于管理员可以操作任意文章，不受作者限制。
 
 ---
 

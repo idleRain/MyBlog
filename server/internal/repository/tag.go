@@ -26,6 +26,7 @@ type TagRepositoryInterface interface {
 	// 查询操作
 	List(params *TagListParams) ([]*model.Tag, int64, error)
 	GetPopular(limit int) ([]*model.Tag, error)
+	ListAll() ([]*model.Tag, error)
 
 	// 工具方法
 	EnsureUniqueSlug(tag *model.Tag) error
@@ -152,6 +153,15 @@ func (r *TagRepository) GetPopular(limit int) ([]*model.Tag, error) {
 		Limit(limit).
 		Find(&tags).Error; err != nil {
 		return nil, fmt.Errorf("查询热门标签失败: %w", err)
+	}
+	return tags, nil
+}
+
+// ListAll 查询全部标签，供文章编辑选择使用，返回启用与隐藏的全部标签。
+func (r *TagRepository) ListAll() ([]*model.Tag, error) {
+	var tags []*model.Tag
+	if err := r.db.Order("usage_count DESC, id ASC").Find(&tags).Error; err != nil {
+		return nil, fmt.Errorf("查询全部标签失败: %w", err)
 	}
 	return tags, nil
 }

@@ -33,9 +33,10 @@ func NewArticleRoutes(
 }
 
 // RegisterRoutes 注册文章相关路由
-func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, adminAPI *gin.RouterGroup) {
-	// 公开访问的文章路由
+func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, _ *gin.RouterGroup) {
+	// 公开访问的文章路由，携带有效令牌时注入用户身份用于角色化可见性判断。
 	publicArticles := rg.Group("/articles")
+	publicArticles.Use(middleware.OptionalAuth(ar.jwtService))
 	{
 		// 文章查看接口，无需登录。
 		publicArticles.POST("/get", ar.articleHandler.GetArticle)                   // 根据ID获取文章
@@ -64,6 +65,7 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, adminAPI *gin.Route
 		authArticles.POST("/unbookmark", ar.articleHandler.UnbookmarkArticle) // 取消收藏
 
 		// 文章管理操作接口，需要编辑权限。
+		// 授权由服务层统一判定：作者（article:create）或具备 article:manage 的管理员均可操作。
 		editorArticles := authArticles.Group("")
 		editorArticles.Use(middleware.RequirePermission(ar.jwtService, ar.userRepo, ar.rbacService, service.PermissionArticleCreate))
 		{
@@ -75,18 +77,5 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, adminAPI *gin.Route
 			editorArticles.POST("/archive", ar.articleHandler.ArchiveArticle)     // 归档文章
 			editorArticles.POST("/private", ar.articleHandler.SetArticlePrivate)  // 设为私有
 		}
-	}
-
-	// 管理员文章管理路由，挂载到统一的管理员分组下。
-	adminArticles := adminAPI.Group("/articles")
-	adminArticles.Use(middleware.RequirePermission(ar.jwtService, ar.userRepo, ar.rbacService, service.PermissionArticleManage))
-	{
-		adminArticles.POST("/list", ar.articleHandler.GetArticleList)        // 管理员文章列表，包含所有状态。
-		adminArticles.POST("/update", ar.articleHandler.UpdateArticle)       // 管理员更新任意文章
-		adminArticles.POST("/delete", ar.articleHandler.DeleteArticle)       // 管理员删除任意文章
-		adminArticles.POST("/publish", ar.articleHandler.PublishArticle)     // 管理员发布任意文章
-		adminArticles.POST("/unpublish", ar.articleHandler.UnpublishArticle) // 管理员取消发布
-		adminArticles.POST("/archive", ar.articleHandler.ArchiveArticle)     // 管理员归档文章
-		adminArticles.POST("/private", ar.articleHandler.SetArticlePrivate)  // 管理员设为私有
 	}
 }

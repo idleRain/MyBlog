@@ -228,6 +228,7 @@ type TagHandlerInterface interface {
 	GetTag(c *gin.Context)         // POST /api/tags/get
 	ListTags(c *gin.Context)       // POST /api/admin/tags/list
 	GetPopularTags(c *gin.Context) // POST /api/tags/popular
+	ListAllTags(c *gin.Context)    // POST /api/tags/list
 }
 
 // CategoryHandlerInterface 分类处理器接口

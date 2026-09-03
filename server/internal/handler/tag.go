@@ -19,6 +19,7 @@ type TagHandlerInterface interface {
 	GetTag(c *gin.Context)
 	ListTags(c *gin.Context)
 	GetPopularTags(c *gin.Context)
+	ListAllTags(c *gin.Context)
 }
 
 // TagHandler 标签处理器实现
@@ -168,6 +169,18 @@ func (h *TagHandler) GetPopularTags(c *gin.Context) {
 	}
 
 	tags, err := h.tagService.GetPopularTags(req.Limit)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"tags": tags})
+}
+
+// ListAllTags 获取全部标签 POST /api/tags/list
+// 需登录且具备文章读取权限，供文章编辑时选择标签使用。
+func (h *TagHandler) ListAllTags(c *gin.Context) {
+	tags, err := h.tagService.ListAllTags()
 	if err != nil {
 		response.InternalError(c, err.Error())
 		return

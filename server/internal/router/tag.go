@@ -41,6 +41,16 @@ func (tr *TagRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGr
 		publicTags.POST("/popular", tr.tagHandler.GetPopularTags) // 热门标签
 	}
 
+	// 文章编辑可读的标签列表，需登录且具备文章读取权限，供前端选择标签使用。
+	authTags := api.Group("/tags")
+	authTags.Use(
+		middleware.Auth(tr.jwtService),
+		middleware.RequirePermission(tr.jwtService, tr.userRepo, tr.rbacService, service.PermissionArticleRead),
+	)
+	{
+		authTags.POST("/list", tr.tagHandler.ListAllTags) // 全部标签列表
+	}
+
 	// 标签管理接口，需要标签管理权限。
 	adminTags := adminAPI.Group("/tags")
 	adminTags.Use(middleware.RequirePermission(tr.jwtService, tr.userRepo, tr.rbacService, service.PermissionTagManage))
