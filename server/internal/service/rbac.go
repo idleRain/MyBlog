@@ -57,7 +57,8 @@ const (
 	PermissionFileDelete Permission = "file:delete" // 文件删除
 )
 
-// RolePermissions 角色权限映射
+// RolePermissions 角色权限映射。
+// 内置默认表作为测试与配置缺失时的降级数据，生产环境经 LoadRBACConfig 由 config.yaml 覆盖。
 var RolePermissions = map[Role][]Permission{
 	RoleSuperAdmin: {
 		// 超级管理员拥有所有权限
@@ -91,7 +92,7 @@ var RolePermissions = map[Role][]Permission{
 	},
 }
 
-// RoleHierarchy 角色层级定义（数字越大权限越高）
+// RoleHierarchy 角色层级定义，数值越大权限越高，生产环境由 config.yaml 覆盖。
 var RoleHierarchy = map[Role]int{
 	RoleUser:       1,
 	RoleEditor:     2,
@@ -122,6 +123,26 @@ type rbacService struct{}
 // NewRBACService 创建RBAC权限管理服务实例
 func NewRBACService() RBACService {
 	return &rbacService{}
+}
+
+// LoadRBACConfig 从配置加载角色层级与权限映射，覆盖内置默认表。
+// 生产环境以 config.yaml 的 rbac 节为唯一权威，调整权限无需重新编译。
+func LoadRBACConfig(roleHierarchy map[string]int, rolePermissions map[string][]string) {
+	hierarchy := make(map[Role]int, len(roleHierarchy))
+	for role, level := range roleHierarchy {
+		hierarchy[Role(role)] = level
+	}
+	RoleHierarchy = hierarchy
+
+	permissions := make(map[Role][]Permission, len(rolePermissions))
+	for role, perms := range rolePermissions {
+		rolePerms := make([]Permission, 0, len(perms))
+		for _, p := range perms {
+			rolePerms = append(rolePerms, Permission(p))
+		}
+		permissions[Role(role)] = rolePerms
+	}
+	RolePermissions = permissions
 }
 
 // HasPermission 检查用户是否有指定权限

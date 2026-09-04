@@ -82,3 +82,82 @@ media:
   base_url: "/uploads"         # 文件访问URL前缀
   max_size_mb: 10              # 单文件大小上限（MB）
   allowed_types: []            # 允许的MIME类型（空表示不限制）
+
+# RBAC权限配置：生产环境角色权限的唯一权威，修改后重启生效，无需重新编译
+rbac:
+  role_hierarchy:
+    superadmin: 4
+    admin: 3
+    editor: 2
+    user: 1
+  role_permissions:
+    superadmin:
+      - "system:config"
+      - "system:logs"
+      - "system:stats"
+      - "user:create"
+      - "user:read"
+      - "user:update"
+      - "user:delete"
+      - "user:list"
+      - "article:create"
+      - "article:read"
+      - "article:update"
+      - "article:delete"
+      - "article:list"
+      - "article:publish"
+      - "article:manage"
+      - "category:manage"
+      - "tag:manage"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"
+      - "comment:delete"
+      - "comment:moderate"
+      - "file:upload"
+      - "file:read"
+      - "file:delete"
+    admin:
+      - "system:logs"
+      - "system:stats"
+      - "user:create"
+      - "user:read"
+      - "user:update"
+      - "user:delete"
+      - "user:list"
+      - "article:create"
+      - "article:read"
+      - "article:update"
+      - "article:delete"
+      - "article:list"
+      - "article:publish"
+      - "article:manage"
+      - "category:manage"
+      - "tag:manage"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"
+      - "comment:delete"
+      - "comment:moderate"
+      - "file:upload"
+      - "file:read"
+      - "file:delete"
+    editor:
+      - "user:read"
+      - "article:create"
+      - "article:read"
+      - "article:update"
+      - "article:delete"
+      - "article:list"
+      - "article:publish"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"
+      - "comment:delete"
+      - "file:upload"
+      - "file:read"
+    user:
+      - "article:read"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"

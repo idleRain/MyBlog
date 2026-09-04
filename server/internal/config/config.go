@@ -17,6 +17,13 @@ type Config struct {
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Security SecurityConfig `mapstructure:"security"`
 	Media    MediaConfig    `mapstructure:"media"`
+	RBAC     RBACConfig     `mapstructure:"rbac"`
+}
+
+// RBACConfig 权限配置，角色层级与权限映射的生产环境唯一权威。
+type RBACConfig struct {
+	RoleHierarchy   map[string]int      `mapstructure:"role_hierarchy"`   // 角色层级，数值越大权限越高
+	RolePermissions map[string][]string `mapstructure:"role_permissions"` // 角色到权限列表的映射
 }
 
 // MediaConfig 媒体文件存储配置
@@ -262,6 +269,16 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.JWT.RefreshExpire <= 0 {
 		return fmt.Errorf("JWT刷新令牌过期时间必须大于0")
+	}
+
+	// RBAC 配置校验：四类角色必须全部登记层级与权限。
+	for _, role := range []string{"superadmin", "admin", "editor", "user"} {
+		if _, ok := cfg.RBAC.RoleHierarchy[role]; !ok {
+			return fmt.Errorf("RBAC角色层级缺少 %s 的定义", role)
+		}
+		if _, ok := cfg.RBAC.RolePermissions[role]; !ok {
+			return fmt.Errorf("RBAC角色权限映射缺少 %s 的定义", role)
+		}
 	}
 
 	return nil

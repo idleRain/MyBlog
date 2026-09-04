@@ -27,6 +27,9 @@ func main() {
 	// 设置Gin运行模式
 	gin.SetMode(cfg.Server.Mode)
 
+	// 从配置加载 RBAC 权限表，作为运行期唯一权威。
+	service.LoadRBACConfig(cfg.RBAC.RoleHierarchy, cfg.RBAC.RolePermissions)
+
 	// 初始化数据库
 	db, err := database.InitMySQL(cfg)
 	if err != nil {
