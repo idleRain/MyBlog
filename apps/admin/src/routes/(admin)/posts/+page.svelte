@@ -8,13 +8,12 @@ import { ARTICLE_PAGE_SIZE, type ArticleStatusAction } from '$lib/constants/arti
 import ArticleFilter from '$lib/components/admin/article/article-filter.svelte'
 import ArticleTable from '$lib/components/admin/article/article-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
+import { Button, Pagination } from '$ui'
 import { Plus } from '@lucide/svelte'
 import { ArticleAPI } from '$lib/api'
 import { onMount } from 'svelte'
-import { Button } from '$ui'
 
 // 筛选与分页状态，sortBy 类型与后端 GetArticleListRequest 的 oneof 约束对齐。
 let articles = $state<Article[]>([])
@@ -168,10 +167,18 @@ onMount(() => {
     onDelete={handleDelete}
   />
 
-  <Pagination
+  <Pagination.Root
+    count={total}
+    perPage={ARTICLE_PAGE_SIZE}
     page={currentPage}
-    {total}
-    pageSize={ARTICLE_PAGE_SIZE}
     onPageChange={handlePageChange}
-  />
+  >
+    <Pagination.Content>
+      <Pagination.PrevButton />
+      <span class="px-2 text-sm text-muted-foreground">
+        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / ARTICLE_PAGE_SIZE))} 页
+      </span>
+      <Pagination.NextButton />
+    </Pagination.Content>
+  </Pagination.Root>
 </PageHeader>

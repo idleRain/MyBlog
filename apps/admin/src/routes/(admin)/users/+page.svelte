@@ -9,12 +9,11 @@ import UserFormDialog from '$lib/components/admin/user/user-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import UserTable from '$lib/components/admin/user/user-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import { getAssignableRoles } from '$lib/utils/permissions'
+import { Button, Card, Input, Pagination } from '$ui'
 import { USER_PAGE_SIZE } from '$lib/constants/user'
 import { Plus, Search } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth'
-import { Button, Card, Input } from '$ui'
 import { UserAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -299,12 +298,20 @@ onMount(() => {
     onDelete={user => (deleteTarget = user)}
   />
 
-  <Pagination
+  <Pagination.Root
+    count={total}
+    perPage={USER_PAGE_SIZE}
     page={currentPage}
-    {total}
-    pageSize={USER_PAGE_SIZE}
     onPageChange={handlePageChange}
-  />
+  >
+    <Pagination.Content>
+      <Pagination.PrevButton />
+      <span class="px-2 text-sm text-muted-foreground">
+        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / USER_PAGE_SIZE))} 页
+      </span>
+      <Pagination.NextButton />
+    </Pagination.Content>
+  </Pagination.Root>
 
   <UserFormDialog
     {isSubmitting}

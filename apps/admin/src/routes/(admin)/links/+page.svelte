@@ -7,11 +7,10 @@ import type {
 } from '@myblog/api/modules/friendlyLink/types'
 import { LINK_PAGE_SIZE, LINK_STATUS_CONFIG, LINK_STATUS_OPTIONS } from '$lib/constants/link'
 import { Plus, MoreHorizontal, Pencil, Trash2, Link as LinkIcon } from '@lucide/svelte'
+import { Badge, Button, Card, DropdownMenu, Pagination, Table, ToggleGroup } from '$ui'
 import LinkFormDialog from '$lib/components/admin/link/link-form-dialog.svelte'
-import { Badge, Button, Card, DropdownMenu, Table, ToggleGroup } from '$ui'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import { FriendlyLinkAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -288,12 +287,20 @@ onMount(loadLinks)
     </Card.Content>
   </Card.Root>
 
-  <Pagination
+  <Pagination.Root
+    count={total}
+    perPage={LINK_PAGE_SIZE}
     page={currentPage}
-    {total}
-    pageSize={LINK_PAGE_SIZE}
     onPageChange={handlePageChange}
-  />
+  >
+    <Pagination.Content>
+      <Pagination.PrevButton />
+      <span class="px-2 text-sm text-muted-foreground">
+        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / LINK_PAGE_SIZE))} 页
+      </span>
+      <Pagination.NextButton />
+    </Pagination.Content>
+  </Pagination.Root>
 
   <LinkFormDialog
     {isSubmitting}

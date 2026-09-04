@@ -2,9 +2,8 @@
 import { Upload, Image, Film, FileText, Copy, Trash2, Loader2 } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import type { MediaFile } from '@myblog/api/modules/media/types'
-import { Button, Card, ToggleGroup } from '$ui'
+import { Button, Card, Pagination, ToggleGroup } from '$ui'
 import { getFileSize } from '@myblog/shared'
 import { MediaAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -222,7 +221,15 @@ onMount(loadMedia)
       {/each}
     </div>
 
-    <Pagination page={currentPage} {total} pageSize={12} onPageChange={handlePageChange} />
+    <Pagination.Root count={total} perPage={12} page={currentPage} onPageChange={handlePageChange}>
+      <Pagination.Content>
+        <Pagination.PrevButton />
+        <span class="px-2 text-sm text-muted-foreground">
+          第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / 12))} 页
+        </span>
+        <Pagination.NextButton />
+      </Pagination.Content>
+    </Pagination.Root>
   {/if}
 
   <ConfirmDialog

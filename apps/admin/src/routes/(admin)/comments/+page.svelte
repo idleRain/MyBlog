@@ -12,11 +12,10 @@ import type {
   CommentStatus,
   CommentActionResponse
 } from '@myblog/api/modules/comment/types'
-import { Badge, Button, Card, DropdownMenu, Input, Table, ToggleGroup } from '$ui'
+import { Badge, Button, Card, DropdownMenu, Input, Pagination, Table, ToggleGroup } from '$ui'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import { Search, MessageSquare, MoreHorizontal } from '@lucide/svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import { CommentAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -250,12 +249,20 @@ onMount(loadComments)
     </Card.Content>
   </Card.Root>
 
-  <Pagination
+  <Pagination.Root
+    count={total}
+    perPage={COMMENT_PAGE_SIZE}
     page={currentPage}
-    {total}
-    pageSize={COMMENT_PAGE_SIZE}
     onPageChange={handlePageChange}
-  />
+  >
+    <Pagination.Content>
+      <Pagination.PrevButton />
+      <span class="px-2 text-sm text-muted-foreground">
+        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / COMMENT_PAGE_SIZE))} 页
+      </span>
+      <Pagination.NextButton />
+    </Pagination.Content>
+  </Pagination.Root>
 
   <ConfirmDialog
     title="删除评论"

@@ -5,13 +5,12 @@ import type {
   TagStatus,
   UpdateTagRequest
 } from '@myblog/api/modules/tag/types'
+import { Badge, Button, Card, Input, Pagination, Table, ToggleGroup } from '$ui'
 import { Plus, Search, Trash2, Pencil, Tags as TagsIcon } from '@lucide/svelte'
 import TagFormDialog from '$lib/components/admin/tag/tag-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import { TAG_PAGE_SIZE, TAG_STATUS_CONFIG } from '$lib/constants/tag'
-import { Badge, Button, Card, Input, Table, ToggleGroup } from '$ui'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import { TagAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -286,7 +285,20 @@ onMount(loadTags)
     </Card.Content>
   </Card.Root>
 
-  <Pagination page={currentPage} {total} pageSize={TAG_PAGE_SIZE} onPageChange={handlePageChange} />
+  <Pagination.Root
+    count={total}
+    perPage={TAG_PAGE_SIZE}
+    page={currentPage}
+    onPageChange={handlePageChange}
+  >
+    <Pagination.Content>
+      <Pagination.PrevButton />
+      <span class="px-2 text-sm text-muted-foreground">
+        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / TAG_PAGE_SIZE))} 页
+      </span>
+      <Pagination.NextButton />
+    </Pagination.Content>
+  </Pagination.Root>
 
   <TagFormDialog
     {isSubmitting}

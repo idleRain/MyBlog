@@ -5,10 +5,9 @@ import {
   NOTIFICATION_TYPE_OPTIONS
 } from '$lib/constants/notification'
 import type { Notification, NotificationType } from '@myblog/api/modules/notification/types'
+import { Badge, Button, Card, Pagination, ToggleGroup } from '$ui'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import Pagination from '$lib/components/admin/pagination.svelte'
 import { Bell, CheckCheck, Inbox } from '@lucide/svelte'
-import { Badge, Button, Card, ToggleGroup } from '$ui'
 import { NotificationAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -170,10 +169,18 @@ onMount(loadNotifications)
     </Card.Content>
   </Card.Root>
 
-  <Pagination
+  <Pagination.Root
+    count={total}
+    perPage={NOTIFICATION_PAGE_SIZE}
     page={currentPage}
-    {total}
-    pageSize={NOTIFICATION_PAGE_SIZE}
     onPageChange={handlePageChange}
-  />
+  >
+    <Pagination.Content>
+      <Pagination.PrevButton />
+      <span class="px-2 text-sm text-muted-foreground">
+        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / NOTIFICATION_PAGE_SIZE))} 页
+      </span>
+      <Pagination.NextButton />
+    </Pagination.Content>
+  </Pagination.Root>
 </PageHeader>
