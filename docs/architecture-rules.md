@@ -101,13 +101,15 @@ git grep -n "interface BaseApiResponse" -- apps
 
 **决策**：不引入 swaggo → OpenAPI → 前端类型生成的 codegen 链路，改用**双向类型锚定**三把锁，以最低成本实现与 codegen 同级的「物理不可漂移」：
 
-| 锁 | 机制 | 拦截什么 |
+| 锁 | 机制 | 落地状态 |
 |---|---|---|
-| ① | Go handler 测试断言响应与 `contracts/fixtures/` 逐字节一致 | 后端悄悄改响应形状 |
-| ② | TS 侧 vitest + `expectTypeOf(fixture).toEqualTypeOf<手写类型>` 双向精确相等 | fixture 与 `@myblog/api` 手写类型任一方漂移 |
-| ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | 影子类型回潮 |
+| ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/login_fixture_test.go`（login.wrong-password） |
+| ② | TS 侧 vitest + `expectTypeOf(fixture).toEqualTypeOf<手写类型>` 双向精确相等 | ✅ `packages/api/src/contracts/fixtures.test.ts`（首批 3 个） |
+| ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | ✅ `apps/admin/eslint.config.js` |
 
 漂移必炸链：后端改 → Go 测试红 → 改 fixture → 类型测试红 → 改类型 → check 红。
+
+**门禁**：`pnpm run contract:check`（Go fixture 测试 + vitest 类型锚定）。
 
 **升级触发器**（命中任一则改推 codegen 方案 2）：
 1. 接口总数 > 80–100；
@@ -115,7 +117,7 @@ git grep -n "interface BaseApiResponse" -- apps
 3. 需对外发布 API 文档；
 4. 团队扩张超单人。
 
-**备注**：C1（handler DTO 分离）是单行道决策，与本次选择正交；未来升级 codegen 时 DTO 层零返工。
+**备注**：C1（handler DTO 分离）是单行道决策，与本次选择正交；`article.detail` 金样本的类型锚定待 Author 窄化 DTO 后补充。未来升级 codegen 时 DTO 层零返工。
 
 ---
 

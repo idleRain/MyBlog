@@ -40,6 +40,7 @@
     "migrate:down": "tsx scripts/migrate.ts down",
     "migrate:version": "tsx scripts/migrate.ts version",
     "seed:admin": "tsx scripts/seed.ts",
+    "contract:check": "cd server && go test ./internal/handler/ -run Fixture -count=1 && cd .. && pnpm --filter @myblog/api run test",
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },
