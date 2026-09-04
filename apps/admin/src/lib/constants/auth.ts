@@ -22,6 +22,7 @@ export const PERMISSIONS = {
   ARTICLE_DELETE: 'article:delete',
   ARTICLE_LIST: 'article:list',
   ARTICLE_PUBLISH: 'article:publish',
+  ARTICLE_MANAGE: 'article:manage',
 
   // 分类标签
   CATEGORY_MANAGE: 'category:manage',

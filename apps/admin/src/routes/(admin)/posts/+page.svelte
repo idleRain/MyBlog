@@ -8,6 +8,8 @@ import { ARTICLE_PAGE_SIZE, type ArticleStatusAction } from '$lib/constants/arti
 import ArticleFilter from '$lib/components/admin/article/article-filter.svelte'
 import ArticleTable from '$lib/components/admin/article/article-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { hasPermission } from '$lib/utils/permissions'
+import { PERMISSIONS } from '$lib/constants/auth'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { Button, Pagination } from '$ui'
@@ -27,8 +29,8 @@ let sortBy = $state<
 >('created_at')
 let order = $state<'asc' | 'desc'>('desc')
 
-// 当前用户是否管理员，仅用于控制编辑者的状态筛选提示。
-let isAdmin = $state(false)
+// 当前用户是否具备 article:manage 权限，用于控制状态筛选是否可用。
+let canManageAllArticles = $state(false)
 
 // 文章状态操作到接口方法的映射，统一走 /api/articles 端点，权限由后端判定。
 const STATUS_ACTION_METHODS: Record<
@@ -132,8 +134,8 @@ function handlePageChange(page: number) {
 }
 
 onMount(() => {
-  const role = authStore.getCurrentState().user?.role
-  isAdmin = role === 'admin' || role === 'superadmin'
+  const currentUser = authStore.getCurrentState().user
+  canManageAllArticles = hasPermission(currentUser, PERMISSIONS.ARTICLE_MANAGE)
   loadArticles()
 })
 </script>
@@ -155,7 +157,7 @@ onMount(() => {
     bind:status
     bind:sortBy
     bind:order
-    statusDisabled={!isAdmin}
+    statusDisabled={!canManageAllArticles}
     onSearch={handleSearch}
     onReset={handleReset}
   />

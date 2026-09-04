@@ -26,7 +26,7 @@ git grep -ln "MyBlog/internal/repository" -- internal/service internal/middlewar
 - 后端 `model` 实体的 `json` tag 即 API 契约，修改输出字段前必须评估前端影响面（`@myblog/api` 类型 + 页面消费点）。
 - 前端接口类型唯一来源为 `@myblog/api/modules/*/types`；**禁止在 apps 内定义与后端请求/响应同构的 interface/type**（影子类型，存量违例见 D7，禁止扩大）。
 - 通用响应结构 `{code, message, data}` 唯一来源为 `@myblog/shared` 的 `ApiResponse`。
-- 验证：`git grep -n "BaseApiResponse" -- apps` 合法命中仅限 `apps/admin/src/lib/types/`（存量债务，只减不增）。
+- 验证：`git grep -n "BaseApiResponse" -- apps` 应为空（D7 已清偿，apps 内零命中，禁止回潮）。
 
 ### A3 契约先行，模块对齐
 

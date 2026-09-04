@@ -17,15 +17,20 @@ import type { StatsOverview } from '@myblog/api/modules/stats/types'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { Article } from '@myblog/api/modules/article/types'
 import type { UserRole } from '@myblog/api/modules/user/types'
+import { hasPermission } from '$lib/utils/permissions'
+import { PERMISSIONS } from '$lib/constants/auth'
 import { ArticleAPI, StatsAPI } from '$lib/api'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { Button, Card } from '$ui'
 import { onMount } from 'svelte'
 
-// 当前用户角色与昵称，isAdmin 决定是否加载统计区块。
+// 当前用户角色与昵称，区块裁剪依据后端登录下发的权限列表（铁律 A4）。
 let userRole = $state<UserRole>('user')
-let isAdmin = $state(false)
+let canViewStats = $state(false)
+let canViewArticles = $state(false)
+let canCreateArticle = $state(false)
+let canManageUsers = $state(false)
 let nickname = $state('')
 
 let overview = $state<StatsOverview | null>(null)
@@ -36,18 +41,23 @@ let recentArticles = $state<Article[]>([])
 
 /**
  * 加载仪表盘数据。
- * 统计概览与趋势仅管理员可读取，按角色是否具备 system:stats 权限做前端区块裁剪；
- * 最新文章列表对管理员与编辑者统一走 /api/articles/list，状态可见性由后端按角色判定。
+ * 统计概览与趋势仅具备 system:stats 权限的角色可读取，按下发权限做前端区块裁剪；
+ * 最新文章列表对具备 article:list 权限的角色统一走 /api/articles/list，状态可见性由后端判定。
  */
 async function loadDashboard() {
   isLoading = true
   try {
     const currentState = authStore.getCurrentState()
-    userRole = currentState.user?.role ?? 'user'
-    isAdmin = userRole === 'admin' || userRole === 'superadmin'
-    nickname = currentState.user?.nickname ?? ''
+    const currentUser = currentState.user
+    userRole = currentUser?.role ?? 'user'
+    nickname = currentUser?.nickname ?? ''
+    // 权限判定与后端各接口判定一致，修改权限表后重新登录即可联动变化。
+    canViewStats = hasPermission(currentUser, PERMISSIONS.SYSTEM_STATS)
+    canViewArticles = hasPermission(currentUser, PERMISSIONS.ARTICLE_LIST)
+    canCreateArticle = hasPermission(currentUser, PERMISSIONS.ARTICLE_CREATE)
+    canManageUsers = hasPermission(currentUser, PERMISSIONS.USER_LIST)
 
-    if (isAdmin) {
+    if (canViewStats) {
       const [overviewResult, trendResult] = await Promise.all([
         StatsAPI.getOverview().catch(() => null),
         StatsAPI.getArticleViewsTrend(7).catch(() => null)
@@ -62,7 +72,7 @@ async function loadDashboard() {
       }
     }
 
-    if (isAdmin || userRole === 'editor') {
+    if (canViewArticles) {
       const articleResult = await ArticleAPI.list({ page: 1, pageSize: 5 }).catch(() => null)
       if (articleResult?.code === 200 && articleResult.data) {
         recentArticles = articleResult.data.articles ?? []
@@ -142,7 +152,7 @@ onMount(loadDashboard)
             <Card.Description>常用的管理操作</Card.Description>
           </Card.Header>
           <Card.Content class="space-y-3">
-            {#if ['editor', 'admin', 'superadmin'].includes(userRole)}
+            {#if canCreateArticle}
               <Button
                 variant="outline"
                 class="h-auto w-full justify-start p-4"
@@ -156,6 +166,8 @@ onMount(loadDashboard)
                   </div>
                 </div>
               </Button>
+            {/if}
+            {#if canViewArticles}
               <Button
                 variant="outline"
                 class="h-auto w-full justify-start p-4"
@@ -170,7 +182,7 @@ onMount(loadDashboard)
                 </div>
               </Button>
             {/if}
-            {#if ['admin', 'superadmin'].includes(userRole)}
+            {#if canManageUsers}
               <Button
                 variant="outline"
                 class="h-auto w-full justify-start p-4"
@@ -188,7 +200,7 @@ onMount(loadDashboard)
           </Card.Content>
         </Card.Root>
 
-        {#if isAdmin || userRole === 'editor'}
+        {#if canViewArticles}
           <Card.Root>
             <Card.Header>
               <Card.Title>最新文章</Card.Title>
