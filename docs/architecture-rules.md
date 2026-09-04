@@ -229,7 +229,7 @@ git grep -n "NewRBACService()" -- server
 | D10 | 401 文案匹配 | **已清偿（R0）**：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |
 | D11 | JWT 撤销无锁内存 map | **已加锁（R0）**：`sync.RWMutex` 保护；deprecated `ValidateToken` 已删 | `git grep -n "revokedTokens" -- server` | 单实例部署前提；持久化前保持锁 |
 | D12 | 文章响应泄漏作者审计字段 | **已清偿（R2）**：`lastLoginIP` 等审计字段改为 `json:"-"` | 读 `domain/user.go` json tag | 新增审计字段默认 `json:"-"` |
-| D13 | follow 模块仅后端 | 前端 0 消费 | `git grep -ln "follow" -- packages/api/src`（非空即已补齐） | 前端补齐前视为未完成 |
+| D13 | follow 模块仅后端 | **API 模块已补齐（R3）**：`@myblog/api/modules/follow` + 两应用注册；页面消费待 web 业务接入 | `git grep -ln "createFollowAPI" -- packages/api/src`（非空即已补齐） | 页面消费前视为功能未完成 |
 | D14 | admin 重写 `$ui` 已有组件 | **已清偿（R3）**：本地 `pagination.svelte` 已删，7 页回归 `$ui` | 目录比对 | 禁止仿效；新分页一律 `$ui` |
 
 ---
@@ -244,7 +244,7 @@ git grep -n "NewRBACService()" -- server
 | R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；JWT 撤销表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已清偿；D11 已加锁；D4 已收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
 | R1 类型归位 | 建 `internal/domain`，合并双 User，service/middleware/router 签名切 domain 类型；前端 auth 下沉共享包、影子类型清剿 | **D2、D7 已清偿；D5 大幅清偿（auth store 下沉）；D1 service 12→11** | ✅ D1 下降；auth store diff 为零 |
 | R2 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | **D10、D12 已清偿；三把锁已落地**（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
-| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 已完成（D2a）**；permissions 下发、D6 收敛、D13 前端补齐待办 | 权限定义全栈唯一；认证工具单轨 |
+| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 完成；permissions 下发完成（登录响应）**；D13 API 模块已补齐；D1 IdentityProvider、D6 认证工具收敛待办 | 权限定义全栈唯一；认证工具单轨 |
 | R4 扩展点 | 后端 ContentRenderer 内容策略接口；web SSR 业务接入（token 迁 cookie） | — | 新文章类型 = 插入实现，非逐层打洞 |
 
 ---
