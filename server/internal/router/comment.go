@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type CommentRoutes struct {
 	commentHandler handler.CommentHandlerInterface
 	jwtService     service.JWTService
-	userRepo       repository.UserRepository
+	identity       middleware.IdentityProvider
 	rbacService    service.RBACService
 }
 
@@ -21,13 +20,13 @@ type CommentRoutes struct {
 func NewCommentRoutes(
 	commentHandler handler.CommentHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *CommentRoutes {
 	return &CommentRoutes{
 		commentHandler: commentHandler,
 		jwtService:     jwtService,
-		userRepo:       userRepo,
+		identity:       identity,
 		rbacService:    rbacService,
 	}
 }
@@ -55,7 +54,7 @@ func (cr *CommentRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rout
 
 	// 评论审核接口，需要评论审核权限。
 	adminComments := adminAPI.Group("/comments")
-	adminComments.Use(middleware.RequirePermission(cr.jwtService, cr.userRepo, cr.rbacService, service.PermissionCommentModerate))
+	adminComments.Use(middleware.RequirePermission(cr.identity, cr.rbacService, service.PermissionCommentModerate))
 	{
 		adminComments.POST("/approve", cr.commentHandler.ApproveComment) // 审核通过
 		adminComments.POST("/reject", cr.commentHandler.RejectComment)   // 拒绝评论

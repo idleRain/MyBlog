@@ -6,7 +6,6 @@ import (
 	"MyBlog/internal/config"
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -64,55 +63,55 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 
 	// 注册用户相关路由
 	if deps.UserHandler != nil {
-		userRoutes := NewUserRoutes(deps.UserHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		userRoutes := NewUserRoutes(deps.UserHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		userRoutes.RegisterRoutes(api)
 	}
 
 	// 注册文章相关路由
 	if deps.ArticleHandler != nil {
-		articleRoutes := NewArticleRoutes(deps.ArticleHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		articleRoutes := NewArticleRoutes(deps.ArticleHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		articleRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册分类相关路由
 	if deps.CategoryHandler != nil {
-		categoryRoutes := NewCategoryRoutes(deps.CategoryHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		categoryRoutes := NewCategoryRoutes(deps.CategoryHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		categoryRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册标签相关路由
 	if deps.TagHandler != nil {
-		tagRoutes := NewTagRoutes(deps.TagHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		tagRoutes := NewTagRoutes(deps.TagHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		tagRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册评论相关路由
 	if deps.CommentHandler != nil {
-		commentRoutes := NewCommentRoutes(deps.CommentHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		commentRoutes := NewCommentRoutes(deps.CommentHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		commentRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册媒体相关路由
 	if deps.MediaHandler != nil {
-		mediaRoutes := NewMediaRoutes(deps.MediaHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		mediaRoutes := NewMediaRoutes(deps.MediaHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		mediaRoutes.RegisterRoutes(api)
 	}
 
 	// 注册设置相关路由
 	if deps.SettingHandler != nil {
-		settingRoutes := NewSettingRoutes(deps.SettingHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		settingRoutes := NewSettingRoutes(deps.SettingHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		settingRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册友情链接相关路由
 	if deps.FriendlyLinkHandler != nil {
-		linkRoutes := NewFriendlyLinkRoutes(deps.FriendlyLinkHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		linkRoutes := NewFriendlyLinkRoutes(deps.FriendlyLinkHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		linkRoutes.RegisterRoutes(api, adminAPI)
 	}
 
 	// 注册站点统计相关路由
 	if deps.StatsHandler != nil {
-		statsRoutes := NewStatsRoutes(deps.StatsHandler, deps.JWTService, deps.UserRepository, deps.RBACService)
+		statsRoutes := NewStatsRoutes(deps.StatsHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
 		statsRoutes.RegisterRoutes(adminAPI)
 	}
 
@@ -143,6 +142,6 @@ type Dependencies struct {
 	NotificationHandler handler.NotificationHandlerInterface // 通知处理器接口
 	UserFollowHandler   handler.UserFollowHandlerInterface   // 用户关注处理器接口
 	JWTService          service.JWTService                   // JWT服务
-	UserRepository      repository.UserRepository            // 用户仓库
+	IdentityProvider    middleware.IdentityProvider          // 身份解析抽象
 	RBACService         service.RBACService                  // RBAC权限服务
 }

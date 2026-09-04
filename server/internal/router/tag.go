@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type TagRoutes struct {
 	tagHandler  handler.TagHandlerInterface
 	jwtService  service.JWTService
-	userRepo    repository.UserRepository
+	identity    middleware.IdentityProvider
 	rbacService service.RBACService
 }
 
@@ -21,13 +20,13 @@ type TagRoutes struct {
 func NewTagRoutes(
 	tagHandler handler.TagHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *TagRoutes {
 	return &TagRoutes{
 		tagHandler:  tagHandler,
 		jwtService:  jwtService,
-		userRepo:    userRepo,
+		identity:    identity,
 		rbacService: rbacService,
 	}
 }
@@ -45,7 +44,7 @@ func (tr *TagRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGr
 	authTags := api.Group("/tags")
 	authTags.Use(
 		middleware.Auth(tr.jwtService),
-		middleware.RequirePermission(tr.jwtService, tr.userRepo, tr.rbacService, service.PermissionArticleRead),
+		middleware.RequirePermission(tr.identity, tr.rbacService, service.PermissionArticleRead),
 	)
 	{
 		authTags.POST("/list", tr.tagHandler.ListAllTags) // 全部标签列表
@@ -53,7 +52,7 @@ func (tr *TagRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGr
 
 	// 标签管理接口，需要标签管理权限。
 	adminTags := adminAPI.Group("/tags")
-	adminTags.Use(middleware.RequirePermission(tr.jwtService, tr.userRepo, tr.rbacService, service.PermissionTagManage))
+	adminTags.Use(middleware.RequirePermission(tr.identity, tr.rbacService, service.PermissionTagManage))
 	{
 		adminTags.POST("/create", tr.tagHandler.CreateTag) // 创建标签
 		adminTags.POST("/update", tr.tagHandler.UpdateTag) // 更新标签

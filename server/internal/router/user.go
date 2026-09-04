@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,16 +12,16 @@ import (
 type UserRoutes struct {
 	userHandler handler.UserHandlerInterface
 	jwtService  service.JWTService
-	userRepo    repository.UserRepository
+	identity    middleware.IdentityProvider
 	rbacService service.RBACService
 }
 
 // NewUserRoutes 创建用户路由模块，RBAC 服务由组合根注入。
-func NewUserRoutes(userHandler handler.UserHandlerInterface, jwtService service.JWTService, userRepo repository.UserRepository, rbacService service.RBACService) *UserRoutes {
+func NewUserRoutes(userHandler handler.UserHandlerInterface, jwtService service.JWTService, identity middleware.IdentityProvider, rbacService service.RBACService) *UserRoutes {
 	return &UserRoutes{
 		userHandler: userHandler,
 		jwtService:  jwtService,
-		userRepo:    userRepo,
+		identity:    identity,
 		rbacService: rbacService,
 	}
 }
@@ -42,22 +41,22 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 
 		// 用户创建接口，需要用户创建权限。
 		userGroup.POST("/create",
-			middleware.RequirePermission(ur.jwtService, ur.userRepo, ur.rbacService, service.PermissionUserCreate),
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserCreate),
 			ur.userHandler.CreateUser)
 
 		// 用户更新接口，需要用户更新权限。
 		userGroup.POST("/update",
-			middleware.RequirePermission(ur.jwtService, ur.userRepo, ur.rbacService, service.PermissionUserUpdate),
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserUpdate),
 			ur.userHandler.UpdateUser)
 
 		// 用户删除接口，需要用户删除权限。
 		userGroup.POST("/delete",
-			middleware.RequirePermission(ur.jwtService, ur.userRepo, ur.rbacService, service.PermissionUserDelete),
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserDelete),
 			ur.userHandler.DeleteUser)
 
 		// 用户列表接口，需要用户列表权限。
 		userGroup.POST("/list",
-			middleware.RequirePermission(ur.jwtService, ur.userRepo, ur.rbacService, service.PermissionUserList),
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserList),
 			ur.userHandler.GetUserList)
 	}
 

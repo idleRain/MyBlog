@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type StatsRoutes struct {
 	statsHandler handler.StatsHandlerInterface
 	jwtService   service.JWTService
-	userRepo     repository.UserRepository
+	identity     middleware.IdentityProvider
 	rbacService  service.RBACService
 }
 
@@ -21,13 +20,13 @@ type StatsRoutes struct {
 func NewStatsRoutes(
 	statsHandler handler.StatsHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *StatsRoutes {
 	return &StatsRoutes{
 		statsHandler: statsHandler,
 		jwtService:   jwtService,
-		userRepo:     userRepo,
+		identity:     identity,
 		rbacService:  rbacService,
 	}
 }
@@ -36,7 +35,7 @@ func NewStatsRoutes(
 func (sr *StatsRoutes) RegisterRoutes(adminAPI *gin.RouterGroup) {
 	// 站点统计接口，需要统计权限。
 	adminStats := adminAPI.Group("/stats")
-	adminStats.Use(middleware.RequirePermission(sr.jwtService, sr.userRepo, sr.rbacService, service.PermissionSystemStats))
+	adminStats.Use(middleware.RequirePermission(sr.identity, sr.rbacService, service.PermissionSystemStats))
 	{
 		adminStats.POST("/overview", sr.statsHandler.GetOverview)          // 站点统计概览
 		adminStats.POST("/articles", sr.statsHandler.GetArticleViewsTrend) // 文章浏览量趋势

@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type ArticleRoutes struct {
 	articleHandler handler.ArticleHandlerInterface
 	jwtService     service.JWTService
-	userRepo       repository.UserRepository
+	identity       middleware.IdentityProvider
 	rbacService    service.RBACService
 }
 
@@ -21,13 +20,13 @@ type ArticleRoutes struct {
 func NewArticleRoutes(
 	articleHandler handler.ArticleHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *ArticleRoutes {
 	return &ArticleRoutes{
 		articleHandler: articleHandler,
 		jwtService:     jwtService,
-		userRepo:       userRepo,
+		identity:       identity,
 		rbacService:    rbacService,
 	}
 }
@@ -67,7 +66,7 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, _ *gin.RouterGroup)
 		// 文章管理操作接口，需要编辑权限。
 		// 授权由服务层统一判定：作者（article:create）或具备 article:manage 的管理员均可操作。
 		editorArticles := authArticles.Group("")
-		editorArticles.Use(middleware.RequirePermission(ar.jwtService, ar.userRepo, ar.rbacService, service.PermissionArticleCreate))
+		editorArticles.Use(middleware.RequirePermission(ar.identity, ar.rbacService, service.PermissionArticleCreate))
 		{
 			editorArticles.POST("/create", ar.articleHandler.CreateArticle)       // 创建文章
 			editorArticles.POST("/update", ar.articleHandler.UpdateArticle)       // 更新文章

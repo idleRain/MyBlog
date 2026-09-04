@@ -3,21 +3,17 @@ package middleware
 
 import (
 	"MyBlog/internal/domain"
-	"MyBlog/internal/model"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
-	"fmt"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 // RequirePermission 权限验证中间件
-func RequirePermission(jwtService service.JWTService, userRepo repository.UserRepository, rbacService service.RBACService, permissions ...service.Permission) gin.HandlerFunc {
+func RequirePermission(identity IdentityProvider, rbacService service.RBACService, permissions ...service.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -44,10 +40,10 @@ func RequirePermission(jwtService service.JWTService, userRepo repository.UserRe
 }
 
 // RequireAllPermissions 要求拥有所有权限的中间件
-func RequireAllPermissions(jwtService service.JWTService, userRepo repository.UserRepository, rbacService service.RBACService, permissions ...service.Permission) gin.HandlerFunc {
+func RequireAllPermissions(identity IdentityProvider, rbacService service.RBACService, permissions ...service.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -66,10 +62,10 @@ func RequireAllPermissions(jwtService service.JWTService, userRepo repository.Us
 }
 
 // RequireRoleLevel 要求最低角色级别的中间件
-func RequireRoleLevel(jwtService service.JWTService, userRepo repository.UserRepository, rbacService service.RBACService, minRole string) gin.HandlerFunc {
+func RequireRoleLevel(identity IdentityProvider, rbacService service.RBACService, minRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -88,10 +84,10 @@ func RequireRoleLevel(jwtService service.JWTService, userRepo repository.UserRep
 }
 
 // RequireSuperAdmin 要求超级管理员权限的中间件
-func RequireSuperAdmin(jwtService service.JWTService, userRepo repository.UserRepository) gin.HandlerFunc {
+func RequireSuperAdmin(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -110,10 +106,10 @@ func RequireSuperAdmin(jwtService service.JWTService, userRepo repository.UserRe
 }
 
 // RequireAdminOrAbove 要求管理员或更高权限的中间件
-func RequireAdminOrAbove(jwtService service.JWTService, userRepo repository.UserRepository) gin.HandlerFunc {
+func RequireAdminOrAbove(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -132,10 +128,10 @@ func RequireAdminOrAbove(jwtService service.JWTService, userRepo repository.User
 }
 
 // RequireEditorOrAbove 要求编辑者或更高权限的中间件
-func RequireEditorOrAbove(jwtService service.JWTService, userRepo repository.UserRepository) gin.HandlerFunc {
+func RequireEditorOrAbove(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -155,10 +151,10 @@ func RequireEditorOrAbove(jwtService service.JWTService, userRepo repository.Use
 
 // RequireOwnershipOrAdmin 要求资源所有权或管理员权限的中间件
 // 用于检查用户是否可以操作特定资源，支持资源所有者或管理员权限。
-func RequireOwnershipOrAdmin(jwtService service.JWTService, userRepo repository.UserRepository, getResourceOwnerID func(*gin.Context) (uint, error)) gin.HandlerFunc {
+func RequireOwnershipOrAdmin(identity IdentityProvider, getResourceOwnerID func(*gin.Context) (uint, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -191,10 +187,10 @@ func RequireOwnershipOrAdmin(jwtService service.JWTService, userRepo repository.
 }
 
 // CanManageUserRole 检查是否可以管理指定角色用户的中间件
-func CanManageUserRole(jwtService service.JWTService, userRepo repository.UserRepository, rbacService service.RBACService, getTargetRole func(*gin.Context) (string, error)) gin.HandlerFunc {
+func CanManageUserRole(identity IdentityProvider, rbacService service.RBACService, getTargetRole func(*gin.Context) (string, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 验证JWT令牌
-		user, err := validateUserFromToken(c, jwtService, userRepo)
+		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
 		}
@@ -218,52 +214,6 @@ func CanManageUserRole(jwtService service.JWTService, userRepo repository.UserRe
 		setUserContext(c, user)
 		c.Next()
 	}
-}
-
-// validateUserFromToken 从JWT令牌验证用户身份
-func validateUserFromToken(c *gin.Context, jwtService service.JWTService, userRepo repository.UserRepository) (*domain.User, error) {
-	token := c.GetHeader("Authorization")
-
-	if token == "" {
-		response.Unauthorized(c, "未提供认证令牌")
-		c.Abort()
-		return nil, fmt.Errorf("no token")
-	}
-
-	// 移除 Bearer 前缀，无前缀时保持原值
-	token = strings.TrimPrefix(token, bearerTokenPrefix)
-
-	// 验证访问令牌
-	claims, err := jwtService.ValidateAccessToken(token)
-	if err != nil {
-		response.Unauthorized(c, "无效的认证令牌")
-		c.Abort()
-		return nil, err
-	}
-
-	// 从数据库查询用户信息
-	user, err := userRepo.GetByID(claims.UserID)
-	if err != nil {
-		response.Unauthorized(c, "用户不存在")
-		c.Abort()
-		return nil, err
-	}
-
-	// 验证用户状态
-	if user.Status != model.UserStatusActive {
-		response.Forbidden(c, "用户已被禁用")
-		c.Abort()
-		return nil, fmt.Errorf("user disabled")
-	}
-
-	// 验证角色有效性，角色表为无状态纯函数，无需实例化 RBAC 服务。
-	if !service.IsValidRole(user.Role) {
-		response.Forbidden(c, "用户角色无效")
-		c.Abort()
-		return nil, fmt.Errorf("invalid role")
-	}
-
-	return user, nil
 }
 
 // setUserContext 设置用户上下文信息

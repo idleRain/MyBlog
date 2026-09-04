@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type CategoryRoutes struct {
 	categoryHandler handler.CategoryHandlerInterface
 	jwtService      service.JWTService
-	userRepo        repository.UserRepository
+	identity        middleware.IdentityProvider
 	rbacService     service.RBACService
 }
 
@@ -21,13 +20,13 @@ type CategoryRoutes struct {
 func NewCategoryRoutes(
 	categoryHandler handler.CategoryHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *CategoryRoutes {
 	return &CategoryRoutes{
 		categoryHandler: categoryHandler,
 		jwtService:      jwtService,
-		userRepo:        userRepo,
+		identity:        identity,
 		rbacService:     rbacService,
 	}
 }
@@ -43,7 +42,7 @@ func (cr *CategoryRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rou
 
 	// 分类管理接口，需要分类管理权限。
 	adminCategories := adminAPI.Group("/categories")
-	adminCategories.Use(middleware.RequirePermission(cr.jwtService, cr.userRepo, cr.rbacService, service.PermissionCategoryManage))
+	adminCategories.Use(middleware.RequirePermission(cr.identity, cr.rbacService, service.PermissionCategoryManage))
 	{
 		adminCategories.POST("/create", cr.categoryHandler.CreateCategory) // 创建分类
 		adminCategories.POST("/update", cr.categoryHandler.UpdateCategory) // 更新分类

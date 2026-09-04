@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type FriendlyLinkRoutes struct {
 	linkHandler handler.FriendlyLinkHandlerInterface
 	jwtService  service.JWTService
-	userRepo    repository.UserRepository
+	identity    middleware.IdentityProvider
 	rbacService service.RBACService
 }
 
@@ -21,13 +20,13 @@ type FriendlyLinkRoutes struct {
 func NewFriendlyLinkRoutes(
 	linkHandler handler.FriendlyLinkHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *FriendlyLinkRoutes {
 	return &FriendlyLinkRoutes{
 		linkHandler: linkHandler,
 		jwtService:  jwtService,
-		userRepo:    userRepo,
+		identity:    identity,
 		rbacService: rbacService,
 	}
 }
@@ -39,7 +38,7 @@ func (fr *FriendlyLinkRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin
 
 	// 友情链接管理接口，需要系统配置权限。
 	adminLinks := adminAPI.Group("/friendly-links")
-	adminLinks.Use(middleware.RequirePermission(fr.jwtService, fr.userRepo, fr.rbacService, service.PermissionSystemConfig))
+	adminLinks.Use(middleware.RequirePermission(fr.identity, fr.rbacService, service.PermissionSystemConfig))
 	{
 		adminLinks.POST("/create", fr.linkHandler.CreateLink)   // 创建友情链接
 		adminLinks.POST("/update", fr.linkHandler.UpdateLink)   // 更新友情链接

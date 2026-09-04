@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type MediaRoutes struct {
 	mediaHandler handler.MediaHandlerInterface
 	jwtService   service.JWTService
-	userRepo     repository.UserRepository
+	identity     middleware.IdentityProvider
 	rbacService  service.RBACService
 }
 
@@ -21,13 +20,13 @@ type MediaRoutes struct {
 func NewMediaRoutes(
 	mediaHandler handler.MediaHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *MediaRoutes {
 	return &MediaRoutes{
 		mediaHandler: mediaHandler,
 		jwtService:   jwtService,
-		userRepo:     userRepo,
+		identity:     identity,
 		rbacService:  rbacService,
 	}
 }
@@ -39,22 +38,22 @@ func (mr *MediaRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	{
 		// 上传文件需要上传权限。
 		media.POST("/upload",
-			middleware.RequirePermission(mr.jwtService, mr.userRepo, mr.rbacService, service.PermissionFileUpload),
+			middleware.RequirePermission(mr.identity, mr.rbacService, service.PermissionFileUpload),
 			mr.mediaHandler.UploadFile)
 
 		// 查看媒体列表需要读取权限。
 		media.POST("/list",
-			middleware.RequirePermission(mr.jwtService, mr.userRepo, mr.rbacService, service.PermissionFileRead),
+			middleware.RequirePermission(mr.identity, mr.rbacService, service.PermissionFileRead),
 			mr.mediaHandler.ListMedia)
 
 		// 查看媒体详情需要读取权限。
 		media.POST("/get",
-			middleware.RequirePermission(mr.jwtService, mr.userRepo, mr.rbacService, service.PermissionFileRead),
+			middleware.RequirePermission(mr.identity, mr.rbacService, service.PermissionFileRead),
 			mr.mediaHandler.GetMedia)
 
 		// 删除文件需要删除权限。
 		media.POST("/delete",
-			middleware.RequirePermission(mr.jwtService, mr.userRepo, mr.rbacService, service.PermissionFileDelete),
+			middleware.RequirePermission(mr.identity, mr.rbacService, service.PermissionFileDelete),
 			mr.mediaHandler.DeleteMedia)
 	}
 }

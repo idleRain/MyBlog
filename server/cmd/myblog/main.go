@@ -10,6 +10,7 @@ import (
 	"MyBlog/internal/config"
 	"MyBlog/internal/database"
 	"MyBlog/internal/handler"
+	"MyBlog/internal/middleware"
 	"MyBlog/internal/repository"
 	"MyBlog/internal/router"
 	"MyBlog/internal/service"
@@ -63,6 +64,7 @@ func main() {
 	followRepo := repository.NewUserFollowRepository(db)
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
+	identity := middleware.NewIdentityProvider(jwtService, userRepo)
 	userSvc := service.NewUserService(userRepo, jwtService, rbacService)
 	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService)
 	categorySvc := service.NewCategoryService(categoryRepo)
@@ -103,7 +105,7 @@ func main() {
 		NotificationHandler: notificationHandler,
 		UserFollowHandler:   followHandler,
 		JWTService:          jwtService,
-		UserRepository:      userRepo,
+		IdentityProvider:    identity,
 		RBACService:         rbacService,
 	}
 

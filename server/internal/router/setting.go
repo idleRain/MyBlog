@@ -3,7 +3,6 @@ package router
 import (
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ import (
 type SettingRoutes struct {
 	settingHandler handler.SettingHandlerInterface
 	jwtService     service.JWTService
-	userRepo       repository.UserRepository
+	identity       middleware.IdentityProvider
 	rbacService    service.RBACService
 }
 
@@ -21,13 +20,13 @@ type SettingRoutes struct {
 func NewSettingRoutes(
 	settingHandler handler.SettingHandlerInterface,
 	jwtService service.JWTService,
-	userRepo repository.UserRepository,
+	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *SettingRoutes {
 	return &SettingRoutes{
 		settingHandler: settingHandler,
 		jwtService:     jwtService,
-		userRepo:       userRepo,
+		identity:       identity,
 		rbacService:    rbacService,
 	}
 }
@@ -39,7 +38,7 @@ func (sr *SettingRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rout
 
 	// 设置管理接口，需要系统配置权限。
 	adminSettings := adminAPI.Group("/settings")
-	adminSettings.Use(middleware.RequirePermission(sr.jwtService, sr.userRepo, sr.rbacService, service.PermissionSystemConfig))
+	adminSettings.Use(middleware.RequirePermission(sr.identity, sr.rbacService, service.PermissionSystemConfig))
 	{
 		adminSettings.POST("/list", sr.settingHandler.ListSettings)     // 设置项列表
 		adminSettings.POST("/update", sr.settingHandler.UpdateSettings) // 批量更新设置项

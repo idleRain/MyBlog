@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"MyBlog/internal/model"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 	"strings"
@@ -65,49 +63,21 @@ func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc {
 }
 
 // AdminAuth 管理员认证中间件
-func AdminAuth(jwtService service.JWTService, userRepo repository.UserRepository) gin.HandlerFunc {
+func AdminAuth(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 先验证基本认证
-		token := c.GetHeader("Authorization")
-
-		if token == "" {
-			response.Unauthorized(c, "未提供认证令牌")
-			c.Abort()
-			return
-		}
-
-		token = strings.TrimPrefix(token, bearerTokenPrefix)
-
-		claims, err := jwtService.ValidateAccessToken(token)
+		user, err := identity.Resolve(c)
 		if err != nil {
-			response.Unauthorized(c, "无效的认证令牌")
-			c.Abort()
-			return
-		}
-
-		// 从数据库查询用户信息验证管理员权限
-		user, err := userRepo.GetByID(claims.UserID)
-		if err != nil {
-			response.Unauthorized(c, "用户不存在")
-			c.Abort()
-			return
-		}
-
-		// 验证用户状态
-		if user.Status != model.UserStatusActive {
-			response.Forbidden(c, "用户已被禁用")
-			c.Abort()
-			return
+			return // 错误已在 Resolve 中处理
 		}
 
 		// 验证管理员权限
-		if !isAdminRole(user.Role) {
+		if !service.IsAdminRole(user.Role) {
 			response.Forbidden(c, "权限不足，需要管理员权限")
 			c.Abort()
 			return
 		}
 
-		c.Set("userID", claims.UserID)
+		c.Set("userID", user.ID)
 		c.Set("userRole", user.Role)
 		c.Set("isAdmin", true)
 
@@ -115,45 +85,12 @@ func AdminAuth(jwtService service.JWTService, userRepo repository.UserRepository
 	}
 }
 
-// isAdminRole 检查角色是否为管理员级别
-func isAdminRole(role string) bool {
-	return role == "admin" || role == "superadmin"
-}
-
 // RequireRole 角色验证中间件
-func RequireRole(jwtService service.JWTService, userRepo repository.UserRepository, allowedRoles ...string) gin.HandlerFunc {
+func RequireRole(identity IdentityProvider, allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 先验证基本认证
-		token := c.GetHeader("Authorization")
-
-		if token == "" {
-			response.Unauthorized(c, "未提供认证令牌")
-			c.Abort()
-			return
-		}
-
-		token = strings.TrimPrefix(token, bearerTokenPrefix)
-
-		claims, err := jwtService.ValidateAccessToken(token)
+		user, err := identity.Resolve(c)
 		if err != nil {
-			response.Unauthorized(c, "无效的认证令牌")
-			c.Abort()
-			return
-		}
-
-		// 从数据库查询用户信息
-		user, err := userRepo.GetByID(claims.UserID)
-		if err != nil {
-			response.Unauthorized(c, "用户不存在")
-			c.Abort()
-			return
-		}
-
-		// 验证用户状态
-		if user.Status != model.UserStatusActive {
-			response.Forbidden(c, "用户已被禁用")
-			c.Abort()
-			return
+			return // 错误已在 Resolve 中处理
 		}
 
 		// 验证角色权限
@@ -171,7 +108,7 @@ func RequireRole(jwtService service.JWTService, userRepo repository.UserReposito
 			return
 		}
 
-		c.Set("userID", claims.UserID)
+		c.Set("userID", user.ID)
 		c.Set("userRole", user.Role)
 
 		c.Next()
