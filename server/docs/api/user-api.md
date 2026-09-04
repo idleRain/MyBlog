@@ -62,9 +62,12 @@ curl -X POST http://localhost:3000/api/users/login \
 | data.user.status | integer | 是 | 用户状态，1启用0禁用 |
 | data.user.createdAt | string | 是 | 创建时间 |
 | data.user.updatedAt | string | 是 | 更新时间 |
-| data.accessToken | string | 是 | 访问令牌 |
-| data.refreshToken | string | 是 | 刷新令牌 |
+| data.accessToken | string | 是 | 访问令牌（payload-only，见下方注记） |
+| data.refreshToken | string | 是 | 刷新令牌（payload-only） |
 | data.expiresIn | integer | 是 | 访问令牌有效期，单位秒 |
+| data.permissions | string[] | 是 | 当前角色权限列表（后端唯一权威） |
+
+> **线格式注记**：令牌为 **payload-only JWT**（无点号 Base64 payload，非标准三段式）。完整协议见 `contracts/auth-protocol.md`。
 
 #### 响应示例
 
@@ -85,9 +88,10 @@ curl -X POST http://localhost:3000/api/users/login \
       "createdAt": "2024-01-01 10:00:00",
       "updatedAt": "2024-01-01 10:00:00"
     },
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresIn": 3600
+    "accessToken": "<payload-only access token>",
+    "refreshToken": "<payload-only refresh token>",
+    "expiresIn": 3600,
+    "permissions": ["article:read", "comment:create", "comment:read", "comment:update"]
   }
 }
 ```

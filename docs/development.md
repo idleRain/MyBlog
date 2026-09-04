@@ -56,7 +56,10 @@ MyBlog/
 ├─────────────────┤
 │Repository Layer │  internal/repository/
 │  (数据访问)      │  - 数据库操作
-│                 │  （实体定义见 internal/model/）
+│                 │  （持久化实现，实体与 DTO 见 internal/domain）
+├─────────────────┤
+│  Domain Layer   │  internal/domain/
+│  (领域类型)      │  - 领域实体 + 请求/响应 DTO（全系统唯一类型语言）
 ├─────────────────┤
 │  Database Layer │  MySQL + GORM
 │                 │
@@ -97,7 +100,8 @@ MyBlog/
 // 在 main.go 中（组合根）
 userRepo := repository.NewUserRepository(db)
 jwtService := service.NewJWTService(cfg)
-userSvc := service.NewUserService(userRepo, jwtService)
+rbacService := service.NewRBACService()
+userSvc := service.NewUserService(userRepo, jwtService, rbacService)
 userHandler := handler.NewUserHandler(userSvc)
 ```
 
@@ -105,7 +109,7 @@ userHandler := handler.NewUserHandler(userSvc)
 
 ### 前端架构（apps/ + packages/）
 
-前端在 web-split 重构后拆分为前台与后台两个独立 SvelteKit 应用，公共代码抽取为四个 package。
+前端在 web-split 重构后拆分为前台与后台两个独立 SvelteKit 应用，公共代码抽取为五个 package（shared/http/api/auth/ui）。
 
 #### 应用拆分
 
@@ -120,10 +124,11 @@ userHandler := handler.NewUserHandler(userSvc)
 | --- | --- | --- |
 | `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量，不依赖 SvelteKit/Svelte | clsx、tailwind-merge、mitt |
 | `@myblog/http` | `createHttpClient` 工厂（ky 封装，认证回调注入，401 刷新钩子） | ky、@myblog/shared |
-| `@myblog/api` | 后端接口模块与响应类型（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification 共 10 个模块工厂） | @myblog/http、@myblog/shared |
+| `@myblog/api` | 后端接口模块与响应类型（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow 共 11 个模块工厂） | @myblog/http、@myblog/shared |
+| `@myblog/auth` | 认证会话组装：`createAuthStore` 工厂（注入式，逻辑两应用共享） | @myblog/api、@myblog/shared、svelte |
 | `@myblog/ui` | shadcn-svelte 基础组件，保持 stock，主题经各应用 `app.css` token 注入 | bits-ui、vaul-svelte 等 |
 
-依赖方向单向无环：应用 → `ui` → `shared`；应用 → `http` → `shared`；应用 → `api` → `http` + `shared`。
+依赖方向单向无环：应用 → `ui` → `shared`；应用 → `auth`/`http` → `shared`；应用 → `api` → `http` + `shared`。
 
 #### 应用目录结构
 
@@ -144,11 +149,10 @@ apps/admin/src/               # 后台
 │   ├── api/                  # 接口实例化
 │   ├── service/              # http 客户端创建
 │   ├── components/           # 后台组件
-│   ├── stores/               # 认证状态 store
-│   ├── constants/            # 权限与角色常量
-│   ├── guards/               # 路由守卫
-│   ├── types/                # 后台专用类型
-│   └── utils/                # 认证域工具（jwt / logout / permissions 等）
+│   ├── stores/               # 认证 store 薄封装（逻辑在 @myblog/auth）
+│   ├── constants/            # 权限与角色常量（降级兜底，权限判定读登录下发值）
+│   ├── types/                # 后台专用类型（接口类型一律来自 @myblog/api）
+│   └── utils/                # 认证域工具（logout / permissions / auth-guard / request / navigation）
 └── app.css                   # 原始后台主题（无 --signal）
 ```
 
@@ -383,7 +387,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 实体只携带 `json` + `gorm` tag；`binding`（HTTP 校验）只出现在请求 DTO 上。**禁止把三类 tag 写进同一个结构体**——那会让存储结构、API 契约与请求校验互相锁死（历史教训见 [`architecture-rules.md`](./architecture-rules.md) 第 9 节）：
 
 ```go
-// 实体（internal/model）：持久化与对外输出，禁止 binding tag
+// 实体（internal/domain）：领域实体 + GORM tag，禁止 binding tag
 type User struct {
   ID        uint      `json:"id" gorm:"primaryKey"`
   Username  string    `json:"username" gorm:"uniqueIndex;not null;size:50"`
@@ -392,7 +396,7 @@ type User struct {
   UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// 请求 DTO（service 层）：承载校验，禁止 gorm tag
+// 请求 DTO（internal/domain/dto.go）：承载校验，禁止 gorm tag
 type CreateUserRequest struct {
   Username string `json:"username" binding:"required,min=3,max=20"`
   Email    string `json:"email" binding:"required,email"`

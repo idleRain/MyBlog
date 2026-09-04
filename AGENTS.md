@@ -12,13 +12,13 @@
 
 ### A1 依赖方向，只准向下
 
-- 后端：`handler → service → repository → model` 单向依赖。禁止：service import handler；repository import service/handler；middleware/router 直接 import repository（存量违例见债务 D1，只减不增）。
+- 后端：`handler → service → repository → domain` 单向依赖。禁止：service import handler；repository import service/handler；middleware/router 直接 import repository（D1 已清偿：router 归零、middleware 仅 `identity.go` 实现 1 处，只减不增）。领域类型统一来自 `internal/domain`。
 - 前端：`apps → @myblog/api → @myblog/http → @myblog/shared` 单向依赖。禁止：packages 反向 import apps；页面/组件直接 import `ky`（唯一豁免：各应用 `src/lib/service/index.ts` 的令牌刷新直连，为避免循环依赖）。
 - 验证（在 `server/` 目录下执行）：
 
 ```bash
 git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router
-# 输出文件数不得高于债务基线 D1（service 12 + middleware 2 + router 10）
+# 输出文件数不得高于债务基线 D1（service 11 + middleware 1 + router 0）
 ```
 
 ### A2 类型唯一真相源
@@ -37,8 +37,8 @@ git grep -ln "MyBlog/internal/repository" -- internal/service internal/middlewar
 ### A4 单一权威，禁止私自实例化
 
 - 业务规则（状态流转、slug 生成、密码强度、权限判定）唯一权威在后端；前端只能做展示层优化（如隐藏按钮），不得复刻规则逻辑。
-- RBAC 权限表唯一权威为 `server/internal/service/rbac.go`；前端 `apps/admin/src/lib/constants/auth.ts` 为已知消费副本（终态后端下发，见 D6），**禁止新增第三份权限定义**。
-- 依赖一律经构造函数注入，**禁止在 service/router/middleware 内部私自 `NewXxxService()`**（存量违例 D4：`RBACService` 4 处实例化，禁止新增第 5 处）。
+- RBAC 权限表唯一权威为后端（生产环境 `configs/config.yaml` 的 `rbac` 节），登录响应下发 `permissions[]`；前端 `apps/admin/src/lib/constants/auth.ts` 的映射仅作未下发时的降级兜底，**禁止新增第三份权限定义**。
+- 依赖一律经构造函数注入，**禁止在 service/router/middleware 内部私自 `NewXxxService()`**（D4 已收敛：生产实例化仅 `cmd/myblog/main.go` 组合根 1 处，禁止新增实例化点）。
 
 ### A5 禁止复制粘贴式共享
 
@@ -88,7 +88,8 @@ MyBlog/
 ├── packages/
 │   ├── shared/               # 公共纯工具与通用类型（ApiResponse 等）
 │   ├── http/                 # HTTP 请求器（ky 封装，认证回调注入）
-│   ├── api/                  # 后端接口模块与响应类型（10 个模块工厂）
+│   ├── api/                  # 后端接口模块与响应类型（11 个模块工厂）
+│   ├── auth/                 # 认证会话组装（createAuthStore 工厂，注入式）
 │   └── ui/                   # shadcn-svelte 基础组件（stock，主题注入）
 ├── server/                   # Go 后端服务（Gin + GORM + MySQL）
 ├── scripts/                  # 跨项目构建/开发脚本（Node.js + tsx）
@@ -151,7 +152,7 @@ pnpm run migrate [create|up|down|version|help]
 - **错误分档**：service 返回的哨兵错误（`ErrArticleNotFound`、`ErrUserNotFound` 等）必须在 handler 映射为对应语义（404/403/400），**禁止一律 500**；`binding` 校验失败映射 400；权限不足映射 403。
 - **依赖注入**：集中在 `cmd/myblog/main.go`（组合根）与 `router.Dependencies`；handler 通过接口注入。禁止包内私自实例化依赖服务（A4）。
 - **统一响应**：使用 `pkg/response` 包，响应结构为 `{ code, message, data? }`；预定义响应码 `CodeSuccess=200`、`CodeError=500`、`CodeInvalid=400`、`CodeAuth=401`、`CodeForbid=403`、`CodeNotFound=404`。统一通过 `response.Success` / `response.Error` 等函数返回。
-- **模型与类型归属**：GORM 实体位于 `internal/model`；请求/响应 DTO 位于 service 层（现状，目标态迁移至独立 domain/dto 层，见债务 D2）。**注意**：`repository.User` 与请求结构体寄生在 repository 包为已知债务，新代码禁止加深该模式（禁止在 repository 新增 DTO、禁止新增对 `repository.User` 的引用，见 A1/D1/D2）。
+- **模型与类型归属**：领域实体与请求/响应 DTO 统一位于 `internal/domain`（`domain.User`、`domain/dto.go`），为全系统唯一类型语言；`internal/model` 保留各业务 GORM 实体；`repository` 只承载持久化实现。**禁止在 repository 包新增实体或 DTO 定义**（D2 已清偿，禁止回潮）。
 - **入口与工具包**：服务入口在 `cmd/myblog/main.go`，种子脚本入口在 `cmd/seed/main.go`，种子逻辑见 `internal/database/seed.go`；通用包 `pkg/response`、`pkg/datetime`、`pkg/slug`。
 - **数据库**：MySQL 单库（GORM）；迁移由 `internal/database/migrate.go` 与根 `migrate` 脚本管理（开发模式 AutoMigrate / 生产 golang-migrate 双轨）。模型见 `internal/model/*.go`，架构细节见 `docs/database-architecture.md`。
 - **数据库设计可持续性**：表结构以可长期健康演进为目标设计。每张业务表须具备完整的生命周期字段、状态字段、业务字段与必要的预留扩展字段，且每个字段均带 `comment` 说明业务含义，字段类型与长度须贴合真实数据需求。
@@ -161,18 +162,18 @@ pnpm run migrate [create|up|down|version|help]
 - **命名**：Go 结构体字段与 JSON tag 使用小驼峰；接口与实现同包定义，命名统一为 `XxxInterface` 后缀，如 `ArticleHandlerInterface`、`ArticleServiceInterface`、`ArticleRepositoryInterface`。存量不一致：user 模块的 `UserService`、`JWTService`、`RBACService`、`UserRepository` 未带后缀（触碰时统一，不强制专项重构）。各层只依赖接口而非具体实现。
 - **接口定义位置**：接口统一声明在各层实现所在包，即 `handler`、`service`、`repository` 内；`router` 只引用各层接口完成依赖注入，**不得在 `router` 包重复定义接口**（存量违例：router 包重复定义 11 个 handler 接口 + `Dependencies` 字段为 `interface{}` 运行时断言，见 D3，禁止扩大）。
 - **配置**：`internal/config` 包通过 Viper 读取 `configs/config.yaml`，所有配置项均以 YAML 为唯一来源。
-- **中间件**：`middleware` 包含 logger、request ID、CORS、汇总安全、auth、rbac、ratelimit。中间件只应依赖抽象（JWTService 接口等），当前直接依赖 `repository.UserRepository` 为债务 D1 的一部分。
+- **中间件**：`middleware` 包含 logger、request ID、CORS、汇总安全、auth、rbac、ratelimit。权限与认证中间件只依赖 `IdentityProvider` 抽象（`middleware/identity.go`），唯一实现 `jwtIdentityProvider` 经组合根注入 jwtService 与 userRepo。
 
 ## 6. 前端约定（apps/ + packages/）
 
 - **框架**：SvelteKit + Svelte 5 + TypeScript，Svelte 5 runes 风格，**不使用 Options API**。应用分 `apps/web`（前台 toC，SSR 路线）与 `apps/admin`（后台 toB，SPA 路线 `ssr=false`）。
-- **组件库**：shadcn-svelte 基础组件统一位于 `packages/ui`（保持 stock，主题经各应用 `app.css` token 注入），以 `$ui` 别名引入，由根级 eslint/prettier 排除。**禁止在应用内重写 `$ui` 已有组件**（存量反例：admin 本地 `pagination.svelte`，见 D14）。别名见各应用 `svelte.config.js`：`$lib`、`$ui`、`$i18n`（仅前台）、`@/*`、`#/*`、`~/*`。
+- **组件库**：shadcn-svelte 基础组件统一位于 `packages/ui`（保持 stock，主题经各应用 `app.css` token 注入），以 `$ui` 别名引入，由根级 eslint/prettier 排除。**禁止在应用内重写 `$ui` 已有组件**（D14 已清偿：admin 分页已回归 `$ui`）。别名见各应用 `svelte.config.js`：`$lib`、`$ui`、`$i18n`（仅前台）、`@/*`、`#/*`、`~/*`。
 - **样式**：TailwindCSS v4（`@tailwindcss/vite`）；前台 `apps/web/src/app.css`（规格书主题，含 `--signal`）、后台 `apps/admin/src/app.css`（原始主题，无 `--signal`）；`packages/ui` 不携带全局样式。
-- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 10 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification）；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
-- **状态**：认证 store 现状为两应用各一份（逐字重复，债务 D5）；admin 认证域工具存在三轨并行（债务 D6）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
+- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 11 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow）；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
+- **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用薄封装各持一份）；admin 认证域工具 D6 已收敛（`utils/jwt.ts`、`utils/auth.ts` 已删，刷新/登出单轨）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
 - **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`（i18n 演示沙盒）；后台使用 `(admin)`、`(auth)`（登录页归属后台）。数据加载纪律见 A6：web 用 load，admin 新页面优先 load。
 - **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。
-- **类型**：接口类型唯一来源 `@myblog/api`（铁律 A2）。`apps/admin/src/lib/types/` 含影子类型（债务 D7，只减不增），新代码禁止从中 import。
+- **类型**：接口类型唯一来源 `@myblog/api`（铁律 A2）。D7 已清偿：`types/api.d.ts` 影子层已删并加 eslint 守门，禁止回潮。
 - 前端代码改动需运行对应应用 `cd apps/web && pnpm run check` 或 `cd apps/admin && pnpm run check`（svelte-check + svelte-kit sync）。
 
 ## 7. 注释与代码规范硬约束
@@ -194,19 +195,19 @@ pnpm run migrate [create|up|down|version|help]
 
 | 编号 | 债务 | 红线 |
 |---|---|---|
-| D1 | service/middleware/router 依赖 repository 包（R1 后 service 12→11） | 只减不增 |
+| D1 | service/middleware/router 依赖 repository 包（**已收敛**：service 11 + middleware 1 + router 0） | 只减不增 |
 | D2 | 双 User 模型（**已清偿**：合并为唯一 `domain.User`） | 新字段只加 `domain.User` |
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言（**已清偿**） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化（**已收敛**：仅 main 组合根 1 处） | 禁止新增实例化点 |
 | D5 | 两 app 基础设施逐字重复（auth store 已下沉 `@myblog/auth`，service/theme/layout 仍重复） | 修改任一必须同步另一份 |
-| D6 | admin 认证工具三轨并行约 969 行 | 禁止新增认证工具文件 |
+| D6 | admin 认证工具三轨并行（**已收敛**：`jwt.ts`/`auth.ts` 已删，刷新/登出单轨） | 禁止新增认证工具文件 |
 | D7 | 影子类型 `types/api.d.ts`（**已清偿**，eslint 守门已加） | 禁止回潮；类型一律来自 `@myblog/api` |
 | D8 | admin 12 个页面胖组件 + onMount 取数（users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码（**已清偿**） | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |
 | D11 | JWT 撤销内存 map（**已加锁**；deprecated `ValidateToken` 已删） | 单实例部署前提；持久化前保持锁 |
 | D12 | 文章响应泄漏作者审计字段（**已清偿**：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
-| D13 | `user_follow` 模块仅后端存在，前端零消费 | 前端补齐前视为未完成功能 |
+| D13 | `user_follow` 前端零消费（**API 模块已补齐**：`@myblog/api/modules/follow` + 两应用注册；页面待 web 业务接入） | 页面消费前视为功能未完成 |
 | D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（**已清偿**：7 页回归 `$ui`） | 禁止仿效；新分页一律 `$ui` |
 
 ## 10. 开发进度概览
@@ -219,6 +220,8 @@ pnpm run migrate [create|up|down|version|help]
 
 待办：
 - web 前台业务接入（文章列表/详情/归档，强制 load 模式 + SSR）。
-- `user_follow` 前端模块补齐（D13）。
+- `user_follow` 页面级消费（`@myblog/api` 模块已就绪，见 D13）。
 - 全文搜索、响应式完善、部署与 Docker。
-- 架构债清偿：按 `docs/architecture-rules.md` 第 8 节的分期路线（domain 层建立、DTO 分离、横切归位、组合根固化、前端 auth 包下沉与影子类型清剿）。
+- 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配。
+
+架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D14 只减不增。

@@ -465,42 +465,52 @@ gin.SetMode(gin.DebugMode)
 
 ### 中间件列表
 
+权限与认证中间件只依赖 `IdentityProvider` 抽象（`identity.go`），身份解析经组合根注入：
+
 ```go
+// 身份解析抽象
+type IdentityProvider interface {
+    Resolve(c *gin.Context) (*domain.User, error)
+}
+
 // 权限验证中间件
-func RequirePermission(jwtService, userRepo, rbacService, permissions...) gin.HandlerFunc
-func RequireAllPermissions(jwtService, userRepo, rbacService, permissions...) gin.HandlerFunc
+func RequirePermission(identity IdentityProvider, rbacService, permissions...) gin.HandlerFunc
+func RequireAllPermissions(identity IdentityProvider, rbacService, permissions...) gin.HandlerFunc
 
 // 角色级别验证中间件
-func RequireRoleLevel(jwtService, userRepo, rbacService, minRole) gin.HandlerFunc
-func RequireSuperAdmin(jwtService, userRepo) gin.HandlerFunc
-func RequireAdminOrAbove(jwtService, userRepo) gin.HandlerFunc
-func RequireEditorOrAbove(jwtService, userRepo) gin.HandlerFunc
+func RequireRoleLevel(identity IdentityProvider, rbacService, minRole) gin.HandlerFunc
+func RequireSuperAdmin(identity IdentityProvider) gin.HandlerFunc
+func RequireAdminOrAbove(identity IdentityProvider) gin.HandlerFunc
+func RequireEditorOrAbove(identity IdentityProvider) gin.HandlerFunc
 
 // 资源所有权验证中间件
-func RequireOwnershipOrAdmin(jwtService, userRepo, getResourceOwnerID) gin.HandlerFunc
-func CanManageUserRole(jwtService, userRepo, rbacService, getTargetRole) gin.HandlerFunc
+func RequireOwnershipOrAdmin(identity IdentityProvider, getResourceOwnerID) gin.HandlerFunc
+func CanManageUserRole(identity IdentityProvider, rbacService, getTargetRole) gin.HandlerFunc
 ```
 
 ### 使用示例
 
 ```go
+// 组合根创建身份解析器
+identity := middleware.NewIdentityProvider(jwtService, userRepo)
+
 // 用户管理路由
 userGroup := api.Group("/users")
 {
     // 需要用户创建权限
     userGroup.POST("/create", 
-        middleware.RequirePermission(jwtService, userRepo, rbacService, 
+        middleware.RequirePermission(identity, rbacService, 
             service.PermissionUserCreate),
         handler.CreateUser)
 
     // 需要管理员或更高权限
     userGroup.POST("/list",
-        middleware.RequireAdminOrAbove(jwtService, userRepo),
+        middleware.RequireAdminOrAbove(identity),
         handler.GetUserList)
 
     // 需要超级管理员权限
     userGroup.POST("/system-config",
-        middleware.RequireSuperAdmin(jwtService, userRepo),
+        middleware.RequireSuperAdmin(identity),
         handler.UpdateSystemConfig)
 }
 ```

@@ -77,23 +77,23 @@ git grep -ln "apps/admin" -- packages
 ### 3.1 三层类型镜像关系与权威
 
 ```
-后端 model 实体 json tag（权威）
-    ↓ 手工镜像（目标态：OpenAPI 生成，见 §8 R2）
+后端 domain 实体 json tag（权威）
+    ↓ 手工镜像（目标态：三把锁双向锚定，见 §3.4；不引入 codegen）
 @myblog/api/modules/*/types（唯一合法镜像）
     ↓ 禁止再造
-apps 内任何同构 interface/type（影子类型 = 债务 D7）
+apps 内任何同构 interface/type（影子类型 = 债务 D7，已清偿）
 ```
 
 ### 3.2 规则
 
 1. 后端修改实体输出字段（json tag）属于 **wire 格式变更**，必须走 A3 契约流程。
 2. 前端需要后端没有的类型（如页面视图模型）：允许定义，但**不得与后端请求/响应结构同构**（同构 = 字段集合基本一致）。视图模型应组合/派生自 `@myblog/api` 类型，而非平行重写。
-3. `AuthState` 类认证域类型现状有 3 份定义（两 app store + admin `types/auth.d.ts`），属债务，新增认证类型必须收敛到一处。
+3. `AuthState` 类认证域类型已收敛到 `@myblog/auth`（B5 下沉后仅剩 admin `types/auth.d.ts` 一处旧副本，触碰时移除，新增认证类型一律来自 `@myblog/auth`）。
 
 ### 3.3 验证命令
 
 ```bash
-# 影子类型合法命中仅限债务文件 apps/admin/src/lib/types/（只减不增）
+# 影子类型已清偿（D7）：apps 内不得再出现 BaseApiResponse 定义
 git grep -n "interface BaseApiResponse" -- apps
 ```
 
@@ -127,8 +127,8 @@ git grep -n "interface BaseApiResponse" -- apps
 
 1. **影响面声明**：列出后端 DTO、`@myblog/api` types、两 app 消费页面三方清单。
 2. **双端同窗口变更**：后端与前端类型/页面改动进同一变更集（或紧邻提交），提交信息注明契约面。
-3. **错误语义**：后端错误 message 措辞变更必须同步检查前端 `TOKEN_ERROR_MESSAGES`（债务 D10，前端以文案匹配识别 401）；改错误码语义同理。
-4. **认证协议**：token 形状、刷新端点、撤销语义的变更属于最高风险契约变更，须先在本文档 §6.3 登记再动代码。
+3. **错误语义**：后端错误 message 措辞变更属文案层面（D10 已清偿，前端以 `code === 401` 判定，不再匹配文案）；改错误码语义仍需双端同步。
+4. **认证协议**：token 形状、刷新端点、撤销语义的变更属于最高风险契约变更，须先更新 `contracts/auth-protocol.md` 再动代码。
 
 ### 4.2 模块对齐表
 
@@ -139,11 +139,11 @@ git grep -n "interface BaseApiResponse" -- apps
 | 后端 | `internal/model/<entity>.go`（如需）、`internal/repository/<module>.go`、`internal/service/<module>.go`、`internal/handler/<module>.go`、`internal/router/<module>.go`、`main.go` 装配 |
 | 前端 | `packages/api/src/modules/<module>/{types.ts, index.ts}`、`packages/api/src/index.ts` 导出、两应用 `src/lib/api/index.ts` 注册 |
 
-现存反例：`user_follow` 模块后端完整、前端零消费（债务 D13）。**此为"两端各自演进"的实证，模块对齐表的目的就是让这类偏差在发生当天可见。**
+**历史反例**：`user_follow` 曾后端完整、前端零消费（债务 D13，2026-09 已补齐 API 模块：`@myblog/api/modules/follow` + 两应用注册）。**此为"两端各自演进"的实证，模块对齐表的目的就是让这类偏差在发生当天可见。**
 
 ### 4.3 能力缺口推回原则
 
-前端发现后端接口能力不足（如列表缺关键词过滤）时，**唯一合法动作是给后端加参数**，禁止前端补偿（全量拉取 + 客户端过滤）。现存反例：admin users 页跨页抓取补偿（债务 D8 注记），清偿方式为后端 `users/list` 增加 keyword 参数。
+前端发现后端接口能力不足（如列表缺关键词过滤）时，**唯一合法动作是给后端加参数**，禁止前端补偿（全量拉取 + 客户端过滤）。**已清偿（2026-09）**：admin users 页跨页抓取补偿移除，后端 `users/list` 增加 keyword 参数（D8 注记）。
 
 ---
 
@@ -153,23 +153,23 @@ git grep -n "interface BaseApiResponse" -- apps
 
 | 事实 | 唯一权威 | 非法副本（存量债务） |
 |---|---|---|
-| 角色枚举与权限映射 | `server/internal/service/rbac.go` | 前端 `constants/auth.ts`、`utils/permissions.ts`（D6，终态后端下发） |
-| "是否管理员"判定 | 后端 RBAC | middleware 内硬编码字符串、前端复刻 |
-| 文章状态流转 | `model.Article` 行为方法 + service | 前端硬编码状态字符串比较 |
+| 角色枚举与权限映射 | 后端（生产 `configs/config.yaml` `rbac` 节，经 `LoadRBACConfig` 加载） | 前端 `constants/auth.ts` 映射仅作未下发降级兜底，**禁止新增第三份定义** |
+| "是否管理员"判定 | 后端 RBAC | 前端复刻（仅可做展示层优化） |
+| 文章状态流转 | `domain.Article` 行为方法 + service | 前端硬编码状态字符串比较 |
 | slug 生成 | `pkg/slug` + service 调用 | 前端自写 slugify |
 | 密码强度 | 后端 `service/user.go` | 前端正则复刻（仅可做输入提示，不得作为校验依据） |
-| token 刷新流程 | 各应用 `src/lib/service/index.ts`（裸 ky 直连版） | admin `utils/jwt.ts` 的 `manualRefreshToken`（D6 双轨，触碰时收敛） |
+| token 刷新流程 | 各应用 `src/lib/service/index.ts`（裸 ky 直连版，D6 已单轨） | —（`utils/jwt.ts` 的 `manualRefreshToken` 已删） |
 
 ### 5.2 实例化纪律
 
 - 依赖对象只能由组合根（`main.go`）构造并逐层注入。
-- **禁止**在 service 构造函数内部 `New` 另一个 service（存量违例：`NewUserService` 内部 `NewRBACService()`，债务 D4）。
-- **禁止**中间件、路由注册函数内部实例化服务（存量违例：`router/user.go`、`middleware/rbac.go` 每请求实例化，债务 D4）。
+- **禁止**在 service 构造函数内部 `New` 另一个 service（D4 已修复：`NewUserService` 不再内部实例化 `RBACService`）。
+- **禁止**中间件、路由注册函数内部实例化服务（D4 已修复：`router/user.go`、`middleware/rbac.go` 的私自实例化已移除）。
 
 ### 5.3 验证命令
 
 ```bash
-# RBACService 生产实例化点基线为 4 处：main.go / service/user.go / router/user.go / middleware/rbac.go
+# RBACService 生产实例化点已收敛为 1 处（cmd/myblog/main.go 组合根）
 # （rbac.go 本体的命中为定义，不计入；测试文件不计入）
 git grep -n "NewRBACService()" -- server
 ```
@@ -222,7 +222,7 @@ git grep -n "NewRBACService()" -- server
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言 | **已清偿（R0）**：router 重复接口 0、断言 0 | `git grep -c "HandlerInterface interface" -- server/internal/router`（应为空） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化 | **已收敛（R0）**：仅 main.go 组合根 1 处 | 见 §5.3 | 禁止新增实例化点 |
 | D5 | 两 app 基础设施逐字重复 | **大幅清偿（R1）**：auth store 下沉 `@myblog/auth`（202 行×2 → 16 行×2）；service/index.ts、theme-toggle、layout、error 仍重复 | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应近零差异） | 修改任一必须同步另一份 |
-| D6 | admin 认证工具三轨并行 | 5 个 utils 约 969 行；`requireAuth`×2、`isAuthenticated`×3、`performLogout`×2、token 刷新×2 | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken" -- apps/admin/src/lib` | 禁止新增认证工具文件；触碰时收敛双轨 |
+| D6 | admin 认证工具三轨并行 | **已收敛（R3）**：`utils/jwt.ts`、`utils/auth.ts` 已删（约 488 行）；`performLogout` 单轨（utils/logout）、刷新单轨（service/index.ts） | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken\|getAuthStatus" -- apps/admin/src/lib` | 禁止新增认证工具文件；禁止回潮双轨 |
 | D7 | 影子类型层 | **已清偿（R1）**：`types/api.d.ts` 已删，eslint 守门已加 | `git grep -n "interface BaseApiResponse" -- apps`（应为空） | 禁止回潮；类型一律来自 `@myblog/api` |
 | D8 | admin 胖组件 + onMount 取数 | **users 跨页补偿已清偿（R3）**：users/list 增加 keyword 参数；12 个胖组件存量保留（新页面禁用） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码 | **已清偿（R0）**：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
@@ -244,7 +244,7 @@ git grep -n "NewRBACService()" -- server
 | R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；JWT 撤销表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已清偿；D11 已加锁；D4 已收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
 | R1 类型归位 | 建 `internal/domain`，合并双 User，service/middleware/router 签名切 domain 类型；前端 auth 下沉共享包、影子类型清剿 | **D2、D7 已清偿；D5 大幅清偿（auth store 下沉）；D1 service 12→11** | ✅ D1 下降；auth store diff 为零 |
 | R2 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | **D10、D12 已清偿；三把锁已落地**（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
-| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 完成；permissions 下发完成；D13 API 模块已补齐；IdentityProvider 中间件坍缩完成**（D1 router/middleware 归零）；D6 认证工具收敛待办 | 权限定义全栈唯一；认证工具单轨 |
+| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 完成；permissions 下发完成；D13 API 模块已补齐；IdentityProvider 中间件坍缩完成（D1 router 归零、middleware 1 处）；D6 认证工具已收敛** | 权限定义全栈唯一；认证工具单轨 ✅ |
 | R4 扩展点 | 后端 ContentRenderer 内容策略接口；web SSR 业务接入（token 迁 cookie） | — | 新文章类型 = 插入实现，非逐层打洞 |
 
 ---
