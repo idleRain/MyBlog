@@ -38,8 +38,8 @@ router → handler → service → repository → model
 |---|---|---|
 | service → handler | 业务逻辑不得感知 HTTP | 已合规 |
 | repository → service / handler | 数据层不得承载业务 | 已合规 |
-| middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 债务 D1（2 文件） |
-| router → repository（仅为拼装中间件） | 路由层不应持有数据访问句柄 | 债务 D1（10 文件） |
+| middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 已收敛：仅 `identity.go` 实现 1 处 |
+| router → repository（仅为拼装中间件） | 路由层不应持有数据访问句柄 | 已清偿：router 依赖 repository 归零 |
 | 任何包 → `database.GetDB()` 全局单例 | 破坏可测试性 | 已合规（仅 main/seed 使用） |
 
 ### 2.2 前端允许的依赖图
@@ -217,7 +217,7 @@ git grep -n "NewRBACService()" -- server
 
 | 编号 | 债务描述 | 基线 | 验证命令 | 红线 |
 |---|---|---|---|---|
-| D1 | service/middleware/router import repository | service **11**+middleware 2+router 10（R1 后 jwt.go 已脱离 repository） | 见 §2.3 | 只减不增 |
+| D1 | service/middleware/router import repository | service **11**+middleware **1**+router **0**（R3 后 router 归零，middleware 仅 identity.go） | 见 §2.3 | 只减不增 |
 | D2 | 双 User 模型同写 users 表 | **已清偿（R1）**：合并为唯一 `domain.User` 实体 | `git grep -n "type User struct" -- server/internal --include="*.go"`（仅 domain） | 新字段只加 `domain.User` |
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言 | **已清偿（R0）**：router 重复接口 0、断言 0 | `git grep -c "HandlerInterface interface" -- server/internal/router`（应为空） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化 | **已收敛（R0）**：仅 main.go 组合根 1 处 | 见 §5.3 | 禁止新增实例化点 |
@@ -244,7 +244,7 @@ git grep -n "NewRBACService()" -- server
 | R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；JWT 撤销表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已清偿；D11 已加锁；D4 已收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
 | R1 类型归位 | 建 `internal/domain`，合并双 User，service/middleware/router 签名切 domain 类型；前端 auth 下沉共享包、影子类型清剿 | **D2、D7 已清偿；D5 大幅清偿（auth store 下沉）；D1 service 12→11** | ✅ D1 下降；auth store diff 为零 |
 | R2 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | **D10、D12 已清偿；三把锁已落地**（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
-| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 完成；permissions 下发完成（登录响应）**；D13 API 模块已补齐；D1 IdentityProvider、D6 认证工具收敛待办 | 权限定义全栈唯一；认证工具单轨 |
+| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 完成；permissions 下发完成；D13 API 模块已补齐；IdentityProvider 中间件坍缩完成**（D1 router/middleware 归零）；D6 认证工具收敛待办 | 权限定义全栈唯一；认证工具单轨 |
 | R4 扩展点 | 后端 ContentRenderer 内容策略接口；web SSR 业务接入（token 迁 cookie） | — | 新文章类型 = 插入实现，非逐层打洞 |
 
 ---
