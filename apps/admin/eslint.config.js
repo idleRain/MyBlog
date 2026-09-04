@@ -44,6 +44,22 @@ export default ts.config(
     }
   },
   {
+    // 类型唯一真相源守门（铁律 A2）：拦截影子类型层回潮。
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '$lib/types/api',
+              message: '影子类型层已删除，接口类型一律来自 @myblog/api（铁律 A2），禁止重新引入。'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.svelte', '**/*.svelte.ts', '**/*.svelte.js'],
     languageOptions: {
       parserOptions: {

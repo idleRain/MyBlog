@@ -9,8 +9,7 @@ export * from './auth'
 // 管理后台类型
 export * from './admin'
 
-// API相关类型
-export * from './api'
+// 接口类型唯一来源为 @myblog/api，禁止应用层定义同构影子类型（铁律 A2）。
 export * from '@myblog/api/modules/user/types'
 
 // 重新导出常用类型，提供更好的开发体验
@@ -41,23 +40,3 @@ export type {
   NotificationMessage,
   FormState
 } from './common'
-
-export type {
-  BaseApiResponse,
-  PaginationRequest,
-  PaginationResponse,
-  BaseListRequest,
-  ApiError,
-  RequestStatus,
-  AsyncState,
-  AsyncStateActions,
-  ApiResponse,
-  ListResponse,
-  DetailResponse,
-  CreateResponse,
-  UpdateResponse,
-  DeleteResponse,
-  BatchResponse,
-  HttpMethod,
-  ApiRequestConfig
-} from './api'
