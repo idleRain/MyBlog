@@ -1,5 +1,5 @@
 <script lang="ts">
-import { performLogout } from '$lib/utils/jwt'
+import { performLogout } from '$lib/utils/logout'
 import { LogOut } from '@lucide/svelte'
 import { toast } from 'svelte-sonner'
 import { Button } from '$ui/button'

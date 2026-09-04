@@ -1,5 +1,6 @@
 <script lang="ts">
-import { getAuthStatus, manualRefreshToken, type AuthStatus } from '$lib/utils/jwt'
+import { refreshAccessToken } from '$lib/service'
+import { authStore } from '$lib/stores/auth'
 import { onMount, onDestroy } from 'svelte'
 import { toast } from 'svelte-sonner'
 
@@ -12,31 +13,32 @@ export let autoRefresh = true
 const TOKEN_CHECK_INTERVAL_MS = 30 * 1000
 
 let interval: NodeJS.Timeout | null = null
-// 认证状态类型由 jwt.ts 的 AuthStatus 接口统一约束，令牌缺失时不含时间与用户字段。
-let authStatus: AuthStatus = {
+// 认证状态由 authStore 权威判定，令牌缺失时各项均为关闭态。
+let authStatus = {
   isAuthenticated: false,
   tokenValid: false,
-  needsRefresh: false
+  needsRefresh: false,
+  expiresAt: null as Date | null
 }
 
 function updateAuthStatus() {
-  authStatus = getAuthStatus()
+  const state = authStore.getCurrentState()
+  authStatus = {
+    isAuthenticated: state.isAuthenticated,
+    tokenValid: authStore.isTokenValid(),
+    needsRefresh: authStore.shouldRefreshToken(),
+    expiresAt: state.expiresAt ? new Date(state.expiresAt) : null
+  }
 }
 
 async function handleAutoRefresh() {
   if (!autoRefresh || !authStatus.isAuthenticated) return
 
-  if (authStatus.needsRefresh && authStatus.tokenValid) {
-    try {
-      const success = await manualRefreshToken()
-      if (success && showStatus) {
-        toast.success('令牌已自动刷新')
-      }
-    } catch (error) {
-      console.error('自动刷新令牌失败:', error)
-      if (showStatus) {
-        toast.error('令牌自动刷新失败')
-      }
+  if (authStatus.needsRefresh) {
+    // 复用 service 层唯一刷新路径（裸 ky 直连），保持认证逻辑单轨。
+    const newToken = await refreshAccessToken()
+    if (newToken && showStatus) {
+      toast.success('令牌已自动刷新')
     }
   }
 }
