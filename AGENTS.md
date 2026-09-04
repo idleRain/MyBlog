@@ -194,20 +194,20 @@ pnpm run migrate [create|up|down|version|help]
 
 | 编号 | 债务 | 红线 |
 |---|---|---|
-| D1 | service/middleware/router 依赖 repository 包（12+2+10 文件） | 只减不增 |
-| D2 | 双 User 模型（`repository.User` 12 字段与 `model.User` 30+ 字段同写 users 表） | 禁止第三份；新字段只加 `model.User` |
-| D3 | router 包重复定义 11 个 handler 接口 + `interface{}` 断言 | 禁止扩大 |
-| D4 | `RBACService` 4 处生产实例化（main/user.go/router/middleware） | 禁止第 5 处 |
-| D5 | 两 app 基础设施逐字重复 5 文件约 420 行（auth store/service/theme-toggle 等） | 修改任一必须同步另一份 |
-| D6 | admin 认证工具三轨并行约 969 行（guards/utils 双实现、token 刷新双轨） | 禁止新增认证工具文件 |
-| D7 | 影子类型 `apps/admin/src/lib/types/api.d.ts`（364 行，与真实契约不符） | 禁止新增同构类型 |
-| D8 | admin 12 个页面胖组件 + onMount 取数（users 搜索为后端缺口做跨页补偿） | 新页面禁用该模式；后端缺口推回后端 |
-| D9 | web 首页 load 死代码（返回值无人消费且触发认证请求） | 接业务前必须清理 |
-| D10 | 前端以中文文案匹配识别 401（`TOKEN_ERROR_MESSAGES`） | 后端改错误措辞必须同步前端 |
-| D11 | JWT 撤销表为无锁内存 map，多实例部署即失效 | 单实例部署为前提；部署架构变更前必须重构 |
-| D12 | 文章响应经 Preload("Author") 泄漏作者 `lastLoginIP` 等审计字段 | 触碰文章响应必须处理 |
+| D1 | service/middleware/router 依赖 repository 包（R1 后 service 12→11） | 只减不增 |
+| D2 | 双 User 模型（**已清偿**：合并为唯一 `domain.User`） | 新字段只加 `domain.User` |
+| D3 | router 重复定义 handler 接口 + `interface{}` 断言（**已清偿**） | 禁止回潮 |
+| D4 | `RBACService` 生产实例化（**已收敛**：仅 main 组合根 1 处） | 禁止新增实例化点 |
+| D5 | 两 app 基础设施逐字重复（auth store 已下沉 `@myblog/auth`，service/theme/layout 仍重复） | 修改任一必须同步另一份 |
+| D6 | admin 认证工具三轨并行约 969 行 | 禁止新增认证工具文件 |
+| D7 | 影子类型 `types/api.d.ts`（**已清偿**，eslint 守门已加） | 禁止回潮；类型一律来自 `@myblog/api` |
+| D8 | admin 12 个页面胖组件 + onMount 取数（users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
+| D9 | web 首页 load 死代码（**已清偿**） | 新页面禁用 load 调认证接口 |
+| D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |
+| D11 | JWT 撤销内存 map（**已加锁**；deprecated `ValidateToken` 已删） | 单实例部署前提；持久化前保持锁 |
+| D12 | 文章响应泄漏作者审计字段（**已清偿**：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
 | D13 | `user_follow` 模块仅后端存在，前端零消费 | 前端补齐前视为未完成功能 |
-| D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件 | 禁止仿效；触碰时回归 `$ui` |
+| D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（**已清偿**：7 页回归 `$ui`） | 禁止仿效；新分页一律 `$ui` |
 
 ## 10. 开发进度概览
 

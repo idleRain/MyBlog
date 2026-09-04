@@ -217,20 +217,20 @@ git grep -n "NewRBACService()" -- server
 
 | 编号 | 债务描述 | 基线 | 验证命令 | 红线 |
 |---|---|---|---|---|
-| D1 | service/middleware/router import repository | 12+2+10 文件 | 见 §2.3 | 只减不增 |
-| D2 | 双 User 模型同写 users 表 | `repository.User` 12 字段 / `model.User` 30+ 字段 | `git grep -n "type User struct" -- server/internal` | 禁止第三份；用户实体新字段只加 `model.User` |
-| D3 | router 重复定义 handler 接口 + `interface{}` 断言 | 11 个接口 | `git grep -c "HandlerInterface interface" -- server/internal/router` | 禁止扩大；新 handler 直接用 handler 包接口 |
-| D4 | `RBACService` 生产实例化 | 4 处 | 见 §5.3 | 禁止第 5 处 |
-| D5 | 两 app 基础设施逐字重复 | 5 文件约 420 行 | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应近零差异） | 修改任一必须同步另一份 |
-| D6 | admin 认证工具三轨并行 | 5 个 utils + 1 guards 约 969 行；`requireAuth`×2、`isAuthenticated`×3、`performLogout`×2、token 刷新×2 | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken" -- apps/admin/src/lib` | 禁止新增认证工具文件；触碰时收敛双轨 |
-| D7 | 影子类型层 | `apps/admin/src/lib/types/api.d.ts` 364 行（含与后端不符的 `timestamp`/`requestId`/`hasNext` 字段） | `git grep -ln "BaseApiResponse" -- apps` | 只减不增；新类型一律来自 `@myblog/api` |
-| D8 | admin 胖组件 + onMount 取数 | 12 个数据页面；users 页跨页抓取补偿 | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端能力缺口推回后端 |
-| D9 | web 首页 load 死代码 | `(app)/+page.ts` 返回值无消费且触发认证请求 | 读文件确认 | web 接业务前必须清理 |
+| D1 | service/middleware/router import repository | service **11**+middleware 2+router 10（R1 后 jwt.go 已脱离 repository） | 见 §2.3 | 只减不增 |
+| D2 | 双 User 模型同写 users 表 | **已清偿（R1）**：合并为唯一 `domain.User` 实体 | `git grep -n "type User struct" -- server/internal --include="*.go"`（仅 domain） | 新字段只加 `domain.User` |
+| D3 | router 重复定义 handler 接口 + `interface{}` 断言 | **已清偿（R0）**：router 重复接口 0、断言 0 | `git grep -c "HandlerInterface interface" -- server/internal/router`（应为空） | 禁止回潮 |
+| D4 | `RBACService` 生产实例化 | **已收敛（R0）**：仅 main.go 组合根 1 处 | 见 §5.3 | 禁止新增实例化点 |
+| D5 | 两 app 基础设施逐字重复 | **大幅清偿（R1）**：auth store 下沉 `@myblog/auth`（202 行×2 → 16 行×2）；service/index.ts、theme-toggle、layout、error 仍重复 | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应近零差异） | 修改任一必须同步另一份 |
+| D6 | admin 认证工具三轨并行 | 5 个 utils 约 969 行；`requireAuth`×2、`isAuthenticated`×3、`performLogout`×2、token 刷新×2 | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken" -- apps/admin/src/lib` | 禁止新增认证工具文件；触碰时收敛双轨 |
+| D7 | 影子类型层 | **已清偿（R1）**：`types/api.d.ts` 已删，eslint 守门已加 | `git grep -n "interface BaseApiResponse" -- apps`（应为空） | 禁止回潮；类型一律来自 `@myblog/api` |
+| D8 | admin 胖组件 + onMount 取数 | **users 跨页补偿已清偿（R3）**：users/list 增加 keyword 参数；12 个胖组件存量保留（新页面禁用） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端缺口推回后端 |
+| D9 | web 首页 load 死代码 | **已清偿（R0）**：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配 | **已清偿（R0）**：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |
-| D11 | JWT 撤销无锁内存 map | `service/jwt.go` `revokedTokens`；deprecated `ValidateToken` 每次新建实例致撤销检查失效 | `git grep -n "revokedTokens" -- server` | 单实例部署前提；并发触碰时先加锁 |
-| D12 | 文章响应泄漏作者审计字段 | `Preload("Author")` 输出 `lastLoginIP`/`loginCount` 等 | 读 `model/user.go` json tag | 触碰文章响应必须处理（DTO 分离） |
+| D11 | JWT 撤销无锁内存 map | **已加锁（R0）**：`sync.RWMutex` 保护；deprecated `ValidateToken` 已删 | `git grep -n "revokedTokens" -- server` | 单实例部署前提；持久化前保持锁 |
+| D12 | 文章响应泄漏作者审计字段 | **已清偿（R2）**：`lastLoginIP` 等审计字段改为 `json:"-"` | 读 `domain/user.go` json tag | 新增审计字段默认 `json:"-"` |
 | D13 | follow 模块仅后端 | 前端 0 消费 | `git grep -ln "follow" -- packages/api/src`（非空即已补齐） | 前端补齐前视为未完成 |
-| D14 | admin 重写 `$ui` 已有组件 | 本地 `pagination.svelte` | 目录比对 | 禁止仿效 |
+| D14 | admin 重写 `$ui` 已有组件 | **已清偿（R3）**：本地 `pagination.svelte` 已删，7 页回归 `$ui` | 目录比对 | 禁止仿效；新分页一律 `$ui` |
 
 ---
 
@@ -241,10 +241,10 @@ git grep -n "NewRBACService()" -- server
 
 | 阶段 | 内容 | 清偿债务 | 验收口径 |
 |---|---|---|---|
-| R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；JWT 撤销表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已收敛；D11 已加锁；D4 已注入收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | 第 1 节自检命令全绿 |
-| R1 类型归位 | 建 `internal/domain`，合并双 User，service/middleware/router 签名切 domain 类型；前端 auth 下沉共享包、影子类型清剿 | D1、D2、D5、D7 | D1 文件数下降；两 app auth 文件 diff 为零 |
-| R2 契约切换 | handler 层 DTO 分离（实体不再直接序列化输出）；swaggo → OpenAPI → 前端类型生成；401 改错误码判定 | D10、D12 | 前端类型物理生成；影子类型归零 |
-| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | D4、D6、D8、D13、D14 | 权限定义全栈唯一；认证工具单轨 |
+| R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；JWT 撤销表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已清偿；D11 已加锁；D4 已收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
+| R1 类型归位 | 建 `internal/domain`，合并双 User，service/middleware/router 签名切 domain 类型；前端 auth 下沉共享包、影子类型清剿 | **D2、D7 已清偿；D5 大幅清偿（auth store 下沉）；D1 service 12→11** | ✅ D1 下降；auth store diff 为零 |
+| R2 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | **D10、D12 已清偿；三把锁已落地**（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
+| R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 已完成（D2a）**；permissions 下发、D6 收敛、D13 前端补齐待办 | 权限定义全栈唯一；认证工具单轨 |
 | R4 扩展点 | 后端 ContentRenderer 内容策略接口；web SSR 业务接入（token 迁 cookie） | — | 新文章类型 = 插入实现，非逐层打洞 |
 
 ---
