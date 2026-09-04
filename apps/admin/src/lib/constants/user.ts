@@ -20,9 +20,3 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
 
 // 用户默认分页大小
 export const USER_PAGE_SIZE = 10
-
-// 搜索时单次抓取的用户数，取后端 pageSize 上限以覆盖更多用户。
-export const USER_SEARCH_PAGE_SIZE = 100
-
-// 搜索时最多抓取的页数，避免超大用户量时发起过多请求。
-export const USER_SEARCH_MAX_PAGES = 10

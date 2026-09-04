@@ -5,13 +5,13 @@ import type {
   User,
   UserRole
 } from '@myblog/api/modules/user/types'
-import { USER_PAGE_SIZE, USER_SEARCH_MAX_PAGES, USER_SEARCH_PAGE_SIZE } from '$lib/constants/user'
 import UserFormDialog from '$lib/components/admin/user/user-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import UserTable from '$lib/components/admin/user/user-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import Pagination from '$lib/components/admin/pagination.svelte'
 import { getAssignableRoles } from '$lib/utils/permissions'
+import { USER_PAGE_SIZE } from '$lib/constants/user'
 import { Plus, Search } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth'
 import { Button, Card, Input } from '$ui'
@@ -23,8 +23,6 @@ let isLoading = $state(true)
 let total = $state(0)
 let currentPage = $state(1)
 let searchQuery = $state('')
-// 是否处于跨页搜索状态，用于控制结果计数与分页显隐。
-let isSearching = $state(false)
 
 // 批量选择状态
 let selectedIds = $state<number[]>([])
@@ -44,43 +42,19 @@ let batchConfirm = $state<{ action: 'enable' | 'disable' | 'delete' } | null>(nu
 let isBatchExecuting = $state(false)
 
 /**
- * 加载用户列表。
- * 无搜索词时按分页加载；有搜索词时跨页抓取并交给客户端过滤，
- * 因为后端 users/list 不提供关键词参数。
+ * 加载用户列表，搜索词经 keyword 参数交由后端模糊匹配。
  */
 async function loadUsers() {
   isLoading = true
   try {
     const query = searchQuery.trim()
-    if (query) {
-      isSearching = true
-      const allUsers: User[] = []
-      let fetchedTotal = 0
-      for (let page = 1; page <= USER_SEARCH_MAX_PAGES; page++) {
-        const response = await UserAPI.getUserList(page, USER_SEARCH_PAGE_SIZE)
-        if (response.code !== 200 || !response.data) {
-          if (allUsers.length === 0) {
-            toast.error(response.message || '加载用户列表失败')
-          }
-          break
-        }
-        total = response.data.total ?? 0
-        allUsers.push(...(response.data.users ?? []))
-        fetchedTotal = allUsers.length
-        if (fetchedTotal >= total) break
-      }
-      users = allUsers
+    const response = await UserAPI.getUserList(currentPage, USER_PAGE_SIZE, query)
+    if (response.code === 200 && response.data) {
+      users = response.data.users ?? []
+      total = response.data.total ?? 0
       selectedIds = []
     } else {
-      isSearching = false
-      const response = await UserAPI.getUserList(currentPage, USER_PAGE_SIZE)
-      if (response.code === 200 && response.data) {
-        users = response.data.users ?? []
-        total = response.data.total ?? 0
-        selectedIds = []
-      } else {
-        toast.error(response.message || '加载用户列表失败')
-      }
+      toast.error(response.message || '加载用户列表失败')
     }
   } catch (error) {
     console.error('加载用户列表失败:', error)
@@ -89,15 +63,6 @@ async function loadUsers() {
     isLoading = false
   }
 }
-
-// 清空搜索词时恢复普通分页列表，避免残留跨页搜索态。
-$effect(() => {
-  if (searchQuery.trim() === '' && isSearching) {
-    isSearching = false
-    currentPage = 1
-    void loadUsers()
-  }
-})
 
 /**
  * 提交用户表单，新建与编辑分别调用对应接口。
@@ -237,8 +202,7 @@ async function executeBatch() {
 }
 
 function toggleSelectAll() {
-  selectedIds =
-    selectedIds.length === filteredUsers.length ? [] : filteredUsers.map(user => user.id)
+  selectedIds = selectedIds.length === users.length ? [] : users.map(user => user.id)
 }
 
 function toggleSelect(id: number) {
@@ -252,21 +216,7 @@ function handlePageChange(page: number) {
   loadUsers()
 }
 
-const filteredUsers = $derived(
-  users.filter(user => {
-    const query = searchQuery.trim().toLowerCase()
-    if (!query) return true
-    return (
-      user.username.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query) ||
-      (user.nickname ?? '').toLowerCase().includes(query)
-    )
-  })
-)
-
-const isAllSelected = $derived(
-  filteredUsers.length > 0 && selectedIds.length === filteredUsers.length
-)
+const isAllSelected = $derived(users.length > 0 && selectedIds.length === users.length)
 
 onMount(() => {
   const currentUser = authStore.getCurrentState().user
@@ -309,11 +259,7 @@ onMount(() => {
             }}
           />
         </div>
-        {#if isSearching}
-          <span class="text-sm text-muted-foreground">匹配 {filteredUsers.length} 个用户</span>
-        {:else}
-          <span class="text-sm text-muted-foreground">共 {total} 个用户</span>
-        {/if}
+        <span class="text-sm text-muted-foreground">共 {total} 个用户</span>
       </div>
     </Card.Content>
   </Card.Root>
@@ -339,7 +285,7 @@ onMount(() => {
   {/if}
 
   <UserTable
-    users={filteredUsers}
+    {users}
     {selectedIds}
     {isAllSelected}
     {isLoading}
@@ -353,14 +299,12 @@ onMount(() => {
     onDelete={user => (deleteTarget = user)}
   />
 
-  {#if !isSearching}
-    <Pagination
-      page={currentPage}
-      {total}
-      pageSize={USER_PAGE_SIZE}
-      onPageChange={handlePageChange}
-    />
-  {/if}
+  <Pagination
+    page={currentPage}
+    {total}
+    pageSize={USER_PAGE_SIZE}
+    onPageChange={handlePageChange}
+  />
 
   <UserFormDialog
     {isSubmitting}

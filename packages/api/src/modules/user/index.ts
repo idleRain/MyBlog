@@ -28,9 +28,9 @@ export function createUserAPI(request: KyInstance) {
       return request.post('users/create', { json: params }).json()
     },
 
-    // 获取用户列表
-    getUserList(page = 1, pageSize = 10): Promise<UserListResponse> {
-      return request.post('users/list', { json: { page, pageSize } }).json()
+    // 获取用户列表，keyword 非空时按用户名、邮箱或昵称模糊匹配。
+    getUserList(page = 1, pageSize = 10, keyword = ''): Promise<UserListResponse> {
+      return request.post('users/list', { json: { page, pageSize, keyword } }).json()
     },
 
     // 根据 ID 获取用户信息，统一使用 POST 方法。

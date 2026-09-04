@@ -143,8 +143,9 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 // GetUserList 获取用户列表 POST /api/users/list
 func (h *UserHandler) GetUserList(c *gin.Context) {
 	type GetUserListRequest struct {
-		Page     int `json:"page" binding:"omitempty,min=1"`
-		PageSize int `json:"pageSize" binding:"omitempty,min=1,max=100"`
+		Page     int    `json:"page" binding:"omitempty,min=1"`
+		PageSize int    `json:"pageSize" binding:"omitempty,min=1,max=100"`
+		Keyword  string `json:"keyword"`
 	}
 
 	var req GetUserListRequest
@@ -161,7 +162,7 @@ func (h *UserHandler) GetUserList(c *gin.Context) {
 		req.PageSize = 10
 	}
 
-	users, total, err := h.userService.GetUserList(req.Page, req.PageSize)
+	users, total, err := h.userService.GetUserList(req.Page, req.PageSize, req.Keyword)
 	if err != nil {
 		response.InternalError(c, err.Error())
 		return

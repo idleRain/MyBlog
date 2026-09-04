@@ -21,7 +21,7 @@ type UserRepository interface {
 	GetByEmail(email string) (*domain.User, error)
 	Update(user *domain.User) error
 	Delete(id uint) error
-	List(offset, limit int) ([]*domain.User, int64, error)
+	List(offset, limit int, keyword string) ([]*domain.User, int64, error)
 }
 
 // userRepository 用户仓库实现
@@ -94,18 +94,27 @@ func (r *userRepository) Delete(id uint) error {
 	return nil
 }
 
-// List 获取用户列表
-func (r *userRepository) List(offset, limit int) ([]*domain.User, int64, error) {
+// List 获取用户列表，keyword 非空时按用户名、邮箱或昵称模糊过滤。
+func (r *userRepository) List(offset, limit int, keyword string) ([]*domain.User, int64, error) {
 	var users []*domain.User
 	var total int64
 
+	query := r.db.Model(&domain.User{})
+	if keyword != "" {
+		like := "%" + keyword + "%"
+		query = query.Where(
+			"username LIKE ? OR email LIKE ? OR nickname LIKE ?",
+			like, like, like,
+		)
+	}
+
 	// 获取总数
-	if err := r.db.Model(&domain.User{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("查询用户总数失败: %w", err)
 	}
 
 	// 获取用户列表
-	if err := r.db.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
+	if err := query.Offset(offset).Limit(limit).Find(&users).Error; err != nil {
 		return nil, 0, fmt.Errorf("查询用户列表失败: %w", err)
 	}
 

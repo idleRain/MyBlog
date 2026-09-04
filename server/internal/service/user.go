@@ -30,7 +30,7 @@ type UserService interface {
 	CreateUser(req *domain.CreateUserRequest) (*domain.User, error)
 	UpdateUser(req *domain.UpdateUserRequest) (*domain.User, error)
 	GetUserByID(id uint) (*domain.User, error)
-	GetUserList(page, pageSize int) ([]*domain.User, int64, error)
+	GetUserList(page, pageSize int, keyword string) ([]*domain.User, int64, error)
 	DeleteUser(id uint) error
 	Login(username, password string) (*LoginResponse, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
@@ -191,8 +191,8 @@ func (s *userService) GetUserByID(id uint) (*domain.User, error) {
 	return user, nil
 }
 
-// GetUserList 获取用户列表
-func (s *userService) GetUserList(page, pageSize int) ([]*domain.User, int64, error) {
+// GetUserList 获取用户列表，keyword 非空时按用户名、邮箱或昵称模糊匹配。
+func (s *userService) GetUserList(page, pageSize int, keyword string) ([]*domain.User, int64, error) {
 	// 参数验证
 	if page < 1 {
 		page = 1
@@ -202,7 +202,7 @@ func (s *userService) GetUserList(page, pageSize int) ([]*domain.User, int64, er
 	}
 
 	offset := (page - 1) * pageSize
-	users, total, err := s.userRepo.List(offset, pageSize)
+	users, total, err := s.userRepo.List(offset, pageSize, keyword)
 	if err != nil {
 		return nil, 0, err
 	}
