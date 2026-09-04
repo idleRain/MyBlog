@@ -39,3 +39,7 @@ export * from './modules/stats/types.ts'
 export { createNotificationAPI } from './modules/notification/index.ts'
 export type { NotificationAPI } from './modules/notification/index.ts'
 export * from './modules/notification/types.ts'
+
+export { createFollowAPI } from './modules/follow/index.ts'
+export type { FollowAPI } from './modules/follow/index.ts'
+export * from './modules/follow/types.ts'
