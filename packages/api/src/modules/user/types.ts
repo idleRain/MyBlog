@@ -48,6 +48,7 @@ export interface LoginData {
   accessToken: string
   refreshToken: string
   expiresIn: number
+  permissions: string[]
 }
 
 // 获取用户信息请求参数

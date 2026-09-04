@@ -2,12 +2,19 @@
 
 import type { User, UserRole, UserPermissionContext, PermissionCheck, RoleInfo } from '$lib/types'
 import { ROLE_PERMISSIONS, ROLE_CONFIG } from '$lib/constants/auth.ts'
+import { authStore } from '$lib/stores/auth'
 
 /**
- * 检查用户是否拥有指定权限
+ * 检查用户是否拥有指定权限。
+ * 权限唯一权威为后端登录下发的权限列表（铁律 A4），未下发时降级使用内置映射。
  */
 export function hasPermission(user: User | null, permission: string): boolean {
   if (!user) return false
+
+  const delivered = authStore.getPermissions()
+  if (delivered.length > 0) {
+    return delivered.includes(permission)
+  }
 
   const rolePermissions = ROLE_PERMISSIONS[user.role] || []
   return rolePermissions.includes(permission)
@@ -103,10 +110,12 @@ export function getRoleInfo(role: UserRole): RoleInfo {
 }
 
 /**
- * 获取用户的所有权限
+ * 获取用户的所有权限，优先返回后端下发值。
  */
 export function getUserPermissions(user: User | null): string[] {
   if (!user) return []
+  const delivered = authStore.getPermissions()
+  if (delivered.length > 0) return delivered
   return ROLE_PERMISSIONS[user.role] || []
 }
 

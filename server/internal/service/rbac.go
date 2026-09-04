@@ -251,6 +251,15 @@ func GetAllRoles() []Role {
 	return []Role{RoleUser, RoleEditor, RoleAdmin, RoleSuperAdmin}
 }
 
+// permissionStrings 将权限枚举列表转换为字符串列表，供接口下发给前端。
+func permissionStrings(permissions []Permission) []string {
+	result := make([]string, 0, len(permissions))
+	for _, p := range permissions {
+		result = append(result, string(p))
+	}
+	return result
+}
+
 // IsAdminRole 检查是否为管理员级别角色
 func IsAdminRole(role string) bool {
 	return role == string(RoleAdmin) || role == string(RoleSuperAdmin)

@@ -9,6 +9,7 @@ export interface AuthState {
   accessToken: string | null
   refreshToken: string | null
   expiresAt: number | null // 过期时间戳
+  permissions: string[] // 登录时由后端下发的权限列表
 }
 
 /**
@@ -33,7 +34,8 @@ const initialState: AuthState = {
   user: null,
   accessToken: null,
   refreshToken: null,
-  expiresAt: null
+  expiresAt: null,
+  permissions: []
 }
 
 // localStorage 令牌存储键
@@ -41,6 +43,7 @@ const AUTH_TOKEN_KEY = 'auth_access_token'
 const AUTH_REFRESH_KEY = 'auth_refresh_token'
 const AUTH_USER_KEY = 'auth_user'
 const AUTH_EXPIRES_KEY = 'auth_expires_at'
+const AUTH_PERMISSIONS_KEY = 'auth_permissions'
 
 // 令牌过期前提前刷新的窗口，单位毫秒
 const REFRESH_LEAD_TIME_MS = 5 * 60 * 1000
@@ -58,6 +61,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
       const refreshToken = local.get<string>(AUTH_REFRESH_KEY)
       const user = local.get<User>(AUTH_USER_KEY)
       const expiresAt = local.get<number>(AUTH_EXPIRES_KEY)
+      const permissions = local.get<string[]>(AUTH_PERMISSIONS_KEY)
 
       if (accessToken && refreshToken && user) {
         return {
@@ -65,7 +69,8 @@ export function createAuthStore(deps: AuthStoreDeps) {
           user,
           accessToken,
           refreshToken,
-          expiresAt
+          expiresAt,
+          permissions: permissions ?? []
         }
       }
     } catch (error) {
@@ -90,6 +95,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
     local.rm(AUTH_REFRESH_KEY)
     local.rm(AUTH_USER_KEY)
     local.rm(AUTH_EXPIRES_KEY)
+    local.rm(AUTH_PERMISSIONS_KEY)
   }
 
   return {
@@ -100,8 +106,14 @@ export function createAuthStore(deps: AuthStoreDeps) {
       return currentState
     },
 
-    // 登录并持久化令牌
-    login(user: User, accessToken: string, refreshToken: string, expiresIn: number) {
+    // 登录并持久化令牌与权限
+    login(
+      user: User,
+      accessToken: string,
+      refreshToken: string,
+      expiresIn: number,
+      permissions: string[] = []
+    ) {
       const expiresAt = Date.now() + expiresIn * 1000 // 转换为毫秒时间戳
 
       const authState: AuthState = {
@@ -109,7 +121,8 @@ export function createAuthStore(deps: AuthStoreDeps) {
         user,
         accessToken,
         refreshToken,
-        expiresAt
+        expiresAt,
+        permissions
       }
 
       if (deps.isBrowser()) {
@@ -117,6 +130,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
         local.set(AUTH_REFRESH_KEY, refreshToken)
         local.set(AUTH_USER_KEY, user)
         local.set(AUTH_EXPIRES_KEY, expiresAt)
+        local.set(AUTH_PERMISSIONS_KEY, permissions)
       }
 
       set(authState)
@@ -204,6 +218,16 @@ export function createAuthStore(deps: AuthStoreDeps) {
     // 获取刷新令牌
     getRefreshToken(): string | null {
       return currentState.refreshToken
+    },
+
+    // 获取当前用户权限列表，权限唯一权威为后端下发值。
+    getPermissions(): string[] {
+      return currentState.permissions
+    },
+
+    // 检查当前用户是否拥有指定权限，未下发时返回 false 交由调用方降级。
+    hasPermission(permission: string): boolean {
+      return currentState.permissions.includes(permission)
     },
 
     // 向后兼容：获取访问令牌

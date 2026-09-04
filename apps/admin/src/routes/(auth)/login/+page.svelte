@@ -67,7 +67,8 @@ async function handleLogin(e: SubmitEvent) {
         response.data.user,
         response.data.accessToken,
         response.data.refreshToken,
-        response.data.expiresIn
+        response.data.expiresIn,
+        response.data.permissions
       )
       toast.success('登录成功')
       await goto('/')

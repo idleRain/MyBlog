@@ -256,6 +256,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 		"accessToken":  loginResp.AccessToken,
 		"refreshToken": loginResp.RefreshToken,
 		"expiresIn":    loginResp.ExpiresIn,
+		"permissions":  loginResp.Permissions,
 	}
 
 	response.SuccessWithMessage(c, "登录成功", data)

@@ -16,6 +16,7 @@
     },
     "accessToken": "<payload-only access token>",
     "refreshToken": "<payload-only refresh token>",
-    "expiresIn": 1800
+    "expiresIn": 1800,
+    "permissions": ["article:read", "comment:create", "comment:read", "comment:update"]
   }
 }

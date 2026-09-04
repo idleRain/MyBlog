@@ -23,6 +23,7 @@ type LoginResponse struct {
 	AccessToken  string       `json:"access_token"`
 	RefreshToken string       `json:"refresh_token"`
 	ExpiresIn    int64        `json:"expires_in"`
+	Permissions  []string     `json:"permissions"` // 当前角色权限列表，由后端下发的唯一权威
 }
 
 // UserService 用户服务接口
@@ -312,6 +313,7 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 		AccessToken:  tokenPair.AccessToken,
 		RefreshToken: tokenPair.RefreshToken,
 		ExpiresIn:    tokenPair.ExpiresIn,
+		Permissions:  permissionStrings(s.rbacService.GetUserPermissions(user.Role)),
 	}, nil
 }
 
