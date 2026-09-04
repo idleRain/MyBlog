@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@myblog/api": "workspace:*",
+    "@myblog/auth": "workspace:*",
     "@myblog/http": "workspace:*",
     "@myblog/shared": "workspace:*",
     "@myblog/ui": "workspace:*",

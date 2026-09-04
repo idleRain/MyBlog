@@ -1,0 +1,21 @@
+{
+  "name": "@myblog/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MyBlog 认证会话组装包：以工厂函数提供认证 store，依赖经注入避免框架耦合。",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@myblog/api": "workspace:*",
+    "@myblog/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "svelte": "catalog:"
+  },
+  "devDependencies": {
+    "svelte": "catalog:",
+    "typescript": "catalog:"
+  }
+}
