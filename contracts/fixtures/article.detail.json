@@ -52,12 +52,6 @@
       "locale": "zh-CN",
       "role": "superadmin",
       "status": 1,
-      "lockedUntil": null,
-      "passwordChangedAt": null,
-      "lastLoginAt": null,
-      "lastLoginIP": "127.0.0.1",
-      "loginCount": 0,
-      "emailVerifiedAt": null,
       "createdAt": "2026-01-01T00:00:00+08:00",
       "updatedAt": "2026-01-01T00:00:00+08:00"
     },

@@ -33,12 +33,12 @@ type User struct {
 	Role              string            `json:"role" gorm:"size:20;index;default:user;comment:用户角色：superadmin/admin/editor/user"`
 	Status            int               `json:"status" gorm:"type:tinyint;index;default:1;comment:用户状态：1-正常 0-禁用 2-锁定"`
 	FailedLoginCount  uint              `json:"-" gorm:"default:0;comment:连续登录失败次数，登录成功后清零"`
-	LockedUntil       *time.Time        `json:"lockedUntil" gorm:"type:datetime(3);comment:账户锁定截止时间，到期后可重新登录"`
-	PasswordChangedAt *time.Time        `json:"passwordChangedAt" gorm:"type:datetime(3);comment:密码最后修改时间，用于安全审计"`
-	LastLoginAt       *time.Time        `json:"lastLoginAt" gorm:"type:datetime(3);index;comment:最后登录时间"`
-	LastLoginIP       string            `json:"lastLoginIP" gorm:"size:45;comment:最后登录IP，IPv6 最长 45 字符"`
-	LoginCount        uint              `json:"loginCount" gorm:"default:0;comment:累计登录成功次数"`
-	EmailVerifiedAt   *time.Time        `json:"emailVerifiedAt" gorm:"type:datetime(3);comment:邮箱验证完成时间，为空表示未验证"`
+	LockedUntil       *time.Time        `json:"-" gorm:"type:datetime(3);comment:账户锁定截止时间，到期后可重新登录"`
+	PasswordChangedAt *time.Time        `json:"-" gorm:"type:datetime(3);comment:密码最后修改时间，用于安全审计"`
+	LastLoginAt       *time.Time        `json:"-" gorm:"type:datetime(3);index;comment:最后登录时间"`
+	LastLoginIP       string            `json:"-" gorm:"size:45;comment:最后登录IP，IPv6 最长 45 字符"`
+	LoginCount        uint              `json:"-" gorm:"default:0;comment:累计登录成功次数"`
+	EmailVerifiedAt   *time.Time        `json:"-" gorm:"type:datetime(3);comment:邮箱验证完成时间，为空表示未验证"`
 	Remark            string            `json:"-" gorm:"size:500;comment:管理员备注，仅管理端可见"`
 	CreatedAt         time.Time         `json:"createdAt" gorm:"type:datetime(3);comment:创建时间"`
 	UpdatedAt         time.Time         `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
