@@ -97,10 +97,6 @@ format:
 	@goimports -w .
 	@echo "✅ 代码格式化完成"
 
-# 使用 Node.js 脚本格式化代码 (跨平台)
-format-js:
-	@node scripts/format-code.js
-
 # 格式化代码 (保持向后兼容)
 fmt: format
 
