@@ -21,6 +21,7 @@ import { Avatar, Badge, Button, Separator, Sidebar } from '$ui'
 import { getRoleInfo } from '$lib/utils/permissions'
 import { performLogout } from '$lib/utils/logout'
 import type { User, UserRole } from '$lib/types'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { NotificationAPI } from '$lib/api'
@@ -153,7 +154,7 @@ onMount(loadUserState)
         <Shield class="size-4" />
       </div>
       <div class="flex flex-col">
-        <span class="text-sm font-semibold">MyBlog 管理后台</span>
+        <span class="text-sm font-semibold">{SITE_NAME_ZH} 管理后台</span>
         <span class="text-xs text-muted-foreground">管理控制面板</span>
       </div>
     </div>

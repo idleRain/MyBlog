@@ -3,6 +3,7 @@ import { checkAuthOnLoad, requireAuth } from '$lib/utils/auth-guard'
 import { resolveAllowedRoles } from '$lib/constants/navigation'
 import type { UserRole } from '@myblog/api/modules/user/types'
 import { AppSidebar } from '$lib/components/admin'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { ModeWatcher } from 'mode-watcher'
@@ -56,7 +57,7 @@ $effect(() => {
 </script>
 
 <svelte:head>
-  <title>管理后台 - MyBlog</title>
+  <title>管理后台 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <ModeWatcher />

@@ -4,6 +4,7 @@ import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { Setting } from '@myblog/api/modules/setting/types'
 import { Save, Settings as SettingsIcon } from '@lucide/svelte'
 import { SETTING_GROUP_LABELS } from '$lib/constants/setting'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { Button, Card, Separator } from '$ui'
 import { SettingAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -96,7 +97,7 @@ onMount(loadSettings)
 </script>
 
 <svelte:head>
-  <title>系统设置 - MyBlog</title>
+  <title>系统设置 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="系统设置" description="配置站点信息、内容、媒体与安全等参数" crumb="系统设置">

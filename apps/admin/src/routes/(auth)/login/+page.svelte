@@ -5,6 +5,7 @@ import { superForm } from 'sveltekit-superforms'
 import { safeApiCall } from '$lib/utils/request'
 import { authStore } from '$lib/stores/auth.ts'
 import { ThemeToggle } from '$lib/components'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { ModeWatcher } from 'mode-watcher'
 import type { PageData } from './$types'
@@ -105,7 +106,7 @@ function togglePasswordVisibility() {
 </script>
 
 <svelte:head>
-  <title>登录 - MyBlog</title>
+  <title>登录 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <ModeWatcher />

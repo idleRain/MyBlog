@@ -11,6 +11,7 @@ import { Button, Card, Badge, DropdownMenu, Input, ToggleGroup } from '$ui'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { CATEGORY_STATUS_CONFIG } from '$lib/constants/category'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { CategoryAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -148,7 +149,7 @@ onMount(loadCategories)
 </script>
 
 <svelte:head>
-  <title>分类管理 - MyBlog</title>
+  <title>分类管理 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader

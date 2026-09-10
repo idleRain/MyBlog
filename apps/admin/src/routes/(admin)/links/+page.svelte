@@ -11,6 +11,7 @@ import { Badge, Button, Card, DropdownMenu, Pagination, Table, ToggleGroup } fro
 import LinkFormDialog from '$lib/components/admin/link/link-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { FriendlyLinkAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -146,7 +147,7 @@ onMount(loadLinks)
 </script>
 
 <svelte:head>
-  <title>友情链接 - MyBlog</title>
+  <title>友情链接 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="友情链接" description="管理互链申请，覆盖申请、审核与展示状态" crumb="友情链接">

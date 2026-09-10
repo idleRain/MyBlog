@@ -3,6 +3,7 @@ import { FileText, Eye, Heart, MessageSquare, Users, FolderTree, Tags, Send } fr
 import ViewsTrendChart from '$lib/components/admin/stats/views-trend-chart.svelte'
 import type { StatsOverview } from '@myblog/api/modules/stats/types'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { Card, ToggleGroup } from '$ui'
 import { StatsAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -62,7 +63,7 @@ onMount(loadStats)
 </script>
 
 <svelte:head>
-  <title>站点统计 - MyBlog</title>
+  <title>站点统计 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="站点统计" description="运营数据分析与文章浏览量趋势" crumb="站点统计">

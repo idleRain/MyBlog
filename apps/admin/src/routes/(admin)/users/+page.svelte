@@ -12,6 +12,7 @@ import PageHeader from '$lib/components/admin/page-header.svelte'
 import { getAssignableRoles } from '$lib/utils/permissions'
 import { Button, Card, Input, Pagination } from '$ui'
 import { USER_PAGE_SIZE } from '$lib/constants/user'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { Plus, Search } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth'
 import { UserAPI } from '$lib/api'
@@ -225,7 +226,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>用户管理 - MyBlog</title>
+  <title>用户管理 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="用户管理" description="管理系统用户，包括创建、编辑与删除操作" crumb="用户管理">

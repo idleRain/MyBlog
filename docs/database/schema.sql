@@ -618,10 +618,10 @@ CREATE TABLE IF NOT EXISTS `content_stats` (
 
 -- 插入默认系统配置
 INSERT INTO `settings` (`key_name`, `value`, `description`, `type`, `group_name`, `is_public`) VALUES
-('site_name', 'MyBlog', '网站名称', 'string', 'general', 1),
+('site_name', '闲雨小筑', '网站名称', 'string', 'general', 1),
 ('site_description', '一个基于 Go + SvelteKit 的现代化博客系统', '网站描述', 'string', 'general', 1),
 ('site_keywords', 'blog,go,svelte,typescript', '网站关键词', 'string', 'seo', 1),
-('site_author', 'MyBlog Team', '网站作者', 'string', 'general', 1),
+('site_author', 'IdleRain', '网站作者', 'string', 'general', 1),
 ('articles_per_page', '10', '每页文章数量', 'number', 'content', 1),
 ('comment_enabled', '1', '是否启用评论系统', 'boolean', 'comment', 1),
 ('comment_auto_approve', '0', '评论是否自动审核通过', 'boolean', 'comment', 0),

@@ -16,6 +16,7 @@ import { Badge, Button, Card, DropdownMenu, Input, Pagination, Table, ToggleGrou
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import { Search, MessageSquare, MoreHorizontal } from '@lucide/svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { CommentAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -127,7 +128,7 @@ onMount(loadComments)
 </script>
 
 <svelte:head>
-  <title>评论管理 - MyBlog</title>
+  <title>评论管理 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="评论管理" description="审核与管理文章评论，覆盖完整审核状态机" crumb="评论管理">

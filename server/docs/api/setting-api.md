@@ -66,7 +66,7 @@ curl -X POST http://localhost:3000/api/settings/public \
       {
         "keyName": "site_name",
         "label": "站点名称",
-        "value": "MyBlog",
+        "value": "闲雨小筑",
         "type": "string",
         "groupName": "general"
       }
@@ -140,7 +140,7 @@ curl -X POST http://localhost:3000/api/admin/settings/update \
     "items": [
       {
         "keyName": "site_name",
-        "value": "MyBlog 新站名"
+        "value": "闲雨小筑 新站名"
       }
     ]
   }'
@@ -156,7 +156,7 @@ curl -X POST http://localhost:3000/api/admin/settings/update \
     "settings": [
       {
         "keyName": "site_name",
-        "value": "MyBlog 新站名",
+        "value": "闲雨小筑 新站名",
         "type": "string"
       }
     ]

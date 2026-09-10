@@ -169,7 +169,7 @@ curl -X POST http://localhost:3000/api/health
     "message": "服务正常",
     "data": {
         "status": "healthy",
-        "service": "MyBlog API"
+        "service": "IdleRain Blogs API"
     }
 }
 ```

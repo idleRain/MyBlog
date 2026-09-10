@@ -11,6 +11,7 @@ import TagFormDialog from '$lib/components/admin/tag/tag-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import { TAG_PAGE_SIZE, TAG_STATUS_CONFIG } from '$lib/constants/tag'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { TagAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -126,7 +127,7 @@ onMount(loadTags)
 </script>
 
 <svelte:head>
-  <title>标签管理 - MyBlog</title>
+  <title>标签管理 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader

@@ -7,10 +7,11 @@ import {
   ReadingProgress,
   TimelineSection
 } from '$lib/components/home/index.ts'
+import { SITE_NAME_ZH } from '@myblog/shared'
 </script>
 
 <svelte:head>
-  <title>MyBlog - 把想法，编译成界面</title>
+  <title>{`${SITE_NAME_ZH} - 把想法，编译成界面`}</title>
   <meta
     name="description"
     content="一个专注于技术分享和创意设计的个人博客，探索现代Web开发的无限可能。"
@@ -18,14 +19,14 @@ import {
   <meta name="keywords" content="博客,技术,开发,设计,SvelteKit,Go,全栈开发" />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="MyBlog - 把想法，编译成界面" />
+  <meta property="og:title" content={`${SITE_NAME_ZH} - 把想法，编译成界面`} />
   <meta property="og:description" content="一个专注于技术分享和创意设计的个人博客" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://myblog.example.com" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="MyBlog - 把想法，编译成界面" />
+  <meta name="twitter:title" content={`${SITE_NAME_ZH} - 把想法，编译成界面`} />
   <meta name="twitter:description" content="一个专注于技术分享和创意设计的个人博客" />
 </svelte:head>
 

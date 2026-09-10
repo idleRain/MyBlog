@@ -10,6 +10,7 @@ import ArticleTable from '$lib/components/admin/article/article-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { hasPermission } from '$lib/utils/permissions'
 import { PERMISSIONS } from '$lib/constants/auth'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { Button, Pagination } from '$ui'
@@ -141,7 +142,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-  <title>文章管理 - MyBlog</title>
+  <title>文章管理 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="文章管理" description="管理博客文章，支持搜索、筛选与状态流转" crumb="文章管理">

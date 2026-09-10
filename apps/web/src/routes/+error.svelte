@@ -1,5 +1,6 @@
 <script lang="ts">
 import Header from '$lib/components/layout/Header.svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { ModeWatcher } from 'mode-watcher'
 import { Button } from '$ui'
 import '../app.css'
@@ -15,7 +16,7 @@ const errorSubtitle = $derived(
 </script>
 
 <svelte:head>
-  <title>{status} - MyBlog</title>
+  <title>{status} - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <!-- 主题监听器 -->

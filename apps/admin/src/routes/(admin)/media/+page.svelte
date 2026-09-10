@@ -4,6 +4,7 @@ import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { MediaFile } from '@myblog/api/modules/media/types'
 import { Button, Card, Pagination, ToggleGroup } from '$ui'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { getFileSize } from '@myblog/shared'
 import { MediaAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -134,7 +135,7 @@ onMount(loadMedia)
 </script>
 
 <svelte:head>
-  <title>媒体管理 - MyBlog</title>
+  <title>媒体管理 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="媒体管理" description="上传与管理图片、视频与文档素材" crumb="媒体管理">

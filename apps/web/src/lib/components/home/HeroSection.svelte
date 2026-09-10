@@ -1,5 +1,6 @@
 <script lang="ts">
 import { gsap, MOTION } from '$lib/motion/gsap-setup'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { ArrowUpRight } from '@lucide/svelte'
 
 // 外部链接与站内锚点集中声明，避免散落的魔法字符串。
@@ -153,7 +154,7 @@ $effect(() => {
           <span>02 / 设计</span>
           <span>03 / 生活</span>
         </div>
-        <span class="tracking-[0.18em] uppercase">MYBLOG — EST. 2024</span>
+        <span class="tracking-[0.18em] uppercase">{`${SITE_NAME_ZH} — EST. 2026`}</span>
       </div>
     </div>
   </div>

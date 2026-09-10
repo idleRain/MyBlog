@@ -6,6 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// serviceName 健康检查响应的服务标识，站点英文名变更时同步更新此处。
+const serviceName = "IdleRain Blogs API"
+
 // HealthRoutes 健康检查路由模块
 type HealthRoutes struct{}
 
@@ -29,7 +32,7 @@ func (hr *HealthRoutes) healthCheck(c *gin.Context) {
 		"message": "服务正常",
 		"data": gin.H{
 			"status":  "healthy",
-			"service": "MyBlog API",
+			"service": serviceName,
 		},
 	})
 }

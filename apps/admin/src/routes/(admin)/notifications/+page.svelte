@@ -8,6 +8,7 @@ import type { Notification, NotificationType } from '@myblog/api/modules/notific
 import { Badge, Button, Card, Pagination, ToggleGroup } from '$ui'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { Bell, CheckCheck, Inbox } from '@lucide/svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { NotificationAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -91,7 +92,7 @@ onMount(loadNotifications)
 </script>
 
 <svelte:head>
-  <title>通知中心 - MyBlog</title>
+  <title>通知中心 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="通知中心" description="查看评论回复、点赞与系统消息" crumb="通知中心">

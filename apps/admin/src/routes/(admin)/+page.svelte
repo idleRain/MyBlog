@@ -20,6 +20,7 @@ import type { UserRole } from '@myblog/api/modules/user/types'
 import { hasPermission } from '$lib/utils/permissions'
 import { PERMISSIONS } from '$lib/constants/auth'
 import { ArticleAPI, StatsAPI } from '$lib/api'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { Button, Card } from '$ui'
@@ -103,13 +104,13 @@ onMount(loadDashboard)
 </script>
 
 <svelte:head>
-  <title>管理仪表盘 - MyBlog</title>
+  <title>管理仪表盘 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader
   title={welcomeTitle()}
   crumb="仪表盘"
-  description={nickname ? `欢迎回来，${nickname}！` : '欢迎使用 MyBlog 管理后台'}
+  description={nickname ? `欢迎回来，${nickname}！` : `欢迎使用 ${SITE_NAME_ZH} 管理后台`}
 >
   {#if isLoading}
     <div class="flex h-48 items-center justify-center">

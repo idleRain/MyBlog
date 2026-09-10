@@ -5,6 +5,7 @@ import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
 import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
 
@@ -58,7 +59,7 @@ function openAdminConsole() {
             </div>
           </div>
           <span class="hidden font-display text-lg font-black text-foreground sm:block">
-            MyBlog
+            {SITE_NAME_ZH}
           </span>
         </a>
       </div>

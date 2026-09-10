@@ -3,6 +3,7 @@ import ArticleEditorForm from '$lib/components/admin/article/article-editor-form
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { Article } from '@myblog/api/modules/article/types'
 import { ArrowLeft, FileText } from '@lucide/svelte'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { ArticleAPI } from '$lib/api'
 import { page } from '$app/stores'
@@ -43,7 +44,7 @@ onMount(loadArticle)
 </script>
 
 <svelte:head>
-  <title>编辑文章 - MyBlog</title>
+  <title>编辑文章 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
 <PageHeader title="编辑文章" description="修改文章内容、分类与发布状态" crumb="编辑文章">

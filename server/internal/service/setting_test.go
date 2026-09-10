@@ -53,7 +53,7 @@ func TestMaskSensitiveSettings(t *testing.T) {
 	settings := []*model.Setting{
 		{
 			KeyName:     model.SettingSiteName,
-			Value:       "MyBlog",
+			Value:       "闲雨小筑",
 			IsSensitive: false,
 		},
 		{
@@ -66,7 +66,7 @@ func TestMaskSensitiveSettings(t *testing.T) {
 	result := maskSensitiveSettings(settings)
 
 	// 非敏感项保留原值。
-	if result[0].Value != "MyBlog" {
+	if result[0].Value != "闲雨小筑" {
 		t.Errorf("非敏感项值 = %q, 期望保留原值", result[0].Value)
 	}
 	// 敏感项输出掩码。
