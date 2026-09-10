@@ -168,7 +168,7 @@ pnpm run migrate [create|up|down|version|help]
 
 - **框架**：SvelteKit + Svelte 5 + TypeScript，Svelte 5 runes 风格，**不使用 Options API**。应用分 `apps/web`（前台 toC，SSR 路线）与 `apps/admin`（后台 toB，SPA 路线 `ssr=false`）。
 - **组件库**：shadcn-svelte 基础组件统一位于 `packages/ui`（保持 stock，主题经各应用 `app.css` token 注入），以 `$ui` 别名引入，由根级 eslint/prettier 排除。**禁止在应用内重写 `$ui` 已有组件**（D14 已清偿：admin 分页已回归 `$ui`）。别名见各应用 `svelte.config.js`：`$lib`、`$ui`、`$i18n`（仅前台）、`@/*`、`#/*`、`~/*`。
-- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；前台 `apps/web/src/app.css`（规格书主题，含 `--signal`）、后台 `apps/admin/src/app.css`（原始主题，无 `--signal`）；`packages/ui` 不携带全局样式。
+- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；前台 `apps/web/src/app.css`（编辑杂志主题，暖纸墨色系，含 `--signal` 与 `--color-line` 别名）、后台 `apps/admin/src/app.css`（原始主题，无 `--signal`）；`packages/ui` 不携带全局样式。视觉与动效准则见 `docs/ui-design-system.md`。
 - **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 11 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow）；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
 - **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用薄封装各持一份）；admin 认证域工具 D6 已收敛（`utils/jwt.ts`、`utils/auth.ts` 已删，刷新/登出单轨）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
 - **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`（i18n 演示沙盒）；后台使用 `(admin)`、`(auth)`（登录页归属后台）。数据加载纪律见 A6：web 用 load，admin 新页面优先 load。

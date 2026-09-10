@@ -138,10 +138,12 @@ apps/web/src/                 # 前台
 ├── lib/
 │   ├── api/                  # 接口实例化（createUserAPI 实例）
 │   ├── service/              # http 客户端创建（注入认证与提示回调）
-│   ├── components/           # 前台组件
+│   ├── components/           # 前台组件（home/ 为首页版面，layout/ 为全局框架）
+│   ├── data/                 # 页面占位内容（业务接入后由 @myblog/api 替换）
+│   ├── motion/               # GSAP 动效基建（插件注册、缓动常量、滚动进场 actions）
 │   ├── stores/               # 认证状态 store
 │   └── paraglide/            # i18n 生成产物
-└── app.css                   # 规格书主题（含 --signal）
+└── app.css                   # 编辑杂志主题（暖纸墨色系，含 --signal 与 --color-line 别名）
 
 apps/admin/src/               # 后台
 ├── routes/                   # 分组路由：(admin) 后台页面、(auth) 登录页
