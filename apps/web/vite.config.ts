@@ -71,6 +71,9 @@ export default ({ mode }: ConfigEnv) => {
     server: {
       port: Number(env.VITE_SERVER_PORT) || DEFAULT_DEV_PORT,
       host: '0.0.0.0',
+      watch: {
+        ignored: ['**/.*.tmpdir', '**/.*.tmpdir/**']
+      },
       proxy: {
         [env.VITE_BASE_URL ?? DEFAULT_BASE_URL]: {
           target: env.VITE_PROXY_URL ?? DEFAULT_PROXY_TARGET,
