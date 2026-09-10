@@ -31,7 +31,7 @@ const categories = [
 ]
 </script>
 
-<footer class="relative border-t border-border bg-muted/40">
+<footer class="relative border-t border-line bg-secondary">
   <!-- 主要内容区域 -->
   <div class="mx-auto max-w-7xl px-6 py-12 sm:px-10 lg:px-20">
     <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -44,7 +44,7 @@ const categories = [
               <span class="font-mono text-lg font-bold text-signal">M</span>
             </div>
           </div>
-          <span class="text-xl font-bold text-foreground">MyBlog</span>
+          <span class="font-display text-xl font-black text-foreground">MyBlog</span>
         </div>
 
         <p class="mb-6 max-w-md text-muted-foreground">

@@ -40,7 +40,9 @@ function openAdminConsole() {
 }
 </script>
 
-<header class="fixed top-0 right-0 left-0 z-50">
+<header
+  class="fixed top-0 right-0 left-0 z-50 border-b border-line bg-background/85 backdrop-blur-md"
+>
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="flex h-16 items-center">
       <!-- Logo左侧 -->
@@ -55,7 +57,7 @@ function openAdminConsole() {
               <span class="font-mono text-lg font-bold text-signal">M</span>
             </div>
           </div>
-          <span class="hidden text-lg font-bold text-gray-900 sm:block dark:text-white">
+          <span class="hidden font-display text-lg font-black text-foreground sm:block">
             MyBlog
           </span>
         </a>
@@ -67,7 +69,7 @@ function openAdminConsole() {
       >
         <a
           href="/"
-          class="group relative text-gray-700 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
+          class="group relative text-muted-foreground transition-colors duration-200 hover:text-signal"
         >
           博客
           <span
@@ -76,7 +78,7 @@ function openAdminConsole() {
         </a>
         <a
           href="/projects"
-          class="group relative text-gray-700 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
+          class="group relative text-muted-foreground transition-colors duration-200 hover:text-signal"
         >
           项目
           <span
@@ -85,7 +87,7 @@ function openAdminConsole() {
         </a>
         <a
           href="/about"
-          class="group relative text-gray-700 transition-colors duration-200 hover:text-signal dark:text-gray-300 dark:hover:text-signal"
+          class="group relative text-muted-foreground transition-colors duration-200 hover:text-signal"
         >
           关于
           <span
@@ -105,10 +107,7 @@ function openAdminConsole() {
                 <Globe class="h-4 w-4" />
               </Button>
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content
-              align="end"
-              class="bg-white/90 backdrop-blur-md dark:bg-gray-950/90"
-            >
+            <DropdownMenu.Content align="end" class="bg-popover/90 backdrop-blur-md">
               <DropdownMenu.Item onclick={() => setLanguage('zh')}>简体中文</DropdownMenu.Item>
               <DropdownMenu.Item onclick={() => setLanguage('en')}>English</DropdownMenu.Item>
             </DropdownMenu.Content>
@@ -136,7 +135,7 @@ function openAdminConsole() {
                 <User class="h-4 w-4" />
               </Button>
             </Dialog.Trigger>
-            <Dialog.Content class="bg-white/95 backdrop-blur-md sm:max-w-md dark:bg-gray-950/95">
+            <Dialog.Content class="bg-popover/95 backdrop-blur-md sm:max-w-md">
               <Dialog.Header>
                 <Dialog.Title>关于作者</Dialog.Title>
                 <Dialog.Description>
@@ -146,11 +145,11 @@ function openAdminConsole() {
               <div class="flex flex-col space-y-3">
                 <div class="flex items-center space-x-3">
                   <div class="flex h-12 w-12 items-center justify-center rounded-none bg-signal">
-                    <span class="text-lg font-bold text-white">M</span>
+                    <span class="text-lg font-bold text-signal-foreground">M</span>
                   </div>
                   <div>
-                    <h3 class="font-semibold text-gray-900 dark:text-white">开发者</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">全栈开发工程师</p>
+                    <h3 class="font-semibold text-foreground">开发者</h3>
+                    <p class="text-sm text-muted-foreground">全栈开发工程师</p>
                   </div>
                 </div>
               </div>
@@ -164,7 +163,7 @@ function openAdminConsole() {
                 <ExternalLink class="h-4 w-4" />
               </Button>
             </Dialog.Trigger>
-            <Dialog.Content class="bg-white/95 backdrop-blur-md sm:max-w-md dark:bg-gray-950/95">
+            <Dialog.Content class="bg-popover/95 backdrop-blur-md sm:max-w-md">
               <Dialog.Header>
                 <Dialog.Title>友情链接</Dialog.Title>
               </Dialog.Header>
@@ -172,26 +171,26 @@ function openAdminConsole() {
                 <a
                   href="https://github.com"
                   target="_blank"
-                  class="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
                 >
                   <span class="font-medium">GitHub</span>
-                  <ExternalLink class="h-4 w-4 text-gray-500" />
+                  <ExternalLink class="h-4 w-4 text-muted-foreground" />
                 </a>
                 <a
                   href="https://svelte.dev"
                   target="_blank"
-                  class="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
                 >
                   <span class="font-medium">SvelteKit</span>
-                  <ExternalLink class="h-4 w-4 text-gray-500" />
+                  <ExternalLink class="h-4 w-4 text-muted-foreground" />
                 </a>
                 <a
                   href="https://tailwindcss.com"
                   target="_blank"
-                  class="flex items-center justify-between rounded-lg bg-gray-50 p-3 transition-colors hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
                 >
                   <span class="font-medium">TailwindCSS</span>
-                  <ExternalLink class="h-4 w-4 text-gray-500" />
+                  <ExternalLink class="h-4 w-4 text-muted-foreground" />
                 </a>
               </div>
             </Dialog.Content>
@@ -199,9 +198,7 @@ function openAdminConsole() {
         </div>
 
         <!-- 登录/登出和后台按钮 -->
-        <div
-          class="ml-3 hidden items-center space-x-3 border-l border-gray-200 pl-3 md:flex dark:border-gray-700"
-        >
+        <div class="ml-3 hidden items-center space-x-3 border-l border-border pl-3 md:flex">
           {#if isAuthenticated}
             <!-- 后台管理按钮 -->
             <Button
@@ -219,27 +216,24 @@ function openAdminConsole() {
               <DropdownMenu.Trigger>
                 <Button variant="ghost" size="icon" class="h-9 w-9">
                   <div class="flex h-6 w-6 items-center justify-center rounded-none bg-signal">
-                    <span class="text-xs font-bold text-white">
+                    <span class="text-xs font-bold text-signal-foreground">
                       {currentUser?.username?.charAt(0)?.toUpperCase() || 'U'}
                     </span>
                   </div>
                 </Button>
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content
-                align="end"
-                class="w-48 bg-white/90 backdrop-blur-md dark:bg-gray-950/90"
-              >
-                <div class="border-b border-gray-200 px-3 py-2 dark:border-gray-700">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+              <DropdownMenu.Content align="end" class="w-48 bg-popover/90 backdrop-blur-md">
+                <div class="border-b border-border px-3 py-2">
+                  <p class="text-sm font-medium text-foreground">
                     {currentUser?.username || '用户'}
                   </p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                  <p class="text-xs text-muted-foreground">
                     {currentUser?.email || ''}
                   </p>
                 </div>
                 <DropdownMenu.Item
                   onclick={handleLogout}
-                  class="text-red-600 hover:text-red-700 dark:text-red-400"
+                  class="text-destructive hover:text-destructive/80"
                 >
                   登出
                 </DropdownMenu.Item>
@@ -265,10 +259,7 @@ function openAdminConsole() {
               <Menu class="h-5 w-5" />
             </Button>
           </Sheet.Trigger>
-          <Sheet.Content
-            side="right"
-            class="w-80 bg-white/95 p-6 backdrop-blur-md dark:bg-gray-950/95"
-          >
+          <Sheet.Content side="right" class="w-80 bg-popover/95 p-6 backdrop-blur-md">
             <Sheet.Header class="mb-6 text-left">
               <Sheet.Title class="text-xl font-bold">菜单</Sheet.Title>
             </Sheet.Header>
@@ -277,21 +268,21 @@ function openAdminConsole() {
             <nav class="space-y-1">
               <a
                 href="/"
-                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-signal/10 hover:text-signal dark:text-white dark:hover:bg-signal/10 dark:hover:text-signal"
+                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-signal/10 hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
                 博客
               </a>
               <a
                 href="/projects"
-                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-signal/10 hover:text-signal dark:text-white dark:hover:bg-signal/10 dark:hover:text-signal"
+                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-signal/10 hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
                 项目
               </a>
               <a
                 href="/about"
-                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-gray-900 transition-colors hover:bg-signal/10 hover:text-signal dark:text-white dark:hover:bg-signal/10 dark:hover:text-signal"
+                class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-signal/10 hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
                 关于
@@ -300,10 +291,8 @@ function openAdminConsole() {
 
             <!-- 移动端功能按钮 -->
             <div class="mt-8 space-y-6">
-              <div
-                class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2 dark:bg-gray-800/50"
-              >
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">主题切换</span>
+              <div class="flex items-center justify-between bg-secondary px-4 py-2">
+                <span class="text-sm font-medium text-muted-foreground">主题切换</span>
                 <ThemeToggle />
               </div>
 
@@ -312,22 +301,22 @@ function openAdminConsole() {
                 href="https://github.com/idleRain"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2 transition-colors hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50"
+                class="flex items-center justify-between bg-secondary px-4 py-2 transition-colors hover:bg-accent"
               >
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">GitHub</span>
-                <GithubIcon class="h-4 w-4 text-gray-500" />
+                <span class="text-sm font-medium text-muted-foreground">GitHub</span>
+                <GithubIcon class="h-4 w-4 text-muted-foreground" />
               </a>
 
               <div class="space-y-3">
-                <h4 class="px-4 text-sm font-semibold text-gray-900 dark:text-white">语言选择</h4>
+                <h4 class="px-4 text-sm font-semibold text-foreground">语言选择</h4>
                 <div class="space-y-1">
                   <button
-                    class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/50"
+                    class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-accent"
                   >
                     简体中文
                   </button>
                   <button
-                    class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-800/50"
+                    class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-accent"
                   >
                     English
                   </button>
@@ -336,14 +325,14 @@ function openAdminConsole() {
             </div>
 
             <!-- 移动端登录/后台区域 -->
-            <div class="mt-8 border-t border-gray-200/50 pt-6 dark:border-gray-700/50">
+            <div class="mt-8 border-t border-border pt-6">
               {#if isAuthenticated}
                 <div class="space-y-3">
-                  <div class="rounded-none bg-signal/5 px-4 py-3">
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                  <div class="bg-signal/5 px-4 py-3">
+                    <p class="text-sm font-semibold text-foreground">
                       {currentUser?.username || '用户'}
                     </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <p class="text-xs text-muted-foreground">
                       {currentUser?.email || ''}
                     </p>
                   </div>
@@ -362,7 +351,7 @@ function openAdminConsole() {
                   <Button
                     variant="outline"
                     size="sm"
-                    class="w-full justify-start border-red-200 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/50"
+                    class="w-full justify-start border-destructive/30 text-destructive hover:bg-destructive/10"
                     onclick={() => {
                       isMobileMenuOpen = false
                       handleLogout()
@@ -393,13 +382,7 @@ function openAdminConsole() {
 </header>
 
 <style>
-/* 确保导航栏渐变玻璃效果 */
-header {
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-/* 确保父容器为相对定位，以便导航绝对定位居中 */
+/* 中部导航采用绝对定位居中，父容器需要相对定位作为定位上下文。 */
 header > div > div {
   position: relative;
 }

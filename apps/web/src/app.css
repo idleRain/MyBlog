@@ -1,6 +1,12 @@
 @import '@fontsource/fira-mono/latin-400.css';
 @import '@fontsource/fira-mono/latin-500.css';
 @import '@fontsource/fira-mono/latin-700.css';
+@import '@fontsource/noto-sans-sc/chinese-simplified-400.css';
+@import '@fontsource/noto-sans-sc/chinese-simplified-500.css';
+@import '@fontsource/noto-sans-sc/chinese-simplified-700.css';
+@import '@fontsource/noto-serif-sc/chinese-simplified-500.css';
+@import '@fontsource/noto-serif-sc/chinese-simplified-700.css';
+@import '@fontsource/noto-serif-sc/chinese-simplified-900.css';
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -10,81 +16,90 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * 设计基调：暖色纸墨 + 国际橙强调色。
- * 中性色统一使用极低的黄色相，避免常见的冷灰偏蓝。
- * 强调色 signal 为「国际橙」，以发丝线与等宽字体共同构成「工程规格书」质感。
+ * 设计基调：「编辑杂志风」暖纸墨色系。
+ * 大面积暖纸色与墨色构成安静基底，朱红 signal 作为唯一锐利强调色，
+ * 以衬线标题与等宽标注共同构成纸质刊物的阅读质感。
  */
 :root {
   --radius: 0.25rem;
-  --background: oklch(0.982 0.004 95);
-  --foreground: oklch(0.18 0.012 85);
-  --card: oklch(0.992 0.002 95);
-  --card-foreground: oklch(0.18 0.012 85);
-  --popover: oklch(0.992 0.002 95);
-  --popover-foreground: oklch(0.18 0.012 85);
-  --primary: oklch(0.18 0.012 85);
-  --primary-foreground: oklch(0.982 0.004 95);
-  --secondary: oklch(0.945 0.006 95);
-  --secondary-foreground: oklch(0.26 0.014 85);
-  --muted: oklch(0.945 0.006 95);
-  --muted-foreground: oklch(0.5 0.016 85);
-  --accent: oklch(0.935 0.007 95);
-  --accent-foreground: oklch(0.18 0.012 85);
+  --background: #f7f3ea;
+  --foreground: #221d16;
+  --card: #fbf7ec;
+  --card-foreground: #221d16;
+  --popover: #fbf7ec;
+  --popover-foreground: #221d16;
+  --primary: #221d16;
+  --primary-foreground: #f7f3ea;
+  --secondary: #efe8d9;
+  --secondary-foreground: #3a3227;
+  --muted: #f0e9db;
+  --muted-foreground: #6f6555;
+  --accent: #e9e0cd;
+  --accent-foreground: #221d16;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.882 0.007 95);
-  --input: oklch(0.882 0.007 95);
-  --ring: oklch(0.63 0.23 30);
-  --signal: oklch(0.63 0.23 30);
-  --signal-foreground: oklch(0.17 0.02 30);
-  --chart-1: oklch(0.63 0.23 30);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.945 0.006 95);
-  --sidebar-foreground: oklch(0.18 0.012 85);
-  --sidebar-primary: oklch(0.18 0.012 85);
-  --sidebar-primary-foreground: oklch(0.982 0.004 95);
-  --sidebar-accent: oklch(0.935 0.007 95);
-  --sidebar-accent-foreground: oklch(0.18 0.012 85);
-  --sidebar-border: oklch(0.882 0.007 95);
-  --sidebar-ring: oklch(0.63 0.23 30);
+  --border: #ded3bf;
+  --input: #ded3bf;
+  --ring: #c83e1d;
+  --signal: #c83e1d;
+  --signal-foreground: #f7f3ea;
+  --chart-1: #c83e1d;
+  --chart-2: #6b4f3a;
+  --chart-3: #3a2f26;
+  --chart-4: #b08d57;
+  --chart-5: #98300f;
+  --sidebar: #efe8d9;
+  --sidebar-foreground: #221d16;
+  --sidebar-primary: #221d16;
+  --sidebar-primary-foreground: #f7f3ea;
+  --sidebar-accent: #e9e0cd;
+  --sidebar-accent-foreground: #221d16;
+  --sidebar-border: #ded3bf;
+  --sidebar-ring: #c83e1d;
+
+  /* 动效缓动令牌：入场用强 ease-out，屏内位移用强 ease-in-out。 */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
+/*
+ * 暗色配套：「深夜书房」暖黑纸墨。
+ * 底色为带暖相的近黑墨色，文字为陈旧纸色的亮调，
+ * 朱红提亮一档以维持暗色下的对比度与辨识度。
+ */
 .dark {
-  --background: oklch(0.16 0.007 95);
-  --foreground: oklch(0.93 0.005 95);
-  --card: oklch(0.19 0.008 95);
-  --card-foreground: oklch(0.93 0.005 95);
-  --popover: oklch(0.19 0.008 95);
-  --popover-foreground: oklch(0.93 0.005 95);
-  --primary: oklch(0.93 0.005 95);
-  --primary-foreground: oklch(0.16 0.007 95);
-  --secondary: oklch(0.24 0.009 95);
-  --secondary-foreground: oklch(0.93 0.005 95);
-  --muted: oklch(0.24 0.009 95);
-  --muted-foreground: oklch(0.68 0.012 95);
-  --accent: oklch(0.24 0.009 95);
-  --accent-foreground: oklch(0.93 0.005 95);
+  --background: #171310;
+  --foreground: #ece3d1;
+  --card: #1f1914;
+  --card-foreground: #ece3d1;
+  --popover: #1f1914;
+  --popover-foreground: #ece3d1;
+  --primary: #ece3d1;
+  --primary-foreground: #171310;
+  --secondary: #2a2219;
+  --secondary-foreground: #d9ceba;
+  --muted: #241d16;
+  --muted-foreground: #a3947c;
+  --accent: #2a2219;
+  --accent-foreground: #ece3d1;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.27 0.009 95);
-  --input: oklch(0.27 0.009 95);
-  --ring: oklch(0.68 0.21 32);
-  --signal: oklch(0.68 0.21 32);
-  --signal-foreground: oklch(0.15 0.02 32);
-  --chart-1: oklch(0.68 0.21 32);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.19 0.008 95);
-  --sidebar-foreground: oklch(0.93 0.005 95);
-  --sidebar-primary: oklch(0.68 0.21 32);
-  --sidebar-primary-foreground: oklch(0.16 0.007 95);
-  --sidebar-accent: oklch(0.24 0.009 95);
-  --sidebar-accent-foreground: oklch(0.93 0.005 95);
-  --sidebar-border: oklch(0.27 0.009 95);
-  --sidebar-ring: oklch(0.68 0.21 32);
+  --border: #372e23;
+  --input: #372e23;
+  --ring: #d8572f;
+  --signal: #d8572f;
+  --signal-foreground: #1a120c;
+  --chart-1: #d8572f;
+  --chart-2: #8a6d4f;
+  --chart-3: #4a3d30;
+  --chart-4: #b08d57;
+  --chart-5: #c05a3a;
+  --sidebar: #1f1914;
+  --sidebar-foreground: #ece3d1;
+  --sidebar-primary: #ece3d1;
+  --sidebar-primary-foreground: #171310;
+  --sidebar-accent: #2a2219;
+  --sidebar-accent-foreground: #ece3d1;
+  --sidebar-border: #372e23;
+  --sidebar-ring: #d8572f;
 }
 
 @theme inline {
@@ -110,6 +125,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* 线框色别名：延续参考稿「line」的编辑版式词汇。 */
+  --color-line: var(--border);
   --color-signal: var(--signal);
   --color-signal-foreground: var(--signal-foreground);
   --color-chart-1: var(--chart-1);
@@ -127,8 +144,15 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* 等宽字体采用自托管的 Fira Mono，作为「技术标注」的专属声音。 */
+/*
+ * 字体令牌：衬线标题「思源宋体」承担刊头气质，
+ * 正文「思源黑体」保证长文阅读清晰度，等宽 Fira Mono 保留技术标注的声音。
+ */
 @theme {
+  --font-sans:
+    'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   --font-mono:
     'Fira Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
 }
@@ -138,13 +162,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family:
-      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-      'Microsoft YaHei', sans-serif;
+    @apply bg-background font-sans text-foreground;
   }
 
-  /* 标题字体与正文一致，依靠字号、字重与字距营造层级。 */
+  /* 标题统一使用衬线字体，依靠字号、字重与字距营造刊物层级。 */
   h1,
   h2,
   h3,
@@ -152,9 +173,7 @@
   h5,
   h6 {
     font-weight: 700;
-    font-family:
-      -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
-      'Microsoft YaHei', sans-serif;
+    font-family: var(--font-display);
   }
 
   /* 平滑滚动 */
@@ -173,30 +192,52 @@
 
   ::-webkit-scrollbar-thumb {
     border-radius: 0;
-    background: oklch(0.7 0.012 85);
+    background: #cfc2a8;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.6 0.012 85);
+    background: #bfb094;
   }
 
   .dark ::-webkit-scrollbar-thumb {
-    background: oklch(0.38 0.012 85);
+    background: #3d3327;
   }
 
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.48 0.012 85);
+    background: #4d4132;
   }
 }
 
 /* 规格书坐标网格背景：登录页复用的公共网格底纹。 */
-/* 网格单元边长 56px，与首屏 HeroSection 的网格保持一致的图纸密度。 */
+/* 网格单元边长 56px，与旧版首屏的网格保持一致的图纸密度。 */
 .spec-grid {
   opacity: 0.4;
   background-image:
     linear-gradient(to right, var(--border) 1px, transparent 1px),
     linear-gradient(to bottom, var(--border) 1px, transparent 1px);
   background-size: 56px 56px;
+}
+
+/*
+ * 杂志纸面的细网格底纹，模拟印刷网格的肌理。
+ * 使用前景色低透明度叠加，明暗主题下均自动适配。
+ */
+.texture-grid {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 0,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 0,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 1px,
+      transparent 1px,
+      transparent 48px
+    );
 }
 
 /* 背景动画：登录页还原后恢复使用的模糊色块动效。 */

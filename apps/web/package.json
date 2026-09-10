@@ -22,6 +22,8 @@
     "tw-animate-css": "catalog:"
   },
   "dependencies": {
+    "@fontsource/noto-sans-sc": "^5.3.0",
+    "@fontsource/noto-serif-sc": "^5.3.0",
     "@inlang/paraglide-js": "^2.24.1",
     "@myblog/api": "workspace:*",
     "@myblog/auth": "workspace:*",
