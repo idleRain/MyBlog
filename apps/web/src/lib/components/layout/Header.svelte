@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Globe, User, ExternalLink, Menu, LogIn, Settings } from '@lucide/svelte'
+import NotificationBell from '$lib/components/layout/NotificationBell.svelte'
 import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
 import type { User as UserType } from '@myblog/api/modules/user/types'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
@@ -109,6 +110,9 @@ function openAdminConsole() {
       <div class="ml-auto flex items-center space-x-3">
         <!-- 桌面端功能按钮 -->
         <div class="hidden items-center space-x-3 md:flex">
+          <!-- 通知铃铛：登录后展示未读数与最近通知 -->
+          <NotificationBell />
+
           <!-- 语言切换 -->
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>

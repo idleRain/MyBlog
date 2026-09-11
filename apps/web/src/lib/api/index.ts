@@ -6,6 +6,7 @@ import {
   createCommentAPI,
   createFollowAPI,
   createFriendlyLinkAPI,
+  createNotificationAPI,
   createTagAPI,
   createUserAPI
 } from '@myblog/api'
@@ -18,6 +19,7 @@ const CategoryAPI = createCategoryAPI(request)
 const CommentAPI = createCommentAPI(request)
 const TagAPI = createTagAPI(request)
 const FriendlyLinkAPI = createFriendlyLinkAPI(request)
+const NotificationAPI = createNotificationAPI(request)
 
 const API = {
   user: UserAPI,
@@ -26,9 +28,19 @@ const API = {
   category: CategoryAPI,
   comment: CommentAPI,
   tag: TagAPI,
-  friendlyLink: FriendlyLinkAPI
+  friendlyLink: FriendlyLinkAPI,
+  notification: NotificationAPI
 }
 
-export { UserAPI, FollowAPI, ArticleAPI, CategoryAPI, CommentAPI, TagAPI, FriendlyLinkAPI }
+export {
+  UserAPI,
+  FollowAPI,
+  ArticleAPI,
+  CategoryAPI,
+  CommentAPI,
+  TagAPI,
+  FriendlyLinkAPI,
+  NotificationAPI
+}
 
 export default API
