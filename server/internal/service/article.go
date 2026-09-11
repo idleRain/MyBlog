@@ -2,12 +2,12 @@ package service
 
 import (
 	"errors"
-	"html"
 	"regexp"
 	"unicode/utf8"
 
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
+	"MyBlog/pkg/markdown"
 )
 
 // ArticleServiceInterface 文章服务接口
@@ -229,6 +229,7 @@ func (s *ArticleService) GetArticle(id uint, userID *uint) (*model.Article, erro
 		return nil, errors.New("没有查看此文章的权限")
 	}
 
+	ensureContentHTML(article)
 	return article, nil
 }
 
@@ -244,6 +245,7 @@ func (s *ArticleService) GetArticleBySlug(slug string, userID *uint) (*model.Art
 		return nil, errors.New("没有查看此文章的权限")
 	}
 
+	ensureContentHTML(article)
 	return article, nil
 }
 
@@ -784,28 +786,46 @@ func (s *ArticleService) CanDelete(article *model.Article, userID uint) bool {
 
 // 私有辅助方法
 
-// processContent 处理文章内容
+// 阅读速度常量：每分钟阅读字数，用于由字数估算阅读时间。
+const wordsPerMinute = 200
+
+// 自动摘要的截取长度，超出部分截断并追加省略号。
+const summaryMaxLength = 200
+
+// processContent 处理文章内容：统计字数、渲染 HTML 缓存并提取默认摘要。
 func (s *ArticleService) processContent(article *model.Article) error {
 	// 按 Unicode 字符数统计字数，中文按单字计数，避免空白分词导致的中文统计偏低。
-	wordCount := utf8.RuneCountInString(article.Content)
-
-	// 清理和转义内容
-	article.Content = html.EscapeString(article.Content)
-	article.Summary = html.EscapeString(article.Summary)
-
-	// 记录字数并据此估算阅读时间。
-	article.WordCount = uint(wordCount)
-	article.ReadingTime = article.WordCount / 200
+	article.WordCount = uint(utf8.RuneCountInString(article.Content))
+	article.ReadingTime = article.WordCount / wordsPerMinute
 	if article.ReadingTime == 0 {
 		article.ReadingTime = 1
 	}
 
-	// 如果没有摘要，从内容中提取
+	// 渲染 Markdown 为 HTML 缓存，Unsafe 关闭时原始脚本标签不会进入输出。
+	rendered, err := markdown.Render(article.Content)
+	if err != nil {
+		return err
+	}
+	article.ContentHTML = rendered
+
+	// 如果没有摘要，从 Markdown 源文本中提取。
 	if article.Summary == "" {
-		article.Summary = s.extractSummary(article.Content, 200)
+		article.Summary = s.extractSummary(article.Content, summaryMaxLength)
 	}
 
 	return nil
+}
+
+// ensureContentHTML 为缺失渲染缓存的存量文章按需补渲染。
+// 渲染失败不阻断读取，空缓存交由展示层按纯文本降级处理。
+func ensureContentHTML(article *model.Article) {
+	if article.ContentHTML != "" {
+		return
+	}
+
+	if rendered, err := markdown.Render(article.Content); err == nil {
+		article.ContentHTML = rendered
+	}
 }
 
 // extractSummary 从内容中提取摘要

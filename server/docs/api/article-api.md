@@ -65,7 +65,8 @@ curl -X POST http://localhost:3000/api/articles/get \
 | data.title | string | 是 | 文章标题 |
 | data.slug | string | 是 | 文章别名 |
 | data.summary | string | 是 | 文章摘要 |
-| data.content | string | 是 | 文章内容 |
+| data.content | string | 是 | 文章内容，Markdown 源文本 |
+| data.contentHtml | string | 是 | 渲染后的 HTML 内容缓存，写入时生成，存量数据读取时按需补渲染 |
 | data.coverImage | string | 是 | 封面图片URL |
 | data.authorId | integer | 是 | 作者ID |
 | data.author | object | 是 | 作者信息 |
