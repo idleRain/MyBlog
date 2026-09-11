@@ -68,7 +68,25 @@ func (f *fakeCommentRepo) DecrementReplyCount(id uint) error {
 
 // commentTestService 创建注入评论与文章仓储替身的服务实例。
 func commentTestService(commentRepo repository.CommentRepositoryInterface, articleRepo repository.ArticleRepositoryInterface) *CommentService {
-	return NewCommentService(commentRepo, articleRepo).(*CommentService)
+	return NewCommentService(commentRepo, articleRepo, &fakeSettingRepo{}).(*CommentService)
+}
+
+// commentTestServiceWithSettings 创建携带站点设置替身的服务实例，设置键缺失时走默认行为。
+func commentTestServiceWithSettings(
+	commentRepo repository.CommentRepositoryInterface,
+	articleRepo repository.ArticleRepositoryInterface,
+	settings map[string]string,
+) *CommentService {
+	return NewCommentService(commentRepo, articleRepo, settingRepoWith(settings)).(*CommentService)
+}
+
+// settingRepoWith 构造携带键值设置的设置仓储替身。
+func settingRepoWith(settings map[string]string) *fakeSettingRepo {
+	repo := &fakeSettingRepo{}
+	for key, value := range settings {
+		repo.settings = append(repo.settings, &model.Setting{KeyName: key, Value: value})
+	}
+	return repo
 }
 
 // publishedArticleForComment 构造允许评论的已发布文章。
@@ -190,6 +208,49 @@ func TestCreateReplySetsLevel(t *testing.T) {
 	}
 	if comment.Level != 2 {
 		t.Errorf("Level = %d, 期望 2", comment.Level)
+	}
+}
+
+// TestCreateCommentRejectsGuestWhenDisabled 验证站点关闭游客评论后游客通道被拒。
+func TestCreateCommentRejectsGuestWhenDisabled(t *testing.T) {
+	articleRepo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return publishedArticleForComment(id), nil
+		},
+	}
+	svc := commentTestServiceWithSettings(&fakeCommentRepo{}, articleRepo, map[string]string{
+		model.SettingAllowGuestComment: "false",
+	})
+
+	req := &CreateCommentRequest{
+		ArticleID:  1,
+		Content:    "游客评论",
+		AuthorName: "游客甲",
+	}
+	if _, err := svc.CreateComment(req, nil); err == nil {
+		t.Fatal("关闭游客评论后应拒绝游客发言")
+	}
+}
+
+// TestCreateCommentAutoApprove 验证站点开启自动通过后评论直接进入已审核状态。
+func TestCreateCommentAutoApprove(t *testing.T) {
+	articleRepo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return publishedArticleForComment(id), nil
+		},
+	}
+	commentRepo := &fakeCommentRepo{}
+	svc := commentTestServiceWithSettings(commentRepo, articleRepo, map[string]string{
+		model.SettingCommentAutoApprove: "true",
+	})
+
+	userID := uint(7)
+	comment, err := svc.CreateComment(&CreateCommentRequest{ArticleID: 1, Content: "登录评论"}, &userID)
+	if err != nil {
+		t.Fatalf("创建评论失败: %v", err)
+	}
+	if comment.Status != model.CommentStatusApproved {
+		t.Errorf("Status = %s, 期望 approved", comment.Status)
 	}
 }
 

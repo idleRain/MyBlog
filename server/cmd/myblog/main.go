@@ -69,7 +69,7 @@ func main() {
 	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService)
 	categorySvc := service.NewCategoryService(categoryRepo)
 	tagSvc := service.NewTagService(tagRepo)
-	commentSvc := service.NewCommentService(commentRepo, articleRepo)
+	commentSvc := service.NewCommentService(commentRepo, articleRepo, settingRepo)
 	mediaSvc := service.NewMediaService(mediaRepo, cfg)
 	settingSvc := service.NewSettingService(settingRepo)
 	linkSvc := service.NewFriendlyLinkService(linkRepo)

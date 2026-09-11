@@ -62,17 +62,29 @@ type CommentListResponse struct {
 type CommentService struct {
 	commentRepo repository.CommentRepositoryInterface
 	articleRepo repository.ArticleRepositoryInterface
+	settingRepo repository.SettingRepositoryInterface
 }
 
 // NewCommentService 创建评论服务实例
 func NewCommentService(
 	commentRepo repository.CommentRepositoryInterface,
 	articleRepo repository.ArticleRepositoryInterface,
+	settingRepo repository.SettingRepositoryInterface,
 ) CommentServiceInterface {
 	return &CommentService{
 		commentRepo: commentRepo,
 		articleRepo: articleRepo,
+		settingRepo: settingRepo,
 	}
+}
+
+// settingEnabled 读取布尔型站点设置，设置缺失时回退调用方给定的默认值。
+func (s *CommentService) settingEnabled(key string, defaultValue bool) bool {
+	setting, err := s.settingRepo.GetByKey(key)
+	if err != nil {
+		return defaultValue
+	}
+	return setting.GetBoolValue()
 }
 
 // CreateComment 创建评论，支持注册用户与游客双通道，评论默认待审核。
@@ -86,6 +98,11 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 		return nil, errors.New("该文章不允许评论")
 	}
 
+	// 游客通道受站点开关控制，登录通道不受该开关限制。
+	if userID == nil && !s.settingEnabled(model.SettingAllowGuestComment, true) {
+		return nil, errors.New("站点已关闭游客评论，请登录后发言")
+	}
+
 	comment := &model.Comment{
 		ArticleID:     req.ArticleID,
 		Content:       req.Content,
@@ -93,6 +110,11 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 		AuthorName:    req.AuthorName,
 		AuthorEmail:   req.AuthorEmail,
 		AuthorWebsite: req.AuthorWebsite,
+	}
+
+	// 站点开启评论自动通过时，评论跳过待审核直接进入已审核状态。
+	if s.settingEnabled(model.SettingCommentAutoApprove, false) {
+		comment.Status = model.CommentStatusApproved
 	}
 
 	// 登录评论绑定账号身份，展示名经关联用户解析，游客字段仅游客通道生效。

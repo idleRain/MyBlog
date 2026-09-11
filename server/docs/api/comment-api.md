@@ -110,6 +110,8 @@ curl -X POST http://localhost:3000/api/comments/list \
 
 支持注册用户与游客双通道。注册用户经认证自动绑定身份，游客字段将被忽略且展示名经关联用户解析；游客需填写姓名。
 
+受站点设置控制：`allow_guest_comment` 关闭时游客通道被拒绝，仅登录用户可发言；`comment_auto_approve` 开启时新评论跳过待审核直接进入已审核状态。两项设置缺失时保持默认行为，即允许游客评论且需人工审核。
+
 #### 请求信息
 
 - **接口地址**: `/api/comments/create`
