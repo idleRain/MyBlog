@@ -1,10 +1,13 @@
 import type { KyInstance } from 'ky'
 import type {
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   LoginRequest,
   LoginResponse,
   PublicProfileResponse,
   RegisterRequest,
   RegisterResponse,
+  UpdateProfileRequest,
   UserListResponse,
   UserResponse,
   RefreshTokenRequest,
@@ -44,6 +47,21 @@ export function createUserAPI(request: KyInstance) {
       return request.post('users/publicProfile', { json: { id } }).json()
     },
 
+    // 获取当前登录用户资料，需登录。
+    getProfile(): Promise<UserResponse> {
+      return request.post('users/profile', { json: {} }).json()
+    },
+
+    // 更新当前登录用户资料，字段显式传入才更新，需登录。
+    updateProfile(params: UpdateProfileRequest): Promise<UserResponse> {
+      return request.post('users/profile/update', { json: params }).json()
+    },
+
+    // 修改当前登录用户密码，需登录。
+    changePassword(params: ChangePasswordRequest): Promise<ChangePasswordResponse> {
+      return request.post('users/change-password', { json: params }).json()
+    },
+
     // 更新用户（仅管理员）
     updateUser(params: UpdateUserRequest): Promise<RegisterResponse> {
       return request.post('users/update', { json: params }).json()
@@ -74,11 +92,14 @@ export function createUserAPI(request: KyInstance) {
 export type UserAPI = ReturnType<typeof createUserAPI>
 
 export type {
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   LoginRequest,
   LoginResponse,
   PublicProfileResponse,
   RegisterRequest,
   RegisterResponse,
+  UpdateProfileRequest,
   UserListResponse,
   UserResponse,
   RefreshTokenRequest,

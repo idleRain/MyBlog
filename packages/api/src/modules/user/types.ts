@@ -40,6 +40,20 @@ export interface PublicProfile {
   articleCount: number
 }
 
+// 自助资料更新请求，字段显式传入才更新
+export interface UpdateProfileRequest {
+  nickname?: string
+  avatar?: string
+  bio?: string
+  website?: string
+}
+
+// 修改密码请求
+export interface ChangePasswordRequest {
+  oldPassword: string
+  newPassword: string
+}
+
 // 用户列表数据
 export interface UserListData {
   page: number
@@ -121,6 +135,7 @@ export interface RegisterRequest {
 // 各类型的响应接口
 export type UserListResponse = ApiResponse<UserListData>
 export type PublicProfileResponse = ApiResponse<PublicProfile>
+export type ChangePasswordResponse = ApiResponse<null>
 export type LoginResponse = ApiResponse<LoginData>
 export type RegisterResponse = ApiResponse<User>
 export type UserResponse = ApiResponse<User>

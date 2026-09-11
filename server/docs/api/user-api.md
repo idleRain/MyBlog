@@ -519,3 +519,99 @@ curl -X POST http://localhost:3000/api/auth/logout \
   "message": "用户名已存在"
 }
 ```
+---
+
+### 9. 获取当前用户资料
+
+获取当前登录用户的完整资料。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/profile`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+无请求参数，请求体传空对象。
+
+#### 响应示例
+
+响应格式同"获取用户信息"接口，返回当前登录用户的资料。
+
+---
+
+### 10. 更新当前用户资料
+
+更新当前登录用户的自助资料，仅昵称、头像、简介与网站四个字段，显式传入才更新。用户名、角色等敏感字段请使用管理端 `users/update`。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/profile/update`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| nickname | string | 否 | 昵称，清空时回退为用户名 | 最大50字符 |
+| avatar | string | 否 | 头像URL | 最大255字符 |
+| bio | string | 否 | 个人简介 | 最大500字符 |
+| website | string | 否 | 个人网站URL | 最大255字符 |
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/users/profile/update \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {accessToken}" \
+  -d '{
+    "nickname": "新昵称",
+    "bio": "新的个人简介"
+  }'
+```
+
+#### 响应示例
+
+响应格式同"获取用户信息"接口，返回更新后的资料。
+
+---
+
+### 11. 修改密码
+
+校验旧密码后更新为新的登录密码，新密码需满足强度要求。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/change-password`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| oldPassword | string | 是 | 旧密码 | 非空字符串 |
+| newPassword | string | 是 | 新密码 | 8-64字符，需满足强度校验 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "密码修改成功"
+}
+```
+
+#### 错误响应
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 旧密码不正确或新密码强度不足 |

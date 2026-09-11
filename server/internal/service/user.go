@@ -36,9 +36,27 @@ type UserService interface {
 	Login(username, password string) (*LoginResponse, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
 	Logout(accessToken string) error
+	// 自助资料
+	GetProfile(userID uint) (*domain.User, error)
+	UpdateProfile(userID uint, req *UpdateProfileRequest) (*domain.User, error)
+	ChangePassword(userID uint, req *ChangePasswordRequest) error
 	// 权限相关方法
 	CanUserManageRole(managerRole, targetRole string) bool
 	ValidateRoleTransition(currentRole, newRole string) error
+}
+
+// UpdateProfileRequest 自助资料更新请求，字段显式传入才更新。
+type UpdateProfileRequest struct {
+	Nickname *string `json:"nickname" binding:"omitempty,max=50"`
+	Avatar   *string `json:"avatar" binding:"omitempty,max=255"`
+	Bio      *string `json:"bio" binding:"omitempty,max=500"`
+	Website  *string `json:"website" binding:"omitempty,max=255"`
+}
+
+// ChangePasswordRequest 修改密码请求。
+type ChangePasswordRequest struct {
+	OldPassword string `json:"oldPassword" binding:"required"`
+	NewPassword string `json:"newPassword" binding:"required,min=8,max=64"`
 }
 
 // userService 用户服务实现
@@ -224,6 +242,69 @@ func (s *userService) DeleteUser(id uint) error {
 		return fmt.Errorf("删除用户失败: %w", err)
 	}
 
+	return nil
+}
+
+// GetProfile 获取当前登录用户的资料。
+func (s *userService) GetProfile(userID uint) (*domain.User, error) {
+	return s.userRepo.GetByID(userID)
+}
+
+// UpdateProfile 更新当前登录用户的自助资料字段，显式传入才更新。
+func (s *userService) UpdateProfile(userID uint, req *UpdateProfileRequest) (*domain.User, error) {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Nickname != nil {
+		user.Nickname = *req.Nickname
+	}
+	if req.Avatar != nil {
+		user.Avatar = *req.Avatar
+	}
+	if req.Bio != nil {
+		user.Bio = *req.Bio
+	}
+	if req.Website != nil {
+		user.Website = *req.Website
+	}
+
+	// 如果昵称为空，使用用户名
+	if user.Nickname == "" {
+		user.Nickname = user.Username
+	}
+
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, fmt.Errorf("更新资料失败: %w", err)
+	}
+	return user, nil
+}
+
+// ChangePassword 校验旧密码后更新为新密码。
+func (s *userService) ChangePassword(userID uint, req *ChangePasswordRequest) error {
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+
+	if !s.verifyPassword(req.OldPassword, user.Password) {
+		return fmt.Errorf("旧密码不正确")
+	}
+
+	if err := s.validatePasswordStrength(req.NewPassword); err != nil {
+		return err
+	}
+
+	hashedPassword, err := s.hashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	user.Password = hashedPassword
+	if err := s.userRepo.Update(user); err != nil {
+		return fmt.Errorf("更新密码失败: %w", err)
+	}
 	return nil
 }
 

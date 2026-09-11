@@ -23,14 +23,17 @@ func handleUserQueryError(c *gin.Context, err error) {
 
 // UserHandlerInterface 用户处理器接口，由 router 层消费并注入。
 type UserHandlerInterface interface {
-	CreateUser(c *gin.Context)   // POST /api/users/create - JSON格式
-	UpdateUser(c *gin.Context)   // POST /api/users/update - JSON格式
-	GetUserByID(c *gin.Context)  // POST /api/users/get - JSON格式
-	GetUserList(c *gin.Context)  // POST /api/users/list - JSON格式，用于复杂参数查询
-	DeleteUser(c *gin.Context)   // POST /api/users/delete - JSON格式
-	Login(c *gin.Context)        // POST /api/users/login - JSON格式
-	RefreshToken(c *gin.Context) // POST /api/auth/refresh - JSON格式
-	Logout(c *gin.Context)       // POST /api/auth/logout - Header中的Token
+	CreateUser(c *gin.Context)     // POST /api/users/create - JSON格式
+	UpdateUser(c *gin.Context)     // POST /api/users/update - JSON格式
+	GetUserByID(c *gin.Context)    // POST /api/users/get - JSON格式
+	GetUserList(c *gin.Context)    // POST /api/users/list - JSON格式，用于复杂参数查询
+	DeleteUser(c *gin.Context)     // POST /api/users/delete - JSON格式
+	Login(c *gin.Context)          // POST /api/users/login - JSON格式
+	RefreshToken(c *gin.Context)   // POST /api/auth/refresh - JSON格式
+	Logout(c *gin.Context)         // POST /api/auth/logout - Header中的Token
+	GetProfile(c *gin.Context)     // POST /api/users/profile - 当前用户资料
+	UpdateProfile(c *gin.Context)  // POST /api/users/profile/update - JSON格式
+	ChangePassword(c *gin.Context) // POST /api/users/change-password - JSON格式
 }
 
 // UserHandler 用户处理器
@@ -308,6 +311,68 @@ func (h *UserHandler) Logout(c *gin.Context) {
 	}
 
 	response.SuccessWithMessage(c, "登出成功", nil)
+}
+
+// GetProfile 获取当前登录用户资料 POST /api/users/profile
+func (h *UserHandler) GetProfile(c *gin.Context) {
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	user, err := h.userService.GetProfile(userID)
+	if err != nil {
+		handleUserQueryError(c, err)
+		return
+	}
+
+	response.Success(c, user)
+}
+
+// UpdateProfile 更新当前登录用户资料 POST /api/users/profile/update
+func (h *UserHandler) UpdateProfile(c *gin.Context) {
+	var req service.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	user, err := h.userService.UpdateProfile(userID, &req)
+	if err != nil {
+		handleUserQueryError(c, err)
+		return
+	}
+
+	response.Success(c, user)
+}
+
+// ChangePassword 修改当前登录用户密码 POST /api/users/change-password
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	var req service.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	if err := h.userService.ChangePassword(userID, &req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "密码修改成功", nil)
 }
 
 // HealthCheck 健康检查 POST /api/health

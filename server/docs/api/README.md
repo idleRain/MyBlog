@@ -36,7 +36,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 模块 | 接口数量 | 说明 |
 |------|----------|------|
 | 健康检查 | 1 | 系统状态监控 |
-| 用户管理 | 8 | 用户认证和管理 |
+| 用户管理 | 11 | 用户认证和管理 |
 | 用户关注 | 6 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
 | 文章管理 | 26 | 文章内容管理 |
@@ -47,7 +47,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 8 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **86** | **完整的博客系统 API** |
+| **总计** | **89** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -57,6 +57,9 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/auth/logout` - 用户登出
 
 ### 用户管理 (需要权限)
+- `POST /api/users/profile` - 获取当前用户资料（登录）
+- `POST /api/users/profile/update` - 更新当前用户资料（登录）
+- `POST /api/users/change-password` - 修改密码（登录）
 - `POST /api/users/create` - 创建用户
 - `POST /api/users/get` - 获取用户信息
 - `POST /api/users/update` - 更新用户信息
@@ -229,6 +232,7 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 用户自助资料端点：`users/profile`、`users/profile/update` 与 `users/change-password`，登录用户可自助维护资料与密码
 - ✅ 关注契约补全：粉丝与关注列表内嵌用户摘要，新增 `users/isFollowing` 状态查询
 - ✅ 新增 `users/publicProfile`：用户公开资料与公开统计，供作者页与关于页使用
 - ✅ 新增互动状态查询：`articles/isLiked`、`articles/isBookmarked` 与 `articles/bookmarks` 我的收藏列表

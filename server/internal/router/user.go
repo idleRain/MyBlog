@@ -58,6 +58,17 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 		userGroup.POST("/list",
 			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserList),
 			ur.userHandler.GetUserList)
+
+		// 自助资料接口，需要登录，仅操作本人数据。
+		userGroup.POST("/profile",
+			middleware.Auth(ur.jwtService),
+			ur.userHandler.GetProfile)
+		userGroup.POST("/profile/update",
+			middleware.Auth(ur.jwtService),
+			ur.userHandler.UpdateProfile)
+		userGroup.POST("/change-password",
+			middleware.Auth(ur.jwtService),
+			ur.userHandler.ChangePassword)
 	}
 
 	// JWT相关路由
