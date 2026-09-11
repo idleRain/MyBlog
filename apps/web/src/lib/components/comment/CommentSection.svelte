@@ -1,5 +1,6 @@
 <script lang="ts">
 import type { Comment, CommentListData } from '@myblog/api/modules/comment/types'
+import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { formatDate } from '$lib/utils/format-date'
 import { SvelteMap } from 'svelte/reactivity'
 import { authStore } from '$lib/stores/auth'
@@ -14,9 +15,6 @@ const AUTHOR_NAME_MAX_LENGTH = 50
 
 // 评论加载失败时的降级分页大小。
 const FALLBACK_PAGE_SIZE = 20
-
-// 后端统一响应的成功业务码。
-const SUCCESS_CODE = 200
 
 // 评论线程视图模型：根评论携带回复列表，由平铺评论派生。
 interface CommentThread {
@@ -102,7 +100,7 @@ async function reloadComments() {
     page: 1,
     pageSize
   })
-  if (response.code !== SUCCESS_CODE || !response.data) return
+  if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) return
 
   localPage = {
     comments: response.data.comments,
@@ -118,7 +116,7 @@ async function loadMore() {
     page: currentPage + 1,
     pageSize
   })
-  if (response.code !== SUCCESS_CODE || !response.data) return
+  if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) return
 
   localPage = {
     comments: [...comments, ...response.data.comments],
@@ -142,7 +140,7 @@ async function handleSubmit(event: SubmitEvent) {
       ...(isAuthenticated ? {} : { authorName, authorEmail })
     })
 
-    if (response.code !== SUCCESS_CODE) {
+    if (response.code !== RESPONSE_CODE_SUCCESS) {
       toast.error(response.message || '评论提交失败，请稍后重试')
       return
     }

@@ -1,14 +1,12 @@
 import type { ArticleArchiveYear } from '@myblog/api/modules/article/types'
 import type { Tag } from '@myblog/api/modules/tag/types'
+import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { ArticleAPI, TagAPI } from '$lib/api'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
 
 // 首页无服务器端数据加载前显式关闭预渲染，接入业务数据后维持 SSR 按需渲染行为。
 export const prerender = false
-
-// 后端统一响应的成功业务码。
-const SUCCESS_CODE = 200
 
 // 本期精选取热门文章榜首，热门侧栏与近期目录各取若干条。
 const FEATURED_POPULAR_LIMIT = 4
@@ -26,17 +24,18 @@ export const load: PageLoad = async () => {
   ])
 
   if (
-    recentResponse.code !== SUCCESS_CODE ||
+    recentResponse.code !== RESPONSE_CODE_SUCCESS ||
     !recentResponse.data ||
-    popularResponse.code !== SUCCESS_CODE ||
+    popularResponse.code !== RESPONSE_CODE_SUCCESS ||
     !popularResponse.data
   ) {
     throw error(503, '首页数据加载失败，请稍后重试')
   }
 
   const archives: ArticleArchiveYear[] =
-    archivesResult?.code === SUCCESS_CODE ? (archivesResult.data ?? []) : []
-  const tags: Tag[] = tagsResult?.code === SUCCESS_CODE ? (tagsResult.data?.tags ?? []) : []
+    archivesResult?.code === RESPONSE_CODE_SUCCESS ? (archivesResult.data ?? []) : []
+  const tags: Tag[] =
+    tagsResult?.code === RESPONSE_CODE_SUCCESS ? (tagsResult.data?.tags ?? []) : []
 
   return {
     recent: recentResponse.data.articles,

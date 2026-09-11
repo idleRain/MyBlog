@@ -1,4 +1,5 @@
 <script lang="ts">
+import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { Eye, EyeOff, LogIn } from '@lucide/svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
@@ -6,9 +7,6 @@ import { browser } from '$app/environment'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { UserAPI } from '$lib/api'
-
-// 后端统一响应的成功业务码。
-const SUCCESS_CODE = 200
 
 // 表单状态。
 let username = $state('')
@@ -40,7 +38,7 @@ async function handleLogin(event: SubmitEvent) {
       password
     })
 
-    if (response.code !== SUCCESS_CODE || !response.data) {
+    if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) {
       toast.error(response.message || '登录失败，请检查用户名和密码')
       return
     }

@@ -1,12 +1,10 @@
 <script lang="ts">
+import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { Bookmark, Heart } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { ArticleAPI } from '$lib/api'
-
-// 后端统一响应的成功业务码。
-const SUCCESS_CODE = 200
 
 interface Props {
   articleId: number
@@ -37,10 +35,10 @@ async function refreshStates() {
       ArticleAPI.isLiked(articleId),
       ArticleAPI.isBookmarked(articleId)
     ])
-    if (likeResponse.code === SUCCESS_CODE) {
+    if (likeResponse.code === RESPONSE_CODE_SUCCESS) {
       isLiked = likeResponse.data?.isLiked ?? false
     }
-    if (bookmarkResponse.code === SUCCESS_CODE) {
+    if (bookmarkResponse.code === RESPONSE_CODE_SUCCESS) {
       isBookmarked = bookmarkResponse.data?.isBookmarked ?? false
     }
   } catch {
@@ -65,7 +63,7 @@ async function toggleLike() {
   busy = true
   try {
     const response = isLiked ? await ArticleAPI.unlike(articleId) : await ArticleAPI.like(articleId)
-    if (response.code !== SUCCESS_CODE) {
+    if (response.code !== RESPONSE_CODE_SUCCESS) {
       toast.error(response.message || '操作失败，请稍后重试')
       return
     }
@@ -88,7 +86,7 @@ async function toggleBookmark() {
     const response = isBookmarked
       ? await ArticleAPI.unbookmark(articleId)
       : await ArticleAPI.bookmark(articleId)
-    if (response.code !== SUCCESS_CODE) {
+    if (response.code !== RESPONSE_CODE_SUCCESS) {
       toast.error(response.message || '操作失败，请稍后重试')
       return
     }
