@@ -66,6 +66,11 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/byCategory', { json: { categoryId, ...params } }).json()
     },
 
+    // 作者文章列表，非管理员由服务端强制只返回已发布文章。
+    byAuthor(authorId: number, params: GetArticleListRequest): Promise<ArticleListResponse> {
+      return request.post('articles/byAuthor', { json: { authorId, ...params } }).json()
+    },
+
     // 热门文章，按浏览量与点赞数排序。
     popular(limit: number): Promise<ArticleCollectionResponse> {
       return request.post('articles/popular', { json: { limit } }).json()
