@@ -292,18 +292,17 @@ func (r *ArticleRepository) GetByTag(tagID uint, params *ArticleListParams) ([]*
 	return articles, total, nil
 }
 
-// Search 全文搜索文章
+// Search 全文搜索文章，基于 ngram 全文索引匹配标题、内容与摘要。
 func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([]*model.Article, int64, error) {
 	if keyword == "" {
 		return r.List(params)
 	}
 
-	searchTerm := "%" + keyword + "%"
 	query := r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
 		Preload("Tags").
-		Where("title LIKE ? OR content LIKE ? OR summary LIKE ?", searchTerm, searchTerm, searchTerm)
+		Where("MATCH(title, content, summary) AGAINST(? IN BOOLEAN MODE)", keyword)
 
 	// 应用其他筛选条件
 	query = r.applyFilters(query, params)

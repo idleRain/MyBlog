@@ -37,6 +37,11 @@ func main() {
 		log.Fatal("数据库初始化失败:", err)
 	}
 
+	// 确保文章全文索引存在，GORM AutoMigrate 无法声明 FULLTEXT 索引。
+	if err := database.EnsureArticleFulltextIndex(db); err != nil {
+		log.Fatal("创建全文索引失败:", err)
+	}
+
 	// 运行数据库迁移（仅在生产环境）
 	if cfg.Server.Mode != "debug" {
 		if err := database.RunMigrations(cfg); err != nil {

@@ -233,6 +233,7 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 文章搜索升级为 MySQL ngram 全文索引，中文按双字切分检索，替代 LIKE 模糊匹配
 - ✅ 新增 `friendly-links/apply`：访客提交友链申请，闭合友链申请与审核流程
 - ✅ 用户自助资料端点：`users/profile`、`users/profile/update` 与 `users/change-password`，登录用户可自助维护资料与密码
 - ✅ 关注契约补全：粉丝与关注列表内嵌用户摘要，新增 `users/isFollowing` 状态查询
