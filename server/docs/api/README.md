@@ -39,7 +39,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 用户管理 | 8 | 用户认证和管理 |
 | 用户关注 | 4 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
-| 文章管理 | 23 | 文章内容管理 |
+| 文章管理 | 26 | 文章内容管理 |
 | 分类管理 | 7 | 分类树形管理 |
 | 标签管理 | 7 | 标签与热门标签 |
 | 评论管理 | 10 | 评论与审核 |
@@ -47,7 +47,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 8 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **81** | **完整的博客系统 API** |
+| **总计** | **84** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -95,6 +95,9 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/articles/unlike` - 取消点赞
 - `POST /api/articles/bookmark` - 收藏文章
 - `POST /api/articles/unbookmark` - 取消收藏
+- `POST /api/articles/isLiked` - 点赞状态查询
+- `POST /api/articles/isBookmarked` - 收藏状态查询
+- `POST /api/articles/bookmarks` - 我的收藏列表
 
 #### 文章操作接口（作者或有 article:manage 的管理员，服务端统一授权）
 - `POST /api/articles/create` - 创建文章
@@ -224,6 +227,8 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 新增互动状态查询：`articles/isLiked`、`articles/isBookmarked` 与 `articles/bookmarks` 我的收藏列表
+- ✅ 搜索日志落库：`articles/search` 记录关键词、结果数、耗时与成败状态
 - ✅ 通知生产链路打通：评论回复、文章点赞、评论点赞、用户关注自动产生站内通知，自触达场景自动跳过
 - ✅ 评论流程消费站点设置：`allow_guest_comment` 关闭游客通道，`comment_auto_approve` 开启自动过审
 - ✅ 浏览上报落库：`articles/view` 写入 `article_views` 访客去重明细，并按日累加 `content_stats` 浏览维度，管理端趋势图恢复数据来源

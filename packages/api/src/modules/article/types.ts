@@ -131,9 +131,21 @@ export interface ArticleActionData {
   message: string
 }
 
+// 点赞状态查询响应数据
+export interface ArticleLikeStateData {
+  isLiked: boolean
+}
+
+// 收藏状态查询响应数据
+export interface ArticleBookmarkStateData {
+  isBookmarked: boolean
+}
+
 // 各响应类型
 export type ArticleResponse = ApiResponse<Article>
 export type ArticleListResponse = ApiResponse<ArticleListData>
 export type ArticleCollectionResponse = ApiResponse<ArticleCollectionData>
 export type ArticleArchiveResponse = ApiResponse<ArticleArchiveYear[]>
+export type ArticleLikeStateResponse = ApiResponse<ArticleLikeStateData>
+export type ArticleBookmarkStateResponse = ApiResponse<ArticleBookmarkStateData>
 export type ArticleActionResponse = ApiResponse<ArticleActionData>

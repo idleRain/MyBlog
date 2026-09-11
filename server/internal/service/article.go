@@ -40,6 +40,9 @@ type ArticleServiceInterface interface {
 	UnlikeArticle(articleID uint, userID uint) error
 	BookmarkArticle(articleID uint, userID uint) error
 	UnbookmarkArticle(articleID uint, userID uint) error
+	IsArticleLiked(articleID uint, userID uint) (bool, error)
+	IsArticleBookmarked(articleID uint, userID uint) (bool, error)
+	GetArticleBookmarks(userID uint, req *GetArticleListRequest) (*ArticleListResponse, error)
 
 	// 状态管理
 	PublishArticle(id uint, userID uint) error
@@ -720,6 +723,44 @@ func (s *ArticleService) notifyArticleLike(article *model.Article, likerID uint)
 func (s *ArticleService) UnlikeArticle(articleID uint, userID uint) error {
 	_, err := s.articleRepo.RemoveLike(articleID, userID)
 	return err
+}
+
+// IsArticleLiked 查询用户对文章的点赞状态。
+func (s *ArticleService) IsArticleLiked(articleID uint, userID uint) (bool, error) {
+	return s.articleRepo.ExistsLike(articleID, userID)
+}
+
+// IsArticleBookmarked 查询用户对文章的收藏状态。
+func (s *ArticleService) IsArticleBookmarked(articleID uint, userID uint) (bool, error) {
+	return s.articleRepo.ExistsBookmark(articleID, userID)
+}
+
+// GetArticleBookmarks 分页查询用户收藏的文章，按收藏时间倒序。
+func (s *ArticleService) GetArticleBookmarks(userID uint, req *GetArticleListRequest) (*ArticleListResponse, error) {
+	// 设置分页默认值
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
+
+	params := &repository.ArticleListParams{
+		Page:     req.Page,
+		PageSize: req.PageSize,
+	}
+
+	articles, total, err := s.articleRepo.ListBookmarks(userID, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ArticleListResponse{
+		Articles: articles,
+		Total:    total,
+		Page:     params.Page,
+		PageSize: params.PageSize,
+	}, nil
 }
 
 // BookmarkArticle 收藏文章，重复收藏保持幂等。

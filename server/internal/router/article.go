@@ -64,6 +64,11 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, _ *gin.RouterGroup)
 		authArticles.POST("/bookmark", ar.articleHandler.BookmarkArticle)     // 收藏文章
 		authArticles.POST("/unbookmark", ar.articleHandler.UnbookmarkArticle) // 取消收藏
 
+		// 互动状态查询接口，需要登录。
+		authArticles.POST("/isLiked", ar.articleHandler.IsArticleLiked)           // 点赞状态
+		authArticles.POST("/isBookmarked", ar.articleHandler.IsArticleBookmarked) // 收藏状态
+		authArticles.POST("/bookmarks", ar.articleHandler.GetArticleBookmarks)    // 我的收藏列表
+
 		// 文章管理操作接口，需要编辑权限。
 		// 授权由服务层统一判定：作者（article:create）或具备 article:manage 的管理员均可操作。
 		editorArticles := authArticles.Group("")

@@ -1191,6 +1191,95 @@ curl -X POST http://localhost:3000/api/articles/archives \
 
 ---
 
+### 24. 查询点赞状态
+
+查询当前用户对指定文章的点赞状态。
+
+#### 请求信息
+
+- **接口地址**: `/api/articles/isLiked`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| id | integer | 是 | 文章ID | 大于0的整数 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "isLiked": true
+  }
+}
+```
+
+---
+
+### 25. 查询收藏状态
+
+查询当前用户对指定文章的收藏状态。
+
+#### 请求信息
+
+- **接口地址**: `/api/articles/isBookmarked`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| id | integer | 是 | 文章ID | 大于0的整数 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": {
+    "isBookmarked": false
+  }
+}
+```
+
+---
+
+### 26. 我的收藏列表
+
+分页查询当前用户收藏的文章，按收藏时间倒序。
+
+#### 请求信息
+
+- **接口地址**: `/api/articles/bookmarks`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| page | integer | 否 | 页码 | 大于0的整数，默认1 |
+| pageSize | integer | 否 | 每页数量 | 1-100之间，默认10 |
+
+#### 响应示例
+
+响应格式同"获取文章列表"接口。
+
+---
+
 ## 错误响应
 
 ### 常见错误码

@@ -21,6 +21,30 @@ type fakeArticleRepo struct {
 	removeLike     func(articleID, userID uint) (bool, error)
 	addBookmark    func(articleID, userID uint) (bool, error)
 	removeBookmark func(articleID, userID uint) (bool, error)
+	existsLike     func(articleID, userID uint) (bool, error)
+	existsBookmark func(articleID, userID uint) (bool, error)
+	listBookmarks  func(userID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+}
+
+func (f *fakeArticleRepo) ExistsLike(articleID, userID uint) (bool, error) {
+	if f.existsLike != nil {
+		return f.existsLike(articleID, userID)
+	}
+	return false, errors.New("未实现的测试替身方法")
+}
+
+func (f *fakeArticleRepo) ExistsBookmark(articleID, userID uint) (bool, error) {
+	if f.existsBookmark != nil {
+		return f.existsBookmark(articleID, userID)
+	}
+	return false, errors.New("未实现的测试替身方法")
+}
+
+func (f *fakeArticleRepo) ListBookmarks(userID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	if f.listBookmarks != nil {
+		return f.listBookmarks(userID, params)
+	}
+	return nil, 0, errors.New("未实现的测试替身方法")
 }
 
 func (f *fakeArticleRepo) Search(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error) {

@@ -2,7 +2,9 @@ import type { KyInstance } from 'ky'
 import type {
   ArticleActionResponse,
   ArticleArchiveResponse,
+  ArticleBookmarkStateResponse,
   ArticleCollectionResponse,
+  ArticleLikeStateResponse,
   ArticleListResponse,
   ArticleResponse,
   CreateArticleRequest,
@@ -79,6 +81,21 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/view', { json: { id } }).json()
     },
 
+    // 查询当前用户对文章的点赞状态，需要登录。
+    isLiked(id: number): Promise<ArticleLikeStateResponse> {
+      return request.post('articles/isLiked', { json: { id } }).json()
+    },
+
+    // 查询当前用户对文章的收藏状态，需要登录。
+    isBookmarked(id: number): Promise<ArticleBookmarkStateResponse> {
+      return request.post('articles/isBookmarked', { json: { id } }).json()
+    },
+
+    // 分页查询当前用户的收藏文章，需要登录。
+    bookmarks(params: GetArticleListRequest): Promise<ArticleListResponse> {
+      return request.post('articles/bookmarks', { json: params }).json()
+    },
+
     // 发布文章。
     publish(id: number): Promise<ArticleActionResponse> {
       return request.post(ARTICLE_ACTION_PATHS.publish, { json: { id } }).json()
@@ -106,7 +123,9 @@ export type ArticleAPI = ReturnType<typeof createArticleAPI>
 export type {
   ArticleActionResponse,
   ArticleArchiveResponse,
+  ArticleBookmarkStateResponse,
   ArticleCollectionResponse,
+  ArticleLikeStateResponse,
   ArticleListResponse,
   ArticleResponse,
   CreateArticleRequest,

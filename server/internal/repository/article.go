@@ -45,6 +45,9 @@ type ArticleRepositoryInterface interface {
 	RemoveLike(articleID, userID uint) (bool, error)
 	AddBookmark(articleID, userID uint) (bool, error)
 	RemoveBookmark(articleID, userID uint) (bool, error)
+	ExistsLike(articleID, userID uint) (bool, error)
+	ExistsBookmark(articleID, userID uint) (bool, error)
+	ListBookmarks(userID uint, params *ArticleListParams) ([]*model.Article, int64, error)
 
 	// 分类和标签关联
 	AddCategory(articleID, categoryID uint) error
@@ -474,6 +477,62 @@ func (r *ArticleRepository) RemoveBookmark(articleID, userID uint) (bool, error)
 		return nil
 	})
 	return removed, err
+}
+
+// ExistsLike 判断用户是否已点赞文章。
+func (r *ArticleRepository) ExistsLike(articleID, userID uint) (bool, error) {
+	var count int64
+	if err := r.db.Model(&model.ArticleLike{}).
+		Where("article_id = ? AND user_id = ?", articleID, userID).
+		Count(&count).Error; err != nil {
+		return false, fmt.Errorf("查询点赞状态失败: %w", err)
+	}
+	return count > 0, nil
+}
+
+// ExistsBookmark 判断用户是否已收藏文章。
+func (r *ArticleRepository) ExistsBookmark(articleID, userID uint) (bool, error) {
+	var count int64
+	if err := r.db.Model(&model.ArticleBookmark{}).
+		Where("article_id = ? AND user_id = ?", articleID, userID).
+		Count(&count).Error; err != nil {
+		return false, fmt.Errorf("查询收藏状态失败: %w", err)
+	}
+	return count > 0, nil
+}
+
+// ListBookmarks 分页查询用户收藏的文章，按收藏时间倒序。
+func (r *ArticleRepository) ListBookmarks(userID uint, params *ArticleListParams) ([]*model.Article, int64, error) {
+	joinCondition := "JOIN article_bookmarks ON article_bookmarks.article_id = articles.id AND article_bookmarks.user_id = ?"
+
+	var total int64
+	if err := r.db.Model(&model.Article{}).Joins(joinCondition, userID).Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("查询收藏总数失败: %w", err)
+	}
+
+	// 设置分页默认值
+	if params.Page <= 0 {
+		params.Page = 1
+	}
+	if params.PageSize <= 0 {
+		params.PageSize = 10
+	}
+
+	var articles []*model.Article
+	offset := (params.Page - 1) * params.PageSize
+	err := r.db.Model(&model.Article{}).
+		Joins(joinCondition, userID).
+		Preload("Author").
+		Preload("Category").
+		Preload("Categories").
+		Preload("Tags").
+		Order("article_bookmarks.created_at DESC").
+		Offset(offset).Limit(params.PageSize).
+		Find(&articles).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("查询收藏文章失败: %w", err)
+	}
+	return articles, total, nil
 }
 
 // AddCategory 添加分类关联

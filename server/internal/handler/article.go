@@ -30,6 +30,9 @@ type ArticleHandlerInterface interface {
 	UnlikeArticle(c *gin.Context)
 	BookmarkArticle(c *gin.Context)
 	UnbookmarkArticle(c *gin.Context)
+	IsArticleLiked(c *gin.Context)
+	IsArticleBookmarked(c *gin.Context)
+	GetArticleBookmarks(c *gin.Context)
 	PublishArticle(c *gin.Context)
 	UnpublishArticle(c *gin.Context)
 	ArchiveArticle(c *gin.Context)
@@ -530,6 +533,91 @@ func (h *ArticleHandler) UnlikeArticle(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"message": "取消点赞成功"})
+}
+
+// IsArticleLiked 查询当前用户对文章的点赞状态 POST /api/articles/isLiked
+func (h *ArticleHandler) IsArticleLiked(c *gin.Context) {
+	type IsLikedRequest struct {
+		ID uint `json:"id" binding:"required"`
+	}
+
+	var req IsLikedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	isLiked, err := h.articleService.IsArticleLiked(req.ID, userID)
+	if err != nil {
+		HandleServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"isLiked": isLiked})
+}
+
+// IsArticleBookmarked 查询当前用户对文章的收藏状态 POST /api/articles/isBookmarked
+func (h *ArticleHandler) IsArticleBookmarked(c *gin.Context) {
+	type IsBookmarkedRequest struct {
+		ID uint `json:"id" binding:"required"`
+	}
+
+	var req IsBookmarkedRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	isBookmarked, err := h.articleService.IsArticleBookmarked(req.ID, userID)
+	if err != nil {
+		HandleServiceError(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"isBookmarked": isBookmarked})
+}
+
+// GetArticleBookmarks 分页查询当前用户的收藏文章 POST /api/articles/bookmarks
+func (h *ArticleHandler) GetArticleBookmarks(c *gin.Context) {
+	var req service.GetArticleListRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	// 设置默认值
+	if req.Page <= 0 {
+		req.Page = 1
+	}
+	if req.PageSize <= 0 {
+		req.PageSize = 10
+	}
+
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	result, err := h.articleService.GetArticleBookmarks(userID, &req)
+	if err != nil {
+		HandleServiceError(c, err)
+		return
+	}
+
+	response.Success(c, result)
 }
 
 // BookmarkArticle 收藏文章
