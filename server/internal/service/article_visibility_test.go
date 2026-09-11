@@ -29,7 +29,7 @@ func TestGetArticlesByAuthorForcesPublishedForAnonymous(t *testing.T) {
 func TestGetArticlesByAuthorForcesPublishedForRegularUser(t *testing.T) {
 	var capturedStatus model.ArticleStatus
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 2, Role: "user", Status: 1}}
-	svc := NewArticleService(captureAuthorStatus(&capturedStatus), userRepo, NewRBACService()).(*ArticleService)
+	svc := NewArticleService(captureAuthorStatus(&capturedStatus), userRepo, NewRBACService(), &fakeStatsRepo{}).(*ArticleService)
 
 	viewer := uint(2)
 	req := &GetArticleListRequest{Status: "private", Page: 1, PageSize: 10}

@@ -66,7 +66,7 @@ func main() {
 	rbacService := service.NewRBACService()
 	identity := middleware.NewIdentityProvider(jwtService, userRepo)
 	userSvc := service.NewUserService(userRepo, jwtService, rbacService)
-	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService)
+	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService, statsRepo)
 	categorySvc := service.NewCategoryService(categoryRepo)
 	tagSvc := service.NewTagService(tagRepo)
 	commentSvc := service.NewCommentService(commentRepo, articleRepo, settingRepo)

@@ -2,11 +2,13 @@
 package repository
 
 import (
+	"fmt"
 	"time"
 
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // StatsRepositoryInterface 站点统计仓储接口
@@ -24,6 +26,7 @@ type StatsRepositoryInterface interface {
 
 	// 时间维度统计
 	GetContentStats(contentType, statType string, startDate time.Time) ([]*model.ContentStats, error)
+	UpsertContentStat(contentType string, contentID uint, statType string, statDate time.Time) error
 }
 
 // StatsRepository 站点统计仓储实现
@@ -101,6 +104,25 @@ func (r *StatsRepository) CountTags() (int64, error) {
 		return 0, err
 	}
 	return count, nil
+}
+
+// UpsertContentStat 累加内容日统计，维度组合首次出现时插入初始记录。
+func (r *StatsRepository) UpsertContentStat(contentType string, contentID uint, statType string, statDate time.Time) error {
+	stat := model.ContentStats{
+		ContentType: contentType,
+		ContentID:   contentID,
+		StatType:    statType,
+		StatValue:   1,
+		StatDate:    statDate,
+	}
+	if err := r.db.Clauses(clause.OnConflict{
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"stat_value": gorm.Expr("stat_value + 1"),
+		}),
+	}).Create(&stat).Error; err != nil {
+		return fmt.Errorf("更新内容统计失败: %w", err)
+	}
+	return nil
 }
 
 // GetContentStats 查询指定内容类型与统计类型的时间序列数据。

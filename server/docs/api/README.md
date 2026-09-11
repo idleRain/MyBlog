@@ -224,6 +224,8 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 评论流程消费站点设置：`allow_guest_comment` 关闭游客通道，`comment_auto_approve` 开启自动过审
+- ✅ 浏览上报落库：`articles/view` 写入 `article_views` 访客去重明细，并按日累加 `content_stats` 浏览维度，管理端趋势图恢复数据来源
 - ✅ 新增 `POST /api/categories/getBySlug`：按别名获取公开分类，供前台分类页定位
 - ✅ 新增 `POST /api/articles/archives`：按年月分组的公开文章归档，供前台归档页时间线使用
 - ✅ 作者文章接口 `/api/articles/byAuthor` 补齐角色化可见性：非管理员强制只返回已发布文章，堵住草稿与私密文章越权拉取

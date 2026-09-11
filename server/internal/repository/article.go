@@ -36,6 +36,7 @@ type ArticleRepositoryInterface interface {
 	GetPopular(limit int) ([]*model.Article, error)
 	GetRecent(limit int) ([]*model.Article, error)
 	ListArchives() ([]*model.Article, error)
+	RecordArticleView(view *model.ArticleView) error
 	IncrementViewCount(id uint) error
 	UpdateCommentCount(id uint) error
 
@@ -335,6 +336,21 @@ func (r *ArticleRepository) ListArchives() ([]*model.Article, error) {
 		return nil, fmt.Errorf("查询文章归档失败: %w", err)
 	}
 	return articles, nil
+}
+
+// RecordArticleView 记录文章浏览明细，同一文章、访客与日期命中既有记录时累加当日次数。
+func (r *ArticleRepository) RecordArticleView(view *model.ArticleView) error {
+	var existing model.ArticleView
+	err := r.db.Where("article_id = ? AND visitor_id = ? AND view_date = ?",
+		view.ArticleID, view.VisitorID, view.ViewDate).First(&existing).Error
+	if err == nil {
+		return r.db.Model(&model.ArticleView{}).Where("id = ?", existing.ID).
+			Update("view_count", gorm.Expr("view_count + 1")).Error
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return r.db.Create(view).Error
+	}
+	return fmt.Errorf("查询浏览记录失败: %w", err)
 }
 
 // GetPopular 获取热门文章

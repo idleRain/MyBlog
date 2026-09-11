@@ -11,15 +11,16 @@ import (
 // fakeStatsRepo 站点统计仓储的测试替身。
 type fakeStatsRepo struct {
 	repository.StatsRepositoryInterface
-	articleCount  int64
-	published     int64
-	totalViews    uint64
-	totalLikes    uint64
-	commentCount  int64
-	userCount     int64
-	categoryCount int64
-	tagCount      int64
-	contentStats  []*model.ContentStats
+	articleCount      int64
+	published         int64
+	totalViews        uint64
+	totalLikes        uint64
+	commentCount      int64
+	userCount         int64
+	categoryCount     int64
+	tagCount          int64
+	contentStats      []*model.ContentStats
+	upsertContentStat func(contentType string, contentID uint, statType string, statDate time.Time) error
 }
 
 func (f *fakeStatsRepo) CountArticles(status model.ArticleStatus) (int64, error) {
@@ -38,6 +39,13 @@ func (f *fakeStatsRepo) CountTags() (int64, error)        { return f.tagCount, n
 
 func (f *fakeStatsRepo) GetContentStats(contentType, statType string, startDate time.Time) ([]*model.ContentStats, error) {
 	return f.contentStats, nil
+}
+
+func (f *fakeStatsRepo) UpsertContentStat(contentType string, contentID uint, statType string, statDate time.Time) error {
+	if f.upsertContentStat != nil {
+		return f.upsertContentStat(contentType, contentID, statType, statDate)
+	}
+	return nil
 }
 
 // TestGetOverview 验证站点统计概览聚合各维度数据。

@@ -14,6 +14,8 @@ type fakeArticleRepo struct {
 	repository.ArticleRepositoryInterface
 	getByID        func(id uint) (*model.Article, error)
 	getByAuthor    func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	incrementView  func(id uint) error
+	recordView     func(view *model.ArticleView) error
 	addLike        func(articleID, userID uint) (bool, error)
 	removeLike     func(articleID, userID uint) (bool, error)
 	addBookmark    func(articleID, userID uint) (bool, error)
@@ -67,6 +69,22 @@ func (f *fakeArticleRepo) Archive(id uint) error {
 	return nil
 }
 
+// IncrementViewCount 递增浏览计数，测试替身默认成功。
+func (f *fakeArticleRepo) IncrementViewCount(id uint) error {
+	if f.incrementView != nil {
+		return f.incrementView(id)
+	}
+	return nil
+}
+
+// RecordArticleView 记录浏览明细，测试替身默认成功。
+func (f *fakeArticleRepo) RecordArticleView(view *model.ArticleView) error {
+	if f.recordView != nil {
+		return f.recordView(view)
+	}
+	return nil
+}
+
 // captureAuthorStatus 构造捕获查询状态的作者文章测试替身，供可见性断言使用。
 func captureAuthorStatus(captured *model.ArticleStatus) *fakeArticleRepo {
 	return &fakeArticleRepo{
@@ -106,7 +124,7 @@ func publishedArticle(id uint) *model.Article {
 // newArticleTestService 创建注入测试替身的文章服务实例。
 func newArticleTestService(articleRepo repository.ArticleRepositoryInterface) *ArticleService {
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
-	svc := NewArticleService(articleRepo, userRepo, NewRBACService())
+	svc := NewArticleService(articleRepo, userRepo, NewRBACService(), &fakeStatsRepo{})
 	return svc.(*ArticleService)
 }
 
@@ -147,7 +165,7 @@ func TestLikeArticleRejectsInvisibleArticle(t *testing.T) {
 	}
 	// 使用普通用户角色的服务实例，验证权限校验。
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "user", Status: 1}}
-	svc := NewArticleService(repo, userRepo, NewRBACService()).(*ArticleService)
+	svc := NewArticleService(repo, userRepo, NewRBACService(), &fakeStatsRepo{}).(*ArticleService)
 
 	err := svc.LikeArticle(1, 1)
 	if err == nil {

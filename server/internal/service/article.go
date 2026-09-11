@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"regexp"
+	"time"
 	"unicode/utf8"
 
 	"MyBlog/internal/model"
@@ -123,6 +124,7 @@ type ArticleService struct {
 	articleRepo repository.ArticleRepositoryInterface
 	userRepo    repository.UserRepository
 	rbacService RBACService
+	statsRepo   repository.StatsRepositoryInterface
 }
 
 // NewArticleService 创建文章服务实例
@@ -130,11 +132,13 @@ func NewArticleService(
 	articleRepo repository.ArticleRepositoryInterface,
 	userRepo repository.UserRepository,
 	rbacService RBACService,
+	statsRepo repository.StatsRepositoryInterface,
 ) ArticleServiceInterface {
 	return &ArticleService{
 		articleRepo: articleRepo,
 		userRepo:    userRepo,
 		rbacService: rbacService,
+		statsRepo:   statsRepo,
 	}
 }
 
@@ -609,17 +613,34 @@ func groupArticlesByYearMonth(articles []*model.Article) []ArticleArchiveYear {
 	return groups
 }
 
-// ViewArticle 记录文章浏览
+// ViewArticle 记录文章浏览：递增文章计数，落访客去重明细并累加日统计。
 func (s *ArticleService) ViewArticle(articleID uint, userID *uint, visitorID string, ipAddress string) error {
 	// 增加浏览量
 	if err := s.articleRepo.IncrementViewCount(articleID); err != nil {
 		return err
 	}
 
-	// TODO: 记录详细的浏览记录到 article_views 表
-	// 这里可以异步处理，避免影响响应速度
+	// 访客标识缺失时以 IP 兜底，保证匿名流量也能按访客去重。
+	visitorKey := visitorID
+	if visitorKey == "" {
+		visitorKey = ipAddress
+	}
 
-	return nil
+	now := time.Now()
+	viewDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	view := &model.ArticleView{
+		ArticleID: articleID,
+		UserID:    userID,
+		VisitorID: visitorKey,
+		IPAddress: ipAddress,
+		ViewDate:  viewDate,
+		ViewCount: 1,
+	}
+	if err := s.articleRepo.RecordArticleView(view); err != nil {
+		return err
+	}
+
+	return s.statsRepo.UpsertContentStat(model.ContentTypeArticle, articleID, model.StatTypeDailyViews, viewDate)
 }
 
 // LikeArticle 点赞文章，重复点赞保持幂等。
