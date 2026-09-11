@@ -31,7 +31,7 @@ git grep -ln "MyBlog/internal/repository" -- internal/service internal/middlewar
 ### A3 契约先行，模块对齐
 
 - 修改 wire 格式（请求/响应结构、错误码语义、认证协议）前，必须先明确双端影响面并在同一变更窗口内同步两端；禁止"先改后端、前端以后再说"。
-- 新增业务模块必须双端对齐：后端 `internal/{handler,service,repository}/<module>.go` + 前端 `packages/api/src/modules/<module>/` + 两应用 `lib/api/index.ts` 注册。现存反例：`user_follow` 仅后端存在（D13）。
+- 新增业务模块必须双端对齐：后端 `internal/{handler,service,repository}/<module>.go` + 前端 `packages/api/src/modules/<module>/` + 两应用 `lib/api/index.ts` 注册。历史反例 `user_follow` 曾仅后端存在（D13，已收口）。
 - 后端能力缺口（如列表接口缺关键词参数）必须推回后端修复；**禁止前端补偿**（全量跨页拉取后客户端过滤，存量见 D8 注记）。
 
 ### A4 单一权威，禁止私自实例化
@@ -220,7 +220,7 @@ pnpm run migrate [create|up|down|version|help]
 - 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题（详见 `temp/todos/web-alignment-gaps.md`）。
 
 待办：
-- 全文搜索（当前 `articles/search` 为 LIKE 实现）、通知铃铛移动端入口、响应式完善、部署与 Docker。
+- 通知铃铛移动端入口、响应式完善、部署与 Docker。
 - 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配、SSR 会话（token 迁 cookie）与内容多语言待产品拍板。
 
 架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D14 只减不增。

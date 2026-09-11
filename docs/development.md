@@ -73,6 +73,7 @@ MyBlog/
 - **Response** (`pkg/response/`) - 统一 API 响应格式
 - **DateTime** (`pkg/datetime/`) - 自定义时间类型处理
 - **Slug** (`pkg/slug/`) - URL 友好标识生成工具，供文章、分类、标签复用
+- **Markdown** (`pkg/markdown/`) - Markdown 转 HTML 渲染，供文章内容缓存使用
 
 #### 业务模块
 
@@ -115,14 +116,14 @@ userHandler := handler.NewUserHandler(userSvc)
 
 | 应用 | 定位 | 特性 | 开发端口 |
 | --- | --- | --- | --- |
-| `apps/web`（@myblog/web） | 前台 toC | 公开博客 + demo 页 + i18n（paraglide） | 8899 |
+| `apps/web`（@myblog/web） | 前台 toC | 博客业务页面（首页/目录/详情/分类/归档/作者页/登录/收藏）+ demo 页 + i18n（paraglide） | 8899 |
 | `apps/admin`（@myblog/admin） | 后台 toB | 管理控制台 + 登录页，基准路径 `/admin`，无 i18n | 9988 |
 
 #### 公共包
 
 | 包 | 职责 | 关键依赖 |
 | --- | --- | --- |
-| `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量，不依赖 SvelteKit/Svelte | clsx、tailwind-merge、mitt |
+| `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量（站点常量与后端响应码 `RESPONSE_CODE_*`），不依赖 SvelteKit/Svelte | clsx、tailwind-merge、mitt |
 | `@myblog/http` | `createHttpClient` 工厂（ky 封装，认证回调注入，401 刷新钩子） | ky、@myblog/shared |
 | `@myblog/api` | 后端接口模块与响应类型（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow 共 11 个模块工厂） | @myblog/http、@myblog/shared |
 | `@myblog/auth` | 认证会话组装：`createAuthStore` 工厂（注入式，逻辑两应用共享） | @myblog/api、@myblog/shared、svelte |
@@ -134,14 +135,14 @@ userHandler := handler.NewUserHandler(userSvc)
 
 ```
 apps/web/src/                 # 前台
-├── routes/                   # 分组路由：(app) 前台主页、(demo) 组件演示
+├── routes/                   # 分组路由：(app) 业务页面、(demo) i18n 演示
 ├── lib/
-│   ├── api/                  # 接口实例化（createUserAPI 实例）
+│   ├── api/                  # 接口实例化（8 个模块工厂实例聚合导出）
 │   ├── service/              # http 客户端创建（注入认证与提示回调）
-│   ├── components/           # 前台组件（home/ 为首页版面，layout/ 为全局框架）
-│   ├── data/                 # 页面占位内容（业务接入后由 @myblog/api 替换）
+│   ├── components/           # 前台组件（home/ 首页版面、article/ 文章域、comment/ 评论、user/ 用户域、layout/ 全局框架）
 │   ├── motion/               # GSAP 动效基建（插件注册、缓动常量、滚动进场 actions）
 │   ├── stores/               # 认证状态 store
+│   ├── utils/                # 页面工具（日期格式化等）
 │   └── paraglide/            # i18n 生成产物
 └── app.css                   # 编辑杂志主题（暖纸墨色系，含 --signal 与 --color-line 别名）
 
@@ -477,7 +478,7 @@ const UserAPI = createUserAPI(request)
 
 // 一律使用 POST 调用后端（与后端 POST-Only 规范呼应）
 const list = await UserAPI.getUserList(1, 10)
-const updated = await UserAPI.updateUser(user.id, { username: 'new-name' })
+const updated = await UserAPI.updateUser({ id: user.id, username: 'new-name' })
 ```
 
 ## 部署指南

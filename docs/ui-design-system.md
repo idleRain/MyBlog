@@ -287,13 +287,13 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 | 项 | 现状 | 建议 |
 | --- | --- | --- |
-| 前台 `.texture-grid` 纸纹 | 已启用，施加于首页正文容器 | 随页面扩充按需复用 |
-| 前台 `.spec-grid` | 无组件引用，为死代码 | 后台登录页如需网格底纹可复用；否则待清理 |
-| 前台 `.animate-blob` / 延迟类 | 前台无组件引用，为死代码 | 随清理项一并移除 |
-| 首页文章数据 | `lib/data/home-content.ts` 占位内容 | 文章业务接入后由 `@myblog/api` 真实数据替换 |
+| 前台 `.texture-grid` 纸纹 | 已启用，覆盖首页正文、博客目录/详情、归档、作者页、登录页与错误页等全部业务版面 | 随页面扩充按需复用 |
+| 前台 `.spec-grid` | **已清理**（无引用死代码，随规格书风格退役移除） | 后台登录页如需网格底纹可自行实现 |
+| 前台 `.animate-blob` / 延迟类 | **已清理**（同上） | 后台登录页 blob 动画保留于后台自身样式 |
+| 首页文章数据 | **已接入真实数据**（popular/recent/archives/热门标签，占位 `home-content.ts` 已删除） | 精选文章暂取热门榜首，后续可按 isFeatured 筛选 |
 | 后台 Manrope / Inter 字体 | 已声明于 `font-family` 但未自托管，实际回退系统栈 | 自托管或移除声明 |
 | 后台登录页 blob 动画 | 历史保留的登录页特色 | 保持；如需清理单独立项 |
-| Header 触发器 button 嵌套 | `Dialog.Trigger`/`Sheet.Trigger` 包裹 `$ui` Button 产生 `hydration_mismatch` 警告 | 触碰 Header 时顺带修复（改用 `Button asChild` 或原生按钮） |
+| Header 触发器 button 嵌套 | `Dialog.Trigger`/`Sheet.Trigger` 包裹 `$ui` Button 产生 `hydration_mismatch` 警告 | 触碰 Header 时顺带修复（改用 `Button asChild` 或原生按钮）；新增的通知铃铛已改用 `child` snippet 模式 |
 
 ---
 
