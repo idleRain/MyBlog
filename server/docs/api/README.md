@@ -39,7 +39,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 用户管理 | 8 | 用户认证和管理 |
 | 用户关注 | 4 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
-| 文章管理 | 22 | 文章内容管理 |
+| 文章管理 | 23 | 文章内容管理 |
 | 分类管理 | 6 | 分类树形管理 |
 | 标签管理 | 7 | 标签与热门标签 |
 | 评论管理 | 10 | 评论与审核 |
@@ -47,7 +47,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 8 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **79** | **完整的博客系统 API** |
+| **总计** | **80** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -87,6 +87,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/articles/popular` - 获取热门文章
 - `POST /api/articles/recent` - 获取最新文章
 - `POST /api/articles/related` - 获取相关文章
+- `POST /api/articles/archives` - 按年月分组的公开归档
 - `POST /api/articles/view` - 记录浏览量
 
 #### 认证接口
@@ -221,7 +222,13 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 
 ## 更新日志
 
-### v1.2.0 (当前版本)
+### v1.3.0 (当前版本)
+- ✅ 新增 `POST /api/articles/archives`：按年月分组的公开文章归档，供前台归档页时间线使用
+- ✅ 作者文章接口 `/api/articles/byAuthor` 补齐角色化可见性：非管理员强制只返回已发布文章，堵住草稿与私密文章越权拉取
+- ✅ 评论创建绑定登录身份：登录评论关联 UserID，游客字段仅游客通道生效，游客通道补齐邮箱与网站落库
+- ✅ 媒体静态目录挂载：`fileUrl` 指向的 `/uploads` 路径可直接公开访问
+
+### v1.2.0
 - ♻️ 文章接口收敛为单一路径：移除 `/api/admin/articles/*` 冗余端点，创建/更新/删除/状态流转统一走 `/api/articles/*`，授权由服务端按作者或 `article:manage` 统一判定
 - ♻️ 公开文章读接口（get/getBySlug/list 等）支持可选认证，具备 `article:manage` 的管理员可按任意状态读取，其他角色强制只返回已发布文章
 - ✅ 新增 `POST /api/tags/list`：文章编辑选择使用的全部标签列表（登录 + `article:read`）

@@ -48,6 +48,7 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, _ *gin.RouterGroup)
 		publicArticles.POST("/popular", ar.articleHandler.GetPopularArticles)       // 热门文章
 		publicArticles.POST("/recent", ar.articleHandler.GetRecentArticles)         // 最新文章
 		publicArticles.POST("/related", ar.articleHandler.GetRelatedArticles)       // 相关文章
+		publicArticles.POST("/archives", ar.articleHandler.GetArticleArchives)      // 按年月分组的公开归档
 
 		// 文章统计接口，无需登录。
 		publicArticles.POST("/view", ar.articleHandler.ViewArticle) // 记录浏览量

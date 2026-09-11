@@ -288,13 +288,13 @@ curl -X POST http://localhost:3000/api/articles/list \
 
 ### 4. 获取作者文章列表
 
-获取指定作者的文章列表。
+获取指定作者的文章列表，可见性规则与"获取文章列表"接口一致。
 
 #### 请求信息
 
 - **接口地址**: `/api/articles/byAuthor`
 - **请求方式**: `POST`
-- **权限要求**: 无需认证
+- **权限要求**: 可选认证；具备 `article:manage` 的管理员可按任意状态筛选，其他角色由服务端强制只返回已发布文章
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -304,6 +304,7 @@ curl -X POST http://localhost:3000/api/articles/list \
 | authorId | integer | 是 | 作者ID | 大于0的整数 |
 | page | integer | 否 | 页码 | 大于0的整数，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100之间，默认10 |
+| status | string | 否 | 状态筛选 | 仅具备 `article:manage` 时生效，其余角色服务端强制 published |
 | sortBy | string | 否 | 排序字段 | created_at/updated_at/published_at/view_count/like_count |
 | order | string | 否 | 排序方向 | asc/desc，默认desc |
 
@@ -1105,6 +1106,83 @@ curl -X POST http://localhost:3000/api/articles/private \
   "data": {
     "message": "文章设置为私有成功"
   }
+}
+```
+
+---
+
+### 23. 获取文章归档（公开）
+
+获取全部已发布文章的归档数据，按年份与月份两级分组，供归档页时间线使用。
+
+#### 请求信息
+
+- **接口地址**: `/api/articles/archives`
+- **请求方式**: `POST`
+- **权限要求**: 无需认证，仅返回已发布文章
+- **Content-Type**: `application/json`
+
+#### 请求参数
+
+无请求参数，请求体传空对象。
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/articles/archives \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+#### 响应参数
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| code | integer | 是 | 状态码，200表示成功 |
+| message | string | 是 | 响应消息 |
+| data | array | 是 | 年份分组列表，按年份倒序 |
+| data[].year | integer | 是 | 年份 |
+| data[].total | integer | 是 | 该年文章总数 |
+| data[].months | array | 是 | 月份分组列表，按月份倒序 |
+| data[].months[].month | integer | 是 | 月份，1-12 |
+| data[].months[].articles | array | 是 | 该月已发布文章，字段同文章列表，按发布时间倒序 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "获取成功",
+  "data": [
+    {
+      "year": 2026,
+      "total": 2,
+      "months": [
+        {
+          "month": 2,
+          "articles": [
+            {
+              "id": 1,
+              "title": "Hello World",
+              "slug": "hello-world",
+              "publishedAt": "2026-02-03T10:00:00Z"
+            }
+          ]
+        },
+        {
+          "month": 1,
+          "articles": [
+            {
+              "id": 2,
+              "title": "设计令牌先行",
+              "slug": "design-tokens-first",
+              "publishedAt": "2026-01-18T10:00:00Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 ```
 

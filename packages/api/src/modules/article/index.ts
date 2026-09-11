@@ -1,6 +1,7 @@
 import type { KyInstance } from 'ky'
 import type {
   ArticleActionResponse,
+  ArticleArchiveResponse,
   ArticleListResponse,
   ArticleResponse,
   CreateArticleRequest,
@@ -47,6 +48,11 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/list', { json: params }).json()
     },
 
+    // 按年月分组的公开文章归档。
+    archives(): Promise<ArticleArchiveResponse> {
+      return request.post('articles/archives', { json: {} }).json()
+    },
+
     // 发布文章。
     publish(id: number): Promise<ArticleActionResponse> {
       return request.post(ARTICLE_ACTION_PATHS.publish, { json: { id } }).json()
@@ -73,6 +79,7 @@ export type ArticleAPI = ReturnType<typeof createArticleAPI>
 
 export type {
   ArticleActionResponse,
+  ArticleArchiveResponse,
   ArticleListResponse,
   ArticleResponse,
   CreateArticleRequest,

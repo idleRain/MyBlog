@@ -30,6 +30,7 @@ type ArticleServiceInterface interface {
 	GetPopularArticles(limit int) ([]*model.Article, error)
 	GetRecentArticles(limit int) ([]*model.Article, error)
 	GetRelatedArticles(articleID uint, limit int) ([]*model.Article, error)
+	GetArticleArchives() ([]ArticleArchiveYear, error)
 
 	// 互动操作
 	ViewArticle(articleID uint, userID *uint, visitorID string, ipAddress string) error
@@ -102,6 +103,19 @@ type ArticleListResponse struct {
 	Total    int64            `json:"total"`
 	Page     int              `json:"page"`
 	PageSize int              `json:"pageSize"`
+}
+
+// ArticleArchiveMonth 归档的月份分组，articles 为该月已发布文章，按发布时间倒序。
+type ArticleArchiveMonth struct {
+	Month    int              `json:"month"`
+	Articles []*model.Article `json:"articles"`
+}
+
+// ArticleArchiveYear 归档的年份分组，total 为该年文章总数。
+type ArticleArchiveYear struct {
+	Year   int                   `json:"year"`
+	Total  int                   `json:"total"`
+	Months []ArticleArchiveMonth `json:"months"`
 }
 
 // ArticleService 文章服务实现
@@ -545,6 +559,52 @@ func (s *ArticleService) GetRelatedArticles(articleID uint, limit int) ([]*model
 	}
 
 	return relatedArticles, nil
+}
+
+// GetArticleArchives 获取按年月分组的公开文章归档。
+func (s *ArticleService) GetArticleArchives() ([]ArticleArchiveYear, error) {
+	articles, err := s.articleRepo.ListArchives()
+	if err != nil {
+		return nil, err
+	}
+
+	return groupArticlesByYearMonth(articles), nil
+}
+
+// groupArticlesByYearMonth 将按发布时间倒序的文章按年与月两级分组，缺失发布时间的记录跳过。
+func groupArticlesByYearMonth(articles []*model.Article) []ArticleArchiveYear {
+	groups := make([]ArticleArchiveYear, 0)
+	yearIndex := make(map[int]int)
+	monthIndex := make(map[int]map[int]int)
+
+	for _, article := range articles {
+		if article.PublishedAt == nil {
+			continue
+		}
+
+		year := article.PublishedAt.Year()
+		month := int(article.PublishedAt.Month())
+
+		yearPos, exists := yearIndex[year]
+		if !exists {
+			yearPos = len(groups)
+			yearIndex[year] = yearPos
+			monthIndex[year] = make(map[int]int)
+			groups = append(groups, ArticleArchiveYear{Year: year})
+		}
+
+		monthPos, exists := monthIndex[year][month]
+		if !exists {
+			monthPos = len(groups[yearPos].Months)
+			monthIndex[year][month] = monthPos
+			groups[yearPos].Months = append(groups[yearPos].Months, ArticleArchiveMonth{Month: month})
+		}
+
+		groups[yearPos].Months[monthPos].Articles = append(groups[yearPos].Months[monthPos].Articles, article)
+		groups[yearPos].Total++
+	}
+
+	return groups
 }
 
 // ViewArticle 记录文章浏览

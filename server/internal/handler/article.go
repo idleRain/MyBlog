@@ -24,6 +24,7 @@ type ArticleHandlerInterface interface {
 	GetPopularArticles(c *gin.Context)
 	GetRecentArticles(c *gin.Context)
 	GetRelatedArticles(c *gin.Context)
+	GetArticleArchives(c *gin.Context)
 	ViewArticle(c *gin.Context)
 	LikeArticle(c *gin.Context)
 	UnlikeArticle(c *gin.Context)
@@ -399,6 +400,17 @@ func (h *ArticleHandler) GetRecentArticles(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"articles": articles})
+}
+
+// GetArticleArchives 获取按年月分组的公开文章归档，无请求参数。
+func (h *ArticleHandler) GetArticleArchives(c *gin.Context) {
+	groups, err := h.articleService.GetArticleArchives()
+	if err != nil {
+		HandleServiceError(c, err)
+		return
+	}
+
+	response.Success(c, groups)
 }
 
 // GetRelatedArticles 获取相关文章

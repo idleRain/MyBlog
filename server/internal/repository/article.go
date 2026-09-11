@@ -35,6 +35,7 @@ type ArticleRepositoryInterface interface {
 	// 统计操作
 	GetPopular(limit int) ([]*model.Article, error)
 	GetRecent(limit int) ([]*model.Article, error)
+	ListArchives() ([]*model.Article, error)
 	IncrementViewCount(id uint) error
 	UpdateCommentCount(id uint) error
 
@@ -317,6 +318,23 @@ func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([
 	}
 
 	return articles, total, nil
+}
+
+// ListArchives 查询全部已发布文章用于归档分组，按发布时间倒序。
+func (r *ArticleRepository) ListArchives() ([]*model.Article, error) {
+	var articles []*model.Article
+	err := r.db.Model(&model.Article{}).
+		Preload("Author").
+		Preload("Category").
+		Preload("Categories").
+		Preload("Tags").
+		Where("status = ?", model.ArticleStatusPublished).
+		Order("published_at DESC").
+		Find(&articles).Error
+	if err != nil {
+		return nil, fmt.Errorf("查询文章归档失败: %w", err)
+	}
+	return articles, nil
 }
 
 // GetPopular 获取热门文章

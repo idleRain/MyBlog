@@ -58,6 +58,19 @@ export interface ArticleListData {
   articles: Article[]
 }
 
+// 归档的月份分组，articles 为该月已发布文章，按发布时间倒序。
+export interface ArticleArchiveMonth {
+  month: number
+  articles: Article[]
+}
+
+// 归档的年份分组，total 为该年文章总数。
+export interface ArticleArchiveYear {
+  year: number
+  total: number
+  months: ArticleArchiveMonth[]
+}
+
 // 文章列表查询参数，排序字段与顺序均受后端 oneof 约束。
 export interface GetArticleListRequest {
   page?: number
@@ -116,4 +129,5 @@ export interface ArticleActionData {
 // 各响应类型
 export type ArticleResponse = ApiResponse<Article>
 export type ArticleListResponse = ApiResponse<ArticleListData>
+export type ArticleArchiveResponse = ApiResponse<ArticleArchiveYear[]>
 export type ArticleActionResponse = ApiResponse<ArticleActionData>
