@@ -86,12 +86,8 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID，未登录时为空。
-	var userID *uint
-	if uid, exists := c.Get("userID"); exists {
-		uidUint := uid.(uint)
-		userID = &uidUint
-	}
+	// 读取当前用户ID，未登录时为空。
+	userID := getOptionalUserID(c)
 
 	// 获取文章
 	article, err := h.articleService.GetArticle(req.ID, userID)
@@ -116,12 +112,8 @@ func (h *ArticleHandler) GetArticleBySlug(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID，未登录时为空。
-	var userID *uint
-	if uid, exists := c.Get("userID"); exists {
-		uidUint := uid.(uint)
-		userID = &uidUint
-	}
+	// 读取当前用户ID，未登录时为空。
+	userID := getOptionalUserID(c)
 
 	// 获取文章
 	article, err := h.articleService.GetArticleBySlug(req.Slug, userID)
@@ -211,12 +203,8 @@ func (h *ArticleHandler) GetArticleList(c *gin.Context) {
 		req.PageSize = 10
 	}
 
-	// 获取当前用户ID，未登录时为空。
-	var userID *uint
-	if uid, exists := c.Get("userID"); exists {
-		uidUint := uid.(uint)
-		userID = &uidUint
-	}
+	// 读取当前用户ID，未登录时为空。
+	userID := getOptionalUserID(c)
 
 	// 获取文章列表
 	result, err := h.articleService.GetArticleList(&req, userID)
@@ -452,12 +440,8 @@ func (h *ArticleHandler) ViewArticle(c *gin.Context) {
 		return
 	}
 
-	// 获取当前用户ID，未登录时为空。
-	var userID *uint
-	if uid, exists := c.Get("userID"); exists {
-		uidUint := uid.(uint)
-		userID = &uidUint
-	}
+	// 读取当前用户ID，未登录时为空。
+	userID := getOptionalUserID(c)
 
 	// 获取访客ID和IP地址
 	visitorID := c.GetHeader("Visitor-ID")
