@@ -11,9 +11,34 @@ import (
 // fakeFollowRepo 用户关注仓储的测试替身。
 type fakeFollowRepo struct {
 	repository.UserFollowRepositoryInterface
-	follows      []*model.UserFollow
-	followFunc   func(followerID, followingID uint) (bool, error)
-	unfollowFunc func(followerID, followingID uint) (bool, error)
+	follows        []*model.UserFollow
+	followFunc     func(followerID, followingID uint) (bool, error)
+	unfollowFunc   func(followerID, followingID uint) (bool, error)
+	followers      []*model.UserFollow
+	following      []*model.UserFollow
+	isFollowing    bool
+	followerCount  int64
+	followingCount int64
+}
+
+func (f *fakeFollowRepo) ListFollowers(userID uint, params *repository.FollowListParams) ([]*model.UserFollow, int64, error) {
+	return f.followers, int64(len(f.followers)), nil
+}
+
+func (f *fakeFollowRepo) ListFollowing(userID uint, params *repository.FollowListParams) ([]*model.UserFollow, int64, error) {
+	return f.following, int64(len(f.following)), nil
+}
+
+func (f *fakeFollowRepo) IsFollowing(followerID, followingID uint) (bool, error) {
+	return f.isFollowing, nil
+}
+
+func (f *fakeFollowRepo) CountFollowers(userID uint) (int64, error) {
+	return f.followerCount, nil
+}
+
+func (f *fakeFollowRepo) CountFollowing(userID uint) (int64, error) {
+	return f.followingCount, nil
 }
 
 func (f *fakeFollowRepo) Follow(followerID, followingID uint) (bool, error) {
@@ -49,7 +74,7 @@ func newTestFollowServiceWithNotification(
 	userRepo repository.UserRepository,
 	notificationRepo repository.NotificationRepositoryInterface,
 ) *UserFollowService {
-	return NewUserFollowService(followRepo, userRepo, notificationRepo).(*UserFollowService)
+	return NewUserFollowService(followRepo, userRepo, notificationRepo, &fakeArticleRepo{}).(*UserFollowService)
 }
 
 // TestFollowSelfRejected 验证禁止关注自己。
@@ -147,5 +172,68 @@ func TestFollowSelfSkipsNotification(t *testing.T) {
 	}
 	if len(notificationRepo.created) != 0 {
 		t.Errorf("通知数 = %d, 期望 0", len(notificationRepo.created))
+	}
+}
+
+// TestListFollowersIncludesUserSummary 验证粉丝列表附带关注者用户摘要。
+func TestListFollowersIncludesUserSummary(t *testing.T) {
+	followerUser := model.User{ID: 1, Username: "user1", Nickname: "昵称一", Avatar: "a.png"}
+	followRepo := &fakeFollowRepo{
+		followers: []*model.UserFollow{
+			{ID: 9, FollowerID: 1, FollowingID: 2, Follower: followerUser},
+		},
+	}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 2, Role: "user", Status: 1}}
+	svc := newTestFollowServiceWithNotification(followRepo, userRepo, &fakeNotificationRepo{})
+
+	result, err := svc.ListFollowers(2, &ListFollowsRequest{})
+	if err != nil {
+		t.Fatalf("查询粉丝列表失败: %v", err)
+	}
+	if len(result.Follows) != 1 {
+		t.Fatalf("粉丝条目数 = %d, 期望 1", len(result.Follows))
+	}
+	summary := result.Follows[0].User
+	if summary == nil || summary.Nickname != "昵称一" || summary.ID != 1 {
+		t.Errorf("用户摘要 = %+v, 期望昵称一的摘要", summary)
+	}
+}
+
+// TestIsFollowingPassThrough 验证关注状态查询透传仓储结果。
+func TestIsFollowingPassThrough(t *testing.T) {
+	followRepo := &fakeFollowRepo{isFollowing: true}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 2, Role: "user", Status: 1}}
+	svc := newTestFollowServiceWithNotification(followRepo, userRepo, &fakeNotificationRepo{})
+
+	isFollowing, err := svc.IsFollowing(1, 2)
+	if err != nil {
+		t.Fatalf("查询关注状态失败: %v", err)
+	}
+	if !isFollowing {
+		t.Error("关注状态应为 true")
+	}
+}
+
+// TestGetPublicProfileAggregates 验证公开资料聚合用户信息与公开统计。
+func TestGetPublicProfileAggregates(t *testing.T) {
+	followRepo := &fakeFollowRepo{followerCount: 3, followingCount: 1}
+	userRepo := &fakeUserRepo{user: &domain.User{
+		ID: 2, Username: "user2", Nickname: "昵称二",
+		Avatar: "avatar.png", Bio: "简介内容", Website: "https://example.com", Role: "user", Status: 1,
+	}}
+	articleRepo := &fakeArticleRepo{
+		getByAuthor: func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+			return []*model.Article{publishedArticle(1)}, 4, nil
+		},
+	}
+	notificationRepo := &fakeNotificationRepo{}
+	svc := NewUserFollowService(followRepo, userRepo, notificationRepo, articleRepo).(*UserFollowService)
+
+	profile, err := svc.GetPublicProfile(2)
+	if err != nil {
+		t.Fatalf("获取公开资料失败: %v", err)
+	}
+	if profile.Nickname != "昵称二" || profile.FollowerCount != 3 || profile.ArticleCount != 4 {
+		t.Errorf("公开资料 = %+v, 期望昵称二、3 粉丝、4 篇文章", profile)
 	}
 }

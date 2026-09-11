@@ -134,10 +134,11 @@ curl -X POST http://localhost:3000/api/users/followers \
 | data.follows | array | 是 | 关注关系列表，按关注时间倒序 |
 | data.follows[].id | integer | 是 | 关注关系ID |
 | data.follows[].followerId | integer | 是 | 粉丝用户ID |
-| data.follows[].follower | object | 是 | 粉丝用户信息 |
-| data.follows[].follower.id | integer | 是 | 粉丝ID |
-| data.follows[].follower.username | string | 是 | 粉丝用户名 |
-| data.follows[].follower.nickname | string | 是 | 粉丝昵称 |
+| data.follows[].user | object | 是 | 对方用户摘要，粉丝列表中为关注者 |
+| data.follows[].user.id | integer | 是 | 用户ID |
+| data.follows[].user.username | string | 是 | 用户名 |
+| data.follows[].user.nickname | string | 是 | 昵称 |
+| data.follows[].user.avatar | string | 是 | 头像URL |
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
@@ -153,10 +154,11 @@ curl -X POST http://localhost:3000/api/users/followers \
       {
         "id": 10,
         "followerId": 2,
-        "follower": {
+        "user": {
           "id": 2,
           "username": "user2",
-          "nickname": "用户二"
+          "nickname": "用户二",
+          "avatar": ""
         }
       }
     ],
@@ -205,10 +207,82 @@ curl -X POST http://localhost:3000/api/users/following \
 | code | integer | 是 | 状态码，200表示成功 |
 | data.follows | array | 是 | 关注关系列表 |
 | data.follows[].followingId | integer | 是 | 被关注用户ID |
-| data.follows[].following | object | 是 | 被关注用户信息 |
-| data.follows[].following.id | integer | 是 | 用户ID |
-| data.follows[].following.username | string | 是 | 用户名 |
-| data.follows[].following.nickname | string | 是 | 昵称 |
+| data.follows[].user | object | 是 | 对方用户摘要，关注列表中为被关注者 |
+| data.follows[].user.id | integer | 是 | 用户ID |
+| data.follows[].user.username | string | 是 | 用户名 |
+| data.follows[].user.nickname | string | 是 | 昵称 |
+| data.follows[].user.avatar | string | 是 | 头像URL |
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
+
+---
+
+### 5. 关注状态查询
+
+查询当前登录用户是否已关注目标用户。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/isFollowing`
+- **请求方式**: `POST`
+- **权限要求**: 需要登录
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| userId | integer | 是 | 目标用户ID | 大于0的整数 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "isFollowing": true
+  }
+}
+```
+
+---
+
+### 6. 用户公开资料
+
+获取用户的公开资料与公开统计，无需登录，不含邮箱等敏感字段。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/publicProfile`
+- **请求方式**: `POST`
+- **权限要求**: 无需认证
+- **Content-Type**: `application/json`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| userId | integer | 是 | 用户ID | 大于0的整数 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "username": "admin",
+    "nickname": "闲雨",
+    "avatar": "/uploads/avatar.png",
+    "bio": "白天写代码，晚上写字。",
+    "website": "https://example.com",
+    "followerCount": 12,
+    "followingCount": 5,
+    "articleCount": 40
+  }
+}
+```

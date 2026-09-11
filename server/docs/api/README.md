@@ -37,7 +37,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 |------|----------|------|
 | 健康检查 | 1 | 系统状态监控 |
 | 用户管理 | 8 | 用户认证和管理 |
-| 用户关注 | 4 | 关注关系管理 |
+| 用户关注 | 6 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
 | 文章管理 | 26 | 文章内容管理 |
 | 分类管理 | 7 | 分类树形管理 |
@@ -47,7 +47,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 8 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **84** | **完整的博客系统 API** |
+| **总计** | **86** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -66,8 +66,10 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 ### 用户关注
 - `POST /api/users/follow` - 关注用户（登录）
 - `POST /api/users/unfollow` - 取消关注（登录）
+- `POST /api/users/isFollowing` - 关注状态查询（登录）
 - `POST /api/users/followers` - 粉丝列表（公开）
 - `POST /api/users/following` - 关注列表（公开）
+- `POST /api/users/publicProfile` - 用户公开资料（公开）
 
 ### 通知 (需要登录)
 - `POST /api/notifications/list` - 通知列表
@@ -227,6 +229,8 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 关注契约补全：粉丝与关注列表内嵌用户摘要，新增 `users/isFollowing` 状态查询
+- ✅ 新增 `users/publicProfile`：用户公开资料与公开统计，供作者页与关于页使用
 - ✅ 新增互动状态查询：`articles/isLiked`、`articles/isBookmarked` 与 `articles/bookmarks` 我的收藏列表
 - ✅ 搜索日志落库：`articles/search` 记录关键词、结果数、耗时与成败状态
 - ✅ 通知生产链路打通：评论回复、文章点赞、评论点赞、用户关注自动产生站内通知，自触达场景自动跳过

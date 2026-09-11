@@ -14,6 +14,8 @@ type UserFollowHandlerInterface interface {
 	Unfollow(c *gin.Context)
 	ListFollowers(c *gin.Context)
 	ListFollowing(c *gin.Context)
+	IsFollowing(c *gin.Context)
+	GetPublicProfile(c *gin.Context)
 }
 
 // UserFollowHandler 用户关注处理器实现
@@ -100,6 +102,54 @@ func (h *UserFollowHandler) ListFollowers(c *gin.Context) {
 	}
 
 	response.Success(c, result)
+}
+
+// IsFollowing 查询当前用户是否已关注目标用户 POST /api/users/isFollowing
+func (h *UserFollowHandler) IsFollowing(c *gin.Context) {
+	type IsFollowingRequest struct {
+		UserID uint `json:"userId" binding:"required"`
+	}
+
+	var req IsFollowingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+
+	isFollowing, err := h.followService.IsFollowing(userID, req.UserID)
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{"isFollowing": isFollowing})
+}
+
+// GetPublicProfile 获取用户公开资料 POST /api/users/publicProfile
+func (h *UserFollowHandler) GetPublicProfile(c *gin.Context) {
+	type PublicProfileRequest struct {
+		UserID uint `json:"userId" binding:"required"`
+	}
+
+	var req PublicProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	profile, err := h.followService.GetPublicProfile(req.UserID)
+	if err != nil {
+		response.NotFound(c, err.Error())
+		return
+	}
+
+	response.Success(c, profile)
 }
 
 // ListFollowing 分页查询关注列表 POST /api/users/following

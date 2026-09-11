@@ -24,6 +24,8 @@ type UserFollowRepositoryInterface interface {
 	ListFollowers(userID uint, params *FollowListParams) ([]*model.UserFollow, int64, error)
 	ListFollowing(userID uint, params *FollowListParams) ([]*model.UserFollow, int64, error)
 	IsFollowing(followerID, followingID uint) (bool, error)
+	CountFollowers(userID uint) (int64, error)
+	CountFollowing(userID uint) (int64, error)
 }
 
 // FollowListParams 关注列表查询参数
@@ -139,4 +141,26 @@ func (r *UserFollowRepository) IsFollowing(followerID, followingID uint) (bool, 
 		return false, fmt.Errorf("查询关注关系失败: %w", err)
 	}
 	return count > 0, nil
+}
+
+// CountFollowers 统计用户的粉丝数量。
+func (r *UserFollowRepository) CountFollowers(userID uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.UserFollow{}).
+		Where("following_id = ?", userID).
+		Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("统计粉丝数量失败: %w", err)
+	}
+	return count, nil
+}
+
+// CountFollowing 统计用户的关注数量。
+func (r *UserFollowRepository) CountFollowing(userID uint) (int64, error) {
+	var count int64
+	if err := r.db.Model(&model.UserFollow{}).
+		Where("follower_id = ?", userID).
+		Count(&count).Error; err != nil {
+		return 0, fmt.Errorf("统计关注数量失败: %w", err)
+	}
+	return count, nil
 }

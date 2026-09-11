@@ -3,7 +3,8 @@ import type {
   FollowActionRequest,
   FollowActionResponse,
   FollowListParams,
-  FollowListResponse
+  FollowListResponse,
+  FollowStateResponse
 } from './types.ts'
 
 /**
@@ -19,6 +20,11 @@ export function createFollowAPI(request: KyInstance) {
     // 取消关注，需登录。
     unfollow(params: FollowActionRequest): Promise<FollowActionResponse> {
       return request.post('users/unfollow', { json: params }).json()
+    },
+
+    // 查询当前用户是否已关注目标用户，需登录。
+    isFollowing(userId: number): Promise<FollowStateResponse> {
+      return request.post('users/isFollowing', { json: { userId } }).json()
     },
 
     // 分页查询粉丝列表，公开可访问。

@@ -27,6 +27,19 @@ export interface User {
   updatedAt: string
 }
 
+// 用户公开资料，仅包含可对外展示的字段与公开统计
+export interface PublicProfile {
+  id: number
+  username: string
+  nickname: string
+  avatar: string
+  bio: string
+  website: string
+  followerCount: number
+  followingCount: number
+  articleCount: number
+}
+
 // 用户列表数据
 export interface UserListData {
   page: number
@@ -107,6 +120,7 @@ export interface RegisterRequest {
 
 // 各类型的响应接口
 export type UserListResponse = ApiResponse<UserListData>
+export type PublicProfileResponse = ApiResponse<PublicProfile>
 export type LoginResponse = ApiResponse<LoginData>
 export type RegisterResponse = ApiResponse<User>
 export type UserResponse = ApiResponse<User>

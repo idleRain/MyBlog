@@ -2,6 +2,7 @@ import type { KyInstance } from 'ky'
 import type {
   LoginRequest,
   LoginResponse,
+  PublicProfileResponse,
   RegisterRequest,
   RegisterResponse,
   UserListResponse,
@@ -38,6 +39,11 @@ export function createUserAPI(request: KyInstance) {
       return request.post('users/get', { json: { id } }).json()
     },
 
+    // 获取用户公开资料，无需登录，仅返回可对外展示的字段。
+    getPublicProfile(id: number): Promise<PublicProfileResponse> {
+      return request.post('users/publicProfile', { json: { id } }).json()
+    },
+
     // 更新用户（仅管理员）
     updateUser(params: UpdateUserRequest): Promise<RegisterResponse> {
       return request.post('users/update', { json: params }).json()
@@ -70,6 +76,7 @@ export type UserAPI = ReturnType<typeof createUserAPI>
 export type {
   LoginRequest,
   LoginResponse,
+  PublicProfileResponse,
   RegisterRequest,
   RegisterResponse,
   UserListResponse,

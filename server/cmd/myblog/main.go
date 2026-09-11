@@ -75,7 +75,7 @@ func main() {
 	linkSvc := service.NewFriendlyLinkService(linkRepo)
 	statsSvc := service.NewStatsService(statsRepo)
 	notificationSvc := service.NewNotificationService(notificationRepo)
-	followSvc := service.NewUserFollowService(followRepo, userRepo, notificationRepo)
+	followSvc := service.NewUserFollowService(followRepo, userRepo, notificationRepo, articleRepo)
 	userHandler := handler.NewUserHandler(userSvc)
 	articleHandler := handler.NewArticleHandler(articleSvc)
 	categoryHandler := handler.NewCategoryHandler(categorySvc)
