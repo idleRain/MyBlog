@@ -2,7 +2,10 @@ import type { KyInstance } from 'ky'
 import type {
   AdminListCommentsRequest,
   CommentActionResponse,
-  CommentListResponse
+  CommentListResponse,
+  CommentResponse,
+  CreateCommentRequest,
+  ListCommentsRequest
 } from './types.ts'
 
 // 评论审核状态流转接口路径后缀。
@@ -19,6 +22,26 @@ const ADMIN_COMMENT_ACTION_PATHS = {
  */
 export function createCommentAPI(request: KyInstance) {
   return {
+    // 文章评论列表，仅返回已审核通过的评论。
+    listByArticle(articleId: number, params: ListCommentsRequest): Promise<CommentListResponse> {
+      return request.post('comments/list', { json: { articleId, ...params } }).json()
+    },
+
+    // 发表评论，游客需填写姓名，登录用户经令牌绑定身份。
+    create(params: CreateCommentRequest): Promise<CommentResponse> {
+      return request.post('comments/create', { json: params }).json()
+    },
+
+    // 点赞评论，需要登录。
+    like(id: number): Promise<CommentActionResponse> {
+      return request.post('comments/like', { json: { id } }).json()
+    },
+
+    // 取消点赞评论，需要登录。
+    unlike(id: number): Promise<CommentActionResponse> {
+      return request.post('comments/unlike', { json: { id } }).json()
+    },
+
     // 管理端：全量评论列表，按状态与关键词筛选。
     adminList(params: AdminListCommentsRequest): Promise<CommentListResponse> {
       return request.post('admin/comments/list', { json: params }).json()
@@ -53,4 +76,11 @@ export function createCommentAPI(request: KyInstance) {
 
 export type CommentAPI = ReturnType<typeof createCommentAPI>
 
-export type { AdminListCommentsRequest, CommentActionResponse, CommentListResponse }
+export type {
+  AdminListCommentsRequest,
+  CommentActionResponse,
+  CommentListResponse,
+  CommentResponse,
+  CreateCommentRequest,
+  ListCommentsRequest
+}

@@ -54,6 +54,12 @@ export interface CreateCommentRequest {
   authorWebsite?: string
 }
 
+// 文章评论列表查询参数
+export interface ListCommentsRequest {
+  page?: number
+  pageSize?: number
+}
+
 // 管理端评论列表查询参数
 export interface AdminListCommentsRequest {
   page?: number

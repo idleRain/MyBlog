@@ -1,4 +1,5 @@
 <script lang="ts">
+import { CommentSection } from '$lib/components/comment'
 import { formatDate } from '$lib/utils/format-date'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
@@ -76,6 +77,17 @@ $effect(() => {
               {tag.name}
             </span>
           {/each}
+        </div>
+      {/if}
+
+      <!-- 评论区：单篇关闭评论时以提示占位。 -->
+      {#if article.commentEnabled}
+        <CommentSection articleId={article.id} initialComments={data.comments} />
+      {:else}
+        <div class="mt-16 border-t border-border pt-10">
+          <div class="border-l-2 border-signal py-4 pl-6">
+            <p class="text-sm leading-relaxed text-muted-foreground">这篇文章已关闭评论。</p>
+          </div>
         </div>
       {/if}
 
