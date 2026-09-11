@@ -20,6 +20,11 @@ const ADMIN_LINK_ACTION_PATHS = {
  */
 export function createFriendlyLinkAPI(request: KyInstance) {
   return {
+    // 展示中的友链列表，无需登录。
+    list(): Promise<FriendlyLinkListResponse> {
+      return request.post('friendly-links/list', { json: {} }).json()
+    },
+
     // 管理端：分页查询友链列表
     adminList(params: ListFriendlyLinksRequest): Promise<FriendlyLinkListResponse> {
       return request.post('admin/friendly-links/list', { json: params }).json()

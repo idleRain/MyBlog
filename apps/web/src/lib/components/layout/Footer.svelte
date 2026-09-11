@@ -1,8 +1,16 @@
 <script lang="ts">
+import type { CategoryTreeNode } from '@myblog/api/modules/category/types'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { Separator } from '$ui/separator'
 import { Mail } from '@lucide/svelte'
+
+// 全站底部属性：categories 为公开分类树的顶级节点，由根布局数据提供；无数据场景降级为空列表。
+interface Props {
+  categories?: CategoryTreeNode[]
+}
+
+let { categories = [] }: Props = $props()
 
 // 当前年份用于版权声明，随时间自动更新。
 const currentYear = new Date().getFullYear()
@@ -17,18 +25,9 @@ const socialLinks = [
 const quickLinks = [
   { name: '首页', href: '/' },
   { name: '博客', href: '/blog' },
-  { name: '项目', href: '/projects' },
+  { name: '归档', href: '/archives' },
   { name: '关于', href: '/about' },
   { name: '联系', href: '/contact' }
-]
-
-// 文章分类链接集中声明。
-const categories = [
-  { name: '前端开发', href: '/category/frontend' },
-  { name: '后端开发', href: '/category/backend' },
-  { name: '设计思考', href: '/category/design' },
-  { name: '技术分享', href: '/category/tech' },
-  { name: '生活随笔', href: '/category/life' }
 ]
 </script>
 
@@ -88,16 +87,20 @@ const categories = [
       <!-- 分类目录 - 左右两排布局 -->
       <div>
         <h3 class="mb-4 font-semibold text-foreground">文章分类</h3>
-        <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-          {#each categories as category (category.name)}
-            <a
-              href={category.href}
-              class="text-sm text-muted-foreground transition-colors duration-200 hover:text-signal"
-            >
-              {category.name}
-            </a>
-          {/each}
-        </div>
+        {#if categories.length === 0}
+          <p class="text-sm text-muted-foreground">暂无公开分类</p>
+        {:else}
+          <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+            {#each categories as category (category.id)}
+              <a
+                href={`/category/${category.slug}`}
+                class="text-sm text-muted-foreground transition-colors duration-200 hover:text-signal"
+              >
+                {category.name}
+              </a>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
   </div>

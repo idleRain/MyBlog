@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Globe, User, ExternalLink, Menu, LogIn, Settings } from '@lucide/svelte'
+import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
 import type { User as UserType } from '@myblog/api/modules/user/types'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
@@ -8,6 +9,13 @@ import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
+
+// 展示中的友情链接，由根布局的全站数据提供；错误页等无数据场景降级为空列表。
+interface Props {
+  friendlyLinks?: FriendlyLink[]
+}
+
+let { friendlyLinks = [] }: Props = $props()
 
 let isMobileMenuOpen = $state(false)
 
@@ -168,32 +176,25 @@ function openAdminConsole() {
               <Dialog.Header>
                 <Dialog.Title>友情链接</Dialog.Title>
               </Dialog.Header>
-              <div class="space-y-3">
-                <a
-                  href="https://github.com"
-                  target="_blank"
-                  class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
-                >
-                  <span class="font-medium">GitHub</span>
-                  <ExternalLink class="h-4 w-4 text-muted-foreground" />
-                </a>
-                <a
-                  href="https://svelte.dev"
-                  target="_blank"
-                  class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
-                >
-                  <span class="font-medium">SvelteKit</span>
-                  <ExternalLink class="h-4 w-4 text-muted-foreground" />
-                </a>
-                <a
-                  href="https://tailwindcss.com"
-                  target="_blank"
-                  class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
-                >
-                  <span class="font-medium">TailwindCSS</span>
-                  <ExternalLink class="h-4 w-4 text-muted-foreground" />
-                </a>
-              </div>
+              {#if friendlyLinks.length === 0}
+                <p class="text-sm leading-relaxed text-muted-foreground">
+                  暂无友情链接，欢迎来信交换。
+                </p>
+              {:else}
+                <div class="space-y-3">
+                  {#each friendlyLinks as link (link.id)}
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
+                    >
+                      <span class="font-medium">{link.name}</span>
+                      <ExternalLink class="h-4 w-4 text-muted-foreground" />
+                    </a>
+                  {/each}
+                </div>
+              {/if}
             </Dialog.Content>
           </Dialog.Root>
         </div>
