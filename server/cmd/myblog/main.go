@@ -118,6 +118,12 @@ func main() {
 	// 获取 Gin 引擎
 	engine := routerManager.GetEngine()
 
+	// 挂载媒体静态目录，使 FileURL 指向的 /uploads 路径可被公开访问。
+	// 目录列表默认关闭，仅允许按精确文件路径访问；生产部署可改由 Nginx 托管同一目录。
+	if cfg.Media.BaseURL != "" && cfg.Media.UploadDir != "" {
+		engine.Static(cfg.Media.BaseURL, cfg.Media.UploadDir)
+	}
+
 	// 启动服务器
 	log.Printf("服务器启动成功，监听地址: %s", cfg.GetServerAddress())
 	log.Printf("运行模式: %s", cfg.Server.Mode)

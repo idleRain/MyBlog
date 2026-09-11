@@ -8,6 +8,7 @@
 
 - **存储目录**: `server/configs/config.yaml` 中 `media.upload_dir` 配置，默认 `uploads/`
 - **访问前缀**: `media.base_url` 配置，默认 `/uploads`
+- **静态访问**: 服务启动时按 `media.base_url` 挂载静态目录，`fileUrl` 可直接公开访问且目录列表关闭；生产部署可改由 Nginx 托管同一目录
 - **单文件上限**: `media.max_size_mb` 配置，默认 10MB
 - **文件命名**: 上传后以 UUID 重命名，按年月分目录归档
 
