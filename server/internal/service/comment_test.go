@@ -68,7 +68,7 @@ func (f *fakeCommentRepo) DecrementReplyCount(id uint) error {
 
 // commentTestService 创建注入评论与文章仓储替身的服务实例。
 func commentTestService(commentRepo repository.CommentRepositoryInterface, articleRepo repository.ArticleRepositoryInterface) *CommentService {
-	return NewCommentService(commentRepo, articleRepo, &fakeSettingRepo{}).(*CommentService)
+	return commentTestServiceFull(commentRepo, articleRepo, &fakeSettingRepo{}, &fakeNotificationRepo{})
 }
 
 // commentTestServiceWithSettings 创建携带站点设置替身的服务实例，设置键缺失时走默认行为。
@@ -77,7 +77,17 @@ func commentTestServiceWithSettings(
 	articleRepo repository.ArticleRepositoryInterface,
 	settings map[string]string,
 ) *CommentService {
-	return NewCommentService(commentRepo, articleRepo, settingRepoWith(settings)).(*CommentService)
+	return commentTestServiceFull(commentRepo, articleRepo, settingRepoWith(settings), &fakeNotificationRepo{})
+}
+
+// commentTestServiceFull 构造注入全部依赖替身的评论服务实例，供断言通知的测试使用。
+func commentTestServiceFull(
+	commentRepo repository.CommentRepositoryInterface,
+	articleRepo repository.ArticleRepositoryInterface,
+	settingRepo repository.SettingRepositoryInterface,
+	notificationRepo repository.NotificationRepositoryInterface,
+) *CommentService {
+	return NewCommentService(commentRepo, articleRepo, settingRepo, notificationRepo).(*CommentService)
 }
 
 // settingRepoWith 构造携带键值设置的设置仓储替身。
@@ -251,6 +261,72 @@ func TestCreateCommentAutoApprove(t *testing.T) {
 	}
 	if comment.Status != model.CommentStatusApproved {
 		t.Errorf("Status = %s, 期望 approved", comment.Status)
+	}
+}
+
+// TestCreateReplyNotifiesParentAuthor 验证回复注册用户的评论时产生回复通知。
+func TestCreateReplyNotifiesParentAuthor(t *testing.T) {
+	articleRepo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return publishedArticleForComment(id), nil
+		},
+	}
+	parentAuthorID := uint(5)
+	parent := &model.Comment{ID: 100, ArticleID: 1, Content: "根评论", Level: 1, UserID: &parentAuthorID}
+	commentRepo := &fakeCommentRepo{comments: []*model.Comment{parent}}
+	notificationRepo := &fakeNotificationRepo{}
+	svc := commentTestServiceFull(commentRepo, articleRepo, &fakeSettingRepo{}, notificationRepo)
+
+	replierID := uint(7)
+	comment, err := svc.CreateComment(&CreateCommentRequest{
+		ArticleID: 1,
+		ParentID:  &parent.ID,
+		Content:   "回复根评论",
+	}, &replierID)
+	if err != nil {
+		t.Fatalf("创建回复评论失败: %v", err)
+	}
+
+	if len(notificationRepo.created) != 1 {
+		t.Fatalf("通知数 = %d, 期望 1", len(notificationRepo.created))
+	}
+	notification := notificationRepo.created[0]
+	if notification.UserID != parentAuthorID {
+		t.Errorf("通知接收者 = %d, 期望 %d", notification.UserID, parentAuthorID)
+	}
+	if notification.Type != model.NotificationTypeCommentReply {
+		t.Errorf("通知类型 = %s, 期望 comment_reply", notification.Type)
+	}
+	if notification.SenderID == nil || *notification.SenderID != replierID {
+		t.Errorf("通知触发者 = %v, 期望 %d", notification.SenderID, replierID)
+	}
+	if comment.RootID == nil || *comment.RootID != parent.ID {
+		t.Errorf("RootID = %v, 期望指向根评论 100", comment.RootID)
+	}
+}
+
+// TestCreateSelfReplySkipsNotification 验证自己回复自己的评论不产生通知。
+func TestCreateSelfReplySkipsNotification(t *testing.T) {
+	articleRepo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return publishedArticleForComment(id), nil
+		},
+	}
+	selfID := uint(7)
+	parent := &model.Comment{ID: 100, ArticleID: 1, Content: "根评论", Level: 1, UserID: &selfID}
+	commentRepo := &fakeCommentRepo{comments: []*model.Comment{parent}}
+	notificationRepo := &fakeNotificationRepo{}
+	svc := commentTestServiceFull(commentRepo, articleRepo, &fakeSettingRepo{}, notificationRepo)
+
+	if _, err := svc.CreateComment(&CreateCommentRequest{
+		ArticleID: 1,
+		ParentID:  &parent.ID,
+		Content:   "自回复",
+	}, &selfID); err != nil {
+		t.Fatalf("创建自回复失败: %v", err)
+	}
+	if len(notificationRepo.created) != 0 {
+		t.Errorf("通知数 = %d, 期望 0", len(notificationRepo.created))
 	}
 }
 

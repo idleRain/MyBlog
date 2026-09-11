@@ -60,9 +60,10 @@ type CommentListResponse struct {
 
 // CommentService 评论服务实现
 type CommentService struct {
-	commentRepo repository.CommentRepositoryInterface
-	articleRepo repository.ArticleRepositoryInterface
-	settingRepo repository.SettingRepositoryInterface
+	commentRepo      repository.CommentRepositoryInterface
+	articleRepo      repository.ArticleRepositoryInterface
+	settingRepo      repository.SettingRepositoryInterface
+	notificationRepo repository.NotificationRepositoryInterface
 }
 
 // NewCommentService 创建评论服务实例
@@ -70,11 +71,13 @@ func NewCommentService(
 	commentRepo repository.CommentRepositoryInterface,
 	articleRepo repository.ArticleRepositoryInterface,
 	settingRepo repository.SettingRepositoryInterface,
+	notificationRepo repository.NotificationRepositoryInterface,
 ) CommentServiceInterface {
 	return &CommentService{
-		commentRepo: commentRepo,
-		articleRepo: articleRepo,
-		settingRepo: settingRepo,
+		commentRepo:      commentRepo,
+		articleRepo:      articleRepo,
+		settingRepo:      settingRepo,
+		notificationRepo: notificationRepo,
 	}
 }
 
@@ -131,8 +134,10 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 	}
 
 	// 处理回复关系，回复时继承父评论的文章归属。
+	var parent *model.Comment
 	if req.ParentID != nil {
-		parent, err := s.commentRepo.GetByID(*req.ParentID)
+		var err error
+		parent, err = s.commentRepo.GetByID(*req.ParentID)
 		if err != nil {
 			return nil, errors.New("父评论不存在")
 		}
@@ -162,7 +167,32 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 		}
 	}
 
+	s.notifyParentAuthor(parent, comment, article.Slug, userID)
+
 	return s.commentRepo.GetByID(comment.ID)
+}
+
+// notifyParentAuthor 在回复目标为注册用户时写入评论回复通知。
+// 通知为副产物，写入失败不阻断评论创建；游客作者与自回复不产生通知。
+func (s *CommentService) notifyParentAuthor(parent *model.Comment, reply *model.Comment, articleSlug string, replierID *uint) {
+	if parent == nil || parent.UserID == nil {
+		return
+	}
+	if replierID != nil && *parent.UserID == *replierID {
+		return
+	}
+
+	relatedType := model.RelatedTypeComment
+	notification := &model.Notification{
+		UserID:      *parent.UserID,
+		SenderID:    replierID,
+		Type:        model.NotificationTypeCommentReply,
+		Title:       "你的评论收到了新回复",
+		ActionURL:   fmt.Sprintf("/blog/%s#comment-%d", articleSlug, reply.ID),
+		RelatedType: &relatedType,
+		RelatedID:   &reply.ID,
+	}
+	_ = s.notificationRepo.Create(notification)
 }
 
 // GetCommentsByArticle 获取文章评论列表。
@@ -192,13 +222,48 @@ func (s *CommentService) GetCommentsByArticle(articleID uint, req *ListCommentsR
 	}, nil
 }
 
-// LikeComment 点赞评论。
+// LikeComment 点赞评论，首次点赞时通知评论作者。
 func (s *CommentService) LikeComment(commentID, userID uint) error {
-	if _, err := s.commentRepo.GetByID(commentID); err != nil {
+	comment, err := s.commentRepo.GetByID(commentID)
+	if err != nil {
 		return err
 	}
-	_, err := s.commentRepo.AddLike(commentID, userID)
-	return err
+
+	created, err := s.commentRepo.AddLike(commentID, userID)
+	if err != nil {
+		return err
+	}
+
+	// 首次点赞才通知，重复点赞保持幂等。
+	if created {
+		s.notifyCommentLike(comment, userID)
+	}
+	return nil
+}
+
+// notifyCommentLike 在评论作者为注册用户且非点赞者本人时写入点赞通知。
+// 通知为副产物，写入失败不阻断点赞。
+func (s *CommentService) notifyCommentLike(comment *model.Comment, likerID uint) {
+	if comment.UserID == nil || *comment.UserID == likerID {
+		return
+	}
+
+	article, err := s.articleRepo.GetByID(comment.ArticleID)
+	if err != nil {
+		return
+	}
+
+	relatedType := model.RelatedTypeComment
+	notification := &model.Notification{
+		UserID:      *comment.UserID,
+		SenderID:    &likerID,
+		Type:        model.NotificationTypeCommentLike,
+		Title:       "你的评论收到了新的点赞",
+		ActionURL:   fmt.Sprintf("/blog/%s#comment-%d", article.Slug, comment.ID),
+		RelatedType: &relatedType,
+		RelatedID:   &comment.ID,
+	}
+	_ = s.notificationRepo.Create(notification)
 }
 
 // UnlikeComment 取消点赞评论。

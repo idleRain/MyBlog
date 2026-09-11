@@ -159,6 +159,13 @@ const (
 	NotificationTypeArticleNew   = "article_new"   // 新文章发布
 )
 
+// 通知关联资源类型常量
+const (
+	RelatedTypeArticle = "article" // 关联文章
+	RelatedTypeComment = "comment" // 关联评论
+	RelatedTypeUser    = "user"    // 关联用户
+)
+
 // MarkAsRead 标记通知为已读并记录已读时间。
 func (n *Notification) MarkAsRead() {
 	now := time.Now()

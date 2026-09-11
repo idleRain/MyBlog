@@ -11,8 +11,15 @@ import (
 type fakeNotificationRepo struct {
 	repository.NotificationRepositoryInterface
 	notifications []*model.Notification
+	created       []*model.Notification
 	unread        int64
 	markAsRead    func(id uint, userID uint) error
+}
+
+func (f *fakeNotificationRepo) Create(notification *model.Notification) error {
+	notification.ID = uint(len(f.created) + 1)
+	f.created = append(f.created, notification)
+	return nil
 }
 
 func (f *fakeNotificationRepo) ListByUser(userID uint, params *repository.NotificationListParams) ([]*model.Notification, int64, error) {

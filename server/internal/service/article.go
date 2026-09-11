@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"time"
 	"unicode/utf8"
@@ -121,10 +122,11 @@ type ArticleArchiveYear struct {
 
 // ArticleService 文章服务实现
 type ArticleService struct {
-	articleRepo repository.ArticleRepositoryInterface
-	userRepo    repository.UserRepository
-	rbacService RBACService
-	statsRepo   repository.StatsRepositoryInterface
+	articleRepo      repository.ArticleRepositoryInterface
+	userRepo         repository.UserRepository
+	rbacService      RBACService
+	statsRepo        repository.StatsRepositoryInterface
+	notificationRepo repository.NotificationRepositoryInterface
 }
 
 // NewArticleService 创建文章服务实例
@@ -133,12 +135,14 @@ func NewArticleService(
 	userRepo repository.UserRepository,
 	rbacService RBACService,
 	statsRepo repository.StatsRepositoryInterface,
+	notificationRepo repository.NotificationRepositoryInterface,
 ) ArticleServiceInterface {
 	return &ArticleService{
-		articleRepo: articleRepo,
-		userRepo:    userRepo,
-		rbacService: rbacService,
-		statsRepo:   statsRepo,
+		articleRepo:      articleRepo,
+		userRepo:         userRepo,
+		rbacService:      rbacService,
+		statsRepo:        statsRepo,
+		notificationRepo: notificationRepo,
 	}
 }
 
@@ -657,8 +661,36 @@ func (s *ArticleService) LikeArticle(articleID uint, userID uint) error {
 	}
 
 	// 写入点赞记录并维护计数，已点赞时静默忽略。
-	_, err = s.articleRepo.AddLike(articleID, userID)
-	return err
+	created, err := s.articleRepo.AddLike(articleID, userID)
+	if err != nil {
+		return err
+	}
+
+	// 首次点赞才通知作者，重复点赞保持幂等。
+	if created {
+		s.notifyArticleLike(article, userID)
+	}
+	return nil
+}
+
+// notifyArticleLike 在文章作者与点赞者不同时写入点赞通知。
+// 通知为副产物，写入失败不阻断点赞。
+func (s *ArticleService) notifyArticleLike(article *model.Article, likerID uint) {
+	if article.AuthorID == likerID {
+		return
+	}
+
+	relatedType := model.RelatedTypeArticle
+	notification := &model.Notification{
+		UserID:      article.AuthorID,
+		SenderID:    &likerID,
+		Type:        model.NotificationTypeArticleLike,
+		Title:       "你的文章收到了新的点赞",
+		ActionURL:   fmt.Sprintf("/blog/%s", article.Slug),
+		RelatedType: &relatedType,
+		RelatedID:   &article.ID,
+	}
+	_ = s.notificationRepo.Create(notification)
 }
 
 // UnlikeArticle 取消点赞，未点赞时保持幂等。

@@ -34,7 +34,7 @@ func TestViewArticleRecordsDetail(t *testing.T) {
 		},
 	}
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
-	svc := NewArticleService(repo, userRepo, NewRBACService(), statsRepo).(*ArticleService)
+	svc := NewArticleService(repo, userRepo, NewRBACService(), statsRepo, &fakeNotificationRepo{}).(*ArticleService)
 
 	if err := svc.ViewArticle(1, nil, "", "203.0.113.9"); err != nil {
 		t.Fatalf("浏览上报失败: %v", err)
@@ -80,7 +80,7 @@ func TestViewArticleRejectsIncrementFailure(t *testing.T) {
 		},
 	}
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
-	svc := NewArticleService(repo, userRepo, NewRBACService(), statsRepo).(*ArticleService)
+	svc := NewArticleService(repo, userRepo, NewRBACService(), statsRepo, &fakeNotificationRepo{}).(*ArticleService)
 
 	if err := svc.ViewArticle(1, nil, "visitor-1", "203.0.113.9"); err == nil {
 		t.Fatal("计数递增失败应返回错误")

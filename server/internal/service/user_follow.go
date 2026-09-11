@@ -35,22 +35,25 @@ type FollowListResponse struct {
 
 // UserFollowService 用户关注服务实现
 type UserFollowService struct {
-	followRepo repository.UserFollowRepositoryInterface
-	userRepo   repository.UserRepository
+	followRepo       repository.UserFollowRepositoryInterface
+	userRepo         repository.UserRepository
+	notificationRepo repository.NotificationRepositoryInterface
 }
 
 // NewUserFollowService 创建用户关注服务实例
 func NewUserFollowService(
 	followRepo repository.UserFollowRepositoryInterface,
 	userRepo repository.UserRepository,
+	notificationRepo repository.NotificationRepositoryInterface,
 ) UserFollowServiceInterface {
 	return &UserFollowService{
-		followRepo: followRepo,
-		userRepo:   userRepo,
+		followRepo:       followRepo,
+		userRepo:         userRepo,
+		notificationRepo: notificationRepo,
 	}
 }
 
-// Follow 关注目标用户，禁止自我关注。
+// Follow 关注目标用户，禁止自我关注，成功后通知被关注用户。
 func (s *UserFollowService) Follow(followerID, followingID uint) error {
 	// 防止用户关注自己。
 	if followerID == followingID {
@@ -62,8 +65,22 @@ func (s *UserFollowService) Follow(followerID, followingID uint) error {
 		return errors.New("目标用户不存在")
 	}
 
-	_, err := s.followRepo.Follow(followerID, followingID)
-	return err
+	if _, err := s.followRepo.Follow(followerID, followingID); err != nil {
+		return err
+	}
+
+	// 关注为副产通知，写入失败不阻断关注操作。
+	relatedType := model.RelatedTypeUser
+	notification := &model.Notification{
+		UserID:      followingID,
+		SenderID:    &followerID,
+		Type:        model.NotificationTypeFollow,
+		Title:       "有新用户关注了你",
+		RelatedType: &relatedType,
+		RelatedID:   &followerID,
+	}
+	_ = s.notificationRepo.Create(notification)
+	return nil
 }
 
 // Unfollow 取消关注目标用户。

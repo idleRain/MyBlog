@@ -124,7 +124,7 @@ func publishedArticle(id uint) *model.Article {
 // newArticleTestService 创建注入测试替身的文章服务实例。
 func newArticleTestService(articleRepo repository.ArticleRepositoryInterface) *ArticleService {
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
-	svc := NewArticleService(articleRepo, userRepo, NewRBACService(), &fakeStatsRepo{})
+	svc := NewArticleService(articleRepo, userRepo, NewRBACService(), &fakeStatsRepo{}, &fakeNotificationRepo{})
 	return svc.(*ArticleService)
 }
 
@@ -165,7 +165,7 @@ func TestLikeArticleRejectsInvisibleArticle(t *testing.T) {
 	}
 	// 使用普通用户角色的服务实例，验证权限校验。
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "user", Status: 1}}
-	svc := NewArticleService(repo, userRepo, NewRBACService(), &fakeStatsRepo{}).(*ArticleService)
+	svc := NewArticleService(repo, userRepo, NewRBACService(), &fakeStatsRepo{}, &fakeNotificationRepo{}).(*ArticleService)
 
 	err := svc.LikeArticle(1, 1)
 	if err == nil {
@@ -206,6 +206,56 @@ func TestUnlikeArticleCallsRemoveLike(t *testing.T) {
 	}
 	if !calledRemoveLike {
 		t.Error("取消点赞应调用仓储 RemoveLike")
+	}
+}
+
+// TestLikeArticleNotifiesAuthor 验证首次点赞通知文章作者。
+func TestLikeArticleNotifiesAuthor(t *testing.T) {
+	notificationRepo := &fakeNotificationRepo{}
+	repo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return &model.Article{ID: id, Title: "文章", Slug: "post", Status: model.ArticleStatusPublished, AuthorID: 2}, nil
+		},
+		addLike: func(articleID, userID uint) (bool, error) {
+			return true, nil
+		},
+	}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
+	svc := NewArticleService(repo, userRepo, NewRBACService(), &fakeStatsRepo{}, notificationRepo).(*ArticleService)
+
+	if err := svc.LikeArticle(1, 1); err != nil {
+		t.Fatalf("点赞失败: %v", err)
+	}
+	if len(notificationRepo.created) != 1 {
+		t.Fatalf("通知数 = %d, 期望 1", len(notificationRepo.created))
+	}
+	if notificationRepo.created[0].UserID != 2 {
+		t.Errorf("通知接收者 = %d, 期望 2", notificationRepo.created[0].UserID)
+	}
+	if notificationRepo.created[0].Type != model.NotificationTypeArticleLike {
+		t.Errorf("通知类型 = %s, 期望 article_like", notificationRepo.created[0].Type)
+	}
+}
+
+// TestLikeArticleSelfLikeSkipsNotification 验证作者点赞自己的文章不产生通知。
+func TestLikeArticleSelfLikeSkipsNotification(t *testing.T) {
+	notificationRepo := &fakeNotificationRepo{}
+	repo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return &model.Article{ID: id, Title: "文章", Slug: "post", Status: model.ArticleStatusPublished, AuthorID: 1}, nil
+		},
+		addLike: func(articleID, userID uint) (bool, error) {
+			return true, nil
+		},
+	}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "admin", Status: 1}}
+	svc := NewArticleService(repo, userRepo, NewRBACService(), &fakeStatsRepo{}, notificationRepo).(*ArticleService)
+
+	if err := svc.LikeArticle(1, 1); err != nil {
+		t.Fatalf("点赞失败: %v", err)
+	}
+	if len(notificationRepo.created) != 0 {
+		t.Errorf("通知数 = %d, 期望 0", len(notificationRepo.created))
 	}
 }
 

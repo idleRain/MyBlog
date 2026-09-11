@@ -40,7 +40,16 @@ func (f *fakeFollowRepo) Unfollow(followerID, followingID uint) (bool, error) {
 // newTestFollowService 创建注入测试替身的关注服务实例。
 func newTestFollowService(followRepo repository.UserFollowRepositoryInterface) *UserFollowService {
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 2, Role: "user", Status: 1}}
-	return NewUserFollowService(followRepo, userRepo).(*UserFollowService)
+	return newTestFollowServiceWithNotification(followRepo, userRepo, &fakeNotificationRepo{})
+}
+
+// newTestFollowServiceWithNotification 创建可注入通知替身的关注服务实例。
+func newTestFollowServiceWithNotification(
+	followRepo repository.UserFollowRepositoryInterface,
+	userRepo repository.UserRepository,
+	notificationRepo repository.NotificationRepositoryInterface,
+) *UserFollowService {
+	return NewUserFollowService(followRepo, userRepo, notificationRepo).(*UserFollowService)
 }
 
 // TestFollowSelfRejected 验证禁止关注自己。
@@ -98,5 +107,45 @@ func TestUnfollowSuccess(t *testing.T) {
 	}
 	if !calledUnfollow {
 		t.Error("取消关注应调用仓储 Unfollow")
+	}
+}
+
+// TestFollowNotifiesTargetUser 验证关注成功后通知被关注用户。
+func TestFollowNotifiesTargetUser(t *testing.T) {
+	followRepo := &fakeFollowRepo{}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 2, Role: "user", Status: 1}}
+	notificationRepo := &fakeNotificationRepo{}
+	svc := newTestFollowServiceWithNotification(followRepo, userRepo, notificationRepo)
+
+	if err := svc.Follow(1, 2); err != nil {
+		t.Fatalf("关注失败: %v", err)
+	}
+	if len(notificationRepo.created) != 1 {
+		t.Fatalf("通知数 = %d, 期望 1", len(notificationRepo.created))
+	}
+	notification := notificationRepo.created[0]
+	if notification.UserID != 2 {
+		t.Errorf("通知接收者 = %d, 期望 2", notification.UserID)
+	}
+	if notification.Type != model.NotificationTypeFollow {
+		t.Errorf("通知类型 = %s, 期望 follow", notification.Type)
+	}
+	if notification.SenderID == nil || *notification.SenderID != 1 {
+		t.Errorf("通知触发者 = %v, 期望 1", notification.SenderID)
+	}
+}
+
+// TestFollowSelfSkipsNotification 验证关注被拒时不产生通知。
+func TestFollowSelfSkipsNotification(t *testing.T) {
+	followRepo := &fakeFollowRepo{}
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 1, Role: "user", Status: 1}}
+	notificationRepo := &fakeNotificationRepo{}
+	svc := newTestFollowServiceWithNotification(followRepo, userRepo, notificationRepo)
+
+	if err := svc.Follow(1, 1); err == nil {
+		t.Fatal("关注自己应返回错误")
+	}
+	if len(notificationRepo.created) != 0 {
+		t.Errorf("通知数 = %d, 期望 0", len(notificationRepo.created))
 	}
 }
