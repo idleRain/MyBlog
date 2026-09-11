@@ -71,6 +71,26 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/popular', { json: { limit } }).json()
     },
 
+    // 点赞文章，需登录。
+    like(id: number): Promise<ArticleActionResponse> {
+      return request.post('articles/like', { json: { id } }).json()
+    },
+
+    // 取消点赞，需登录。
+    unlike(id: number): Promise<ArticleActionResponse> {
+      return request.post('articles/unlike', { json: { id } }).json()
+    },
+
+    // 收藏文章，需登录。
+    bookmark(id: number): Promise<ArticleActionResponse> {
+      return request.post('articles/bookmark', { json: { id } }).json()
+    },
+
+    // 取消收藏，需登录。
+    unbookmark(id: number): Promise<ArticleActionResponse> {
+      return request.post('articles/unbookmark', { json: { id } }).json()
+    },
+
     // 最新文章，按发布时间倒序。
     recent(limit: number): Promise<ArticleCollectionResponse> {
       return request.post('articles/recent', { json: { limit } }).json()

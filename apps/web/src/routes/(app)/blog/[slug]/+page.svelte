@@ -1,5 +1,6 @@
 <script lang="ts">
 import { CommentSection } from '$lib/components/comment'
+import { ArticleActions } from '$lib/components/article'
 import { formatDate } from '$lib/utils/format-date'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
@@ -79,6 +80,9 @@ $effect(() => {
           {/each}
         </div>
       {/if}
+
+      <!-- 互动栏：点赞与收藏，登录后展示服务端状态。 -->
+      <ArticleActions articleId={article.id} />
 
       <!-- 评论区：单篇关闭评论时以提示占位。 -->
       {#if article.commentEnabled}
