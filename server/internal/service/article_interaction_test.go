@@ -14,12 +14,20 @@ type fakeArticleRepo struct {
 	repository.ArticleRepositoryInterface
 	getByID        func(id uint) (*model.Article, error)
 	getByAuthor    func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	search         func(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	incrementView  func(id uint) error
 	recordView     func(view *model.ArticleView) error
 	addLike        func(articleID, userID uint) (bool, error)
 	removeLike     func(articleID, userID uint) (bool, error)
 	addBookmark    func(articleID, userID uint) (bool, error)
 	removeBookmark func(articleID, userID uint) (bool, error)
+}
+
+func (f *fakeArticleRepo) Search(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	if f.search != nil {
+		return f.search(keyword, params)
+	}
+	return nil, 0, errors.New("未实现的测试替身方法")
 }
 
 func (f *fakeArticleRepo) GetByID(id uint) (*model.Article, error) {

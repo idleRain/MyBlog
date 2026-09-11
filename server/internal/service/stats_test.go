@@ -20,6 +20,7 @@ type fakeStatsRepo struct {
 	categoryCount     int64
 	tagCount          int64
 	contentStats      []*model.ContentStats
+	searchLogs        []*model.SearchLog
 	upsertContentStat func(contentType string, contentID uint, statType string, statDate time.Time) error
 }
 
@@ -45,6 +46,11 @@ func (f *fakeStatsRepo) UpsertContentStat(contentType string, contentID uint, st
 	if f.upsertContentStat != nil {
 		return f.upsertContentStat(contentType, contentID, statType, statDate)
 	}
+	return nil
+}
+
+func (f *fakeStatsRepo) CreateSearchLog(searchLog *model.SearchLog) error {
+	f.searchLogs = append(f.searchLogs, searchLog)
 	return nil
 }
 

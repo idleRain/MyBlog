@@ -27,6 +27,9 @@ type StatsRepositoryInterface interface {
 	// 时间维度统计
 	GetContentStats(contentType, statType string, startDate time.Time) ([]*model.ContentStats, error)
 	UpsertContentStat(contentType string, contentID uint, statType string, statDate time.Time) error
+
+	// 搜索日志
+	CreateSearchLog(searchLog *model.SearchLog) error
 }
 
 // StatsRepository 站点统计仓储实现
@@ -121,6 +124,14 @@ func (r *StatsRepository) UpsertContentStat(contentType string, contentID uint, 
 		}),
 	}).Create(&stat).Error; err != nil {
 		return fmt.Errorf("更新内容统计失败: %w", err)
+	}
+	return nil
+}
+
+// CreateSearchLog 写入搜索日志。
+func (r *StatsRepository) CreateSearchLog(searchLog *model.SearchLog) error {
+	if err := r.db.Create(searchLog).Error; err != nil {
+		return fmt.Errorf("写入搜索日志失败: %w", err)
 	}
 	return nil
 }

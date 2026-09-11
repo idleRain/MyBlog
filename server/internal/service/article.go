@@ -484,8 +484,10 @@ func (s *ArticleService) GetArticlesByTag(tagID uint, req *GetArticleListRequest
 	}, nil
 }
 
-// SearchArticles 搜索文章
+// SearchArticles 搜索文章，同时记录搜索日志供热词与慢查询分析。
 func (s *ArticleService) SearchArticles(keyword string, req *GetArticleListRequest) (*ArticleListResponse, error) {
+	startedAt := time.Now()
+
 	params := &repository.ArticleListParams{
 		Page:     req.Page,
 		PageSize: req.PageSize,
@@ -495,6 +497,7 @@ func (s *ArticleService) SearchArticles(keyword string, req *GetArticleListReque
 	}
 
 	articles, total, err := s.articleRepo.Search(keyword, params)
+	s.recordSearchLog(keyword, startedAt, len(articles), err)
 	if err != nil {
 		return nil, err
 	}
@@ -505,6 +508,26 @@ func (s *ArticleService) SearchArticles(keyword string, req *GetArticleListReque
 		Page:     req.Page,
 		PageSize: req.PageSize,
 	}, nil
+}
+
+// recordSearchLog 记录搜索日志，写入失败不影响搜索结果返回。
+func (s *ArticleService) recordSearchLog(keyword string, startedAt time.Time, resultCount int, searchErr error) {
+	if keyword == "" {
+		return
+	}
+
+	status := model.OperationStatusSuccess
+	if searchErr != nil {
+		status = model.OperationStatusFailed
+	}
+
+	searchLog := &model.SearchLog{
+		Keyword:      keyword,
+		ResultsCount: resultCount,
+		Status:       status,
+		DurationMs:   uint(time.Since(startedAt).Milliseconds()),
+	}
+	_ = s.statsRepo.CreateSearchLog(searchLog)
 }
 
 // GetPopularArticles 获取热门文章
