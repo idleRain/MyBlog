@@ -19,6 +19,11 @@ export function createCategoryAPI(request: KyInstance) {
       return request.post('categories/get', { json: { id } }).json()
     },
 
+    // 按 slug 获取分类，供前台分类页定位。
+    getBySlug(slug: string): Promise<CategoryResponse> {
+      return request.post('categories/getBySlug', { json: { slug } }).json()
+    },
+
     // 获取分类树，管理端用于树形展示与选择。
     getTree(): Promise<CategoryTreeResponse> {
       return request.post('categories/tree', { json: {} }).json()

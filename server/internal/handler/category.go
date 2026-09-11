@@ -17,6 +17,7 @@ type CategoryHandlerInterface interface {
 	UpdateCategory(c *gin.Context)
 	DeleteCategory(c *gin.Context)
 	GetCategory(c *gin.Context)
+	GetCategoryBySlug(c *gin.Context)
 	ListCategories(c *gin.Context)
 	GetCategoryTree(c *gin.Context)
 }
@@ -126,6 +127,31 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 	}
 
 	category, err := h.categoryService.GetCategory(req.ID)
+	if err != nil {
+		if errors.Is(err, repository.ErrCategoryNotFound) {
+			response.NotFound(c, err.Error())
+			return
+		}
+		response.InternalError(c, err.Error())
+		return
+	}
+
+	response.Success(c, category)
+}
+
+// GetCategoryBySlug 根据Slug获取分类 POST /api/categories/getBySlug
+func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
+	type GetCategoryBySlugRequest struct {
+		Slug string `json:"slug" binding:"required"`
+	}
+
+	var req GetCategoryBySlugRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	category, err := h.categoryService.GetCategoryBySlug(req.Slug)
 	if err != nil {
 		if errors.Is(err, repository.ErrCategoryNotFound) {
 			response.NotFound(c, err.Error())

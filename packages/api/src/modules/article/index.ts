@@ -58,6 +58,11 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/archives', { json: {} }).json()
     },
 
+    // 分类文章列表，服务端仅返回已发布文章。
+    byCategory(categoryId: number, params: GetArticleListRequest): Promise<ArticleListResponse> {
+      return request.post('articles/byCategory', { json: { categoryId, ...params } }).json()
+    },
+
     // 上报文章浏览量，无需登录。
     view(id: number): Promise<ArticleActionResponse> {
       return request.post('articles/view', { json: { id } }).json()

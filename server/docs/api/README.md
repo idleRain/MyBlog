@@ -40,14 +40,14 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 用户关注 | 4 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
 | 文章管理 | 23 | 文章内容管理 |
-| 分类管理 | 6 | 分类树形管理 |
+| 分类管理 | 7 | 分类树形管理 |
 | 标签管理 | 7 | 标签与热门标签 |
 | 评论管理 | 10 | 评论与审核 |
 | 媒体文件 | 4 | 文件上传与管理 |
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 8 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **80** | **完整的博客系统 API** |
+| **总计** | **81** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -107,6 +107,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 ### 分类管理
 - `POST /api/categories/get` - 获取分类详情（公开）
+- `POST /api/categories/getBySlug` - 按 Slug 获取分类（公开）
 - `POST /api/categories/tree` - 获取分类树（公开）
 - `POST /api/admin/categories/create` - 创建分类
 - `POST /api/admin/categories/update` - 更新分类
@@ -223,6 +224,7 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 新增 `POST /api/categories/getBySlug`：按别名获取公开分类，供前台分类页定位
 - ✅ 新增 `POST /api/articles/archives`：按年月分组的公开文章归档，供前台归档页时间线使用
 - ✅ 作者文章接口 `/api/articles/byAuthor` 补齐角色化可见性：非管理员强制只返回已发布文章，堵住草稿与私密文章越权拉取
 - ✅ 评论创建绑定登录身份：登录评论关联 UserID，游客字段仅游客通道生效，游客通道补齐邮箱与网站落库

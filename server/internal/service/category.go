@@ -16,6 +16,7 @@ type CategoryServiceInterface interface {
 	UpdateCategory(req *UpdateCategoryRequest, operatorID uint) (*model.Category, error)
 	DeleteCategory(id uint, operatorID uint) error
 	GetCategory(id uint) (*model.Category, error)
+	GetCategoryBySlug(slug string) (*model.Category, error)
 
 	// 查询操作
 	ListCategories(req *ListCategoriesRequest) (*CategoryListResponse, error)
@@ -206,6 +207,11 @@ func (s *CategoryService) DeleteCategory(id uint, operatorID uint) error {
 // GetCategory 根据ID获取分类
 func (s *CategoryService) GetCategory(id uint) (*model.Category, error) {
 	return s.categoryRepo.GetByID(id)
+}
+
+// GetCategoryBySlug 根据Slug获取分类，供前台按别名定位分类。
+func (s *CategoryService) GetCategoryBySlug(slug string) (*model.Category, error) {
+	return s.categoryRepo.GetBySlug(slug)
 }
 
 // ListCategories 分页查询分类列表

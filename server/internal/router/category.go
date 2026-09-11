@@ -36,8 +36,9 @@ func (cr *CategoryRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rou
 	// 公开分类接口，无需登录。
 	publicCategories := api.Group("/categories")
 	{
-		publicCategories.POST("/get", cr.categoryHandler.GetCategory)      // 根据ID获取分类
-		publicCategories.POST("/tree", cr.categoryHandler.GetCategoryTree) // 分类树
+		publicCategories.POST("/get", cr.categoryHandler.GetCategory)             // 根据ID获取分类
+		publicCategories.POST("/getBySlug", cr.categoryHandler.GetCategoryBySlug) // 根据Slug获取分类，供前台分类页定位
+		publicCategories.POST("/tree", cr.categoryHandler.GetCategoryTree)        // 分类树
 	}
 
 	// 分类管理接口，需要分类管理权限。

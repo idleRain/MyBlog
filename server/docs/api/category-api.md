@@ -96,7 +96,40 @@ curl -X POST http://localhost:3000/api/categories/get \
 }
 ```
 
-### 2. 获取分类树
+### 2. 根据 Slug 获取分类
+
+使用分类别名获取分类详情，供前台分类页定位。
+
+#### 请求信息
+
+- **接口地址**: `/api/categories/getBySlug`
+- **请求方式**: `POST`
+- **权限要求**: 无需认证
+- **Content-Type**: `application/json`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| slug | string | 是 | 分类别名 | 非空字符串 |
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/categories/getBySlug \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "tech"
+  }'
+```
+
+#### 响应示例
+
+响应格式同"获取分类详情"接口。
+
+---
+
+### 3. 获取分类树
 
 获取完整的分类树形结构，按 sortOrder 排序。
 
@@ -158,7 +191,7 @@ curl -X POST http://localhost:3000/api/categories/tree \
 
 管理接口需在请求头携带 `Authorization: Bearer {accessToken}`，且操作者角色为 admin 及以上。
 
-### 3. 创建分类
+### 4. 创建分类
 
 #### 请求信息
 
@@ -225,7 +258,7 @@ curl -X POST http://localhost:3000/api/admin/categories/create \
 |--------|------|
 | 400 | 父分类不存在、请求参数错误 |
 
-### 4. 更新分类
+### 5. 更新分类
 
 #### 请求信息
 
@@ -277,7 +310,7 @@ curl -X POST http://localhost:3000/api/admin/categories/update \
 }
 ```
 
-### 5. 删除分类
+### 6. 删除分类
 
 #### 请求信息
 
@@ -319,7 +352,7 @@ curl -X POST http://localhost:3000/api/admin/categories/delete \
 | 400 | 分类下存在子分类，无法删除 |
 | 404 | 分类不存在 |
 
-### 6. 分类列表
+### 7. 分类列表
 
 #### 请求信息
 
