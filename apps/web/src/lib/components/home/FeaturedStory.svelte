@@ -1,10 +1,25 @@
 <script lang="ts">
-import { featuredStory } from '$lib/data/home-content'
+import type { Article } from '@myblog/api/modules/article/types'
 import { gsap, MOTION } from '$lib/motion/gsap-setup'
+import { formatDate } from '$lib/utils/format-date'
 import { scrollStagger } from '$lib/motion/reveal'
 
-// 占位数据的详情路由尚未建立，链接指向站内锚点，业务接入后替换。
-const STORY_LINK = '#articles'
+// 本期精选属性：article 为热门文章榜首，由首页 load 提供。
+interface Props {
+  article: Article
+}
+
+let { article }: Props = $props()
+
+// 期号取发布月份的两位数字，延续刊物版面的编号语言。
+const issueNo = $derived(
+  String(
+    (article.publishedAt ? new Date(article.publishedAt) : new Date()).getMonth() + 1
+  ).padStart(2, '0')
+)
+
+// 版面标注优先展示分类名，文章未归类时回退到手记栏目。
+const categoryLabel = $derived(article.category?.name ?? '手记')
 
 let root = $state<HTMLElement>()
 
@@ -51,28 +66,28 @@ $effect(() => {
       aria-hidden="true"
     >
       <p class="featured-issue-no font-display text-6xl font-black tracking-tight">
-        {featuredStory.issueNo}
+        {issueNo}
       </p>
-      <p class="mt-auto font-display text-lg">{featuredStory.category}</p>
+      <p class="mt-auto font-display text-lg">{categoryLabel}</p>
     </div>
 
     <!-- 文章信息区：元信息、标题、摘要与全文入口，进入视口后错峰浮现 -->
     <div class="flex flex-col justify-center gap-6 p-8 sm:p-10" use:scrollStagger>
       <p class="flex items-center gap-3 text-sm text-muted-foreground">
         <span class="bg-signal px-2 py-0.5 text-xs font-bold text-signal-foreground">精选</span>
-        {featuredStory.date} · 约 {featuredStory.readMinutes} 分钟
+        {formatDate(article.publishedAt ?? article.createdAt)} · 约 {article.readingTime} 分钟
       </p>
 
       <h2 class="font-display text-3xl leading-snug font-black">
-        <a href={STORY_LINK} class="transition-colors duration-200 hover:text-signal">
-          {featuredStory.title}
+        <a href={`/blog/${article.slug}`} class="transition-colors duration-200 hover:text-signal">
+          {article.title}
         </a>
       </h2>
 
-      <p class="leading-relaxed text-muted-foreground">{featuredStory.excerpt}</p>
+      <p class="leading-relaxed text-muted-foreground">{article.summary}</p>
 
       <a
-        href={STORY_LINK}
+        href={`/blog/${article.slug}`}
         class="group inline-flex w-fit items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
       >
         阅读全文

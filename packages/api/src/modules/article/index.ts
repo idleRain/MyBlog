@@ -2,6 +2,7 @@ import type { KyInstance } from 'ky'
 import type {
   ArticleActionResponse,
   ArticleArchiveResponse,
+  ArticleCollectionResponse,
   ArticleListResponse,
   ArticleResponse,
   CreateArticleRequest,
@@ -63,6 +64,16 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/byCategory', { json: { categoryId, ...params } }).json()
     },
 
+    // 热门文章，按浏览量与点赞数排序。
+    popular(limit: number): Promise<ArticleCollectionResponse> {
+      return request.post('articles/popular', { json: { limit } }).json()
+    },
+
+    // 最新文章，按发布时间倒序。
+    recent(limit: number): Promise<ArticleCollectionResponse> {
+      return request.post('articles/recent', { json: { limit } }).json()
+    },
+
     // 上报文章浏览量，无需登录。
     view(id: number): Promise<ArticleActionResponse> {
       return request.post('articles/view', { json: { id } }).json()
@@ -95,6 +106,7 @@ export type ArticleAPI = ReturnType<typeof createArticleAPI>
 export type {
   ArticleActionResponse,
   ArticleArchiveResponse,
+  ArticleCollectionResponse,
   ArticleListResponse,
   ArticleResponse,
   CreateArticleRequest,

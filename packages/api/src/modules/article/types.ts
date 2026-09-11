@@ -58,6 +58,11 @@ export interface ArticleListData {
   articles: Article[]
 }
 
+// 文章集合响应数据，热门与最新等聚合接口仅返回文章数组。
+export interface ArticleCollectionData {
+  articles: Article[]
+}
+
 // 归档的月份分组，articles 为该月已发布文章，按发布时间倒序。
 export interface ArticleArchiveMonth {
   month: number
@@ -129,5 +134,6 @@ export interface ArticleActionData {
 // 各响应类型
 export type ArticleResponse = ApiResponse<Article>
 export type ArticleListResponse = ApiResponse<ArticleListData>
+export type ArticleCollectionResponse = ApiResponse<ArticleCollectionData>
 export type ArticleArchiveResponse = ApiResponse<ArticleArchiveYear[]>
 export type ArticleActionResponse = ApiResponse<ArticleActionData>
