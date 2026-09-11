@@ -35,6 +35,7 @@ func NewFriendlyLinkRoutes(
 func (fr *FriendlyLinkRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGroup) {
 	// 公开友情链接接口，无需登录。
 	api.POST("/friendly-links/list", fr.linkHandler.ListVisibleLinks)
+	api.POST("/friendly-links/apply", fr.linkHandler.ApplyLink)
 
 	// 友情链接管理接口，需要系统配置权限。
 	adminLinks := adminAPI.Group("/friendly-links")

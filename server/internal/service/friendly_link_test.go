@@ -110,3 +110,44 @@ func TestApproveLinkStatus(t *testing.T) {
 		t.Errorf("审核后状态 = %s, 期望 active", repo.links[0].Status)
 	}
 }
+
+// TestApplyLinkCreatesPendingRecord 验证访客申请创建待审核记录。
+func TestApplyLinkCreatesPendingRecord(t *testing.T) {
+	repo := &fakeLinkRepo{}
+	svc := NewFriendlyLinkService(repo)
+
+	link, err := svc.ApplyLink(&ApplyFriendlyLinkRequest{
+		Name:         "朋友的博客",
+		URL:          "https://friend.example.com",
+		Description:  "一个朋友的站点",
+		ContactEmail: "friend@example.com",
+	})
+	if err != nil {
+		t.Fatalf("提交友链申请失败: %v", err)
+	}
+	if link.Status != model.LinkStatusPending {
+		t.Errorf("申请状态 = %s, 期望 pending", link.Status)
+	}
+	if len(repo.links) != 1 {
+		t.Errorf("仓储记录数 = %d, 期望 1", len(repo.links))
+	}
+}
+
+// TestApplyLinkRejectsDuplicateURL 验证同一站点 URL 不论状态均拒绝重复申请。
+func TestApplyLinkRejectsDuplicateURL(t *testing.T) {
+	repo := &fakeLinkRepo{
+		links: []*model.FriendlyLink{
+			{ID: 1, Name: "已有站点", URL: "https://friend.example.com", Status: model.LinkStatusRejected},
+		},
+	}
+	svc := NewFriendlyLinkService(repo)
+
+	_, err := svc.ApplyLink(&ApplyFriendlyLinkRequest{
+		Name:         "再次申请",
+		URL:          "https://friend.example.com",
+		ContactEmail: "friend@example.com",
+	})
+	if err == nil {
+		t.Fatal("重复申请应返回错误")
+	}
+}

@@ -45,9 +45,9 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 评论管理 | 10 | 评论与审核 |
 | 媒体文件 | 4 | 文件上传与管理 |
 | 系统设置 | 3 | 站点配置管理 |
-| 友情链接 | 8 | 友链申请与审核 |
+| 友情链接 | 9 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **89** | **完整的博客系统 API** |
+| **总计** | **90** | **完整的博客系统 API** |
 
 ## 接口概览
 
@@ -156,6 +156,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 ### 友情链接
 - `POST /api/friendly-links/list` - 展示中的链接（公开）
+- `POST /api/friendly-links/apply` - 提交友链申请（公开）
 - `POST /api/admin/friendly-links/create` - 创建链接
 - `POST /api/admin/friendly-links/update` - 更新链接
 - `POST /api/admin/friendly-links/delete` - 删除链接
@@ -232,6 +233,7 @@ curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json
 ## 更新日志
 
 ### v1.3.0 (当前版本)
+- ✅ 新增 `friendly-links/apply`：访客提交友链申请，闭合友链申请与审核流程
 - ✅ 用户自助资料端点：`users/profile`、`users/profile/update` 与 `users/change-password`，登录用户可自助维护资料与密码
 - ✅ 关注契约补全：粉丝与关注列表内嵌用户摘要，新增 `users/isFollowing` 状态查询
 - ✅ 新增 `users/publicProfile`：用户公开资料与公开统计，供作者页与关于页使用

@@ -19,6 +19,14 @@ export interface FriendlyLink {
   updatedAt: string
 }
 
+// 访客提交友链申请的请求
+export interface ApplyFriendlyLinkRequest {
+  name: string
+  url: string
+  description?: string
+  contactEmail: string
+}
+
 // 友情链接列表数据
 export interface FriendlyLinkListData {
   page: number

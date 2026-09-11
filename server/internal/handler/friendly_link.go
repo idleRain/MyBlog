@@ -21,6 +21,7 @@ type FriendlyLinkHandlerInterface interface {
 	RejectLink(c *gin.Context)
 	ListLinks(c *gin.Context)
 	ListVisibleLinks(c *gin.Context)
+	ApplyLink(c *gin.Context)
 }
 
 // FriendlyLinkHandler 友情链接处理器实现
@@ -144,6 +145,23 @@ func (h *FriendlyLinkHandler) ListVisibleLinks(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"links": links})
+}
+
+// ApplyLink 访客提交友链申请 POST /api/friendly-links/apply
+func (h *FriendlyLinkHandler) ApplyLink(c *gin.Context) {
+	var req service.ApplyFriendlyLinkRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	link, err := h.linkService.ApplyLink(&req)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	response.SuccessWithMessage(c, "友链申请已提交，等待审核", link)
 }
 
 // transition 执行友情链接状态流转类操作的公共逻辑。

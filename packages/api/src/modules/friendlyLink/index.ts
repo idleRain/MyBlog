@@ -1,5 +1,6 @@
 import type { KyInstance } from 'ky'
 import type {
+  ApplyFriendlyLinkRequest,
   CreateFriendlyLinkRequest,
   FriendlyLinkActionResponse,
   FriendlyLinkListResponse,
@@ -23,6 +24,11 @@ export function createFriendlyLinkAPI(request: KyInstance) {
     // 展示中的友链列表，无需登录。
     list(): Promise<FriendlyLinkListResponse> {
       return request.post('friendly-links/list', { json: {} }).json()
+    },
+
+    // 访客提交友链申请，进入待审核状态，无需登录。
+    apply(params: ApplyFriendlyLinkRequest): Promise<FriendlyLinkResponse> {
+      return request.post('friendly-links/apply', { json: params }).json()
     },
 
     // 管理端：分页查询友链列表
@@ -65,6 +71,7 @@ export function createFriendlyLinkAPI(request: KyInstance) {
 export type FriendlyLinkAPI = ReturnType<typeof createFriendlyLinkAPI>
 
 export type {
+  ApplyFriendlyLinkRequest,
   CreateFriendlyLinkRequest,
   FriendlyLinkActionResponse,
   FriendlyLinkListResponse,

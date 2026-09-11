@@ -273,3 +273,59 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/list \
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
+
+---
+
+### 7. 提交友链申请
+
+访客提交友链申请，记录进入待审核状态，等待管理员审核。同一站点 URL 不论处于何种状态均不重复接受申请。
+
+#### 请求信息
+
+- **接口地址**: `/api/friendly-links/apply`
+- **请求方式**: `POST`
+- **权限要求**: 无需认证
+- **Content-Type**: `application/json`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| name | string | 是 | 站点名称 | 1-50字符 |
+| url | string | 是 | 站点地址 | 最大255字符，以 http 开头 |
+| description | string | 否 | 站点描述 | 最大255字符 |
+| contactEmail | string | 是 | 联系邮箱 | 邮箱格式，最大100字符 |
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/friendly-links/apply \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "朋友的博客",
+    "url": "https://friend.example.com",
+    "description": "一个朋友的站点",
+    "contactEmail": "friend@example.com"
+  }'
+```
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "友链申请已提交，等待审核",
+  "data": {
+    "id": 1,
+    "name": "朋友的博客",
+    "url": "https://friend.example.com",
+    "status": "pending"
+  }
+}
+```
+
+#### 错误响应
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 参数错误或该站点已提交过申请 |

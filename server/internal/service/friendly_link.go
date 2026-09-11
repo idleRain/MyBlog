@@ -24,6 +24,17 @@ type FriendlyLinkServiceInterface interface {
 	// 查询操作
 	ListLinks(req *ListFriendlyLinksRequest) (*FriendlyLinkListResponse, error)
 	ListVisibleLinks() ([]*model.FriendlyLink, error)
+
+	// 访客申请
+	ApplyLink(req *ApplyFriendlyLinkRequest) (*model.FriendlyLink, error)
+}
+
+// ApplyFriendlyLinkRequest 访客提交友链申请的请求。
+type ApplyFriendlyLinkRequest struct {
+	Name         string `json:"name" binding:"required,min=1,max=50"`
+	URL          string `json:"url" binding:"required,max=255,startswith=http"`
+	Description  string `json:"description" binding:"omitempty,max=255"`
+	ContactEmail string `json:"contactEmail" binding:"required,email,max=100"`
 }
 
 // CreateFriendlyLinkRequest 创建友情链接请求
@@ -108,6 +119,27 @@ func (s *FriendlyLinkService) CreateLink(req *CreateFriendlyLinkRequest) (*model
 	}
 
 	return s.linkRepo.GetByID(link.ID)
+}
+
+// ApplyLink 访客提交友链申请，记录进入待审核状态等待管理员审核。
+func (s *FriendlyLinkService) ApplyLink(req *ApplyFriendlyLinkRequest) (*model.FriendlyLink, error) {
+	// 同一站点 URL 不论处于何种状态均不重复申请。
+	if existing, err := s.linkRepo.GetByURL(req.URL); err == nil && existing != nil {
+		return nil, errors.New("该站点已提交过申请，请等待审核")
+	}
+
+	link := &model.FriendlyLink{
+		Name:         req.Name,
+		URL:          req.URL,
+		Description:  req.Description,
+		ContactEmail: req.ContactEmail,
+		Status:       model.LinkStatusPending,
+	}
+
+	if err := s.linkRepo.Create(link); err != nil {
+		return nil, fmt.Errorf("提交友链申请失败: %w", err)
+	}
+	return link, nil
 }
 
 // UpdateLink 更新友情链接。
