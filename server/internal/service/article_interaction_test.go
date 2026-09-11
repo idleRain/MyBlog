@@ -13,6 +13,7 @@ import (
 type fakeArticleRepo struct {
 	repository.ArticleRepositoryInterface
 	getByID        func(id uint) (*model.Article, error)
+	getByAuthor    func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	addLike        func(articleID, userID uint) (bool, error)
 	removeLike     func(articleID, userID uint) (bool, error)
 	addBookmark    func(articleID, userID uint) (bool, error)
@@ -24,6 +25,13 @@ func (f *fakeArticleRepo) GetByID(id uint) (*model.Article, error) {
 		return f.getByID(id)
 	}
 	return nil, errors.New("未实现的测试替身方法")
+}
+
+func (f *fakeArticleRepo) GetByAuthor(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	if f.getByAuthor != nil {
+		return f.getByAuthor(authorID, params)
+	}
+	return nil, 0, errors.New("未实现的测试替身方法")
 }
 
 func (f *fakeArticleRepo) AddLike(articleID, userID uint) (bool, error) {

@@ -21,7 +21,7 @@ type ArticleServiceInterface interface {
 
 	// 查询操作
 	GetArticleList(req *GetArticleListRequest, userID *uint) (*ArticleListResponse, error)
-	GetArticlesByAuthor(authorID uint, req *GetArticleListRequest) (*ArticleListResponse, error)
+	GetArticlesByAuthor(authorID uint, req *GetArticleListRequest, userID *uint) (*ArticleListResponse, error)
 	GetArticlesByCategory(categoryID uint, req *GetArticleListRequest) (*ArticleListResponse, error)
 	GetArticlesByTag(tagID uint, req *GetArticleListRequest) (*ArticleListResponse, error)
 	SearchArticles(keyword string, req *GetArticleListRequest) (*ArticleListResponse, error)
@@ -343,14 +343,9 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 		Search:   req.Search,
 	}
 
-	// 如果不是管理员，只能看到已发布的文章
-	if userID == nil {
+	// 非管理员查看时强制已发布状态，与作者页接口共用同一可见性判定。
+	if !s.canFilterByStatus(userID) {
 		params.Status = model.ArticleStatusPublished
-	} else {
-		user, err := s.userRepo.GetByID(*userID)
-		if err != nil || !s.rbacService.HasPermission(user.Role, PermissionArticleManage) {
-			params.Status = model.ArticleStatusPublished
-		}
 	}
 
 	articles, total, err := s.articleRepo.List(params)
@@ -374,8 +369,22 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 	}, nil
 }
 
-// GetArticlesByAuthor 获取指定作者的文章
-func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListRequest) (*ArticleListResponse, error) {
+// canFilterByStatus 判断查看者是否允许按任意状态筛选文章，仅持有文章管理权限的管理员放行。
+func (s *ArticleService) canFilterByStatus(userID *uint) bool {
+	if userID == nil {
+		return false
+	}
+
+	user, err := s.userRepo.GetByID(*userID)
+	if err != nil {
+		return false
+	}
+
+	return s.rbacService.HasPermission(user.Role, PermissionArticleManage)
+}
+
+// GetArticlesByAuthor 获取指定作者的文章，可见性规则与 GetArticleList 保持一致。
+func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListRequest, userID *uint) (*ArticleListResponse, error) {
 	params := &repository.ArticleListParams{
 		Page:     req.Page,
 		PageSize: req.PageSize,
@@ -383,6 +392,11 @@ func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListR
 		SortBy:   req.SortBy,
 		Order:    req.Order,
 		Search:   req.Search,
+	}
+
+	// 非管理员查看时强制已发布，防止公开接口借状态参数越权拉取草稿与私密文章。
+	if !s.canFilterByStatus(userID) {
+		params.Status = model.ArticleStatusPublished
 	}
 
 	articles, total, err := s.articleRepo.GetByAuthor(authorID, params)

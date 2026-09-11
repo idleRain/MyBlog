@@ -238,8 +238,11 @@ func (h *ArticleHandler) GetArticlesByAuthor(c *gin.Context) {
 		req.PageSize = 10
 	}
 
+	// 读取当前用户ID，未登录时为空，供服务层做角色化可见性判断。
+	userID := getOptionalUserID(c)
+
 	// 获取文章列表
-	result, err := h.articleService.GetArticlesByAuthor(req.AuthorID, &req.GetArticleListRequest)
+	result, err := h.articleService.GetArticlesByAuthor(req.AuthorID, &req.GetArticleListRequest, userID)
 	if err != nil {
 		HandleServiceError(c, err)
 		return
