@@ -15,10 +15,10 @@ let { categories = [] }: Props = $props()
 // 当前年份用于版权声明，随时间自动更新。
 const currentYear = new Date().getFullYear()
 
-// 社交链接集中声明，悬停统一反馈为 signal 强调色。
+// 社交链接集中声明，悬停统一反馈为 signal 强调色；邮箱链接需携带 mailto 协议。
 const socialLinks = [
   { name: 'GitHub', icon: GithubIcon, href: 'https://github.com/idleRain' },
-  { name: 'Email', icon: Mail, href: 'gold.experience@foxmail.com' }
+  { name: 'Email', icon: Mail, href: 'mailto:gold.experience@foxmail.com' }
 ]
 
 // 快捷导航链接集中声明。
