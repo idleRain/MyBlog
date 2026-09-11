@@ -207,21 +207,20 @@ pnpm run migrate [create|up|down|version|help]
 | D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |
 | D11 | JWT 撤销内存 map（**已加锁**；deprecated `ValidateToken` 已删） | 单实例部署前提；持久化前保持锁 |
 | D12 | 文章响应泄漏作者审计字段（**已清偿**：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
-| D13 | `user_follow` 前端零消费（**API 模块已补齐**：`@myblog/api/modules/follow` + 两应用注册；页面待 web 业务接入） | 页面消费前视为功能未完成 |
+| D13 | `user_follow` 前端零消费（**已收口**：作者页 FollowButton 消费 follow/isFollowing 接口） | 关注数据仅经 service 域端点读写 |
 | D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（**已清偿**：7 页回归 `$ui`） | 禁止仿效；新分页一律 `$ui` |
 
 ## 10. 开发进度概览
 
 已完成：
 - 基础设施：Monorepo 架构、环境与工具链、Git hooks、智能开发脚本与监控、pnpm catalog 版本治理。
-- 后端：11 个业务模块（用户/认证/JWT 双 token/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注）均已完成三层实现与路由注册。
+- 后端：11 个业务模块（用户/认证/JWT 双 token/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数约 90，详见 `server/docs/api/`）。
+- 后端数据管道：通知生产链路（评论回复/点赞/关注）、浏览明细与日统计、搜索日志、评论设置开关消费均已打通。
 - 前端 admin：14 个页面（仪表盘、文章管理、分类、标签、评论、媒体、用户、设置、友链、统计、通知、登录）+ markdown 编辑器组件。
-- 前端 web：仅应用壳（首页占位数据 + i18n demo 页），业务页面未接入（含 D9 地雷待清理）。
+- 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题（详见 `temp/todos/web-alignment-gaps.md`）。
 
 待办：
-- web 前台业务接入（文章列表/详情/归档，强制 load 模式 + SSR）。
-- `user_follow` 页面级消费（`@myblog/api` 模块已就绪，见 D13）。
-- 全文搜索、响应式完善、部署与 Docker。
-- 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配。
+- 全文搜索（当前 `articles/search` 为 LIKE 实现）、通知铃铛移动端入口、响应式完善、部署与 Docker。
+- 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配、SSR 会话（token 迁 cookie）与内容多语言待产品拍板。
 
 架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D14 只减不增。
