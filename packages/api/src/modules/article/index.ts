@@ -28,6 +28,11 @@ export function createArticleAPI(request: KyInstance) {
       return request.post('articles/get', { json: { id } }).json()
     },
 
+    // 按 slug 获取文章详情，可见性规则与 getById 一致。
+    getBySlug(slug: string): Promise<ArticleResponse> {
+      return request.post('articles/getBySlug', { json: { slug } }).json()
+    },
+
     // 创建文章，需文章创建权限。
     create(params: CreateArticleRequest): Promise<ArticleResponse> {
       return request.post('articles/create', { json: params }).json()
@@ -51,6 +56,11 @@ export function createArticleAPI(request: KyInstance) {
     // 按年月分组的公开文章归档。
     archives(): Promise<ArticleArchiveResponse> {
       return request.post('articles/archives', { json: {} }).json()
+    },
+
+    // 上报文章浏览量，无需登录。
+    view(id: number): Promise<ArticleActionResponse> {
+      return request.post('articles/view', { json: { id } }).json()
     },
 
     // 发布文章。
