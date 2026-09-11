@@ -237,6 +237,7 @@ function openAdminConsole() {
                     {currentUser?.email || ''}
                   </p>
                 </div>
+                <DropdownMenu.Item onclick={() => goto('/favorites')}>我的收藏</DropdownMenu.Item>
                 <DropdownMenu.Item
                   onclick={handleLogout}
                   class="text-destructive hover:text-destructive/80"
