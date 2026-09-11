@@ -2,16 +2,15 @@
 import Header from '$lib/components/layout/Header.svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { ModeWatcher } from 'mode-watcher'
-import { Button } from '$ui'
 import '../app.css'
 
 let { error, status }: { error: App.Error; status: number } = $props()
 
 // 依据状态码区分文案，500 为服务端故障，其余视为目标资源缺失。
 const isServerError = $derived(status === 500)
-const errorTitle = $derived(isServerError ? '实验出现意外结果' : '探索进入未知领域')
+const errorTitle = $derived(isServerError ? '印刷机出了点故障' : '这一页翻不到')
 const errorSubtitle = $derived(
-  isServerError ? '我们的服务器正在经历技术性阵痛' : '你寻找的页面已消失在数字宇宙中'
+  isServerError ? '服务器遇到了意外状况，内容暂时无法呈现' : '你寻找的内容可能已被移动，或尚未刊出'
 )
 </script>
 
@@ -25,95 +24,67 @@ const errorSubtitle = $derived(
 <!-- 保留导航栏 -->
 <Header />
 
-<section
-  class="relative flex min-h-screen items-center overflow-hidden bg-background text-foreground"
->
-  <!-- 坐标网格背景：与首屏一致的工程图纸质感。 -->
-  <div class="error-grid absolute inset-0" aria-hidden="true"></div>
-
-  <!-- 四角定位标记：强化规格书的裁切线质感。 -->
-  <div
-    class="absolute top-5 left-5 h-4 w-4 border-t border-l border-border"
-    aria-hidden="true"
-  ></div>
-  <div
-    class="absolute top-5 right-5 h-4 w-4 border-t border-r border-border"
-    aria-hidden="true"
-  ></div>
-  <div
-    class="absolute bottom-5 left-5 h-4 w-4 border-b border-l border-border"
-    aria-hidden="true"
-  ></div>
-  <div
-    class="absolute right-5 bottom-5 h-4 w-4 border-r border-b border-border"
-    aria-hidden="true"
-  ></div>
-
-  <div class="relative z-10 mx-auto w-full max-w-2xl px-6 pt-20 pb-16 text-center sm:px-10">
-    <!-- 顶部等宽标注行，以注释前缀呼应规格书语言。 -->
-    <p class="font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase">
-      <span class="text-signal">//</span> Error - {status}
+<section class="texture-grid relative flex min-h-screen items-center overflow-hidden pt-16">
+  <div class="relative z-10 mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+    <!-- 栏目标注：朱红粗标签与发丝短线，与站内版面同构。 -->
+    <p
+      class="mb-6 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
+    >
+      意外 · {status}
+      <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
     </p>
 
-    <!-- 大号等宽状态码作为页面的视觉锚点。 -->
-    <h1 class="mt-6 font-mono text-8xl font-bold tracking-tight sm:text-9xl">
-      {status}
+    <!-- 刊头标题：衬线黑体大字，延续 Display 层级规格。 -->
+    <h1 class="font-display text-5xl leading-[1.08] font-black tracking-tight sm:text-6xl">
+      {errorTitle}
     </h1>
 
-    <!-- signal 短发丝线：强调色以标记形式出现。 -->
-    <div class="mx-auto mt-8 h-0.5 w-16 bg-signal" aria-hidden="true"></div>
-
-    <!-- 文案区 -->
-    <div class="mt-8 space-y-3">
-      <h2 class="text-2xl font-bold text-foreground sm:text-3xl">{errorTitle}</h2>
-      <p class="text-base leading-relaxed text-muted-foreground">{errorSubtitle}</p>
-      {#if isServerError}
-        <p class="text-sm text-muted-foreground">维修团队正在紧急处理中...</p>
-      {:else}
-        <p class="text-sm text-muted-foreground">带我回家 -></p>
-      {/if}
+    <!-- 说明引语：朱红竖线引出，保持编辑手记的口吻。 -->
+    <div class="mt-10 max-w-xl border-l-2 border-signal pl-6">
+      <p class="font-display text-xl leading-relaxed font-medium">{errorSubtitle}</p>
       {#if isServerError && error.message}
-        <p class="font-mono text-xs text-muted-foreground">{error.message}</p>
+        <p class="mt-3 font-mono text-xs text-muted-foreground">{error.message}</p>
       {/if}
     </div>
 
-    <!-- 操作按钮 -->
-    <div class="mt-12 flex flex-wrap items-center justify-center gap-4">
+    <!-- 操作区：500 提供重试与返回双入口，其余状态仅保留返回。 -->
+    <div class="mt-12 flex flex-wrap items-center gap-4">
       {#if isServerError}
-        <Button
+        <button
+          type="button"
           onclick={() => window.location.reload()}
-          class="rounded-none bg-signal px-6 py-3 font-mono text-sm text-signal-foreground transition-colors duration-200 hover:bg-signal/90"
+          class="inline-flex items-center gap-2 bg-primary px-7 py-3.5 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97]"
         >
-          重试实验
-        </Button>
-        <Button
+          重试加载
+        </button>
+        <a
           href="/"
-          variant="outline"
-          class="rounded-none border-border px-6 py-3 font-mono text-sm transition-colors duration-200 hover:border-signal hover:text-signal"
+          class="inline-flex items-center gap-2 border border-border px-7 py-3.5 text-sm font-bold text-foreground transition-[border-color,color,transform] duration-200 ease-(--ease-out-strong) hover:border-signal hover:text-signal active:scale-[0.97]"
         >
           返回首页
-        </Button>
+        </a>
       {:else}
-        <Button
+        <a
           href="/"
-          class="rounded-none bg-signal px-8 py-4 font-mono text-sm font-medium text-signal-foreground hover:bg-signal/90!"
+          class="group inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
         >
-          返回安全基地
-        </Button>
+          返回首页
+          <span
+            class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:-translate-x-1"
+            aria-hidden="true"
+          >
+            ←
+          </span>
+        </a>
       {/if}
     </div>
   </div>
-</section>
 
-<style>
-/* 网格单元边长与首屏 HeroSection 保持一致，形成全站统一的图纸质感。 */
-.error-grid {
-  opacity: 0.4;
-  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 30%, transparent 75%);
-  mask-image: radial-gradient(ellipse 90% 80% at 50% 40%, black 30%, transparent 75%);
-  background-image:
-    linear-gradient(to right, var(--border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
-  background-size: 56px 56px;
-}
-</style>
+  <!-- 幽灵状态码：右下角的大号衬线数字，作为版面前景装饰。 -->
+  <div
+    class="pointer-events-none absolute right-8 bottom-14 hidden font-display text-[11rem] leading-none font-black text-foreground/[0.05] select-none lg:block"
+    aria-hidden="true"
+  >
+    {status}
+  </div>
+</section>
