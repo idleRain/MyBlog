@@ -1,5 +1,5 @@
 <script lang="ts">
-import { ArticleIndexList } from '$lib/components/article'
+import { ArticleIndexList, PaginationNav } from '$lib/components/article'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
 
@@ -44,32 +44,8 @@ const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pa
         offset={(data.currentPage - 1) * data.list.pageSize}
       />
 
-      <!-- 分页导航：等宽标注风格，越界一端以灰显占位。 -->
-      <nav
-        class="mt-12 flex items-center justify-between border-t border-border pt-6 font-mono text-sm text-muted-foreground"
-      >
-        {#if data.currentPage > 1}
-          <a
-            href={`/blog?page=${data.currentPage - 1}`}
-            class="transition-colors duration-200 hover:text-signal"
-          >
-            ← 上一页
-          </a>
-        {:else}
-          <span aria-hidden="true">← 上一页</span>
-        {/if}
-        <span>第 {data.currentPage} / {totalPages} 页</span>
-        {#if data.currentPage < totalPages}
-          <a
-            href={`/blog?page=${data.currentPage + 1}`}
-            class="transition-colors duration-200 hover:text-signal"
-          >
-            下一页 →
-          </a>
-        {:else}
-          <span aria-hidden="true">下一页 →</span>
-        {/if}
-      </nav>
+      <!-- 分页导航：等宽标注风格，越界端以灰显占位。 -->
+      <PaginationNav currentPage={data.currentPage} {totalPages} basePath="/blog" />
     {/if}
   </div>
 </section>

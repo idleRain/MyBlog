@@ -2,8 +2,8 @@
 import { postEntries, hotPosts, tagCloud } from '$lib/data/home-content'
 import { scrollReveal } from '$lib/motion/reveal'
 
-// 占位阶段的外部链接：业务接入后替换为真实路由与订阅接口。
-const ARCHIVE_LINK = '#timeline'
+// 归档页入口：真实路由，页面由文章归档接口驱动。
+const ARCHIVE_LINK = '/archives'
 const GITHUB_URL = 'https://github.com/idleRain'
 
 const authorSocialLinks = [
