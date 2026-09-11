@@ -67,6 +67,16 @@ func (f *fakeArticleRepo) Archive(id uint) error {
 	return nil
 }
 
+// captureAuthorStatus 构造捕获查询状态的作者文章测试替身，供可见性断言使用。
+func captureAuthorStatus(captured *model.ArticleStatus) *fakeArticleRepo {
+	return &fakeArticleRepo{
+		getByAuthor: func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+			*captured = params.Status
+			return []*model.Article{publishedArticle(1)}, 1, nil
+		},
+	}
+}
+
 // fakeUserRepo 用户仓储的测试替身。
 type fakeUserRepo struct {
 	repository.UserRepository
