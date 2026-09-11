@@ -95,9 +95,40 @@ func TestCreateCommentGuestRequiresName(t *testing.T) {
 		ArticleID: 1,
 		Content:   "这是一条评论",
 	}
-	_, err := svc.CreateComment(req)
+	_, err := svc.CreateComment(req, nil)
 	if err == nil {
 		t.Fatal("游客评论未填写姓名应返回错误")
+	}
+}
+
+// TestCreateCommentBindsLoginIdentity 验证登录用户评论绑定身份且忽略游客字段。
+func TestCreateCommentBindsLoginIdentity(t *testing.T) {
+	articleRepo := &fakeArticleRepo{
+		getByID: func(id uint) (*model.Article, error) {
+			return publishedArticleForComment(id), nil
+		},
+	}
+	commentRepo := &fakeCommentRepo{}
+	svc := commentTestService(commentRepo, articleRepo)
+
+	userID := uint(7)
+	req := &CreateCommentRequest{
+		ArticleID:  1,
+		Content:    "登录用户评论",
+		AuthorName: "伪造姓名",
+	}
+	comment, err := svc.CreateComment(req, &userID)
+	if err != nil {
+		t.Fatalf("登录评论创建失败: %v", err)
+	}
+	if comment.UserID == nil || *comment.UserID != 7 {
+		t.Errorf("UserID = %v, 期望 7", comment.UserID)
+	}
+	if comment.AuthorName != "" {
+		t.Errorf("登录评论的游客姓名应被忽略，实际为 %s", comment.AuthorName)
+	}
+	if comment.Status != model.CommentStatusPending {
+		t.Errorf("Status = %s, 期望 pending", comment.Status)
 	}
 }
 
@@ -122,7 +153,7 @@ func TestCreateCommentParentMismatch(t *testing.T) {
 		Content:    "回复评论",
 		AuthorName: "游客甲",
 	}
-	_, err := svc.CreateComment(req)
+	_, err := svc.CreateComment(req, nil)
 	if err == nil {
 		t.Fatal("父评论与文章不匹配应返回错误")
 	}
@@ -149,7 +180,7 @@ func TestCreateReplySetsLevel(t *testing.T) {
 		Content:    "回复根评论",
 		AuthorName: "游客甲",
 	}
-	comment, err := svc.CreateComment(req)
+	comment, err := svc.CreateComment(req, nil)
 	if err != nil {
 		t.Fatalf("创建回复评论失败: %v", err)
 	}

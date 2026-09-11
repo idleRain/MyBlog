@@ -45,7 +45,10 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 		return
 	}
 
-	comment, err := h.commentService.CreateComment(&req)
+	// 读取当前用户ID，未登录时走游客通道。
+	userID := getOptionalUserID(c)
+
+	comment, err := h.commentService.CreateComment(&req, userID)
 	if err != nil {
 		response.BadRequest(c, err.Error())
 		return

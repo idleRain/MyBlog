@@ -44,7 +44,7 @@ export interface CommentListData {
   comments: Comment[]
 }
 
-// 创建评论请求参数，游客提交时姓名必填。
+// 创建评论请求参数，游客提交时姓名必填；登录用户经令牌绑定身份，游客字段将被忽略。
 export interface CreateCommentRequest {
   articleId: number
   parentId?: number | null

@@ -108,7 +108,7 @@ curl -X POST http://localhost:3000/api/comments/list \
 
 ### 2. 发表评论
 
-支持注册用户与游客双通道。注册用户经认证自动绑定身份；游客需填写姓名。
+支持注册用户与游客双通道。注册用户经认证自动绑定身份，游客字段将被忽略且展示名经关联用户解析；游客需填写姓名。
 
 #### 请求信息
 
@@ -124,9 +124,9 @@ curl -X POST http://localhost:3000/api/comments/list \
 | articleId | integer | 是 | 文章ID | 大于0的整数 |
 | parentId | integer | 否 | 父评论ID，回复评论时填写 | 正整数 |
 | content | string | 是 | 评论内容 | 1-2000字符 |
-| authorName | string | 游客必填 | 游客姓名 | 最大50字符 |
-| authorEmail | string | 否 | 游客邮箱 | 邮箱格式，最大100字符 |
-| authorWebsite | string | 否 | 游客网站 | 最大255字符 |
+| authorName | string | 游客必填 | 游客姓名，登录提交时忽略 | 最大50字符 |
+| authorEmail | string | 否 | 游客邮箱，登录提交时忽略 | 邮箱格式，最大100字符 |
+| authorWebsite | string | 否 | 游客网站，登录提交时忽略 | 最大255字符 |
 
 #### 请求示例（游客）
 

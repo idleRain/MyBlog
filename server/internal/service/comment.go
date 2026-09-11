@@ -12,7 +12,7 @@ import (
 // CommentServiceInterface 评论服务接口
 type CommentServiceInterface interface {
 	// 评论操作
-	CreateComment(req *CreateCommentRequest) (*model.Comment, error)
+	CreateComment(req *CreateCommentRequest, userID *uint) (*model.Comment, error)
 	GetCommentsByArticle(articleID uint, req *ListCommentsRequest) (*CommentListResponse, error)
 	LikeComment(commentID, userID uint) error
 	UnlikeComment(commentID, userID uint) error
@@ -76,7 +76,7 @@ func NewCommentService(
 }
 
 // CreateComment 创建评论，支持注册用户与游客双通道，评论默认待审核。
-func (s *CommentService) CreateComment(req *CreateCommentRequest) (*model.Comment, error) {
+func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) (*model.Comment, error) {
 	// 校验文章存在且允许评论。
 	article, err := s.articleRepo.GetByID(req.ArticleID)
 	if err != nil {
@@ -87,14 +87,24 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest) (*model.Commen
 	}
 
 	comment := &model.Comment{
-		ArticleID:  req.ArticleID,
-		Content:    req.Content,
-		Status:     model.CommentStatusPending,
-		AuthorName: req.AuthorName,
+		ArticleID:     req.ArticleID,
+		Content:       req.Content,
+		Status:        model.CommentStatusPending,
+		AuthorName:    req.AuthorName,
+		AuthorEmail:   req.AuthorEmail,
+		AuthorWebsite: req.AuthorWebsite,
+	}
+
+	// 登录评论绑定账号身份，展示名经关联用户解析，游客字段仅游客通道生效。
+	if userID != nil {
+		comment.UserID = userID
+		comment.AuthorName = ""
+		comment.AuthorEmail = ""
+		comment.AuthorWebsite = ""
 	}
 
 	// 游客提交时必须提供姓名。
-	if comment.AuthorName == "" {
+	if comment.UserID == nil && comment.AuthorName == "" {
 		return nil, errors.New("游客评论必须填写姓名")
 	}
 
