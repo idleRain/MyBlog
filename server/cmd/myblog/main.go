@@ -1,22 +1,26 @@
-// MyBlog 博客系统主程序
+// MyBlog 博客系统主程序：组合根入口，负责配置加载、数据库初始化与 HTTP 生命周期管理。
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"MyBlog/internal/config"
 	"MyBlog/internal/database"
-	"MyBlog/internal/handler"
-	"MyBlog/internal/middleware"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/router"
-	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
+
+// 优雅关停的排空时限，超时后强制退出。
+const shutdownTimeout = 10 * time.Second
 
 func main() {
 	// 加载配置
@@ -28,124 +32,40 @@ func main() {
 	// 设置Gin运行模式
 	gin.SetMode(cfg.Server.Mode)
 
-	// 从配置加载 RBAC 权限表，作为运行期唯一权威。
-	service.LoadRBACConfig(cfg.RBAC.RoleHierarchy, cfg.RBAC.RolePermissions)
-
 	// 初始化数据库
-	db, err := database.InitMySQL(cfg)
-	if err != nil {
-		log.Fatal("数据库初始化失败:", err)
-	}
+	db := initDatabase(cfg)
 
-	// 确保文章全文索引存在，GORM AutoMigrate 无法声明 FULLTEXT 索引。
-	if err := database.EnsureArticleFulltextIndex(db); err != nil {
-		log.Fatal("创建全文索引失败:", err)
-	}
-
-	// 运行数据库迁移（仅在生产环境）
-	if cfg.Server.Mode != "debug" {
-		if err := database.RunMigrations(cfg); err != nil {
-			log.Fatal("数据库迁移失败:", err)
-		}
-	} else {
-		log.Println("开发模式：跳过golang-migrate迁移，使用GORM AutoMigrate")
-		// 开发模式使用GORM自动迁移
-		if err := database.AutoMigrateWithFix(db); err != nil {
-			log.Fatal("GORM自动迁移失败:", err)
-		}
-	}
-
-	// 初始化依赖注入
-	userRepo := repository.NewUserRepository(db)
-	articleRepo := repository.NewArticleRepository(db)
-	categoryRepo := repository.NewCategoryRepository(db)
-	tagRepo := repository.NewTagRepository(db)
-	commentRepo := repository.NewCommentRepository(db)
-	mediaRepo := repository.NewMediaRepository(db)
-	settingRepo := repository.NewSettingRepository(db)
-	linkRepo := repository.NewFriendlyLinkRepository(db)
-	statsRepo := repository.NewStatsRepository(db)
-	notificationRepo := repository.NewNotificationRepository(db)
-	followRepo := repository.NewUserFollowRepository(db)
-	jwtService := service.NewJWTService(cfg)
-	rbacService := service.NewRBACService()
-	identity := middleware.NewIdentityProvider(jwtService, userRepo)
-	userSvc := service.NewUserService(userRepo, jwtService, rbacService)
-	articleSvc := service.NewArticleService(articleRepo, userRepo, rbacService, statsRepo, notificationRepo)
-	categorySvc := service.NewCategoryService(categoryRepo)
-	tagSvc := service.NewTagService(tagRepo)
-	commentSvc := service.NewCommentService(commentRepo, articleRepo, settingRepo, notificationRepo)
-	mediaSvc := service.NewMediaService(mediaRepo, cfg)
-	settingSvc := service.NewSettingService(settingRepo)
-	linkSvc := service.NewFriendlyLinkService(linkRepo)
-	statsSvc := service.NewStatsService(statsRepo)
-	notificationSvc := service.NewNotificationService(notificationRepo)
-	followSvc := service.NewUserFollowService(followRepo, userRepo, notificationRepo, articleRepo)
-	userHandler := handler.NewUserHandler(userSvc)
-	articleHandler := handler.NewArticleHandler(articleSvc)
-	categoryHandler := handler.NewCategoryHandler(categorySvc)
-	tagHandler := handler.NewTagHandler(tagSvc)
-	commentHandler := handler.NewCommentHandler(commentSvc)
-	mediaHandler := handler.NewMediaHandler(mediaSvc)
-	settingHandler := handler.NewSettingHandler(settingSvc)
-	linkHandler := handler.NewFriendlyLinkHandler(linkSvc)
-	statsHandler := handler.NewStatsHandler(statsSvc)
-	notificationHandler := handler.NewNotificationHandler(notificationSvc)
-	followHandler := handler.NewUserFollowHandler(followSvc)
-
-	// 创建路由管理器
+	// 按业务域装配依赖并注册路由
+	deps := newDependencies(cfg, db)
 	routerManager := router.NewRouter(cfg)
-
-	// 设置依赖
-	deps := &router.Dependencies{
-		UserHandler:         userHandler,
-		ArticleHandler:      articleHandler,
-		CategoryHandler:     categoryHandler,
-		TagHandler:          tagHandler,
-		CommentHandler:      commentHandler,
-		MediaHandler:        mediaHandler,
-		SettingHandler:      settingHandler,
-		FriendlyLinkHandler: linkHandler,
-		StatsHandler:        statsHandler,
-		NotificationHandler: notificationHandler,
-		UserFollowHandler:   followHandler,
-		JWTService:          jwtService,
-		IdentityProvider:    identity,
-		RBACService:         rbacService,
-	}
-
-	// 注册路由
 	routerManager.SetupRoutes(deps)
 
-	// 可选：注册 V2 版本路由
-	// routerManager.SetupV2Routes(deps)
-
-	// 获取 Gin 引擎
-	engine := routerManager.GetEngine()
-
-	// 挂载媒体静态目录，使 FileURL 指向的 /uploads 路径可被公开访问。
-	// 目录列表默认关闭，仅允许按精确文件路径访问；生产部署可改由 Nginx 托管同一目录。
-	if cfg.Media.BaseURL != "" && cfg.Media.UploadDir != "" {
-		engine.Static(cfg.Media.BaseURL, cfg.Media.UploadDir)
+	// 以结构化 HTTP 服务启动，支持优雅关停。
+	server := &http.Server{
+		Addr:    cfg.GetServerAddress(),
+		Handler: routerManager.GetEngine(),
 	}
 
-	// 启动服务器
-	log.Printf("服务器启动成功，监听地址: %s", cfg.GetServerAddress())
-	log.Printf("运行模式: %s", cfg.Server.Mode)
-
-	// 优雅关闭
+	// 独立 goroutine 监听端口，主 goroutine 等待中断信号。
 	go func() {
-		if err := engine.Run(cfg.GetServerAddress()); err != nil {
-			log.Fatal("服务器启动失败:", err)
+		log.Printf("服务器启动成功，监听地址: %s", cfg.GetServerAddress())
+		log.Printf("运行模式: %s", cfg.Server.Mode)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("服务器启动失败: %v", err)
 		}
 	}()
 
-	// 等待中断信号
+	// 等待中断信号后进入优雅关停，排空在途请求。
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-
 	log.Println("正在关闭服务器...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("服务器关停异常: %v", err)
+	}
 
 	// 关闭数据库连接
 	if err := database.Close(); err != nil {
@@ -153,4 +73,31 @@ func main() {
 	}
 
 	log.Println("服务器已关闭")
+}
+
+// initDatabase 初始化数据库连接，并确保结构迁移与全文索引就绪。
+func initDatabase(cfg *config.Config) *gorm.DB {
+	db, err := database.InitMySQL(cfg)
+	if err != nil {
+		log.Fatal("数据库初始化失败:", err)
+	}
+
+	// 运行数据库迁移：生产环境走 golang-migrate，开发环境走 GORM AutoMigrate。
+	if cfg.Server.Mode != "debug" {
+		if err := database.RunMigrations(cfg); err != nil {
+			log.Fatal("数据库迁移失败:", err)
+		}
+	} else {
+		log.Println("开发模式：跳过golang-migrate迁移，使用GORM AutoMigrate")
+		if err := database.AutoMigrateWithFix(db); err != nil {
+			log.Fatal("GORM自动迁移失败:", err)
+		}
+	}
+
+	// 确保文章全文索引存在，GORM AutoMigrate 无法声明 FULLTEXT 索引。
+	if err := database.EnsureArticleFulltextIndex(db); err != nil {
+		log.Fatal("创建全文索引失败:", err)
+	}
+
+	return db
 }
