@@ -32,8 +32,10 @@ api:
 
 # JWT配置
 jwt:
-  access_secret: "myblog_access_secret_key_2025"
-  refresh_secret: "myblog_refresh_secret_key_2025"
+  # 双密钥禁止入库为真实值，生产与本地均经环境变量注入：
+  # MYBLOG_JWT_ACCESS_SECRET 与 MYBLOG_JWT_REFRESH_SECRET，缺失任一即启动失败。
+  access_secret: ""
+  refresh_secret: ""
   access_expire: 15  # 分钟
   refresh_expire: 168  # 小时（7天）
   issuer: "myblog"

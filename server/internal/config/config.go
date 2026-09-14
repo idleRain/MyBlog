@@ -3,6 +3,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -124,6 +126,16 @@ var (
 	once   sync.Once
 )
 
+// envKeyPrefix 环境变量统一前缀，完整变量名由该前缀与配置键转换拼接得到。
+const envKeyPrefix = "MYBLOG"
+
+// knownWeakSecrets 历史版本公开泄漏过的弱密钥集合，任一 JWT 密钥命中都必须拒绝启动。
+// 这些值已随公开仓库扩散，继续使用等同于放弃令牌签名防护。
+var knownWeakSecrets = []string{
+	"myblog_access_secret_key_2025",
+	"myblog_refresh_secret_key_2025",
+}
+
 // Load 加载配置文件
 func Load(configPath string) (*Config, error) {
 	var err error
@@ -139,6 +151,9 @@ func Load(configPath string) (*Config, error) {
 			err = fmt.Errorf("读取配置文件失败: %w", err)
 			return
 		}
+
+		// 环境变量覆盖标量配置，敏感项在生产环境经环境注入，不再依赖 YAML 明文。
+		applyEnvOverrides(viper.GetViper())
 
 		// 解析配置到结构体
 		config = &Config{}
@@ -204,8 +219,7 @@ func setDefaults() {
 	viper.SetDefault("api.version", "v1")
 	viper.SetDefault("api.timeout", 30)
 
-	viper.SetDefault("jwt.access_secret", "myblog_access_secret_key_2025")
-	viper.SetDefault("jwt.refresh_secret", "myblog_refresh_secret_key_2025")
+	// JWT 密钥不设代码默认值，缺失时由 validateConfig 拒绝启动，避免弱默认值随代码分发。
 	viper.SetDefault("jwt.access_expire", 15)
 	viper.SetDefault("jwt.refresh_expire", 168)
 	viper.SetDefault("jwt.issuer", "myblog")
@@ -235,6 +249,46 @@ func setDefaults() {
 	viper.SetDefault("media.upload_dir", "uploads")
 	viper.SetDefault("media.base_url", "/uploads")
 	viper.SetDefault("media.max_size_mb", 10)
+}
+
+// applyEnvOverrides 使用环境变量覆盖标量配置项，环境变量优先级高于 YAML 与代码默认值。
+// 映射规则为 MYBLOG_ 前缀加配置键的大写下划线形式，例如 jwt.access_secret 对应 MYBLOG_JWT_ACCESS_SECRET。
+// 列表与映射结构无法经单个环境变量无损表达，此类配置项保持 YAML 原值。
+func applyEnvOverrides(v *viper.Viper) {
+	for _, key := range v.AllKeys() {
+		if !isScalarConfigValue(v.Get(key)) {
+			continue
+		}
+		if value, ok := os.LookupEnv(envVariableName(key)); ok {
+			v.Set(key, value)
+		}
+	}
+}
+
+// envVariableName 将配置键转换为环境变量名，点分隔符替换为下划线并整体转为大写。
+func envVariableName(key string) string {
+	upperKey := strings.ToUpper(key)
+	return envKeyPrefix + "_" + strings.ReplaceAll(upperKey, ".", "_")
+}
+
+// isScalarConfigValue 判断配置值是否为可经环境变量表达的标量，列表与映射等容器类型返回 false。
+func isScalarConfigValue(value any) bool {
+	switch value.(type) {
+	case map[string]any, map[any]any, []any:
+		return false
+	default:
+		return true
+	}
+}
+
+// isKnownWeakSecret 判断给定密钥是否命中已公开的弱密钥集合。
+func isKnownWeakSecret(secret string) bool {
+	for _, weak := range knownWeakSecrets {
+		if secret == weak {
+			return true
+		}
+	}
+	return false
 }
 
 // validateConfig 验证配置的有效性
@@ -269,6 +323,20 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.JWT.RefreshExpire <= 0 {
 		return fmt.Errorf("JWT刷新令牌过期时间必须大于0")
+	}
+
+	// 密钥为已公开的弱默认值时直接拒绝启动，强制部署方轮换为随机强密钥。
+	if isKnownWeakSecret(cfg.JWT.AccessSecret) {
+		return fmt.Errorf("JWT访问令牌密钥使用了已公开的弱默认值，必须更换为随机强密钥")
+	}
+
+	if isKnownWeakSecret(cfg.JWT.RefreshSecret) {
+		return fmt.Errorf("JWT刷新令牌密钥使用了已公开的弱默认值，必须更换为随机强密钥")
+	}
+
+	// 双密钥互异校验，防止单一密钥泄漏同时波及访问令牌与刷新令牌两条签名链路。
+	if cfg.JWT.AccessSecret == cfg.JWT.RefreshSecret {
+		return fmt.Errorf("JWT访问令牌密钥与刷新令牌密钥不能相同")
 	}
 
 	// RBAC 配置校验：四类角色必须全部登记层级与权限。

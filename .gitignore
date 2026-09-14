@@ -60,6 +60,10 @@ air_tmp/
 *.yml.bak
 *.json.bak
 
+# 敏感配置与环境变量文件，一律不入库（OPS-08）
+server/configs/config.yaml
+apps/*/.env*
+
 # 构建产物
 dist
 build
