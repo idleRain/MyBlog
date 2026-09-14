@@ -63,13 +63,10 @@ security:
   input_validation:
     enabled: true
     max_request_size_mb: 10    # 最大请求体大小（MB）
-    blocked_user_agents:       # 阻止的User-Agent
+    blocked_user_agents:       # 阻止的User-Agent，子串匹配语义，禁止收录 bot/crawler/spider 等泛化词
       - "curl"
       - "wget"
       - "python-requests"
-      - "bot"
-      - "crawler"
-      - "spider"
       
   # 管理员接口安全配置
   admin_security:
