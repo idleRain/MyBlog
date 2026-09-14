@@ -231,6 +231,7 @@ git grep -n "NewRBACService()" -- server
 | D12 | 文章响应泄漏作者审计字段 | **已清偿（R2）**：`lastLoginIP` 等审计字段改为 `json:"-"` | 读 `domain/user.go` json tag | 新增审计字段默认 `json:"-"` |
 | D13 | follow 模块仅后端 | **API 模块已补齐（R3）**：`@myblog/api/modules/follow` + 两应用注册；页面消费待 web 业务接入 | `git grep -ln "createFollowAPI" -- packages/api/src`（非空即已补齐） | 页面消费前视为功能未完成 |
 | D14 | admin 重写 `$ui` 已有组件 | **已清偿（R3）**：本地 `pagination.svelte` 已删，7 页回归 `$ui` | 目录比对 | 禁止仿效；新分页一律 `$ui` |
+| D15 | 公开端点直出实体泄漏个人信息 | **评论域与作者域已窄化（2026-09 体检第一波）**：`model.Comment` 游客邮箱/IP/UserAgent 改 `json:"-"`，评论 `user` 与文章 `author` 经 `domain.AuthorPublic` 窄化视图输出，管理端审计走 `AdminCommentView`；`/users/get` 对任意登录用户返回 email 的问题待单独收口 | 读 `model/comment.go`、`model/article.go` json tag 与 `domain/author.go`；service 层测试断言公开响应无审计字段 | 公开端点输出个人信息前必须经窄化 DTO 或字段白名单；实体新增隐私/审计字段默认 `json:"-"` |
 
 ---
 

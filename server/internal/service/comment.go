@@ -23,7 +23,7 @@ type CommentServiceInterface interface {
 	MarkCommentSpam(id uint, operatorID uint) error
 	TrashComment(id uint, operatorID uint) error
 	DeleteComment(id uint, operatorID uint) error
-	ListComments(req *AdminListCommentsRequest) (*CommentListResponse, error)
+	ListComments(req *AdminListCommentsRequest) (*AdminCommentListResponse, error)
 }
 
 // CreateCommentRequest 创建评论请求
@@ -56,6 +56,33 @@ type CommentListResponse struct {
 	Total    int64            `json:"total"`
 	Page     int              `json:"page"`
 	PageSize int              `json:"pageSize"`
+}
+
+// AdminCommentView 管理端评论视图，在公开契约之上恢复反垃圾审计字段供审核使用。
+// 外层字段遮蔽内嵌实体的同名隐藏字段，是管理端恢复输出的唯一入口。
+type AdminCommentView struct {
+	model.Comment
+	AuthorEmail string `json:"authorEmail"`
+	AuthorIP    string `json:"authorIP"`
+	UserAgent   string `json:"userAgent"`
+}
+
+// AdminCommentListResponse 管理端评论列表响应
+type AdminCommentListResponse struct {
+	Comments []*AdminCommentView `json:"comments"`
+	Total    int64               `json:"total"`
+	Page     int                 `json:"page"`
+	PageSize int                 `json:"pageSize"`
+}
+
+// newAdminCommentView 从评论实体构建管理端视图，恢复被公开契约隐藏的审计字段。
+func newAdminCommentView(comment *model.Comment) *AdminCommentView {
+	return &AdminCommentView{
+		Comment:     *comment,
+		AuthorEmail: comment.AuthorEmail,
+		AuthorIP:    comment.AuthorIP,
+		UserAgent:   comment.UserAgent,
+	}
 }
 
 // CommentService 评论服务实现
@@ -309,8 +336,8 @@ func (s *CommentService) DeleteComment(id uint, operatorID uint) error {
 	return nil
 }
 
-// ListComments 管理端分页查询评论。
-func (s *CommentService) ListComments(req *AdminListCommentsRequest) (*CommentListResponse, error) {
+// ListComments 管理端分页查询评论，经专用视图恢复审计字段。
+func (s *CommentService) ListComments(req *AdminListCommentsRequest) (*AdminCommentListResponse, error) {
 	if req.Page <= 0 {
 		req.Page = 1
 	}
@@ -330,8 +357,13 @@ func (s *CommentService) ListComments(req *AdminListCommentsRequest) (*CommentLi
 		return nil, err
 	}
 
-	return &CommentListResponse{
-		Comments: comments,
+	views := make([]*AdminCommentView, 0, len(comments))
+	for _, comment := range comments {
+		views = append(views, newAdminCommentView(comment))
+	}
+
+	return &AdminCommentListResponse{
+		Comments: views,
 		Total:    total,
 		Page:     req.Page,
 		PageSize: req.PageSize,

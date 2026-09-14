@@ -1,9 +1,12 @@
 package service
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -64,6 +67,14 @@ func (f *fakeCommentRepo) DecrementReplyCount(id uint) error {
 		return f.decrementReply(id)
 	}
 	return nil
+}
+
+func (f *fakeCommentRepo) ListByArticle(articleID uint, params *repository.CommentListParams) ([]*model.Comment, int64, error) {
+	return f.comments, int64(len(f.comments)), nil
+}
+
+func (f *fakeCommentRepo) ListAdmin(params *repository.CommentListParams) ([]*model.Comment, int64, error) {
+	return f.comments, int64(len(f.comments)), nil
 }
 
 // commentTestService 创建注入评论与文章仓储替身的服务实例。
@@ -345,5 +356,82 @@ func TestApproveCommentStatus(t *testing.T) {
 
 	if commentRepo.comments[0].Status != model.CommentStatusApproved {
 		t.Errorf("审核后状态 = %s, 期望 approved", commentRepo.comments[0].Status)
+	}
+}
+
+// commentWithAudit 构造携带审计字段与注册用户身份的评论，模拟仓储经 AfterFind 钩子后的返回形态。
+func commentWithAudit(id uint, userID uint) *model.Comment {
+	user := &model.User{ID: userID, Username: "alice", Email: "alice@example.com", Nickname: "爱丽丝"}
+	return &model.Comment{
+		ID:           id,
+		ArticleID:    1,
+		Content:      "评论内容",
+		AuthorName:   "游客甲",
+		AuthorEmail:  "guest@example.com",
+		AuthorIP:     "203.0.113.10",
+		UserAgent:    "Mozilla/5.0 (Test)",
+		UserID:       &userID,
+		User:         user,
+		AuthorPublic: domain.NewAuthorPublic(user),
+	}
+}
+
+// TestGetCommentsByArticleHidesAuditFields 验证公开评论列表响应不含审计字段与用户邮箱。
+func TestGetCommentsByArticleHidesAuditFields(t *testing.T) {
+	commentRepo := &fakeCommentRepo{
+		comments: []*model.Comment{commentWithAudit(1, 7)},
+	}
+	svc := commentTestService(commentRepo, &fakeArticleRepo{})
+
+	result, err := svc.GetCommentsByArticle(1, &ListCommentsRequest{Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatalf("查询公开评论列表失败: %v", err)
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("序列化公开评论列表失败: %v", err)
+	}
+	output := string(data)
+
+	for _, forbidden := range []string{"authorEmail", "authorIP", "userAgent", `"email"`} {
+		if strings.Contains(output, forbidden) {
+			t.Errorf("公开评论列表不应包含 %s，实际为 %s", forbidden, output)
+		}
+	}
+	if !strings.Contains(output, `"nickname":"爱丽丝"`) {
+		t.Errorf("公开评论列表的 user 应为窄化视图，实际为 %s", output)
+	}
+}
+
+// TestListCommentsRestoresAuditFields 验证管理端评论列表经专用视图恢复审计字段。
+func TestListCommentsRestoresAuditFields(t *testing.T) {
+	commentRepo := &fakeCommentRepo{
+		comments: []*model.Comment{commentWithAudit(1, 7)},
+	}
+	svc := commentTestService(commentRepo, &fakeArticleRepo{})
+
+	result, err := svc.ListComments(&AdminListCommentsRequest{Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatalf("查询管理端评论列表失败: %v", err)
+	}
+
+	if len(result.Comments) != 1 {
+		t.Fatalf("管理端评论数 = %d, 期望 1", len(result.Comments))
+	}
+	if result.Comments[0].AuthorEmail == "" || result.Comments[0].AuthorIP == "" || result.Comments[0].UserAgent == "" {
+		t.Error("管理端视图应恢复审计字段供审核使用")
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("序列化管理端评论列表失败: %v", err)
+	}
+	output := string(data)
+
+	for _, required := range []string{`"authorEmail"`, `"authorIP"`, `"userAgent"`} {
+		if !strings.Contains(output, required) {
+			t.Errorf("管理端评论列表应包含 %s，实际为 %s", required, output)
+		}
 	}
 }

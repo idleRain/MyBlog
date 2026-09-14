@@ -209,6 +209,7 @@ pnpm run migrate [create|up|down|version|help]
 | D12 | 文章响应泄漏作者审计字段（**已清偿**：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
 | D13 | `user_follow` 前端零消费（**已收口**：作者页 FollowButton 消费 follow/isFollowing 接口） | 关注数据仅经 service 域端点读写 |
 | D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（**已清偿**：7 页回归 `$ui`） | 禁止仿效；新分页一律 `$ui` |
+| D15 | 公开端点直出实体泄漏个人信息（评论审计字段与作者 email **已窄化**，`/users/get` 待收口） | 公开端点输出个人信息必须经窄化 DTO 或字段白名单；新增隐私/审计字段默认 `json:"-"` |
 
 ## 10. 开发进度概览
 
@@ -223,4 +224,4 @@ pnpm run migrate [create|up|down|version|help]
 - 通知铃铛移动端入口、响应式完善、部署与 Docker。
 - 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配、SSR 会话（token 迁 cookie）与内容多语言待产品拍板。
 
-架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D14 只减不增。
+架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D15 只减不增。

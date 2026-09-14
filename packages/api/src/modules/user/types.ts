@@ -40,6 +40,17 @@ export interface PublicProfile {
   articleCount: number
 }
 
+// 作者公开信息窄化视图，与后端 domain.AuthorPublic 一致；
+// 文章作者与评论者经此视图输出，不携带 email 等个人信息。
+export interface AuthorPublic {
+  id: number
+  username: string
+  nickname: string
+  avatar: string
+  bio: string
+  website: string
+}
+
 // 自助资料更新请求，字段显式传入才更新
 export interface UpdateProfileRequest {
   nickname?: string

@@ -3,6 +3,8 @@ package model
 import (
 	"time"
 
+	"MyBlog/internal/domain"
+
 	"gorm.io/gorm"
 )
 
@@ -121,14 +123,28 @@ type Article struct {
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Author     User              `json:"author" gorm:"foreignKey:AuthorID;constraint:OnDelete:CASCADE"`
-	Category   *Category         `json:"category,omitempty" gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL"`
-	Categories []Category        `json:"categories,omitempty" gorm:"many2many:article_categories"`
-	Tags       []Tag             `json:"tags,omitempty" gorm:"many2many:article_tags"`
-	Comments   []Comment         `json:"-" gorm:"foreignKey:ArticleID"`
-	Views      []ArticleView     `json:"-" gorm:"foreignKey:ArticleID"`
-	Likes      []ArticleLike     `json:"-" gorm:"foreignKey:ArticleID"`
-	Bookmarks  []ArticleBookmark `json:"-" gorm:"foreignKey:ArticleID"`
+	// Author 作者关联仅供服务端读取，对外输出经 AuthorPublic 窄化视图，防止作者 email 泄露。
+	Author       User                 `json:"-" gorm:"foreignKey:AuthorID;constraint:OnDelete:CASCADE"`
+	AuthorPublic *domain.AuthorPublic `json:"author,omitempty" gorm:"-"`
+	Category     *Category            `json:"category,omitempty" gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL"`
+	Categories   []Category           `json:"categories,omitempty" gorm:"many2many:article_categories"`
+	Tags         []Tag                `json:"tags,omitempty" gorm:"many2many:article_tags"`
+	Comments     []Comment            `json:"-" gorm:"foreignKey:ArticleID"`
+	Views        []ArticleView        `json:"-" gorm:"foreignKey:ArticleID"`
+	Likes        []ArticleLike        `json:"-" gorm:"foreignKey:ArticleID"`
+	Bookmarks    []ArticleBookmark    `json:"-" gorm:"foreignKey:ArticleID"`
+}
+
+// AfterFind 查询后从预加载的作者关联同步公开作者视图。
+// GORM 保证本钩子在 Preload 完成后执行，文章输出始终经窄化视图而非 User 实体。
+func (a *Article) AfterFind(_ *gorm.DB) error {
+	// 作者关联未预加载时零值视图无意义，置空使 author 键整体省略。
+	if a.Author.ID == 0 {
+		a.AuthorPublic = nil
+		return nil
+	}
+	a.AuthorPublic = domain.NewAuthorPublic(&a.Author)
+	return nil
 }
 
 // TableName 指定表名

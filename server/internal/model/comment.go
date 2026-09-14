@@ -3,10 +3,14 @@ package model
 import (
 	"time"
 
+	"MyBlog/internal/domain"
+
 	"gorm.io/gorm"
 )
 
 // Comment 评论模型，采用 parent_id、root_id、level 构建两级展开的评论树。
+// 游客邮箱、IP 与 UserAgent 属反垃圾审计字段，公开契约一律隐藏；
+// 管理端需要时经 service 层的 AdminCommentView 视图恢复输出。
 type Comment struct {
 	ID            uint           `json:"id" gorm:"primaryKey;comment:评论ID"`
 	ArticleID     uint           `json:"articleId" gorm:"not null;index;index:idx_article_status_created,priority:1;comment:文章ID"`
@@ -15,16 +19,16 @@ type Comment struct {
 	RootID        *uint          `json:"rootId" gorm:"index;comment:根评论ID，便于一次查询整棵评论树"`
 	Level         uint8          `json:"level" gorm:"default:1;comment:评论层级，根评论为 1"`
 	AuthorName    string         `json:"authorName" gorm:"size:50;comment:游客姓名"`
-	AuthorEmail   string         `json:"authorEmail" gorm:"size:100;comment:游客邮箱"`
+	AuthorEmail   string         `json:"-" gorm:"size:100;comment:游客邮箱，仅管理端审计可见"`
 	AuthorWebsite string         `json:"authorWebsite" gorm:"size:255;comment:游客网站"`
-	AuthorIP      string         `json:"authorIP" gorm:"size:45;index;comment:评论者IP地址，用于反垃圾与封禁"`
+	AuthorIP      string         `json:"-" gorm:"size:45;index;comment:评论者IP地址，用于反垃圾与封禁，仅管理端审计可见"`
 	Content       string         `json:"content" gorm:"type:text;not null;comment:评论内容，Markdown 格式"`
 	ContentHTML   string         `json:"contentHtml" gorm:"type:text;comment:评论内容，渲染后的 HTML 缓存"`
 	Status        CommentStatus  `json:"status" gorm:"default:pending;size:20;index;index:idx_article_status_created,priority:2;comment:审核状态：pending/approved/rejected/spam/trash"`
 	LikeCount     uint           `json:"likeCount" gorm:"default:0;comment:点赞数"`
 	ReplyCount    uint           `json:"replyCount" gorm:"default:0;comment:回复数量"`
 	ReportedCount uint           `json:"reportedCount" gorm:"default:0;comment:被举报次数，达到阈值后进入待复核队列"`
-	UserAgent     string         `json:"userAgent" gorm:"type:text;comment:用户代理"`
+	UserAgent     string         `json:"-" gorm:"type:text;comment:用户代理，仅管理端审计可见"`
 	IsAuthor      bool           `json:"isAuthor" gorm:"default:false;comment:是否为文章作者回复"`
 	IsPinned      bool           `json:"isPinned" gorm:"default:false;index;comment:是否置顶评论"`
 	EditedAt      *time.Time     `json:"editedAt" gorm:"type:datetime(3);comment:内容最后编辑时间，用于展示已编辑标记"`
@@ -34,11 +38,21 @@ type Comment struct {
 
 	// 关联关系
 	Article  Article       `json:"article" gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE"`
-	User     *User         `json:"user,omitempty" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
+	User     *User         `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 	Parent   *Comment      `json:"parent,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:CASCADE"`
 	Root     *Comment      `json:"root,omitempty" gorm:"foreignKey:RootID;constraint:OnDelete:CASCADE"`
 	Children []Comment     `json:"children,omitempty" gorm:"foreignKey:ParentID"`
 	Likes    []CommentLike `json:"-" gorm:"foreignKey:CommentID"`
+
+	// AuthorPublic 评论者公开信息窄化视图，以 user 键对外输出，由 AfterFind 从关联用户同步。
+	AuthorPublic *domain.AuthorPublic `json:"user,omitempty" gorm:"-"`
+}
+
+// AfterFind 查询后从预加载的关联用户同步公开作者视图。
+// GORM 保证本钩子在 Preload 完成后执行，评论输出始终经窄化视图而非 User 实体。
+func (c *Comment) AfterFind(_ *gorm.DB) error {
+	c.AuthorPublic = domain.NewAuthorPublic(c.User)
+	return nil
 }
 
 // TableName 指定表名

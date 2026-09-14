@@ -1,5 +1,5 @@
 import type { ApiResponse } from '@myblog/shared'
-import type { User } from '@myblog/api/modules/user/types'
+import type { AuthorPublic } from '@myblog/api/modules/user/types'
 import type { Category } from '@myblog/api/modules/category/types'
 import type { Tag } from '@myblog/api/modules/tag/types'
 
@@ -44,7 +44,7 @@ export interface Article {
   lastCommentAt: string | null
   createdAt: string
   updatedAt: string
-  author: User
+  author: AuthorPublic
   category: Category | null
   categories: Category[]
   tags: Tag[]

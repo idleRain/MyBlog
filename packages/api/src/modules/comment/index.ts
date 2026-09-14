@@ -1,5 +1,6 @@
 import type { KyInstance } from 'ky'
 import type {
+  AdminCommentListResponse,
   AdminListCommentsRequest,
   CommentActionResponse,
   CommentListResponse,
@@ -42,8 +43,8 @@ export function createCommentAPI(request: KyInstance) {
       return request.post('comments/unlike', { json: { id } }).json()
     },
 
-    // 管理端：全量评论列表，按状态与关键词筛选。
-    adminList(params: AdminListCommentsRequest): Promise<CommentListResponse> {
+    // 管理端：全量评论列表，按状态与关键词筛选，响应携带审计字段。
+    adminList(params: AdminListCommentsRequest): Promise<AdminCommentListResponse> {
       return request.post('admin/comments/list', { json: params }).json()
     },
 
@@ -77,6 +78,7 @@ export function createCommentAPI(request: KyInstance) {
 export type CommentAPI = ReturnType<typeof createCommentAPI>
 
 export type {
+  AdminCommentListResponse,
   AdminListCommentsRequest,
   CommentActionResponse,
   CommentListResponse,
