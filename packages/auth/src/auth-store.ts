@@ -88,6 +88,10 @@ export function createAuthStore(deps: AuthStoreDeps) {
     currentState = state
   })
 
+  // 进行中的刷新任务，并发触发刷新时共享同一次请求。
+  // 刷新即旋转语义下，并发各自刷新会导致后到的请求携带已撤销的旧令牌而失败。
+  let refreshInFlight: Promise<string | null> | null = null
+
   // 清除本地存储中的全部认证令牌。
   function clearLocalStorage() {
     if (!deps.isBrowser()) return
@@ -190,6 +194,17 @@ export function createAuthStore(deps: AuthStoreDeps) {
 
         return newState
       })
+    },
+
+    // 以单飞模式执行令牌刷新，并发调用共享同一次刷新结果。
+    // 刷新完成后清除进行中标记，失败结果同样共享，由调用方按 null 处理。
+    refreshSingleFlight(refreshFn: () => Promise<string | null>): Promise<string | null> {
+      if (!refreshInFlight) {
+        refreshInFlight = refreshFn().finally(() => {
+          refreshInFlight = null
+        })
+      }
+      return refreshInFlight
     },
 
     // 检查令牌是否仍然有效，过期前预留刷新窗口。

@@ -7,6 +7,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@myblog/api": "workspace:*",
     "@myblog/shared": "workspace:*"
@@ -16,6 +20,7 @@
   },
   "devDependencies": {
     "svelte": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

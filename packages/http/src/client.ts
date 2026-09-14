@@ -57,6 +57,9 @@ export interface CreateHttpClientOptions {
 const REFRESH_PATH = '/auth/refresh'
 const LOGIN_PATH = '/users/login'
 
+// Authorization 请求头名称，重放守卫依赖比对请求携带的令牌代际。
+const AUTHORIZATION_HEADER = 'Authorization'
+
 /**
  * 解析响应体中的业务码与消息，解析失败时返回空值。
  */
@@ -89,8 +92,8 @@ export function createHttpClient(options: CreateHttpClientOptions) {
     }
   }
 
-  // 响应拦截器：以响应体业务码识别认证失效，处理令牌刷新与通用错误提示。
-  const responseInterceptor: AfterResponseHook = async (request, _options, response) => {
+  // 响应拦截器：以响应体业务码识别认证失效，处理令牌刷新、请求重放与通用错误提示。
+  const responseInterceptor: AfterResponseHook = async (request, options, response) => {
     const { code, message } = await parseResponseBody(response)
     const isAuthFailure = code === 401
     const isRefreshRequest = request.url.includes(REFRESH_PATH)
@@ -101,12 +104,26 @@ export function createHttpClient(options: CreateHttpClientOptions) {
         if (!isRefreshRequest) {
           const newToken = await auth.refreshToken()
           if (newToken) {
-            // 令牌刷新成功后返回原响应，调用方依据新令牌重试。
-            return response
+            // 仅当请求携带的仍是刷新前旧令牌时才重放，令牌代际比对确保同一请求最多重放一次，防止 401 循环。
+            if (request.headers.get(AUTHORIZATION_HEADER) !== `Bearer ${newToken}`) {
+              request.headers.set(AUTHORIZATION_HEADER, `Bearer ${newToken}`)
+              // ky 钩子收到的归一化选项已剥离 hooks，重放需显式回传请求与响应拦截器；
+              // 内建重试关闭，嵌套调用自身的 401 由其响应拦截器处理。
+              // 归一化选项与 Options 在 exactOptionalPropertyTypes 下可选属性类型存在差异，运行时结构一致，此处收窄为 Options。
+              const replayOptions = {
+                ...options,
+                retry: 0,
+                hooks: {
+                  beforeRequest: [requestInterceptor],
+                  afterResponse: [responseInterceptor]
+                }
+              } as Options
+              return ky(request, replayOptions)
+            }
           }
         }
 
-        // 刷新失败或刷新请求自身 401，触发认证失效处理。
+        // 刷新失败、刷新请求自身 401，或最新令牌仍被拒绝时触发认证失效处理。
         await auth.onAuthFailure?.(message || '登录已过期，请重新登录')
       } catch {
         await auth.onAuthFailure?.('认证失败，请重新登录')

@@ -13,9 +13,16 @@ const prefixUrl = import.meta.env.SSR
   : import.meta.env.VITE_BASE_URL
 
 /**
- * 通过刷新令牌获取新访问令牌并更新认证状态。
+ * 以单飞模式刷新令牌，并发触发时共享同一次刷新请求，避免刷新即旋转下旧令牌被并发使用。
  */
-async function refreshAccessToken(): Promise<string | null> {
+function refreshAccessToken(): Promise<string | null> {
+  return authStore.refreshSingleFlight(doRefreshAccessToken)
+}
+
+/**
+ * 执行实际的令牌刷新请求，仅由单飞调度器调用。
+ */
+async function doRefreshAccessToken(): Promise<string | null> {
   const refreshToken = authStore.getRefreshToken()
   if (!refreshToken) {
     console.warn('没有刷新令牌，无法自动刷新')
