@@ -6,16 +6,12 @@
  * golangci-lint 与 goimports 的检测、安装与路径解析交由 go-toolchain.ts 处理
  */
 
-import { execSync } from 'child_process'
-import { join } from 'path'
-import { existsSync, mkdirSync } from 'fs'
-import { platform } from 'os'
-import {
-  ensureGolangciLint,
-  ensureGoimports,
-  golangciLintTimeout,
-  runCommand
-} from './go-toolchain'
+import { ensureGolangciLint, ensureGoimports, golangciLintTimeout } from './go-toolchain'
+import { existsSync, mkdirSync } from 'node:fs'
+import { runCommand } from './lib/run-command'
+import { execSync } from 'node:child_process'
+import { platform } from 'node:os'
+import { join } from 'node:path'
 
 // 支持的命令类型
 type Command =

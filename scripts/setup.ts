@@ -1,9 +1,9 @@
 #!/usr/bin/env -S node --import tsx
 
-import { execSync } from 'child_process'
-import { existsSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { existsSync, writeFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { isMainModule } from './lib/is-main'
+import { join } from 'node:path'
 
 console.log('🚀 开始设置 MyBlog 开发环境...\n')
 

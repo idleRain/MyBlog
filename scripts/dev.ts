@@ -1,23 +1,14 @@
 #!/usr/bin/env -S node --import tsx
 
-import { execSync, spawn, type ChildProcess } from 'child_process'
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
-import yaml from 'yaml'
+import { execSync, spawn, type ChildProcess } from 'node:child_process'
+import { getExecutableSuffix, getGoBinDir } from './go-toolchain'
+import { existsSync, readFileSync } from 'node:fs'
 import { isMainModule } from './lib/is-main'
+import { ansi } from './lib/terminal'
+import { join } from 'node:path'
+import yaml from 'yaml'
 
 // ---------- 常量定义 ----------
-
-// 终端颜色样式
-const COLORS = {
-  blue: '\x1b[34m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  reset: '\x1b[0m',
-  bold: '\x1b[1m'
-} as const
 
 // 默认端口配置
 const DEFAULT_SERVER_PORT = 3000
@@ -58,7 +49,7 @@ interface ServiceConfig {
   name: string
   command: string[]
   cwd?: string
-  color: keyof typeof COLORS
+  color: keyof typeof ansi
   port?: number
 }
 
@@ -75,7 +66,7 @@ async function readServerPort(): Promise<number> {
   const configPath = join('server', 'configs', 'config.yaml')
   if (!existsSync(configPath)) {
     console.log(
-      `${COLORS.yellow}⚠️  未找到后端配置，使用默认端口 ${DEFAULT_SERVER_PORT}${COLORS.reset}`
+      `${ansi.yellow}⚠️  未找到后端配置，使用默认端口 ${DEFAULT_SERVER_PORT}${ansi.reset}`
     )
     return DEFAULT_SERVER_PORT
   }
@@ -86,7 +77,7 @@ async function readServerPort(): Promise<number> {
     return config.server?.port || DEFAULT_SERVER_PORT
   } catch {
     console.log(
-      `${COLORS.yellow}⚠️  后端配置解析失败，使用默认端口 ${DEFAULT_SERVER_PORT}${COLORS.reset}`
+      `${ansi.yellow}⚠️  后端配置解析失败，使用默认端口 ${DEFAULT_SERVER_PORT}${ansi.reset}`
     )
     return DEFAULT_SERVER_PORT
   }
@@ -113,21 +104,6 @@ function readAppPort(appDir: string): number {
 // air 可执行文件路径，由 ensureAir 在环境检查阶段解析
 let airExecutable = 'air'
 
-// 获取 Go 可执行文件安装目录，优先使用 GOBIN，未设置时退回 GOPATH/bin
-function getGoBinDir(): string {
-  const goBin = execSync('go env GOBIN').toString().trim()
-  if (goBin) {
-    return goBin
-  }
-  const goPath = execSync('go env GOPATH').toString().trim()
-  return join(goPath, 'bin')
-}
-
-// 获取当前平台下的可执行文件后缀，Windows 平台为 .exe
-function getExecutableSuffix(): string {
-  return process.platform === 'win32' ? '.exe' : ''
-}
-
 // 检测 air 是否已加入 PATH 中
 function isAirAvailable(): boolean {
   try {
@@ -142,7 +118,7 @@ function isAirAvailable(): boolean {
 function ensureAir(): void {
   if (isAirAvailable()) {
     airExecutable = 'air'
-    console.log(`${COLORS.green}✅ Air: 已安装${COLORS.reset}`)
+    console.log(`${ansi.green}✅ Air: 已安装${ansi.reset}`)
     return
   }
 
@@ -150,18 +126,18 @@ function ensureAir(): void {
   const goBinPath = join(getGoBinDir(), `air${getExecutableSuffix()}`)
   if (existsSync(goBinPath)) {
     airExecutable = quoteForShell(goBinPath)
-    console.log(`${COLORS.green}✅ Air: ${goBinPath}${COLORS.reset}`)
+    console.log(`${ansi.green}✅ Air: ${goBinPath}${ansi.reset}`)
     return
   }
 
-  console.log(`${COLORS.yellow}📦 未检测到 air，正在安装...${COLORS.reset}`)
+  console.log(`${ansi.yellow}📦 未检测到 air，正在安装...${ansi.reset}`)
   execSync(`go install ${AIR_MODULE}`, { stdio: 'inherit' })
   if (existsSync(goBinPath)) {
     airExecutable = quoteForShell(goBinPath)
-    console.log(`${COLORS.green}✅ Air 安装完成: ${goBinPath}${COLORS.reset}`)
+    console.log(`${ansi.green}✅ Air 安装完成: ${goBinPath}${ansi.reset}`)
     return
   }
-  console.error(`${COLORS.red}❌ air 安装失败，请检查 Go 环境后重试${COLORS.reset}`)
+  console.error(`${ansi.red}❌ air 安装失败，请检查 Go 环境后重试${ansi.reset}`)
   process.exit(1)
 }
 
@@ -215,25 +191,25 @@ async function getServices(targets: DevTarget[]): Promise<ServiceConfig[]> {
 
 // 检查开发环境所需的工具、文件与依赖。
 async function checkEnvironment(): Promise<void> {
-  console.log(`${COLORS.cyan}🔍 检查开发环境...${COLORS.reset}\n`)
+  console.log(`${ansi.cyan}🔍 检查开发环境...${ansi.reset}\n`)
 
   await checkCommandAvailable('Go', 'go version')
   await checkCommandAvailable('Node.js', 'node --version')
-  console.log(`${COLORS.green}✅ Node.js: ${process.version}${COLORS.reset}`)
+  console.log(`${ansi.green}✅ Node.js: ${process.version}${ansi.reset}`)
 
   ensureAir()
 
   for (const file of REQUIRED_FILES) {
     if (existsSync(file)) {
-      console.log(`${COLORS.green}✅ ${file}${COLORS.reset}`)
+      console.log(`${ansi.green}✅ ${file}${ansi.reset}`)
     } else {
-      console.error(`${COLORS.red}❌ 缺少文件: ${file}${COLORS.reset}`)
+      console.error(`${ansi.red}❌ 缺少文件: ${file}${ansi.reset}`)
       process.exit(1)
     }
   }
 
   if (!existsSync('node_modules')) {
-    console.log(`${COLORS.yellow}⚠️  根目录依赖未安装，正在安装...${COLORS.reset}`)
+    console.log(`${ansi.yellow}⚠️  根目录依赖未安装，正在安装...${ansi.reset}`)
     execSync('pnpm install', { stdio: 'inherit' })
   }
 
@@ -245,9 +221,9 @@ async function checkEnvironment(): Promise<void> {
 async function checkCommandAvailable(label: string, versionCommand: string): Promise<void> {
   try {
     execSync(versionCommand, { stdio: 'ignore' })
-    console.log(`${COLORS.green}✅ ${label}: 已安装${COLORS.reset}`)
+    console.log(`${ansi.green}✅ ${label}: 已安装${ansi.reset}`)
   } catch {
-    console.error(`${COLORS.red}❌ ${label} 未安装或不在 PATH 中${COLORS.reset}`)
+    console.error(`${ansi.red}❌ ${label} 未安装或不在 PATH 中${ansi.reset}`)
     process.exit(1)
   }
 }
@@ -337,7 +313,7 @@ async function killProcess(pid: number): Promise<boolean> {
 // 在终端中让用户选择选项，支持方向键与数字键，未启用 TTY 时回退为数字输入。
 async function promptUser(message: string, options: string[]): Promise<number> {
   if (message) {
-    console.log(`${COLORS.yellow}${message}${COLORS.reset}`)
+    console.log(`${ansi.yellow}${message}${ansi.reset}`)
   }
 
   let selectedIndex = 0
@@ -352,7 +328,7 @@ async function promptUser(message: string, options: string[]): Promise<number> {
 
     options.forEach((option, index) => {
       if (index === selectedIndex) {
-        console.log(`${COLORS.cyan}${COLORS.bold}❯ ${option}${COLORS.reset}`)
+        console.log(`${ansi.cyan}${ansi.bold}❯ ${option}${ansi.reset}`)
       } else {
         console.log(`  ${option}`)
       }
@@ -363,9 +339,9 @@ async function promptUser(message: string, options: string[]): Promise<number> {
 
   // 非 TTY 环境回退为数字输入。
   if (!process.stdout.isTTY || !process.stdin.isTTY) {
-    console.log(`${COLORS.yellow}${message}${COLORS.reset}`)
+    console.log(`${ansi.yellow}${message}${ansi.reset}`)
     options.forEach((option, index) => {
-      console.log(`${COLORS.cyan}${index + 1}. ${option}${COLORS.reset}`)
+      console.log(`${ansi.cyan}${index + 1}. ${option}${ansi.reset}`)
     })
 
     const input = prompt('请选择 (输入数字): ')
@@ -389,13 +365,13 @@ async function promptUser(message: string, options: string[]): Promise<number> {
         process.stdin.setRawMode(false)
         process.stdin.pause()
         process.stdin.removeListener('data', onKeyPress)
-        console.log(`${COLORS.green}✓ 已选择: ${options[selectedIndex]}${COLORS.reset}\n`)
+        console.log(`${ansi.green}✓ 已选择: ${options[selectedIndex]}${ansi.reset}\n`)
         resolve(selectedIndex)
         return
       } else if (key === '\u0003') {
         process.stdin.setRawMode(false)
         process.stdin.pause()
-        console.log(`\n${COLORS.yellow}👋 用户取消操作${COLORS.reset}`)
+        console.log(`\n${ansi.yellow}👋 用户取消操作${ansi.reset}`)
         process.exit(0)
         return
       } else {
@@ -416,37 +392,37 @@ async function promptUser(message: string, options: string[]): Promise<number> {
 
 // 检查后端端口占用，必要时结束占用进程并释放端口。
 async function checkBackendPort(serverPort: number): Promise<void> {
-  console.log(`${COLORS.cyan}🔌 检查后端端口 ${serverPort}...${COLORS.reset}`)
+  console.log(`${ansi.cyan}🔌 检查后端端口 ${serverPort}...${ansi.reset}`)
 
   const pid = await getListeningPid(serverPort)
   if (pid === null) {
-    console.log(`${COLORS.green}✅ 端口 ${serverPort} 可用${COLORS.reset}\n`)
+    console.log(`${ansi.green}✅ 端口 ${serverPort} 可用${ansi.reset}\n`)
     return
   }
 
   const processName = await getProcessName(pid)
   console.log(
-    `${COLORS.yellow}⚠️  端口 ${serverPort} 被进程占用：${processName} (PID: ${pid})${COLORS.reset}`
+    `${ansi.yellow}⚠️  端口 ${serverPort} 被进程占用：${processName} (PID: ${pid})${ansi.reset}`
   )
-  console.log(`${COLORS.cyan}使用 ↑↓ 键或 1/2 数字键选择，回车/空格确认：${COLORS.reset}\n`)
+  console.log(`${ansi.cyan}使用 ↑↓ 键或 1/2 数字键选择，回车/空格确认：${ansi.reset}\n`)
 
   const choice = await promptUser('', [`结束进程 ${processName} (PID: ${pid}) 并继续`, '退出'])
   if (choice !== 0) {
-    console.log(`${COLORS.yellow}👋 用户选择退出${COLORS.reset}`)
+    console.log(`${ansi.yellow}👋 用户选择退出${ansi.reset}`)
     process.exit(0)
   }
 
-  console.log(`${COLORS.cyan}🔄 正在结束进程 ${processName} (PID: ${pid})...${COLORS.reset}`)
+  console.log(`${ansi.cyan}🔄 正在结束进程 ${processName} (PID: ${pid})...${ansi.reset}`)
   if (!(await killProcess(pid))) {
-    console.log(`${COLORS.red}❌ 无法结束进程 ${pid}，请手动处理${COLORS.reset}`)
+    console.log(`${ansi.red}❌ 无法结束进程 ${pid}，请手动处理${ansi.reset}`)
     process.exit(1)
   }
 
-  console.log(`${COLORS.green}✅ 成功结束进程，端口 ${serverPort} 已释放${COLORS.reset}`)
+  console.log(`${ansi.green}✅ 成功结束进程，端口 ${serverPort} 已释放${ansi.reset}`)
   await new Promise(resolve => setTimeout(resolve, PORT_RELEASE_WAIT_MS))
 
   if (await isPortInUse(serverPort)) {
-    console.log(`${COLORS.red}❌ 端口 ${serverPort} 仍被占用，请手动处理${COLORS.reset}`)
+    console.log(`${ansi.red}❌ 端口 ${serverPort} 仍被占用，请手动处理${ansi.reset}`)
     process.exit(1)
   }
 
@@ -457,7 +433,7 @@ async function checkBackendPort(serverPort: number): Promise<void> {
 
 // 启动全部服务，就绪信息由输出标志驱动，并接管退出信号。
 async function startServices(services: ServiceConfig[]): Promise<void> {
-  console.log(`${COLORS.bold}${COLORS.cyan}🚀 启动开发服务器...${COLORS.reset}\n`)
+  console.log(`${ansi.bold}${ansi.cyan}🚀 启动开发服务器...${ansi.reset}\n`)
 
   const statusMap = new Map<string, ServiceStatus>()
   const processes: ChildProcess[] = []
@@ -500,7 +476,7 @@ function forwardServiceOutput(
   child.stdout?.setEncoding('utf8')
   child.stdout?.on('data', (data: string) => {
     for (const line of splitOutput(data)) {
-      console.log(`${COLORS[service.color]}[${service.name}]${COLORS.reset} ${line}`)
+      console.log(`${ansi[service.color]}[${service.name}]${ansi.reset} ${line}`)
       handleServiceLine(service, line, statusMap)
     }
   })
@@ -527,9 +503,9 @@ function emitServiceLine(
   statusMap: Map<string, ServiceStatus>
 ): void {
   if (isErrorLine(line)) {
-    console.log(`${COLORS.red}[${service.name}:ERROR]${COLORS.reset} ${line}`)
+    console.log(`${ansi.red}[${service.name}:ERROR]${ansi.reset} ${line}`)
   } else {
-    console.log(`${COLORS[service.color]}[${service.name}]${COLORS.reset} ${line}`)
+    console.log(`${ansi[service.color]}[${service.name}]${ansi.reset} ${line}`)
   }
   handleServiceLine(service, line, statusMap)
 }
@@ -566,7 +542,7 @@ function markServiceReady(serviceName: string, statusMap: Map<string, ServiceSta
   }
 
   status.ready = true
-  console.log(`${COLORS.green}✅ ${serviceName} 已就绪${COLORS.reset}`)
+  console.log(`${ansi.green}✅ ${serviceName} 已就绪${ansi.reset}`)
   checkAllServicesReady(statusMap)
 }
 
@@ -602,7 +578,7 @@ function handleServiceExit(
     return
   }
 
-  console.log(`${COLORS.red}❌ ${service.name} 退出，代码: ${code}${COLORS.reset}`)
+  console.log(`${ansi.red}❌ ${service.name} 退出，代码: ${code}${ansi.reset}`)
   for (const other of processes) {
     if (other !== child && !other.killed) {
       other.kill()
@@ -623,7 +599,7 @@ function stopAllProcesses(processes: ChildProcess[]): void {
 // 注册 SIGINT 信号处理以停止所有服务。
 function setupSignalHandler(processes: ChildProcess[]): void {
   process.on('SIGINT', () => {
-    console.log(`\n${COLORS.yellow}🛑 正在停止所有服务...${COLORS.reset}`)
+    console.log(`\n${ansi.yellow}🛑 正在停止所有服务...${ansi.reset}`)
     stopAllProcesses(processes)
     process.exit(0)
   })
@@ -631,18 +607,18 @@ function setupSignalHandler(processes: ChildProcess[]): void {
 
 // 输出各服务的访问地址，仅显示已启动的服务。
 function displayServicesInfo(statusMap: Map<string, ServiceStatus>): void {
-  console.log(`\n${COLORS.bold}${COLORS.green}🎉 所有服务已启动！${COLORS.reset}`)
-  console.log(`${COLORS.cyan}📖 可用服务:${COLORS.reset}`)
+  console.log(`\n${ansi.bold}${ansi.green}🎉 所有服务已启动！${ansi.reset}`)
+  console.log(`${ansi.cyan}📖 可用服务:${ansi.reset}`)
 
   const serverStatus = statusMap.get('SERVER')
   if (serverStatus?.port) {
-    console.log(`  ${COLORS.green}• SERVER: http://localhost:${serverStatus.port}${COLORS.reset}`)
+    console.log(`  ${ansi.green}• SERVER: http://localhost:${serverStatus.port}${ansi.reset}`)
   }
 
   const webStatus = statusMap.get('WEB')
   if (webStatus) {
     console.log(
-      `  ${COLORS.green}• WEB: http://localhost:${webStatus.port || DEFAULT_WEB_PORT}${COLORS.reset}`
+      `  ${ansi.green}• WEB: http://localhost:${webStatus.port || DEFAULT_WEB_PORT}${ansi.reset}`
     )
   }
 
@@ -650,10 +626,10 @@ function displayServicesInfo(statusMap: Map<string, ServiceStatus>): void {
   if (adminStatus) {
     const adminPort = adminStatus.port || DEFAULT_WEB_PORT
     // 后台已配置基准路径 /admin，访问地址需带子路径前缀。
-    console.log(`  ${COLORS.yellow}• ADMIN: http://localhost:${adminPort}/admin${COLORS.reset}`)
+    console.log(`  ${ansi.yellow}• ADMIN: http://localhost:${adminPort}/admin${ansi.reset}`)
   }
 
-  console.log(`\n${COLORS.yellow}按 Ctrl+C 停止所有服务${COLORS.reset}\n`)
+  console.log(`\n${ansi.yellow}按 Ctrl+C 停止所有服务${ansi.reset}\n`)
 }
 
 // ---------- 辅助函数 ----------
@@ -701,7 +677,7 @@ async function main(): Promise<void> {
     const services = await getServices(targets)
     await startServices(services)
   } catch (error) {
-    console.error(`${COLORS.red}❌ 启动失败:${COLORS.reset}`, error)
+    console.error(`${ansi.red}❌ 启动失败:${ansi.reset}`, error)
     process.exit(1)
   }
 }

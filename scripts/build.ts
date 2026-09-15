@@ -5,20 +5,10 @@
  * 负责构建前端和后端项目，支持清理、质量检查等功能
  */
 
-import { spawn } from 'child_process'
-import { existsSync, rmSync } from 'fs'
+import { tryRunCommand } from './lib/run-command'
 import { isMainModule } from './lib/is-main'
-
-// 颜色配置
-const colors = {
-  blue: '\x1b[34m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  reset: '\x1b[0m',
-  bold: '\x1b[1m'
-}
+import { existsSync, rmSync } from 'node:fs'
+import { ansi } from './lib/terminal'
 
 interface BuildOptions {
   clean?: boolean
@@ -42,60 +32,23 @@ function parseArgs(): BuildOptions {
   }
 }
 
-// 运行命令的辅助函数
-async function runCommand(
-  command: string,
-  args: string[],
-  options: { cwd?: string; stdio?: 'inherit' | 'pipe' } = {}
-): Promise<{ success: boolean; output?: string }> {
-  return new Promise(resolve => {
-    const child = spawn(command, args, {
-      stdio: options.stdio || 'inherit',
-      shell: true,
-      cwd: options.cwd || process.cwd()
-    })
-
-    let output = ''
-
-    if (options.stdio === 'pipe') {
-      child.stdout?.on('data', data => {
-        output += data.toString()
-      })
-      child.stderr?.on('data', data => {
-        output += data.toString()
-      })
-    }
-
-    child.on('close', code => {
-      resolve({
-        success: code === 0,
-        output: options.stdio === 'pipe' ? output : undefined
-      })
-    })
-
-    child.on('error', () => {
-      resolve({ success: false, output })
-    })
-  })
-}
-
 // 环境检查
 async function checkEnvironment(): Promise<boolean> {
-  console.log(`${colors.cyan}🔍 检查构建环境...${colors.reset}`)
+  console.log(`${ansi.cyan}🔍 检查构建环境...${ansi.reset}`)
 
   // 检查 Go
-  const goCheck = await runCommand('go', ['version'], { stdio: 'pipe' })
+  const goCheck = await tryRunCommand('go', ['version'], { stdio: 'pipe' })
   if (!goCheck.success) {
-    console.error(`${colors.red}❌ Go 未安装或不在 PATH 中${colors.reset}`)
+    console.error(`${ansi.red}❌ Go 未安装或不在 PATH 中${ansi.reset}`)
     return false
   }
-  console.log(`${colors.green}✅ Go: 已安装${colors.reset}`)
+  console.log(`${ansi.green}✅ Go: 已安装${ansi.reset}`)
 
   // 检查 Node.js
   try {
-    console.log(`${colors.green}✅ Node.js: ${process.version}${colors.reset}`)
+    console.log(`${ansi.green}✅ Node.js: ${process.version}${ansi.reset}`)
   } catch {
-    console.error(`${colors.red}❌ Node.js 未安装${colors.reset}`)
+    console.error(`${ansi.red}❌ Node.js 未安装${ansi.reset}`)
     return false
   }
 
@@ -109,12 +62,12 @@ async function checkEnvironment(): Promise<boolean> {
 
   for (const path of requiredPaths) {
     if (!existsSync(path)) {
-      console.error(`${colors.red}❌ 缺少必需文件/目录: ${path}${colors.reset}`)
+      console.error(`${ansi.red}❌ 缺少必需文件/目录: ${path}${ansi.reset}`)
       return false
     }
   }
 
-  console.log(`${colors.green}✅ 项目结构检查通过${colors.reset}\n`)
+  console.log(`${ansi.green}✅ 项目结构检查通过${ansi.reset}\n`)
   return true
 }
 
@@ -122,7 +75,7 @@ async function checkEnvironment(): Promise<boolean> {
 async function cleanBuildFiles(options: BuildOptions): Promise<boolean> {
   if (!options.clean) return true
 
-  console.log(`${colors.yellow}🧹 清理构建文件...${colors.reset}`)
+  console.log(`${ansi.yellow}🧹 清理构建文件...${ansi.reset}`)
 
   const cleanPaths = [
     'server/bin',
@@ -139,42 +92,42 @@ async function cleanBuildFiles(options: BuildOptions): Promise<boolean> {
     for (const path of cleanPaths) {
       if (existsSync(path)) {
         rmSync(path, { recursive: true, force: true })
-        console.log(`${colors.green}  ✅ 已清理: ${path}${colors.reset}`)
+        console.log(`${ansi.green}  ✅ 已清理: ${path}${ansi.reset}`)
       }
     }
-    console.log(`${colors.green}✅ 清理完成${colors.reset}\n`)
+    console.log(`${ansi.green}✅ 清理完成${ansi.reset}\n`)
     return true
   } catch (error) {
-    console.error(`${colors.red}❌ 清理失败: ${error}${colors.reset}`)
+    console.error(`${ansi.red}❌ 清理失败: ${error}${ansi.reset}`)
     return false
   }
 }
 
 // 安装依赖
 async function installDependencies(options: BuildOptions): Promise<boolean> {
-  console.log(`${colors.cyan}📦 检查并安装依赖...${colors.reset}`)
+  console.log(`${ansi.cyan}📦 检查并安装依赖...${ansi.reset}`)
 
   // 检查并安装根目录依赖
   if (!existsSync('node_modules')) {
-    console.log(`${colors.yellow}  安装根目录依赖...${colors.reset}`)
-    const result = await runCommand('pnpm', ['install'])
+    console.log(`${ansi.yellow}  安装根目录依赖...${ansi.reset}`)
+    const result = await tryRunCommand('pnpm', ['install'])
     if (!result.success) {
-      console.error(`${colors.red}❌ 根目录依赖安装失败${colors.reset}`)
+      console.error(`${ansi.red}❌ 根目录依赖安装失败${ansi.reset}`)
       return false
     }
   }
 
   // 检查并更新 Go 依赖
   if (!options.webOnly) {
-    console.log(`${colors.yellow}  更新 Go 依赖...${colors.reset}`)
-    const result = await runCommand('go', ['mod', 'tidy'], { cwd: 'server' })
+    console.log(`${ansi.yellow}  更新 Go 依赖...${ansi.reset}`)
+    const result = await tryRunCommand('go', ['mod', 'tidy'], { cwd: 'server' })
     if (!result.success) {
-      console.error(`${colors.red}❌ Go 依赖更新失败${colors.reset}`)
+      console.error(`${ansi.red}❌ Go 依赖更新失败${ansi.reset}`)
       return false
     }
   }
 
-  console.log(`${colors.green}✅ 依赖检查完成${colors.reset}\n`)
+  console.log(`${ansi.green}✅ 依赖检查完成${ansi.reset}\n`)
   return true
 }
 
@@ -182,102 +135,102 @@ async function installDependencies(options: BuildOptions): Promise<boolean> {
 async function runQualityChecks(options: BuildOptions): Promise<boolean> {
   if (options.skipLint && options.skipTests) return true
 
-  console.log(`${colors.cyan}🔍 运行代码质量检查...${colors.reset}`)
+  console.log(`${ansi.cyan}🔍 运行代码质量检查...${ansi.reset}`)
 
   // 前端代码检查
   if (!options.serverOnly && !options.skipLint) {
-    console.log(`${colors.yellow}  前端代码检查...${colors.reset}`)
+    console.log(`${ansi.yellow}  前端代码检查...${ansi.reset}`)
 
     // TypeScript 检查（前台与后台两个应用）
-    const tsCheckWeb = await runCommand('pnpm', ['run', 'check'], { cwd: 'apps/web' })
+    const tsCheckWeb = await tryRunCommand('pnpm', ['run', 'check'], { cwd: 'apps/web' })
     if (!tsCheckWeb.success) {
-      console.error(`${colors.red}❌ 前台 TypeScript 检查失败${colors.reset}`)
+      console.error(`${ansi.red}❌ 前台 TypeScript 检查失败${ansi.reset}`)
       return false
     }
 
-    const tsCheckAdmin = await runCommand('pnpm', ['run', 'check'], { cwd: 'apps/admin' })
+    const tsCheckAdmin = await tryRunCommand('pnpm', ['run', 'check'], { cwd: 'apps/admin' })
     if (!tsCheckAdmin.success) {
-      console.error(`${colors.red}❌ 后台 TypeScript 检查失败${colors.reset}`)
+      console.error(`${ansi.red}❌ 后台 TypeScript 检查失败${ansi.reset}`)
       return false
     }
 
     // ESLint 检查 (跳过)
-    console.log(`${colors.yellow}  跳过前端 ESLint 检查${colors.reset}`)
+    console.log(`${ansi.yellow}  跳过前端 ESLint 检查${ansi.reset}`)
   }
 
   // 后端代码检查
   if (!options.webOnly && !options.skipLint) {
-    console.log(`${colors.yellow}  后端代码检查...${colors.reset}`)
+    console.log(`${ansi.yellow}  后端代码检查...${ansi.reset}`)
 
-    const result = await runCommand('tsx', ['scripts/go-tools.ts', 'vet'])
+    const result = await tryRunCommand('tsx', ['scripts/go-tools.ts', 'vet'])
     if (!result.success) {
-      console.error(`${colors.red}❌ 后端代码检查失败${colors.reset}`)
+      console.error(`${ansi.red}❌ 后端代码检查失败${ansi.reset}`)
       return false
     }
   }
 
   // 运行测试
   if (!options.skipTests) {
-    console.log(`${colors.yellow}  运行测试...${colors.reset}`)
+    console.log(`${ansi.yellow}  运行测试...${ansi.reset}`)
 
     // 前端测试 (跳过，已在代码检查阶段进行了类型检查)
     if (!options.serverOnly) {
-      console.log(`${colors.yellow}  跳过前端测试 (已进行类型检查)${colors.reset}`)
+      console.log(`${ansi.yellow}  跳过前端测试 (已进行类型检查)${ansi.reset}`)
     }
 
     // 后端测试
     if (!options.webOnly) {
-      const serverTest = await runCommand('tsx', ['scripts/go-tools.ts', 'test'])
+      const serverTest = await tryRunCommand('tsx', ['scripts/go-tools.ts', 'test'])
       if (!serverTest.success) {
-        console.error(`${colors.red}❌ 后端测试失败${colors.reset}`)
+        console.error(`${ansi.red}❌ 后端测试失败${ansi.reset}`)
         return false
       }
     }
   }
 
-  console.log(`${colors.green}✅ 代码质量检查通过${colors.reset}\n`)
+  console.log(`${ansi.green}✅ 代码质量检查通过${ansi.reset}\n`)
   return true
 }
 
 // 构建后端
 async function buildServer(): Promise<boolean> {
-  console.log(`${colors.cyan}🔨 构建后端项目...${colors.reset}`)
+  console.log(`${ansi.cyan}🔨 构建后端项目...${ansi.reset}`)
 
-  const result = await runCommand('tsx', ['scripts/go-tools.ts', 'build'])
+  const result = await tryRunCommand('tsx', ['scripts/go-tools.ts', 'build'])
   if (!result.success) {
-    console.error(`${colors.red}❌ 后端构建失败${colors.reset}`)
+    console.error(`${ansi.red}❌ 后端构建失败${ansi.reset}`)
     return false
   }
 
-  console.log(`${colors.green}✅ 后端构建完成${colors.reset}`)
+  console.log(`${ansi.green}✅ 后端构建完成${ansi.reset}`)
   return true
 }
 
 // 构建前端（前台与后台两个应用）
 async function buildWeb(options: BuildOptions): Promise<boolean> {
-  console.log(`${colors.cyan}🔨 构建前端项目...${colors.reset}`)
+  console.log(`${ansi.cyan}🔨 构建前端项目...${ansi.reset}`)
 
   const buildCommand = options.production ? 'build' : 'build'
 
-  const webResult = await runCommand('pnpm', ['run', buildCommand], { cwd: 'apps/web' })
+  const webResult = await tryRunCommand('pnpm', ['run', buildCommand], { cwd: 'apps/web' })
   if (!webResult.success) {
-    console.error(`${colors.red}❌ 前台构建失败${colors.reset}`)
+    console.error(`${ansi.red}❌ 前台构建失败${ansi.reset}`)
     return false
   }
 
-  const adminResult = await runCommand('pnpm', ['run', buildCommand], { cwd: 'apps/admin' })
+  const adminResult = await tryRunCommand('pnpm', ['run', buildCommand], { cwd: 'apps/admin' })
   if (!adminResult.success) {
-    console.error(`${colors.red}❌ 后台构建失败${colors.reset}`)
+    console.error(`${ansi.red}❌ 后台构建失败${ansi.reset}`)
     return false
   }
 
-  console.log(`${colors.green}✅ 前端构建完成${colors.reset}`)
+  console.log(`${ansi.green}✅ 前端构建完成${ansi.reset}`)
   return true
 }
 
 // 显示构建信息
 function showBuildInfo(options: BuildOptions): void {
-  console.log(`${colors.cyan}📋 构建信息:${colors.reset}`)
+  console.log(`${ansi.cyan}📋 构建信息:${ansi.reset}`)
   console.log(`  模式: ${options.production ? '生产环境' : '开发环境'}`)
   console.log(`  清理: ${options.clean ? '是' : '否'}`)
   console.log(`  跳过测试: ${options.skipTests ? '是' : '否'}`)
@@ -290,7 +243,7 @@ function showBuildInfo(options: BuildOptions): void {
 
 // 显示帮助信息
 function showHelp(): void {
-  console.log(`${colors.bold}${colors.cyan}MyBlog 构建脚本${colors.reset}`)
+  console.log(`${ansi.bold}${ansi.cyan}MyBlog 构建脚本${ansi.reset}`)
   console.log('')
   console.log('使用方法:')
   console.log('  tsx scripts/build.ts [选项]')
@@ -322,7 +275,7 @@ async function main(): Promise<void> {
     return
   }
 
-  console.log(`${colors.bold}${colors.green}🚀 MyBlog 项目构建开始${colors.reset}\n`)
+  console.log(`${ansi.bold}${ansi.green}🚀 MyBlog 项目构建开始${ansi.reset}\n`)
   showBuildInfo(options)
 
   try {
@@ -357,8 +310,8 @@ async function main(): Promise<void> {
 
     // 构建完成
     const duration = ((Date.now() - startTime) / 1000).toFixed(2)
-    console.log(`\n${colors.bold}${colors.green}🎉 构建完成！${colors.reset}`)
-    console.log(`${colors.cyan}📊 构建信息:${colors.reset}`)
+    console.log(`\n${ansi.bold}${ansi.green}🎉 构建完成！${ansi.reset}`)
+    console.log(`${ansi.cyan}📊 构建信息:${ansi.reset}`)
     console.log(`  耗时: ${duration}s`)
 
     if (!options.webOnly) {
@@ -369,9 +322,9 @@ async function main(): Promise<void> {
       console.log(`  后台输出: apps/admin/build/`)
     }
 
-    console.log(`\n${colors.yellow}💡 提示: 使用 'pnpm run dev' 启动开发服务器${colors.reset}`)
+    console.log(`\n${ansi.yellow}💡 提示: 使用 'pnpm run dev' 启动开发服务器${ansi.reset}`)
   } catch (error) {
-    console.error(`\n${colors.red}❌ 构建失败:${colors.reset}`, error)
+    console.error(`\n${ansi.red}❌ 构建失败:${ansi.reset}`, error)
     process.exit(1)
   }
 }

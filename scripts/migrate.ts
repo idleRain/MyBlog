@@ -5,51 +5,17 @@
  * 基于 golang-migrate 的数据库迁移脚本管理
  */
 
-import { spawn } from 'child_process'
-import { existsSync } from 'fs'
-import path from 'path'
+import { runCommand } from './lib/run-command'
+import { colors } from './lib/terminal'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 
 const SERVER_DIR = path.join(process.cwd(), 'server')
 const MIGRATIONS_DIR = path.join(SERVER_DIR, 'migrations')
 
-// 颜色输出
-const colors = {
-  green: (text: string) => `\x1b[32m${text}\x1b[0m`,
-  red: (text: string) => `\x1b[31m${text}\x1b[0m`,
-  yellow: (text: string) => `\x1b[33m${text}\x1b[0m`,
-  blue: (text: string) => `\x1b[34m${text}\x1b[0m`,
-  cyan: (text: string) => `\x1b[36m${text}\x1b[0m`,
-  bold: (text: string) => `\x1b[1m${text}\x1b[0m`
-}
-
-// 执行命令的辅助函数
+// 执行命令的辅助函数：以 server 目录为工作目录运行迁移 CLI，复用统一的命令执行器。
 function executeCommand(command: string, args: string[], cwd: string = SERVER_DIR): Promise<void> {
-  return new Promise((resolve, reject) => {
-    console.log(colors.cyan(`执行命令: ${command} ${args.join(' ')}`))
-
-    // 在Windows上使用cmd.exe来执行命令
-    const isWindows = process.platform === 'win32'
-    const shell = isWindows ? 'cmd.exe' : '/bin/bash'
-    const shellArgs = isWindows ? ['/c'] : ['-c']
-    const fullCommand = `${command} ${args.join(' ')}`
-
-    const child = spawn(shell, [...shellArgs, fullCommand], {
-      cwd,
-      stdio: 'inherit'
-    })
-
-    child.on('close', code => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`命令执行失败，退出码: ${code}`))
-      }
-    })
-
-    child.on('error', error => {
-      reject(error)
-    })
-  })
+  return runCommand(command, args, { cwd })
 }
 
 // 检查环境

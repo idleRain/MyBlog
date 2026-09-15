@@ -5,44 +5,18 @@
  * 用于初始化默认超级管理员账户，支持自定义用户名、密码和邮箱
  */
 
-import { spawn } from 'child_process'
-import { existsSync } from 'fs'
-import path from 'path'
+import { runCommand } from './lib/run-command'
+import { colors } from './lib/terminal'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 
 const SERVER_DIR = path.join(process.cwd(), 'server')
 const SEED_ENTRY = 'cmd/seed/main.go'
 
-// 颜色输出
-const colors = {
-  green: (text: string) => `\x1b[32m${text}\x1b[0m`,
-  red: (text: string) => `\x1b[31m${text}\x1b[0m`,
-  yellow: (text: string) => `\x1b[33m${text}\x1b[0m`,
-  cyan: (text: string) => `\x1b[36m${text}\x1b[0m`,
-  bold: (text: string) => `\x1b[1m${text}\x1b[0m`
-}
-
 // 在 server 目录下运行 Go 种子程序
 function runSeed(args: string[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    console.log(colors.cyan(`执行: go run ${SEED_ENTRY} ${args.join(' ')}`))
-
-    const child = spawn('go', ['run', SEED_ENTRY, ...args], {
-      cwd: SERVER_DIR,
-      stdio: 'inherit'
-    })
-
-    child.on('close', code => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`种子数据初始化失败，退出码: ${code}`))
-      }
-    })
-
-    child.on('error', error => {
-      reject(error)
-    })
-  })
+  console.log(colors.cyan(`执行: go run ${SEED_ENTRY} ${args.join(' ')}`))
+  return runCommand('go', ['run', SEED_ENTRY, ...args], { cwd: SERVER_DIR })
 }
 
 // 打印帮助信息

@@ -5,7 +5,8 @@
  * lint-staged 将匹配的文件列表作为参数传入，此脚本解析 goimports 路径后执行格式化
  */
 
-import { ensureGoimports, runCommand } from './go-toolchain'
+import { ensureGoimports } from './go-toolchain'
+import { runCommand } from './lib/run-command'
 
 // 主函数
 async function main(): Promise<void> {

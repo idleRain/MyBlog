@@ -1,8 +1,8 @@
 #!/usr/bin/env -S node --import tsx
 
-import { existsSync, rmSync } from 'fs'
-import { join } from 'path'
 import { isMainModule } from './lib/is-main'
+import { existsSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 
 // 前端各应用待清理的构建产物目录，与 build.ts 的清理范围保持一致。
 const FRONTEND_CLEAN_PATHS = [

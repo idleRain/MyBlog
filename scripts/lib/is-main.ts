@@ -1,5 +1,5 @@
-import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { resolve } from 'node:path'
 
 /**
  * 判断当前模块是否为直接运行的入口模块。

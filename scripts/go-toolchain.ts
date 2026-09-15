@@ -6,11 +6,12 @@
  * 供 go-tools.ts 导入复用，也可独立执行以确保工具就绪
  */
 
-import { execSync, spawn, type SpawnOptions } from 'child_process'
-import { existsSync } from 'fs'
-import { platform } from 'os'
-import { join } from 'path'
+import { runCommand } from './lib/run-command'
+import { execSync } from 'node:child_process'
 import { isMainModule } from './lib/is-main'
+import { existsSync } from 'node:fs'
+import { platform } from 'node:os'
+import { join } from 'node:path'
 
 // golangci-lint 工具模块地址，安装时自动获取最新稳定版本
 export const golangciLintModule: string =
@@ -22,42 +23,8 @@ export const goimportsModule: string = 'golang.org/x/tools/cmd/goimports@latest'
 // golangci-lint 单次检查的超时时间，冷启动加载依赖时耗时较长
 export const golangciLintTimeout: string = '5m'
 
-// 运行命令的选项接口
-interface RunCommandOptions extends Partial<SpawnOptions> {
-  stdio?: 'inherit' | 'ignore' | 'pipe'
-  cwd?: string
-}
-
-// 运行命令的辅助函数，供本脚本与导入方共用
-export function runCommand(
-  command: string,
-  args: string[],
-  options: RunCommandOptions = {}
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, {
-      stdio: options.stdio || 'inherit',
-      shell: true,
-      cwd: options.cwd || process.cwd(),
-      ...options
-    })
-
-    child.on('close', (code: number | null) => {
-      if (code === 0) {
-        resolve()
-      } else {
-        reject(new Error(`命令 "${command} ${args.join(' ')}" 执行失败，退出码: ${code}`))
-      }
-    })
-
-    child.on('error', (error: Error) => {
-      reject(new Error(`无法执行命令 "${command}": ${error.message}`))
-    })
-  })
-}
-
 // 获取 Go 可执行文件安装目录，优先使用 GOBIN，未设置时退回 GOPATH/bin
-function getGoBinDir(): string {
+export function getGoBinDir(): string {
   const goBin: string = execSync('go env GOBIN').toString().trim()
   if (goBin) {
     return goBin
@@ -67,7 +34,7 @@ function getGoBinDir(): string {
 }
 
 // 获取当前平台下的可执行文件后缀，Windows 平台为 .exe
-function getExecutableSuffix(): string {
+export function getExecutableSuffix(): string {
   return platform() === 'win32' ? '.exe' : ''
 }
 

@@ -31,7 +31,10 @@ const basePrettierConfig = {
   // HTML 空格敏感度
   htmlWhitespaceSensitivity: 'css',
   // 换行符类型
-  endOfLine: 'auto'
+  endOfLine: 'auto',
+  // 导入排序插件：本配置同时服务 scripts 与 packages 等非 app 目录，
+  // app 各自的 prettier.config.js 会以自己的 plugins 数组覆盖此处。
+  plugins: ['prettier-plugin-sort-imports']
 }
 
 export default basePrettierConfig
