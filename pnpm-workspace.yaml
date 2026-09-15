@@ -10,7 +10,8 @@ allowBuilds:
 # 公共依赖版本单一事实来源，跨包共用的依赖统一经 catalog: 协议引用。
 catalog:
   # 构建工具链，统一提升至根 devDependencies，仅被 CLI 命令与构建配置文件引用。
-  '@sveltejs/adapter-auto': 6.1.1
+  '@sveltejs/adapter-node': 5.5.7
+  '@sveltejs/adapter-static': 3.0.10
   '@sveltejs/kit': 2.70.3
   '@sveltejs/vite-plugin-svelte': 7.3.0
   svelte-check: 4.7.6

@@ -1,5 +1,5 @@
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import adapter from '@sveltejs/adapter-auto'
+import adapter from '@sveltejs/adapter-node'
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -8,9 +8,7 @@ const config = {
   preprocess: vitePreprocess(),
 
   kit: {
-    // adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-    // If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-    // See https://svelte.dev/docs/kit/adapters for more information about adapters.
+    // 前台自托管 SSR：adapter-node 产出 Node 服务，部署时以 node build 启动（OPS-03 定案）。
     adapter: adapter(),
     // 路径别名；$ui 指向 packages/ui 源码，$i18n 仅前台应用需要。
     alias: {

@@ -1,5 +1,5 @@
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
-import adapter from '@sveltejs/adapter-auto'
+import adapter from '@sveltejs/adapter-static'
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -8,10 +8,9 @@ const config = {
   preprocess: vitePreprocess(),
 
   kit: {
-    // adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-    // If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-    // See https://svelte.dev/docs/kit/adapters for more information about adapters.
-    adapter: adapter(),
+    // 后台为 ssr=false 的 SPA：adapter-static 产出纯静态文件，
+    // fallback 指向 index.html，所有未知路由回退到单页入口（OPS-03 定案）。
+    adapter: adapter({ fallback: 'index.html' }),
     // 后台应用部署在站点 /admin 子路径下，与前台同源区分；relative 关闭以使用绝对的根路径。
     paths: {
       base: '/admin',
