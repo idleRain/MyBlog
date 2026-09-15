@@ -1,0 +1,62 @@
+# 最小 CI：质量防线四件套 + lint（体检项 QA-11 / OPS-06）。
+# 触发方式为手动执行，恢复 push/PR 自动门禁时改回对应触发条件。
+# 本工作流只做质量检查，不含任何自动部署步骤。
+
+name: CI
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: 质量防线（go 三连 / 依赖基线 / svelte-check / 契约锁 / lint）
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 并启用 pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: corepack enable
+
+      - name: 安装 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: 安装依赖（冻结 lock）
+        run: pnpm install --frozen-lockfile
+
+      - name: 后端编译、静态检查与测试
+        working-directory: server
+        run: |
+          go build ./...
+          go vet ./...
+          go test ./...
+
+      - name: 依赖方向基线（D1：11 service + 1 middleware + 0 router）
+        working-directory: server
+        run: |
+          COUNT=$(git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router \
+            | grep -v '_test\.go$' | wc -l)
+          echo "依赖基线命中文件数: ${COUNT}（期望 12）"
+          test "$COUNT" -eq 12
+
+      - name: 双应用 svelte-check
+        run: pnpm run check
+
+      - name: 契约三把锁
+        run: pnpm run contract:check
+
+      - name: 前端与后端 lint
+        run: pnpm run lint
