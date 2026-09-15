@@ -18,11 +18,14 @@ import (
 // createMigrateInstance 创建migrate实例的通用函数
 func createMigrateInstance(cfg *config.Config) (*migrate.Migrate, error) {
 	// 连接数据库
-	db, err := sql.Open("mysql", cfg.GetDSN())
+	// golang-migrate 的 mysql 驱动在 Close 时会关闭传入的 *sql.DB，
+	// 因此此处不得 defer db.Close()，否则迁移执行前底层连接已被关闭。
+	// 基线迁移为多语句 SQL 文件，DSN 需追加 multiStatements=true，
+	// 否则驱动以单次 Exec 执行时会触发 1064 语法错误；该参数仅作用于迁移链路，不污染 GORM 使用的原始 DSN。
+	db, err := sql.Open("mysql", cfg.GetDSN()+"&multiStatements=true")
 	if err != nil {
 		return nil, fmt.Errorf("连接数据库失败: %w", err)
 	}
-	defer db.Close()
 
 	// 创建 MySQL 驱动实例
 	driver, err := mysql.WithInstance(db, &mysql.Config{})

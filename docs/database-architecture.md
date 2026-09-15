@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文档定义 MyBlog 项目的完整数据库架构设计。采用 MySQL 8.0 作为主数据库，使用 GORM 作为 ORM 框架，覆盖用户管理、内容管理、评论系统、媒体管理、互动功能、系统监控等模块。完整 DDL 见 `docs/database/schema.sql`，实际表结构以 GORM 模型定义为准，开发模式启动时通过 AutoMigrate 同步。
+本文档定义 MyBlog 项目的完整数据库架构设计。采用 MySQL 8.0 作为主数据库，使用 GORM 作为 ORM 框架，覆盖用户管理、内容管理、评论系统、媒体管理、互动功能、系统监控等模块。完整 DDL 见 `docs/database/schema.sql`，实际表结构以 GORM 模型定义为准；生产环境经 golang-migrate 执行 `server/migrations/` 增量迁移，开发模式启动时通过 AutoMigrate 同步。
 
 **数据库规模**：23 张业务表，按职责划分为 7 个模块。
 - 用户模块 4 张：users、user_sessions、user_activities、auth_tokens
@@ -165,8 +165,14 @@
 
 ## 演进与运维约定
 
-1. **新增表**：在 `server/internal/model/` 创建模型，加入 `Models()` 注册，并在 `table_comments.go` 补充表注释。
-2. **修改表结构**：修改 GORM 模型后由 AutoMigrate 自动同步，新增字段与索引对既有数据无影响。
+### 迁移双轨（2026-09-15 定案）
+
+- **生产轨（golang-migrate 严格轨）**：非 debug 模式启动时经 `server/internal/database` 的迁移链路执行 `server/migrations/` 增量迁移。基线为 `000001_init_schema`，由开发库 AutoMigrate 生成物导出固化，生产部署以迁移版本为准。
+- **开发轨（AutoMigrate）**：debug 模式保留 GORM AutoMigrate 快速同步，模型改动直接生效；与迁移基线出现漂移时以手写增量迁移对齐。
+- **演进纪律**：后续任何 schema 变更必须手写增量迁移并随版本提交，禁止回退生产轨到 AutoMigrate，禁止仅依赖 AutoMigrate 演进生产表结构。
+
+1. **新增表**：在 `server/internal/model/` 创建模型，加入 `Models()` 注册，并在 `table_comments.go` 补充表注释；生产轨同步手写增量迁移建表。
+2. **修改表结构**：修改 GORM 模型后开发环境由 AutoMigrate 自动同步；生产环境以手写增量迁移执行，新增字段与索引对既有数据无影响。
 3. **新字段约束**：新增字段必须携带 comment、贴合真实数据长度，并考虑是否补充索引。
 4. **数据清理**：定期清理过期会话、过期认证令牌、软删除数据与历史日志。
 5. **备份策略**：每日全量备份 mysqldump，结合 binlog 实现增量恢复。
