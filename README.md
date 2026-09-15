@@ -112,7 +112,8 @@ pnpm run dev:admin     # 仅后台应用
 - **前台应用**: http://localhost:8899 (可配置)
 - **后台应用**: http://localhost:9988/admin (基准路径 /admin，可配置)
 - **后端 API**: http://localhost:3000 (可配置)
-- **API 健康检查**: http://localhost:3000/api/health
+- **API 存活探针 (liveness)**: http://localhost:3000/api/health
+- **API 就绪探针 (readiness)**: http://localhost:3000/api/health/ready（探测数据库连通性）
 
 ## 🔧 开发命令
 

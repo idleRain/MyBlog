@@ -35,7 +35,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 | 模块 | 接口数量 | 说明 |
 |------|----------|------|
-| 健康检查 | 1 | 系统状态监控 |
+| 健康检查 | 2 | 存活与就绪探针 |
 | 用户管理 | 11 | 用户认证和管理 |
 | 用户关注 | 6 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
@@ -170,7 +170,8 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/admin/stats/articles` - 浏览量趋势
 
 ### 系统监控
-- `POST /api/health` - 健康检查
+- `GET /api/health` - 存活探针（基础设施端点例外）
+- `GET /api/health/ready` - 就绪探针（基础设施端点例外）
 
 ## 权限系统
 
@@ -213,8 +214,11 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 # 启动开发服务器
 pnpm run dev
 
-# 健康检查
-curl -X POST http://localhost:3000/api/health -H "Content-Type: application/json" -d '{}'
+# 存活探针
+curl http://localhost:3000/api/health
+
+# 就绪探针（探测数据库连通性）
+curl http://localhost:3000/api/health/ready
 ```
 
 ### 认证流程

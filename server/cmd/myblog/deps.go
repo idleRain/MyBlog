@@ -4,6 +4,7 @@ package main
 
 import (
 	"MyBlog/internal/config"
+	"MyBlog/internal/database"
 	"MyBlog/internal/handler"
 	"MyBlog/internal/middleware"
 	"MyBlog/internal/repository"
@@ -34,6 +35,7 @@ func newDependencies(cfg *config.Config, db *gorm.DB) *router.Dependencies {
 		JWTService:          services.jwt,
 		IdentityProvider:    services.identity,
 		RBACService:         services.rbac,
+		DBHealthCheck:       database.HealthCheck,
 	}
 }
 

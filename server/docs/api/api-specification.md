@@ -222,7 +222,8 @@ POST /api/{模块}/{操作}
 
 - `POST /api/users/create` - 创建用户
 - `POST /api/users/list` - 获取用户列表
-- `POST /api/health` - 健康检查
+- `GET /api/health` - 存活探针（基础设施端点例外）
+- `GET /api/health/ready` - 就绪探针（基础设施端点例外）
 
 ## 开发约定
 

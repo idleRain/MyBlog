@@ -145,7 +145,7 @@ pnpm run migrate [create|up|down|version|help]
 
 ## 5. 后端约定（server/）
 
-- **POST-Only 规范**：后端业务接口一律通过 `POST` 方法注册，查询类接口同样使用 `POST`，不使用 `GET`、`PUT`、`DELETE` 等方法。请求参数统一承载于 JSON 请求体，纯 id 类短参数可放在 path 中。
+- **POST-Only 规范**：后端业务接口一律通过 `POST` 方法注册，查询类接口同样使用 `POST`，不使用 `GET`、`PUT`、`DELETE` 等方法。请求参数统一承载于 JSON 请求体，纯 id 类短参数可放在 path 中。健康探针等基础设施端点不属于业务接口，按编排器标准使用 `GET`（见 `internal/router/health.go`，2026-09-15 定案）。
 - **接口健壮性**：涉及外部输入的接口不得省略必要校验。请求参数在 handler 层通过 `ShouldBindJSON` 与 `binding` tag 完成必填、长度、格式、枚举等校验，业务规则在 service 层校验，校验全部通过后才进入数据访问层。
 - **公共校验方法**：跨接口复用的校验逻辑必须提取为公共方法或工具函数，不得仅内联在单个 handler 或 service 局部。存量私有校验（如 `service/user.go` 的密码强度校验）触碰时应迁移为公共校验工具，禁止其他模块复制其逻辑。
 - **分层架构**：`handler`（HTTP 层，参数校验与 DTO 映射）→ `service`（业务逻辑）→ `repository`（数据访问）。路由注册见 `internal/router/router.go`。依赖方向铁律见 A1。
