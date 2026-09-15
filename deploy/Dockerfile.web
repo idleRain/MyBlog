@@ -1,0 +1,29 @@
+# 前台镜像：构建 adapter-node 产物后由 node 直接运行。
+# 前端 API 地址经构建参数注入：浏览器端走同源 /api，SSR 端直连容器网络内的 server 服务。
+
+# 阶段一：构建前台产物
+FROM node:22-alpine AS builder
+WORKDIR /repo
+RUN corepack enable
+# 拷贝 monorepo 全部源码，pnpm 按 workspace 配置解析本地包依赖
+COPY . .
+# 冻结 lock 安装依赖，确保镜像内依赖与开发环境一致
+RUN pnpm install --frozen-lockfile
+# 生产构建参数：SSR 端请求后端容器，浏览器端请求同源网关
+ARG VITE_BASE_URL=/api
+ARG VITE_PROXY_URL=http://server:3000
+ARG VITE_REQUEST_TIMEOUT=15000
+ENV VITE_BASE_URL=$VITE_BASE_URL \
+    VITE_PROXY_URL=$VITE_PROXY_URL \
+    VITE_REQUEST_TIMEOUT=$VITE_REQUEST_TIMEOUT
+RUN pnpm --filter @myblog/web run build
+
+# 阶段二：运行前台产物
+FROM node:22-alpine
+ENV NODE_ENV=production
+WORKDIR /app
+# adapter-node 产物为 ESM 且自包含，package.json 提供 type: module 供 node 判定模块格式
+COPY --from=builder /repo/apps/web/build ./build
+COPY --from=builder /repo/apps/web/package.json ./package.json
+EXPOSE 3000
+CMD ["node", "build"]

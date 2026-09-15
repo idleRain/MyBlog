@@ -1,0 +1,27 @@
+# 镜像构建上下文忽略规则：排除依赖、构建产物与本地工具目录，控制上下文体积。
+
+# 版本库与 IDE 元数据
+.git
+.idea
+.vscode
+.husky
+
+# 依赖目录与构建产物
+node_modules
+**/node_modules
+**/build
+**/.svelte-kit
+**/dist
+**/coverage
+server/bin
+
+# 本地文档、临时与日志目录
+temp
+docs
+contracts
+*.log
+logs
+
+# 环境变量文件：防止开发配置与潜在密钥进入镜像，构建所需 VITE_ 变量由 Dockerfile 注入
+**/.env
+**/.env.*

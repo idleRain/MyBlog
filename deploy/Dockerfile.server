@@ -1,0 +1,23 @@
+# 后端镜像：多阶段构建，运行层仅包含二进制、配置与迁移文件。
+# Go 版本与 server/go.mod 声明的 1.26.1 对齐，配置经环境变量注入，不烧录真实密钥。
+
+# 阶段一：编译 Go 二进制
+FROM golang:1.26-alpine AS builder
+WORKDIR /src
+# 先拷贝依赖清单以命中 go mod 下载缓存层
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+# 拷贝全部源码后编译，禁用 CGO 以产出可静态分发的二进制
+COPY server/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/myblog ./cmd/myblog
+
+# 阶段二：运行镜像
+FROM alpine:3.21
+# ca-certificates 供 Go 程序访问 HTTPS 依赖，tzdata 保证本地时区解析正确
+RUN apk add --no-cache ca-certificates tzdata
+WORKDIR /app
+COPY --from=builder /out/myblog /app/myblog
+COPY server/configs/config.yaml /app/configs/config.yaml
+COPY server/migrations /app/migrations
+EXPOSE 3000
+CMD ["/app/myblog"]
