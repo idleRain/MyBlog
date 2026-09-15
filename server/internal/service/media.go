@@ -4,7 +4,6 @@ package service
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -172,7 +171,7 @@ func (s *MediaService) DeleteMedia(id uint, operatorID uint, isAdmin bool) error
 
 	// 权限校验：管理员可删除任意文件，否则仅上传者本人可删除。
 	if !isAdmin && media.UploaderID != operatorID {
-		return errors.New("没有删除此文件的权限")
+		return fmt.Errorf("%w：删除此文件", ErrPermissionDenied)
 	}
 
 	// 删除物理文件，失败不影响数据库软删结果。

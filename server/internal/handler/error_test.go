@@ -3,10 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http/httptest"
 	"testing"
 
 	"MyBlog/internal/repository"
+	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,6 +39,22 @@ func TestHandleServiceError(t *testing.T) {
 			assertResponseCode(t, recorder, 404)
 		})
 	}
+
+	t.Run("权限不足返回403", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		HandleServiceError(ctx, service.ErrPermissionDenied)
+
+		assertResponseCode(t, recorder, 403)
+	})
+
+	t.Run("包装后的权限错误经errors.Is识别返回403", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		HandleServiceError(ctx, fmt.Errorf("%w：编辑此文章", service.ErrPermissionDenied))
+
+		assertResponseCode(t, recorder, 403)
+	})
 
 	t.Run("未知错误返回500", func(t *testing.T) {
 		recorder := httptest.NewRecorder()

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strings"
 	"testing"
 
@@ -123,12 +124,12 @@ func TestDeleteMediaPermission(t *testing.T) {
 	}
 	svc := newTestMediaService(t, repo)
 
-	// 非上传者、非管理员删除应被拒绝。
+	// 非上传者、非管理员删除应被拒绝，且错误可经哨兵识别映射为 403。
 	err := svc.DeleteMedia(1, 2, false)
 	if err == nil {
 		t.Fatal("非上传者删除应返回错误")
 	}
-	if !strings.Contains(err.Error(), "没有删除") {
+	if !errors.Is(err, ErrPermissionDenied) {
 		t.Errorf("错误信息不符合预期: %v", err)
 	}
 

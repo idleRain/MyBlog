@@ -159,7 +159,7 @@ func (s *ArticleService) CreateArticle(req *CreateArticleRequest, authorID uint)
 
 	// 权限检查
 	if !s.rbacService.HasPermission(user.Role, PermissionArticleCreate) {
-		return nil, errors.New("没有创建文章的权限")
+		return nil, fmt.Errorf("%w：创建文章", ErrPermissionDenied)
 	}
 
 	// 文章状态未指定时默认为草稿。
@@ -237,7 +237,7 @@ func (s *ArticleService) GetArticle(id uint, userID *uint) (*model.Article, erro
 
 	// 权限检查
 	if !s.CanView(article, userID) {
-		return nil, errors.New("没有查看此文章的权限")
+		return nil, fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
 	ensureContentHTML(article)
@@ -253,7 +253,7 @@ func (s *ArticleService) GetArticleBySlug(slug string, userID *uint) (*model.Art
 
 	// 权限检查
 	if !s.CanView(article, userID) {
-		return nil, errors.New("没有查看此文章的权限")
+		return nil, fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
 	ensureContentHTML(article)
@@ -270,7 +270,7 @@ func (s *ArticleService) UpdateArticle(id uint, req *UpdateArticleRequest, userI
 
 	// 权限检查
 	if !s.CanEdit(article, userID) {
-		return nil, errors.New("没有编辑此文章的权限")
+		return nil, fmt.Errorf("%w：编辑此文章", ErrPermissionDenied)
 	}
 
 	// 更新字段，可选字符串字段仅在显式传入时赋值，省略时保留原值。
@@ -352,7 +352,7 @@ func (s *ArticleService) DeleteArticle(id uint, userID uint) error {
 
 	// 权限检查
 	if !s.CanDelete(article, userID) {
-		return errors.New("没有删除此文章的权限")
+		return fmt.Errorf("%w：删除此文章", ErrPermissionDenied)
 	}
 
 	return s.articleRepo.Delete(id)
@@ -683,7 +683,7 @@ func (s *ArticleService) LikeArticle(articleID uint, userID uint) error {
 
 	// 校验当前用户有查看权限，防止对不可见文章点赞。
 	if !s.CanView(article, &userID) {
-		return errors.New("没有查看此文章的权限")
+		return fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
 	// 写入点赞记录并维护计数，已点赞时静默忽略。
@@ -773,7 +773,7 @@ func (s *ArticleService) BookmarkArticle(articleID uint, userID uint) error {
 
 	// 校验当前用户有查看权限，防止对不可见文章收藏。
 	if !s.CanView(article, &userID) {
-		return errors.New("没有查看此文章的权限")
+		return fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
 	// 写入收藏记录并维护计数，已收藏时静默忽略。
@@ -795,7 +795,7 @@ func (s *ArticleService) PublishArticle(id uint, userID uint) error {
 	}
 
 	if !s.CanEdit(article, userID) {
-		return errors.New("没有编辑此文章的权限")
+		return fmt.Errorf("%w：编辑此文章", ErrPermissionDenied)
 	}
 
 	return s.articleRepo.Publish(id)
@@ -809,7 +809,7 @@ func (s *ArticleService) UnpublishArticle(id uint, userID uint) error {
 	}
 
 	if !s.CanEdit(article, userID) {
-		return errors.New("没有编辑此文章的权限")
+		return fmt.Errorf("%w：编辑此文章", ErrPermissionDenied)
 	}
 
 	return s.articleRepo.Unpublish(id)
@@ -823,7 +823,7 @@ func (s *ArticleService) ArchiveArticle(id uint, userID uint) error {
 	}
 
 	if !s.CanEdit(article, userID) {
-		return errors.New("没有编辑此文章的权限")
+		return fmt.Errorf("%w：编辑此文章", ErrPermissionDenied)
 	}
 
 	return s.articleRepo.Archive(id)
@@ -837,7 +837,7 @@ func (s *ArticleService) SetArticlePrivate(id uint, userID uint) error {
 	}
 
 	if !s.CanEdit(article, userID) {
-		return errors.New("没有编辑此文章的权限")
+		return fmt.Errorf("%w：编辑此文章", ErrPermissionDenied)
 	}
 
 	return s.articleRepo.SetPrivate(id)
