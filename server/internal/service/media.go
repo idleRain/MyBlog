@@ -48,6 +48,17 @@ type MediaListResponse struct {
 	PageSize int                `json:"pageSize"`
 }
 
+// allowedMimeExtensions 白名单 MIME 类型到标准存储扩展名的映射。
+// 存储扩展名一律由内容嗅探结果推导，防止伪造扩展名使静态服务以可执行类型响应。
+// svg 与 html 等可承载脚本的类型刻意不在映射内，杜绝存储型 XSS，见体检项 BE-24。
+var allowedMimeExtensions = map[string]string{
+	"image/jpeg":      ".jpg",
+	"image/png":       ".png",
+	"image/gif":       ".gif",
+	"image/webp":      ".webp",
+	"application/pdf": ".pdf",
+}
+
 // MediaService 媒体服务实现
 type MediaService struct {
 	mediaRepo repository.MediaRepositoryInterface
@@ -83,8 +94,14 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 		return existing, nil
 	}
 
-	// 生成存储文件名与相对路径，按月分目录便于归档。
-	storedName := uuid.NewString() + filepath.Ext(filename)
+	// 以内容嗅探结果校验类型白名单，客户端声明的文件名与 Content-Type 均不可信。
+	mimeType := detectContentType(content)
+	if err := s.validateUploadType(mimeType); err != nil {
+		return nil, err
+	}
+
+	// 生成存储文件名与相对路径，按月分目录便于归档；存储扩展名由嗅探类型推导。
+	storedName := uuid.NewString() + storedExtensionForMime(mimeType, filepath.Ext(filename))
 	subDir := timeNowStr()
 	relativePath := filepath.Join(subDir, storedName)
 	uploadDir := filepath.Join(s.cfg.Media.UploadDir, subDir)
@@ -106,7 +123,7 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 		StoredName:  storedName,
 		FilePath:    fullPath,
 		FileURL:     fileURL,
-		MimeType:    detectContentType(content),
+		MimeType:    mimeType,
 		FileSize:    uint64(size),
 		FileHash:    hashHex,
 		Status:      model.MediaStatusActive,
@@ -183,6 +200,28 @@ func (s *MediaService) DeleteMedia(id uint, operatorID uint, isAdmin bool) error
 // timeNowStr 生成当前日期字符串，用于按天归档上传目录。
 func timeNowStr() string {
 	return time.Now().Format("2006/01")
+}
+
+// validateUploadType 校验嗅探出的 MIME 类型是否在配置白名单内，白名单为空表示不限制。
+func (s *MediaService) validateUploadType(mimeType string) error {
+	if len(s.cfg.Media.AllowedTypes) == 0 {
+		return nil
+	}
+	for _, allowed := range s.cfg.Media.AllowedTypes {
+		if strings.EqualFold(allowed, mimeType) {
+			return nil
+		}
+	}
+	return fmt.Errorf("不支持的文件类型 %s", mimeType)
+}
+
+// storedExtensionForMime 从白名单映射推导存储扩展名，映射缺失时回退原始扩展名。
+// 回退仅发生在白名单关闭或运维显式放行新类型的场景，命中白名单时必然存在映射。
+func storedExtensionForMime(mimeType, originalExt string) string {
+	if ext, ok := allowedMimeExtensions[mimeType]; ok {
+		return ext
+	}
+	return originalExt
 }
 
 // detectContentType 通过嗅探文件内容推断 MIME 类型。

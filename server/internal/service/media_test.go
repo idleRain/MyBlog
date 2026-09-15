@@ -152,3 +152,59 @@ func TestDeleteMediaOwnFile(t *testing.T) {
 		t.Errorf("上传者本人删除失败: %v", err)
 	}
 }
+
+// pngTestContent 构造可被内容嗅探识别为 image/png 的最小内容。
+var pngTestContent = append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0}, 8)...)
+
+// TestUploadFileRejectsDisallowedType 验证白名单开启后非白名单类型被拒绝且不落库。
+func TestUploadFileRejectsDisallowedType(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.AllowedTypes = []string{"image/png"}
+
+	content := []byte("plain text content")
+	_, err := svc.UploadFile("note.txt", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("非白名单类型的上传应返回错误")
+	}
+	if !strings.Contains(err.Error(), "不支持的文件类型") {
+		t.Errorf("错误信息不符合预期: %v", err)
+	}
+	if len(repo.media) != 0 {
+		t.Error("被拒绝的文件不应落库")
+	}
+
+	if _, err := svc.UploadFile("pic.png", bytes.NewReader(pngTestContent), int64(len(pngTestContent)), 1, "127.0.0.1"); err != nil {
+		t.Fatalf("白名单内类型上传失败: %v", err)
+	}
+}
+
+// TestUploadFileDerivesStoredExtension 验证存储扩展名由内容嗅探结果推导，杜绝伪造扩展名。
+func TestUploadFileDerivesStoredExtension(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.AllowedTypes = []string{"image/png"}
+
+	media, err := svc.UploadFile("polyglot.html", bytes.NewReader(pngTestContent), int64(len(pngTestContent)), 1, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+	if !strings.HasSuffix(media.StoredName, ".png") {
+		t.Errorf("存储扩展名应由嗅探类型推导为 .png，实际为 %s", media.StoredName)
+	}
+}
+
+// TestUploadFileKeepsExtensionWhenUnrestricted 验证白名单关闭时保持原始扩展名。
+func TestUploadFileKeepsExtensionWhenUnrestricted(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+
+	content := []byte("plain text content")
+	media, err := svc.UploadFile("note.txt", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+	if !strings.HasSuffix(media.StoredName, ".txt") {
+		t.Errorf("白名单关闭时应保留原始扩展名，实际为 %s", media.StoredName)
+	}
+}

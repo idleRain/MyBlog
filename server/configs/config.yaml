@@ -80,7 +80,12 @@ media:
   upload_dir: "uploads"        # 本地存储目录，相对服务运行目录
   base_url: "/uploads"         # 文件访问URL前缀
   max_size_mb: 10              # 单文件大小上限（MB）
-  allowed_types: []            # 允许的MIME类型（空表示不限制）
+  allowed_types:               # 允许的MIME类型，按内容嗅探结果校验，空表示不限制（不建议）
+    - "image/jpeg"
+    - "image/png"
+    - "image/gif"
+    - "image/webp"
+    - "application/pdf"
 
 # RBAC权限配置：生产环境角色权限的唯一权威，修改后重启生效，无需重新编译
 rbac:

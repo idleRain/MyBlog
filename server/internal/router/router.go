@@ -37,6 +37,10 @@ func NewRouter(cfg *config.Config) *Router {
 		})
 	})
 
+	// 挂载本地上传文件的静态服务，路由前缀与 media.base_url 配置保持一致。
+	// 目录缺失时 http.Dir 按需 404，上传动作会自行创建目录，无需启动期预建。
+	engine.Static(cfg.Media.BaseURL, cfg.Media.UploadDir)
+
 	return &Router{
 		engine: engine,
 		cfg:    cfg,
