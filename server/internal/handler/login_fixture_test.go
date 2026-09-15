@@ -21,11 +21,15 @@ const fixtureContractPath = "../../../contracts/fixtures"
 // fakeLoginUserService 登录场景测试替身，仅覆盖 Login 方法，其余方法沿接口零值。
 type fakeLoginUserService struct {
 	service.UserService
-	loginErr error
+	loginResp *service.LoginResponse
+	loginErr  error
 }
 
 func (f *fakeLoginUserService) Login(username, password string) (*service.LoginResponse, error) {
-	return nil, f.loginErr
+	if f.loginErr != nil {
+		return nil, f.loginErr
+	}
+	return f.loginResp, nil
 }
 
 // assertResponseMatchesFixture 断言 gin 响应体与契约金样本在语义上逐字节一致。

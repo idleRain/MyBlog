@@ -2,21 +2,21 @@
   "code": 200,
   "message": "登录成功",
   "data": {
+    "accessToken": "payload-only-access-token",
+    "expiresIn": 1800,
+    "permissions": ["article:read", "comment:create", "comment:read", "comment:update"],
+    "refreshToken": "payload-only-refresh-token",
     "user": {
       "id": 1,
       "username": "admin",
       "email": "admin@myblog.local",
       "nickname": "admin",
       "avatar": "",
-      "birthday": "",
+      "birthday": "1990-01-01",
       "role": "superadmin",
       "status": 1,
-      "createdAt": "2026-01-01T00:00:00+08:00",
-      "updatedAt": "2026-01-01T00:00:00+08:00"
-    },
-    "accessToken": "<payload-only access token>",
-    "refreshToken": "<payload-only refresh token>",
-    "expiresIn": 1800,
-    "permissions": ["article:read", "comment:create", "comment:read", "comment:update"]
+      "createdAt": "2026-01-01 08:30:00",
+      "updatedAt": "2026-01-01 08:30:00"
+    }
   }
 }

@@ -38,25 +38,64 @@
     "author": {
       "id": 1,
       "username": "admin",
-      "email": "admin@myblog.local",
-      "phone": null,
       "nickname": "admin",
       "avatar": "",
-      "coverImage": "",
       "bio": "",
-      "website": "",
-      "location": "",
-      "gender": null,
-      "birthday": "",
-      "timezone": "Asia/Shanghai",
-      "locale": "zh-CN",
-      "role": "superadmin",
+      "website": ""
+    },
+    "category": {
+      "id": 1,
+      "name": "示例分类",
+      "slug": "example-category",
+      "description": "",
+      "coverImage": "",
+      "parentId": null,
+      "rootId": null,
+      "level": 1,
+      "path": "/1",
+      "sortOrder": 0,
       "status": 1,
+      "articleCount": 0,
+      "isFeatured": false,
+      "seoTitle": "",
+      "seoDescription": "",
       "createdAt": "2026-01-01T00:00:00+08:00",
       "updatedAt": "2026-01-01T00:00:00+08:00"
     },
-    "category": null,
-    "categories": [],
-    "tags": []
+    "categories": [
+      {
+        "id": 1,
+        "name": "示例分类",
+        "slug": "example-category",
+        "description": "",
+        "coverImage": "",
+        "parentId": null,
+        "rootId": null,
+        "level": 1,
+        "path": "/1",
+        "sortOrder": 0,
+        "status": 1,
+        "articleCount": 0,
+        "isFeatured": false,
+        "seoTitle": "",
+        "seoDescription": "",
+        "createdAt": "2026-01-01T00:00:00+08:00",
+        "updatedAt": "2026-01-01T00:00:00+08:00"
+      }
+    ],
+    "tags": [
+      {
+        "id": 1,
+        "name": "示例标签",
+        "slug": "example-tag",
+        "color": "#808080",
+        "description": "",
+        "status": 1,
+        "usageCount": 0,
+        "isHot": false,
+        "createdAt": "2026-01-01T00:00:00+08:00",
+        "updatedAt": "2026-01-01T00:00:00+08:00"
+      }
+    ]
   }
 }
