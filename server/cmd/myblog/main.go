@@ -19,8 +19,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// 优雅关停的排空时限，超时后强制退出。
-const shutdownTimeout = 10 * time.Second
+// HTTP 服务器超时与关停时限，防止慢速连接长期占用服务资源。
+const (
+	readHeaderTimeout = 5 * time.Second   // 请求头读取上限，阻断慢速 HTTP 攻击
+	readTimeout       = 15 * time.Second  // 整个请求的读取上限，媒体上传上限 10MB 时 15s 足够
+	writeTimeout      = 30 * time.Second  // 响应写出上限，覆盖媒体下载等大响应场景
+	idleTimeout       = 120 * time.Second // 空闲连接保活上限，到期回收
+	shutdownTimeout   = 10 * time.Second  // 优雅关停的排空时限，超时后强制退出
+)
 
 func main() {
 	// 加载配置
@@ -40,10 +46,14 @@ func main() {
 	routerManager := router.NewRouter(cfg)
 	routerManager.SetupRoutes(deps)
 
-	// 以结构化 HTTP 服务启动，支持优雅关停。
+	// 以结构化 HTTP 服务启动，支持优雅关停，四项超时防止连接资源泄漏。
 	server := &http.Server{
-		Addr:    cfg.GetServerAddress(),
-		Handler: routerManager.GetEngine(),
+		Addr:              cfg.GetServerAddress(),
+		Handler:           routerManager.GetEngine(),
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
 	}
 
 	// 独立 goroutine 监听端口，主 goroutine 等待中断信号。
