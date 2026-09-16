@@ -108,6 +108,11 @@ function openAdminConsole() {
 
       <!-- 右侧功能区 -->
       <div class="ml-auto flex items-center space-x-3">
+        <!-- 移动端通知入口：与桌面铃铛共用组件，未登录时组件内部不渲染 -->
+        <div class="md:hidden">
+          <NotificationBell />
+        </div>
+
         <!-- 桌面端功能按钮 -->
         <div class="hidden items-center space-x-3 md:flex">
           <!-- 通知铃铛：登录后展示未读数与最近通知 -->
