@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
@@ -12,19 +13,20 @@ import (
 // fakeArticleRepo 文章仓储的测试替身，记录互动调用并返回可配置结果。
 type fakeArticleRepo struct {
 	repository.ArticleRepositoryInterface
-	getByID        func(id uint) (*model.Article, error)
-	list           func(params *repository.ArticleListParams) ([]*model.Article, int64, error)
-	getByAuthor    func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
-	search         func(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error)
-	incrementView  func(id uint) error
-	recordView     func(view *model.ArticleView) error
-	addLike        func(articleID, userID uint) (bool, error)
-	removeLike     func(articleID, userID uint) (bool, error)
-	addBookmark    func(articleID, userID uint) (bool, error)
-	removeBookmark func(articleID, userID uint) (bool, error)
-	existsLike     func(articleID, userID uint) (bool, error)
-	existsBookmark func(articleID, userID uint) (bool, error)
-	listBookmarks  func(userID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	getByID             func(id uint) (*model.Article, error)
+	list                func(params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	getByAuthor         func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	search              func(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	incrementView       func(id uint) error
+	recordView          func(view *model.ArticleView) error
+	recordViewWithStats func(view *model.ArticleView, contentType string, statType string, statDate time.Time) error
+	addLike             func(articleID, userID uint) (bool, error)
+	removeLike          func(articleID, userID uint) (bool, error)
+	addBookmark         func(articleID, userID uint) (bool, error)
+	removeBookmark      func(articleID, userID uint) (bool, error)
+	existsLike          func(articleID, userID uint) (bool, error)
+	existsBookmark      func(articleID, userID uint) (bool, error)
+	listBookmarks       func(userID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 }
 
 func (f *fakeArticleRepo) List(params *repository.ArticleListParams) ([]*model.Article, int64, error) {
@@ -32,6 +34,14 @@ func (f *fakeArticleRepo) List(params *repository.ArticleListParams) ([]*model.A
 		return f.list(params)
 	}
 	return nil, 0, errors.New("未实现的测试替身方法")
+}
+
+// RecordViewWithStats 浏览事务写入的替身实现，捕获调用参数供断言使用。
+func (f *fakeArticleRepo) RecordViewWithStats(view *model.ArticleView, contentType string, statType string, statDate time.Time) error {
+	if f.recordViewWithStats != nil {
+		return f.recordViewWithStats(view, contentType, statType, statDate)
+	}
+	return errors.New("未实现的测试替身方法")
 }
 
 func (f *fakeArticleRepo) ExistsLike(articleID, userID uint) (bool, error) {

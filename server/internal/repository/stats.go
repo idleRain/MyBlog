@@ -111,6 +111,12 @@ func (r *StatsRepository) CountTags() (int64, error) {
 
 // UpsertContentStat 累加内容日统计，维度组合首次出现时插入初始记录。
 func (r *StatsRepository) UpsertContentStat(contentType string, contentID uint, statType string, statDate time.Time) error {
+	return upsertContentStat(r.db, contentType, contentID, statType, statDate)
+}
+
+// upsertContentStat 内容日统计累加的共享写入逻辑，供统计仓储与
+// 文章浏览事务复用，统计口径在包内保持单一来源。
+func upsertContentStat(db *gorm.DB, contentType string, contentID uint, statType string, statDate time.Time) error {
 	stat := model.ContentStats{
 		ContentType: contentType,
 		ContentID:   contentID,
@@ -118,7 +124,7 @@ func (r *StatsRepository) UpsertContentStat(contentType string, contentID uint, 
 		StatValue:   1,
 		StatDate:    statDate,
 	}
-	if err := r.db.Clauses(clause.OnConflict{
+	if err := db.Clauses(clause.OnConflict{
 		DoUpdates: clause.Assignments(map[string]interface{}{
 			"stat_value": gorm.Expr("stat_value + 1"),
 		}),

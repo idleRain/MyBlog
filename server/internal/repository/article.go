@@ -39,6 +39,8 @@ type ArticleRepositoryInterface interface {
 	ListArchives() ([]*model.Article, error)
 	RecordArticleView(view *model.ArticleView) error
 	IncrementViewCount(id uint) error
+	// RecordViewWithStats 在单事务内完成浏览计数递增、访客明细与内容日统计三段写入。
+	RecordViewWithStats(view *model.ArticleView, contentType string, statType string, statDate time.Time) error
 	UpdateCommentCount(id uint) error
 
 	// 互动操作
@@ -353,15 +355,20 @@ func (r *ArticleRepository) ListArchives() ([]*model.Article, error) {
 
 // RecordArticleView 记录文章浏览明细，同一文章、访客与日期命中既有记录时累加当日次数。
 func (r *ArticleRepository) RecordArticleView(view *model.ArticleView) error {
+	return r.recordArticleView(r.db, view)
+}
+
+// recordArticleView 在给定数据库句柄内写入浏览明细，供事务方法复用。
+func (r *ArticleRepository) recordArticleView(db *gorm.DB, view *model.ArticleView) error {
 	var existing model.ArticleView
-	err := r.db.Where("article_id = ? AND visitor_id = ? AND view_date = ?",
+	err := db.Where("article_id = ? AND visitor_id = ? AND view_date = ?",
 		view.ArticleID, view.VisitorID, view.ViewDate).First(&existing).Error
 	if err == nil {
-		return r.db.Model(&model.ArticleView{}).Where("id = ?", existing.ID).
+		return db.Model(&model.ArticleView{}).Where("id = ?", existing.ID).
 			Update("view_count", gorm.Expr("view_count + 1")).Error
 	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return r.db.Create(view).Error
+		return db.Create(view).Error
 	}
 	return fmt.Errorf("查询浏览记录失败: %w", err)
 }
@@ -398,9 +405,29 @@ func (r *ArticleRepository) GetRecent(limit int) ([]*model.Article, error) {
 
 // IncrementViewCount 增加浏览量
 func (r *ArticleRepository) IncrementViewCount(id uint) error {
-	return r.db.Model(&model.Article{}).
+	return r.incrementViewCount(r.db, id)
+}
+
+// incrementViewCount 在给定数据库句柄内递增浏览计数，供事务方法复用。
+func (r *ArticleRepository) incrementViewCount(db *gorm.DB, id uint) error {
+	return db.Model(&model.Article{}).
 		Where("id = ?", id).
 		UpdateColumn("view_count", gorm.Expr("view_count + 1")).Error
+}
+
+// RecordViewWithStats 在单事务内完成浏览三段写入：计数递增、访客明细与日统计，
+// 任一环节失败整体回滚，杜绝中断造成的计数与统计漂移。
+// 日统计复用统计仓储的包内共享写入逻辑，不跨仓储引入依赖。
+func (r *ArticleRepository) RecordViewWithStats(view *model.ArticleView, contentType string, statType string, statDate time.Time) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.incrementViewCount(tx, view.ArticleID); err != nil {
+			return err
+		}
+		if err := r.recordArticleView(tx, view); err != nil {
+			return err
+		}
+		return upsertContentStat(tx, contentType, view.ArticleID, statType, statDate)
+	})
 }
 
 // UpdateCommentCount 更新评论数

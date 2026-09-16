@@ -627,14 +627,10 @@ func groupArticlesByYearMonth(articles []*model.Article) []ArticleArchiveYear {
 	return groups
 }
 
-// ViewArticle 记录文章浏览：递增文章计数，落访客去重明细并累加日统计。
+// ViewArticle 记录文章浏览：计数递增、访客明细与日统计在同一事务内完成，
+// 任一环节失败整体回滚，杜绝中断导致计数与统计漂移。
 func (s *ArticleService) ViewArticle(articleID uint, userID *uint, visitorID string, ipAddress string) error {
-	// 增加浏览量
-	if err := s.articleRepo.IncrementViewCount(articleID); err != nil {
-		return err
-	}
-
-	// 访客标识缺失时以 IP 兜底，保证匿名流量也能按访客去重。
+	// 访客标识缺失时以 IP 后备处理，确保匿名流量也能按访客去重。
 	visitorKey := visitorID
 	if visitorKey == "" {
 		visitorKey = ipAddress
@@ -650,11 +646,8 @@ func (s *ArticleService) ViewArticle(articleID uint, userID *uint, visitorID str
 		ViewDate:  viewDate,
 		ViewCount: 1,
 	}
-	if err := s.articleRepo.RecordArticleView(view); err != nil {
-		return err
-	}
 
-	return s.statsRepo.UpsertContentStat(model.ContentTypeArticle, articleID, model.StatTypeDailyViews, viewDate)
+	return s.articleRepo.RecordViewWithStats(view, model.ContentTypeArticle, model.StatTypeDailyViews, viewDate)
 }
 
 // LikeArticle 点赞文章，重复点赞保持幂等。
