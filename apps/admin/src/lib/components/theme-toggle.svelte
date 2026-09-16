@@ -4,7 +4,12 @@ import { toggleMode } from 'mode-watcher'
 import { cn } from '@myblog/shared'
 import { Button } from '$ui/button'
 
-const props = $props<{ class?: string }>()
+// 未传入 label 时使用的默认无障碍名称。
+const DEFAULT_TOGGLE_LABEL = '切换主题'
+
+// 定位类不内置于组件：独立浮动场景（如登录页）由调用方传入 fixed 定位类，
+// 内嵌布局场景（如导航栏）保持文档流内定位，避免与页面元素重叠或遮挡关闭按钮。
+const props = $props<{ class?: string; label?: string }>()
 
 function handleToggle() {
   toggleMode()
@@ -15,11 +20,9 @@ function handleToggle() {
   variant="outline"
   size="icon"
   onclick={handleToggle}
-  class={cn(
-    props.class,
-    'fixed top-4 right-4 z-50 border bg-background/80 shadow-md backdrop-blur-sm hover:shadow-lg'
-  )}
-  title="切换主题"
+  class={cn(props.class, 'border bg-background/80 shadow-md backdrop-blur-sm hover:shadow-lg')}
+  title={props.label ?? DEFAULT_TOGGLE_LABEL}
+  aria-label={props.label ?? DEFAULT_TOGGLE_LABEL}
 >
   <Sun
     class="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-transform dark:scale-0 dark:-rotate-90"
@@ -27,5 +30,5 @@ function handleToggle() {
   <Moon
     class="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-transform dark:scale-100 dark:rotate-0"
   />
-  <span class="sr-only">切换主题</span>
+  <span class="sr-only">{props.label ?? DEFAULT_TOGGLE_LABEL}</span>
 </Button>

@@ -128,8 +128,8 @@ function togglePasswordVisibility() {
     ></div>
   </div>
 
-  <!-- 主题切换按钮 -->
-  <ThemeToggle />
+  <!-- 主题切换按钮：独立浮动场景，定位类由调用方传入 -->
+  <ThemeToggle class="fixed top-4 right-4 z-50" />
 
   <div class="relative z-10 mx-auto flex w-full max-w-sm flex-col justify-center space-y-6 px-4">
     <!-- Logo and Title -->

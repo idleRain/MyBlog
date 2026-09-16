@@ -122,7 +122,7 @@ function openAdminConsole() {
           <!-- 语言切换 -->
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <Button variant="ghost" size="icon" class="h-9 w-9">
+              <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="切换语言">
                 <Globe class="h-4 w-4" />
               </Button>
             </DropdownMenu.Trigger>
@@ -142,7 +142,7 @@ function openAdminConsole() {
             rel="noopener noreferrer"
             class="group"
           >
-            <Button variant="ghost" size="icon" class="h-9 w-9">
+            <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="GitHub 主页">
               <GithubIcon class="h-4 w-4 transition-colors group-hover:text-signal" />
             </Button>
           </a>
@@ -150,7 +150,7 @@ function openAdminConsole() {
           <!-- 个人介绍 -->
           <Dialog.Root>
             <Dialog.Trigger>
-              <Button variant="ghost" size="icon" class="h-9 w-9">
+              <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="关于作者">
                 <User class="h-4 w-4" />
               </Button>
             </Dialog.Trigger>
@@ -196,7 +196,7 @@ function openAdminConsole() {
             <!-- 用户信息下拉菜单 -->
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <Button variant="ghost" size="icon" class="h-9 w-9">
+                <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="用户菜单">
                   <div class="flex h-6 w-6 items-center justify-center rounded-none bg-signal">
                     <span class="text-xs font-bold text-signal-foreground">
                       {currentUser?.username?.charAt(0)?.toUpperCase() || 'U'}
@@ -239,7 +239,7 @@ function openAdminConsole() {
         <!-- 移动端菜单 -->
         <Sheet.Root bind:open={isMobileMenuOpen}>
           <Sheet.Trigger>
-            <Button variant="ghost" size="icon" class="h-9 w-9 md:hidden">
+            <Button variant="ghost" size="icon" class="h-9 w-9 md:hidden" aria-label="打开菜单">
               <Menu class="h-5 w-5" />
             </Button>
           </Sheet.Trigger>
