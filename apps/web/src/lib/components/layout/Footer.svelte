@@ -27,7 +27,8 @@ const quickLinks = [
   { name: '博客', href: '/blog' },
   { name: '归档', href: '/archives' },
   { name: '关于', href: '/about' },
-  { name: '联系', href: '/contact' }
+  { name: '联系', href: '/contact' },
+  { name: '隐私政策', href: '/privacy' }
 ]
 </script>
 
