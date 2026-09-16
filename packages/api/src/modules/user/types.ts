@@ -183,6 +183,11 @@ export type DeleteUserResponse = ApiResponse<null>
 export type RefreshTokenResponse = ApiResponse<RefreshTokenData>
 export type LogoutResponse = ApiResponse<null>
 
+// 登出请求参数，刷新令牌可选提交，后端将访问与刷新令牌一并撤销
+export interface LogoutRequest {
+  refreshToken?: string
+}
+
 // 权限相关类型
 export interface Permission {
   id: string

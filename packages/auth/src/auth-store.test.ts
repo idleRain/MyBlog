@@ -6,7 +6,7 @@ import { createAuthStore } from './auth-store'
 function createTestStore() {
   return createAuthStore({
     isBrowser: () => false,
-    logoutApi: async () => {}
+    logoutApi: async (_refreshToken?: string) => {}
   })
 }
 

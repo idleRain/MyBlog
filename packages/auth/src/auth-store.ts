@@ -24,8 +24,9 @@ export interface AuthStoreDeps {
 
   /**
    * 调用后端登出接口，供会话登出时同步撤销服务端令牌。
+   * 刷新令牌可选传入，后端将访问与刷新令牌一并撤销。
    */
-  logoutApi: () => Promise<void>
+  logoutApi: (refreshToken?: string) => Promise<void>
 }
 
 // 初始状态
@@ -140,11 +141,11 @@ export function createAuthStore(deps: AuthStoreDeps) {
       set(authState)
     },
 
-    // 登出，先尝试撤销服务端令牌再清除本地状态。
+    // 登出，先尝试撤销服务端令牌对再清除本地状态。
     async logout(skipApiCall: boolean = false) {
       if (!skipApiCall && deps.isBrowser() && currentState.isAuthenticated) {
         try {
-          await deps.logoutApi()
+          await deps.logoutApi(currentState.refreshToken ?? undefined)
           console.log('成功调用后端登出接口')
         } catch (error) {
           console.warn('调用后端登出接口失败，继续清除本地状态:', error)

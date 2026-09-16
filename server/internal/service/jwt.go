@@ -98,6 +98,8 @@ type JWTService interface {
 	ValidateRefreshToken(tokenString string) (*JWTClaims, error)
 	RefreshAccessToken(refreshTokenString string) (*TokenPair, error)
 	RevokeToken(tokenString string) error
+	// RevokeUserTokens 撤销指定用户当前存活的全部令牌，用于改密等全局失效场景。
+	RevokeUserTokens(userID uint) error
 	IsTokenRevoked(tokenString string) bool
 	// 新增：从payload重构完整JWT
 	ReconstructFullToken(payloadOnly string, tokenType TokenType) (string, error)
@@ -110,15 +112,19 @@ type jwtService struct {
 	// 过期令牌本身无法通过签名校验，对应撤销键随之失去存在意义，
 	// 撤销写入时惰性清理，防止撤销表随历史登出无界增长。
 	revokedTokens map[string]time.Time
-	// mu 保护 revokedTokens 的并发读写，避免多请求同时撤销与校验时产生数据竞争。
+	// issuedTokensByUser 登记每个用户存活令牌的撤销键与过期时间，
+	// 供按用户撤销使用，随撤销写入与签发一并惰性清理。
+	issuedTokensByUser map[uint]map[string]time.Time
+	// mu 保护撤销表与用户令牌登记表的并发读写，避免多请求同时撤销与校验时产生数据竞争。
 	mu sync.RWMutex
 }
 
 // NewJWTService 创建JWT服务实例
 func NewJWTService(cfg *config.Config) JWTService {
 	return &jwtService{
-		config:        cfg,
-		revokedTokens: make(map[string]time.Time),
+		config:             cfg,
+		revokedTokens:      make(map[string]time.Time),
+		issuedTokensByUser: make(map[uint]map[string]time.Time),
 	}
 }
 
@@ -140,11 +146,27 @@ func (j *jwtService) GenerateTokenPair(user *domain.User) (*TokenPair, error) {
 		return nil, fmt.Errorf("生成刷新令牌失败: %w", err)
 	}
 
+	// 登记令牌对供按用户撤销使用，过期时间取各自 claims 的有效期。
+	j.registerIssuedToken(user.ID, accessToken, j.tokenExpiry(accessToken))
+	j.registerIssuedToken(user.ID, refreshToken, j.tokenExpiry(refreshToken))
+
 	return &TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    int64(j.config.JWT.AccessExpire * 60), // 转换为秒
 	}, nil
+}
+
+// registerIssuedToken 将存活令牌登记到用户名下，登记表随签发与撤销惰性清理。
+func (j *jwtService) registerIssuedToken(userID uint, tokenString string, expiry time.Time) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	if j.issuedTokensByUser[userID] == nil {
+		j.issuedTokensByUser[userID] = make(map[string]time.Time)
+	}
+	j.issuedTokensByUser[userID][tokenString] = expiry
+	j.pruneExpiredRevocationsLocked(time.Now())
 }
 
 // generateToken 生成指定类型的令牌 - 优化版：只返回payload部分
@@ -351,12 +373,40 @@ func (j *jwtService) IsTokenRevoked(tokenString string) bool {
 	return revoked && expiry.After(time.Now())
 }
 
+// RevokeUserTokens 撤销指定用户当前存活的全部令牌，
+// 登记表中被撤销的键转入撤销表后整体清空，避免重复登记扩散。
+func (j *jwtService) RevokeUserTokens(userID uint) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	now := time.Now()
+	for key, expiry := range j.issuedTokensByUser[userID] {
+		// 已过期的登记项无需转入撤销表，过期令牌在签名校验阶段即被拒绝。
+		if expiry.After(now) {
+			j.revokedTokens[key] = expiry
+		}
+	}
+	delete(j.issuedTokensByUser, userID)
+	j.pruneExpiredRevocationsLocked(now)
+	return nil
+}
+
 // pruneExpiredRevocationsLocked 移除生命周期已终结的撤销记录，约束撤销表规模。
 // 调用方必须已持有写锁，随撤销写入触发，无需独立清扫协程。
 func (j *jwtService) pruneExpiredRevocationsLocked(now time.Time) {
 	for key, expiry := range j.revokedTokens {
 		if !expiry.After(now) {
 			delete(j.revokedTokens, key)
+		}
+	}
+	for userID, tokens := range j.issuedTokensByUser {
+		for key, expiry := range tokens {
+			if !expiry.After(now) {
+				delete(tokens, key)
+			}
+		}
+		if len(tokens) == 0 {
+			delete(j.issuedTokensByUser, userID)
 		}
 	}
 }

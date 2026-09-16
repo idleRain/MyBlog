@@ -35,7 +35,7 @@ type UserService interface {
 	DeleteUser(id uint) error
 	Login(username, password string) (*LoginResponse, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
-	Logout(accessToken string) error
+	Logout(accessToken, refreshToken string) error
 	// 自助资料
 	GetProfile(userID uint) (*domain.User, error)
 	UpdateProfile(userID uint, req *UpdateProfileRequest) (*domain.User, error)
@@ -281,7 +281,8 @@ func (s *userService) UpdateProfile(userID uint, req *UpdateProfileRequest) (*do
 	return user, nil
 }
 
-// ChangePassword 校验旧密码后更新为新密码。
+// ChangePassword 校验旧密码后更新为新密码，成功后撤销该用户全部既有令牌，
+// 持有旧令牌的会话随之失效，当前请求使用的令牌同样被撤销，客户端需重新登录。
 func (s *userService) ChangePassword(userID uint, req *ChangePasswordRequest) error {
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
@@ -305,6 +306,9 @@ func (s *userService) ChangePassword(userID uint, req *ChangePasswordRequest) er
 	if err := s.userRepo.Update(user); err != nil {
 		return fmt.Errorf("更新密码失败: %w", err)
 	}
+
+	// 撤销动作在密码已更新后执行，失败不回滚改密结果，内存实现当前无失败路径。
+	_ = s.jwtService.RevokeUserTokens(userID)
 	return nil
 }
 
@@ -403,9 +407,18 @@ func (s *userService) RefreshToken(refreshToken string) (*TokenPair, error) {
 	return s.jwtService.RefreshAccessToken(refreshToken)
 }
 
-// Logout 用户登出
-func (s *userService) Logout(accessToken string) error {
-	return s.jwtService.RevokeToken(accessToken)
+// Logout 用户登出，撤销访问令牌与刷新令牌构成的对。
+// 刷新令牌由客户端在登出请求体中提交，缺省时仅撤销访问令牌。
+func (s *userService) Logout(accessToken, refreshToken string) error {
+	if accessToken != "" {
+		if err := s.jwtService.RevokeToken(accessToken); err != nil {
+			return err
+		}
+	}
+	if refreshToken == "" {
+		return nil
+	}
+	return s.jwtService.RevokeToken(refreshToken)
 }
 
 // CanUserManageRole 检查用户是否可以管理指定角色

@@ -107,7 +107,8 @@ async function handleProfileSubmit(event: SubmitEvent) {
   }
 }
 
-// 提交改密码，两次输入一致才发起请求，成功后清空表单。
+// 提交改密码，两次输入一致才发起请求。
+// 成功后服务端撤销该用户全部既有令牌，本地会话随之失效，引导重新登录。
 async function handlePasswordSubmit(event: SubmitEvent) {
   event.preventDefault()
   if (savingPassword) return
@@ -125,10 +126,9 @@ async function handlePasswordSubmit(event: SubmitEvent) {
       return
     }
 
-    oldPassword = ''
-    newPassword = ''
-    confirmPassword = ''
-    toast.success('密码修改成功')
+    toast.success('密码修改成功，请使用新密码重新登录')
+    await authStore.logout(true)
+    void goto('/login')
   } catch {
     toast.error('密码修改失败，请稍后重试')
   } finally {

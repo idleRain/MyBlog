@@ -2,12 +2,21 @@
 package handler
 
 import (
+	"errors"
+	"io"
+
 	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
+
+// LogoutRequest 登出请求体，刷新令牌可选提交。
+// 上限 512 字符为保护性约束，payload-only 令牌实际长度约百余字符。
+type LogoutRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"omitempty,max=512"`
+}
 
 // UserHandlerInterface 用户处理器接口，由 router 层消费并注入。
 type UserHandlerInterface interface {
@@ -281,6 +290,7 @@ func (h *UserHandler) RefreshToken(c *gin.Context) {
 }
 
 // Logout 用户登出 POST /api/auth/logout
+// 访问令牌经 Authorization 头提交，刷新令牌经请求体可选提交，两者一并撤销。
 func (h *UserHandler) Logout(c *gin.Context) {
 	token := c.GetHeader("Authorization")
 	if token == "" {
@@ -293,7 +303,14 @@ func (h *UserHandler) Logout(c *gin.Context) {
 		token = token[7:]
 	}
 
-	if err := h.userService.Logout(token); err != nil {
+	// 请求体可省略，客户端未提交请求体时跳过绑定错误，仅撤销访问令牌。
+	var req LogoutRequest
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	if err := h.userService.Logout(token, req.RefreshToken); err != nil {
 		response.InternalError(c, err.Error())
 		return
 	}

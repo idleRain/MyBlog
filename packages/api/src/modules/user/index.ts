@@ -13,6 +13,7 @@ import type {
   UserResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  LogoutRequest,
   LogoutResponse,
   UpdateUserRequest,
   CreateUserRequest
@@ -78,9 +79,9 @@ export function createUserAPI(request: KyInstance) {
       return request.post('auth/refresh', { json: params }).json()
     },
 
-    // 用户登出
-    logout(): Promise<LogoutResponse> {
-      return request.post('auth/logout').json()
+    // 用户登出，携带刷新令牌时后端一并撤销令牌对
+    logout(params: LogoutRequest = {}): Promise<LogoutResponse> {
+      return request.post('auth/logout', { json: params }).json()
     },
 
     // 兼容旧接口
@@ -106,6 +107,7 @@ export type {
   UserResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  LogoutRequest,
   LogoutResponse,
   UpdateUserRequest,
   CreateUserRequest
