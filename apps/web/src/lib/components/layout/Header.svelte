@@ -1,8 +1,9 @@
 <script lang="ts">
-import { Globe, User, ExternalLink, Menu, LogIn, Settings } from '@lucide/svelte'
+import FriendlyLinkDialog from '$lib/components/layout/FriendlyLinkDialog.svelte'
 import NotificationBell from '$lib/components/layout/NotificationBell.svelte'
 import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
 import type { User as UserType } from '@myblog/api/modules/user/types'
+import { Globe, User, Menu, LogIn, Settings } from '@lucide/svelte'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
@@ -174,38 +175,8 @@ function openAdminConsole() {
             </Dialog.Content>
           </Dialog.Root>
 
-          <!-- 友情链接 -->
-          <Dialog.Root>
-            <Dialog.Trigger>
-              <Button variant="ghost" size="icon" class="h-9 w-9">
-                <ExternalLink class="h-4 w-4" />
-              </Button>
-            </Dialog.Trigger>
-            <Dialog.Content class="bg-popover/95 backdrop-blur-md sm:max-w-md">
-              <Dialog.Header>
-                <Dialog.Title>友情链接</Dialog.Title>
-              </Dialog.Header>
-              {#if friendlyLinks.length === 0}
-                <p class="text-sm leading-relaxed text-muted-foreground">
-                  暂无友情链接，欢迎来信交换。
-                </p>
-              {:else}
-                <div class="space-y-3">
-                  {#each friendlyLinks as link (link.id)}
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="flex items-center justify-between bg-secondary p-3 transition-colors hover:bg-accent"
-                    >
-                      <span class="font-medium">{link.name}</span>
-                      <ExternalLink class="h-4 w-4 text-muted-foreground" />
-                    </a>
-                  {/each}
-                </div>
-              {/if}
-            </Dialog.Content>
-          </Dialog.Root>
+          <!-- 友情链接：列表展示与互换申请 -->
+          <FriendlyLinkDialog {friendlyLinks} />
         </div>
 
         <!-- 登录/登出和后台按钮 -->
