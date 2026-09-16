@@ -20,11 +20,37 @@ export interface User {
   email: string
   nickname: string
   avatar: string
-  birthday: string
+  // 后端 JSONDate 零值序列化为 null，未填写生日时为 null。
+  birthday: string | null
   role: UserRole
   status: UserStatus
   createdAt: string
   updatedAt: string
+}
+
+// 当前登录用户完整资料，与后端 domain.User 的 JSON 输出一致；
+// 与列表/登录经 ToResponse 裁剪后的 User 不同，本类型面向 users/profile 自助端点。
+export interface ProfileUser {
+  id: number
+  username: string
+  email: string
+  nickname: string
+  avatar: string
+  coverImage: string
+  bio: string
+  website: string
+  location: string
+  // 后端 JSONDate 零值序列化为 null，未填写生日时为 null。
+  birthday: string | null
+  timezone: string
+  locale: string
+  role: UserRole
+  status: UserStatus
+  createdAt: string
+  updatedAt: string
+  // 手机号与性别在后端带 omitempty，未绑定时键整体缺省。
+  phone?: string
+  gender?: 0 | 1 | 2
 }
 
 // 用户公开资料，仅包含可对外展示的字段与公开统计
@@ -146,6 +172,7 @@ export interface RegisterRequest {
 // 各类型的响应接口
 export type UserListResponse = ApiResponse<UserListData>
 export type PublicProfileResponse = ApiResponse<PublicProfile>
+export type ProfileResponse = ApiResponse<ProfileUser>
 export type ChangePasswordResponse = ApiResponse<null>
 export type LoginResponse = ApiResponse<LoginData>
 export type RegisterResponse = ApiResponse<User>

@@ -4,6 +4,7 @@ import type {
   ChangePasswordResponse,
   LoginRequest,
   LoginResponse,
+  ProfileResponse,
   PublicProfileResponse,
   RegisterRequest,
   RegisterResponse,
@@ -47,13 +48,13 @@ export function createUserAPI(request: KyInstance) {
       return request.post('users/publicProfile', { json: { id } }).json()
     },
 
-    // 获取当前登录用户资料，需登录。
-    getProfile(): Promise<UserResponse> {
+    // 获取当前登录用户资料，返回含简介与网站的完整自助字段，需登录。
+    getProfile(): Promise<ProfileResponse> {
       return request.post('users/profile', { json: {} }).json()
     },
 
     // 更新当前登录用户资料，字段显式传入才更新，需登录。
-    updateProfile(params: UpdateProfileRequest): Promise<UserResponse> {
+    updateProfile(params: UpdateProfileRequest): Promise<ProfileResponse> {
       return request.post('users/profile/update', { json: params }).json()
     },
 
@@ -96,6 +97,7 @@ export type {
   ChangePasswordResponse,
   LoginRequest,
   LoginResponse,
+  ProfileResponse,
   PublicProfileResponse,
   RegisterRequest,
   RegisterResponse,

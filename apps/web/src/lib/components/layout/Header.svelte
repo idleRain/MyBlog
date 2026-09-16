@@ -242,6 +242,7 @@ function openAdminConsole() {
                     {currentUser?.email || ''}
                   </p>
                 </div>
+                <DropdownMenu.Item onclick={() => goto('/profile')}>个人资料</DropdownMenu.Item>
                 <DropdownMenu.Item onclick={() => goto('/favorites')}>我的收藏</DropdownMenu.Item>
                 <DropdownMenu.Item
                   onclick={handleLogout}
@@ -348,6 +349,17 @@ function openAdminConsole() {
                       {currentUser?.email || ''}
                     </p>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="w-full justify-start"
+                    onclick={() => {
+                      isMobileMenuOpen = false
+                      goto('/profile')
+                    }}
+                  >
+                    个人资料
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
