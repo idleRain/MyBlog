@@ -2,15 +2,18 @@
 import Header from '$lib/components/layout/Header.svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { ModeWatcher } from 'mode-watcher'
+import { m } from '$i18n'
 import '../app.css'
 
 let { error, status }: { error: App.Error; status: number } = $props()
 
 // 依据状态码区分文案，500 为服务端故障，其余视为目标资源缺失。
 const isServerError = $derived(status === 500)
-const errorTitle = $derived(isServerError ? '印刷机出了点故障' : '这一页翻不到')
+const errorTitle = $derived(
+  isServerError ? m['ui:error.serverErrorTitle']() : m['ui:error.notFoundTitle']()
+)
 const errorSubtitle = $derived(
-  isServerError ? '服务器遇到了意外状况，内容暂时无法呈现' : '你寻找的内容可能已被移动，或尚未刊出'
+  isServerError ? m['ui:error.serverErrorSubtitle']() : m['ui:error.notFoundSubtitle']()
 )
 </script>
 
@@ -30,7 +33,7 @@ const errorSubtitle = $derived(
     <p
       class="mb-6 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
     >
-      意外 · {status}
+      {m['ui:error.eyebrow']()} · {status}
       <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
     </p>
 
@@ -55,20 +58,20 @@ const errorSubtitle = $derived(
           onclick={() => window.location.reload()}
           class="inline-flex items-center gap-2 bg-primary px-7 py-3.5 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97]"
         >
-          重试加载
+          {m['ui:error.retry']()}
         </button>
         <a
           href="/"
           class="inline-flex items-center gap-2 border border-border px-7 py-3.5 text-sm font-bold text-foreground transition-[border-color,color,transform] duration-200 ease-(--ease-out-strong) hover:border-signal hover:text-signal active:scale-[0.97]"
         >
-          返回首页
+          {m['ui:error.backHome']()}
         </a>
       {:else}
         <a
           href="/"
           class="group inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
         >
-          返回首页
+          {m['ui:error.backHome']()}
           <span
             class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:-translate-x-1"
             aria-hidden="true"

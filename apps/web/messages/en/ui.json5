@@ -14,5 +14,72 @@
     "loading": "Loading...",
     "success": "Success",
     "error": "Error"
+  },
+  "header": {
+    "nav": {
+      "blog": "Blog",
+      "projects": "Projects",
+      "about": "About"
+    },
+    "adminConsole": "Admin Console",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "myProfile": "Profile",
+    "myFavorites": "Favorites",
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "userMenu": "User menu",
+    "userFallback": "User",
+    "switchLanguage": "Switch language",
+    "languageSection": "Language",
+    "githubHome": "GitHub home",
+    "themeToggle": "Toggle theme",
+    "aboutAuthor": "About the author",
+    "aboutAuthorDesc": "A maker passionate about programming and design, weaving ideas with code and changing the world with technology.",
+    "authorName": "Developer",
+    "authorTitle": "Full-stack engineer",
+    "notifications": "Notifications",
+    "markAllRead": "Mark all read",
+    "noNotifications": "No notifications yet"
+  },
+  "footer": {
+    "brandIntro": "A personal blog focused on technology sharing and creative design, exploring the possibilities of modern web development. Weaving ideas with code, changing the world with technology.",
+    "quickLinks": "Quick Links",
+    "categories": "Categories",
+    "noCategories": "No public categories",
+    "link": {
+      "home": "Home",
+      "blog": "Blog",
+      "archives": "Archives",
+      "about": "About",
+      "contact": "Contact",
+      "privacy": "Privacy Policy"
+    }
+  },
+  "linkDialog": {
+    "title": "Friendly Links",
+    "empty": "No friendly links yet. Applications for link exchange are welcome.",
+    "applyTitle": "Apply for a link",
+    "applyNote": "Submissions enter the review queue and appear here once approved.",
+    "siteName": "Site name",
+    "siteNamePlaceholder": "Your site name",
+    "siteUrl": "Site URL",
+    "siteIntro": "Site intro",
+    "siteIntroPlaceholder": "One-line introduction, optional",
+    "contactEmail": "Contact email",
+    "contactEmailPlaceholder": "Used to receive the review result",
+    "submit": "Submit application",
+    "submitting": "Submitting…",
+    "applySubmitted": "Application submitted, awaiting review",
+    "submitFailed": "Failed to submit the application, please try again later"
+  },
+  "error": {
+    "eyebrow": "Unexpected",
+    "notFoundTitle": "This page cannot be found",
+    "notFoundSubtitle": "The content you are looking for may have been moved, or is yet to be published",
+    "serverErrorTitle": "The printing press broke down",
+    "serverErrorSubtitle": "The server ran into an unexpected problem and the content is temporarily unavailable",
+    "retry": "Retry",
+    "backHome": "Back home"
   }
 }

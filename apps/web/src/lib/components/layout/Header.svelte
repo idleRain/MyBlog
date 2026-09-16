@@ -11,6 +11,7 @@ import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
+import { m } from '$i18n'
 
 // 展示中的友情链接，由根布局的全站数据提供；错误页等无数据场景降级为空列表。
 interface Props {
@@ -82,7 +83,7 @@ function openAdminConsole() {
           href="/"
           class="group relative text-muted-foreground transition-colors duration-200 hover:text-signal"
         >
-          博客
+          {m['ui:header.nav.blog']()}
           <span
             class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-signal transition-transform duration-200 group-hover:scale-x-100"
           ></span>
@@ -91,7 +92,7 @@ function openAdminConsole() {
           href="/projects"
           class="group relative text-muted-foreground transition-colors duration-200 hover:text-signal"
         >
-          项目
+          {m['ui:header.nav.projects']()}
           <span
             class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-signal transition-transform duration-200 group-hover:scale-x-100"
           ></span>
@@ -100,7 +101,7 @@ function openAdminConsole() {
           href="/about"
           class="group relative text-muted-foreground transition-colors duration-200 hover:text-signal"
         >
-          关于
+          {m['ui:header.nav.about']()}
           <span
             class="absolute bottom-0 left-0 h-0.5 w-full scale-x-0 bg-signal transition-transform duration-200 group-hover:scale-x-100"
           ></span>
@@ -122,7 +123,12 @@ function openAdminConsole() {
           <!-- 语言切换 -->
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="切换语言">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-9 w-9"
+                aria-label={m['ui:header.switchLanguage']()}
+              >
                 <Globe class="h-4 w-4" />
               </Button>
             </DropdownMenu.Trigger>
@@ -133,7 +139,7 @@ function openAdminConsole() {
           </DropdownMenu.Root>
 
           <!-- 主题切换 -->
-          <ThemeToggle />
+          <ThemeToggle label={m['ui:header.themeToggle']()} />
 
           <!-- GitHub链接 -->
           <a
@@ -142,7 +148,12 @@ function openAdminConsole() {
             rel="noopener noreferrer"
             class="group"
           >
-            <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="GitHub 主页">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-9 w-9"
+              aria-label={m['ui:header.githubHome']()}
+            >
               <GithubIcon class="h-4 w-4 transition-colors group-hover:text-signal" />
             </Button>
           </a>
@@ -150,16 +161,19 @@ function openAdminConsole() {
           <!-- 个人介绍 -->
           <Dialog.Root>
             <Dialog.Trigger>
-              <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="关于作者">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-9 w-9"
+                aria-label={m['ui:header.aboutAuthor']()}
+              >
                 <User class="h-4 w-4" />
               </Button>
             </Dialog.Trigger>
             <Dialog.Content class="bg-popover/95 backdrop-blur-md sm:max-w-md">
               <Dialog.Header>
-                <Dialog.Title>关于作者</Dialog.Title>
-                <Dialog.Description>
-                  一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。
-                </Dialog.Description>
+                <Dialog.Title>{m['ui:header.aboutAuthor']()}</Dialog.Title>
+                <Dialog.Description>{m['ui:header.aboutAuthorDesc']()}</Dialog.Description>
               </Dialog.Header>
               <div class="flex flex-col space-y-3">
                 <div class="flex items-center space-x-3">
@@ -167,8 +181,8 @@ function openAdminConsole() {
                     <span class="text-lg font-bold text-signal-foreground">M</span>
                   </div>
                   <div>
-                    <h3 class="font-semibold text-foreground">开发者</h3>
-                    <p class="text-sm text-muted-foreground">全栈开发工程师</p>
+                    <h3 class="font-semibold text-foreground">{m['ui:header.authorName']()}</h3>
+                    <p class="text-sm text-muted-foreground">{m['ui:header.authorTitle']()}</p>
                   </div>
                 </div>
               </div>
@@ -190,13 +204,18 @@ function openAdminConsole() {
               class="border-signal/30 text-signal hover:bg-signal/10 dark:border-signal/30 dark:text-signal dark:hover:bg-signal/10"
             >
               <Settings class="mr-1 h-4 w-4" />
-              后台管理
+              {m['ui:header.adminConsole']()}
             </Button>
 
             <!-- 用户信息下拉菜单 -->
             <DropdownMenu.Root>
               <DropdownMenu.Trigger>
-                <Button variant="ghost" size="icon" class="h-9 w-9" aria-label="用户菜单">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-9 w-9"
+                  aria-label={m['ui:header.userMenu']()}
+                >
                   <div class="flex h-6 w-6 items-center justify-center rounded-none bg-signal">
                     <span class="text-xs font-bold text-signal-foreground">
                       {currentUser?.username?.charAt(0)?.toUpperCase() || 'U'}
@@ -207,19 +226,23 @@ function openAdminConsole() {
               <DropdownMenu.Content align="end" class="w-48 bg-popover/90 backdrop-blur-md">
                 <div class="border-b border-border px-3 py-2">
                   <p class="text-sm font-medium text-foreground">
-                    {currentUser?.username || '用户'}
+                    {currentUser?.username || m['ui:header.userFallback']()}
                   </p>
                   <p class="text-xs text-muted-foreground">
                     {currentUser?.email || ''}
                   </p>
                 </div>
-                <DropdownMenu.Item onclick={() => goto('/profile')}>个人资料</DropdownMenu.Item>
-                <DropdownMenu.Item onclick={() => goto('/favorites')}>我的收藏</DropdownMenu.Item>
+                <DropdownMenu.Item onclick={() => goto('/profile')}>
+                  {m['ui:header.myProfile']()}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item onclick={() => goto('/favorites')}>
+                  {m['ui:header.myFavorites']()}
+                </DropdownMenu.Item>
                 <DropdownMenu.Item
                   onclick={handleLogout}
                   class="text-destructive hover:text-destructive/80"
                 >
-                  登出
+                  {m['ui:header.logout']()}
                 </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Root>
@@ -231,7 +254,7 @@ function openAdminConsole() {
               class="bg-signal text-signal-foreground hover:bg-signal/90"
             >
               <LogIn class="mr-1 h-4 w-4" />
-              登录
+              {m['ui:header.login']()}
             </Button>
           {/if}
         </div>
@@ -239,13 +262,18 @@ function openAdminConsole() {
         <!-- 移动端菜单 -->
         <Sheet.Root bind:open={isMobileMenuOpen}>
           <Sheet.Trigger>
-            <Button variant="ghost" size="icon" class="h-9 w-9 md:hidden" aria-label="打开菜单">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-9 w-9 md:hidden"
+              aria-label={m['ui:header.openMenu']()}
+            >
               <Menu class="h-5 w-5" />
             </Button>
           </Sheet.Trigger>
           <Sheet.Content side="right" class="w-80 bg-popover/95 p-6 backdrop-blur-md">
             <Sheet.Header class="mb-6 text-left">
-              <Sheet.Title class="text-xl font-bold">菜单</Sheet.Title>
+              <Sheet.Title class="text-xl font-bold">{m['ui:header.menu']()}</Sheet.Title>
             </Sheet.Header>
 
             <!-- 移动端导航链接 -->
@@ -255,29 +283,31 @@ function openAdminConsole() {
                 class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-signal/10 hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
-                博客
+                {m['ui:header.nav.blog']()}
               </a>
               <a
                 href="/projects"
                 class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-signal/10 hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
-                项目
+                {m['ui:header.nav.projects']()}
               </a>
               <a
                 href="/about"
                 class="flex items-center rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-signal/10 hover:text-signal"
                 onclick={() => (isMobileMenuOpen = false)}
               >
-                关于
+                {m['ui:header.nav.about']()}
               </a>
             </nav>
 
             <!-- 移动端功能按钮 -->
             <div class="mt-8 space-y-6">
               <div class="flex items-center justify-between bg-secondary px-4 py-2">
-                <span class="text-sm font-medium text-muted-foreground">主题切换</span>
-                <ThemeToggle />
+                <span class="text-sm font-medium text-muted-foreground">
+                  {m['ui:header.themeToggle']()}
+                </span>
+                <ThemeToggle label={m['ui:header.themeToggle']()} />
               </div>
 
               <!-- GitHub链接 -->
@@ -292,15 +322,19 @@ function openAdminConsole() {
               </a>
 
               <div class="space-y-3">
-                <h4 class="px-4 text-sm font-semibold text-foreground">语言选择</h4>
+                <h4 class="px-4 text-sm font-semibold text-foreground">
+                  {m['ui:header.languageSection']()}
+                </h4>
                 <div class="space-y-1">
                   <button
                     class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-accent"
+                    onclick={() => setLanguage('zh')}
                   >
                     简体中文
                   </button>
                   <button
                     class="flex w-full items-center rounded-lg px-4 py-2 text-left text-sm transition-colors hover:bg-accent"
+                    onclick={() => setLanguage('en')}
                   >
                     English
                   </button>
@@ -314,7 +348,7 @@ function openAdminConsole() {
                 <div class="space-y-3">
                   <div class="bg-signal/5 px-4 py-3">
                     <p class="text-sm font-semibold text-foreground">
-                      {currentUser?.username || '用户'}
+                      {currentUser?.username || m['ui:header.userFallback']()}
                     </p>
                     <p class="text-xs text-muted-foreground">
                       {currentUser?.email || ''}
@@ -329,7 +363,7 @@ function openAdminConsole() {
                       goto('/profile')
                     }}
                   >
-                    个人资料
+                    {m['ui:header.myProfile']()}
                   </Button>
                   <Button
                     variant="outline"
@@ -341,7 +375,7 @@ function openAdminConsole() {
                     }}
                   >
                     <Settings class="mr-2 h-4 w-4" />
-                    后台管理
+                    {m['ui:header.adminConsole']()}
                   </Button>
                   <Button
                     variant="outline"
@@ -352,7 +386,7 @@ function openAdminConsole() {
                       handleLogout()
                     }}
                   >
-                    登出
+                    {m['ui:header.logout']()}
                   </Button>
                 </div>
               {:else}
@@ -365,7 +399,7 @@ function openAdminConsole() {
                   }}
                 >
                   <LogIn class="mr-2 h-4 w-4" />
-                  登录
+                  {m['ui:header.login']()}
                 </Button>
               {/if}
             </div>

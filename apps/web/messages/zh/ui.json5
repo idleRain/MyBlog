@@ -14,5 +14,72 @@
     "loading": "加载中...",
     "success": "成功",
     "error": "错误"
+  },
+  "header": {
+    "nav": {
+      "blog": "博客",
+      "projects": "项目",
+      "about": "关于"
+    },
+    "adminConsole": "后台管理",
+    "login": "登录",
+    "logout": "登出",
+    "myProfile": "个人资料",
+    "myFavorites": "我的收藏",
+    "menu": "菜单",
+    "openMenu": "打开菜单",
+    "userMenu": "用户菜单",
+    "userFallback": "用户",
+    "switchLanguage": "切换语言",
+    "languageSection": "语言选择",
+    "githubHome": "GitHub 主页",
+    "themeToggle": "切换主题",
+    "aboutAuthor": "关于作者",
+    "aboutAuthorDesc": "一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。",
+    "authorName": "开发者",
+    "authorTitle": "全栈开发工程师",
+    "notifications": "通知",
+    "markAllRead": "全部已读",
+    "noNotifications": "暂无通知"
+  },
+  "footer": {
+    "brandIntro": "一个专注于技术分享和创意设计的个人博客，探索现代 Web 开发的无限可能。用代码编织创意，用技术改变世界。",
+    "quickLinks": "快速链接",
+    "categories": "文章分类",
+    "noCategories": "暂无公开分类",
+    "link": {
+      "home": "首页",
+      "blog": "博客",
+      "archives": "归档",
+      "about": "关于",
+      "contact": "联系",
+      "privacy": "隐私政策"
+    }
+  },
+  "linkDialog": {
+    "title": "友情链接",
+    "empty": "暂无友情链接，欢迎提交互换申请。",
+    "applyTitle": "申请友链",
+    "applyNote": "提交后进入待审核状态，通过后即在此展示。",
+    "siteName": "站点名称",
+    "siteNamePlaceholder": "你的站点名称",
+    "siteUrl": "站点地址",
+    "siteIntro": "站点简介",
+    "siteIntroPlaceholder": "一句话介绍站点，选填",
+    "contactEmail": "联系邮箱",
+    "contactEmailPlaceholder": "用于接收审核结果",
+    "submit": "提交申请",
+    "submitting": "提交中…",
+    "applySubmitted": "申请已提交，等待站长审核",
+    "submitFailed": "申请提交失败，请稍后重试"
+  },
+  "error": {
+    "eyebrow": "意外",
+    "notFoundTitle": "这一页翻不到",
+    "notFoundSubtitle": "你寻找的内容可能已被移动，或尚未刊出",
+    "serverErrorTitle": "印刷机出了点故障",
+    "serverErrorSubtitle": "服务器遇到了意外状况，内容暂时无法呈现",
+    "retry": "重试加载",
+    "backHome": "返回首页"
   }
 }

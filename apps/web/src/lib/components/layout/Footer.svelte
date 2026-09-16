@@ -4,6 +4,7 @@ import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { Separator } from '$ui/separator'
 import { Mail } from '@lucide/svelte'
+import { m } from '$i18n'
 
 // 全站底部属性：categories 为公开分类树的顶级节点，由根布局数据提供；无数据场景降级为空列表。
 interface Props {
@@ -21,14 +22,14 @@ const socialLinks = [
   { name: 'Email', icon: Mail, href: 'mailto:gold.experience@foxmail.com' }
 ]
 
-// 快捷导航链接集中声明。
+// 快捷导航链接集中声明，文案取自 i18n 词表，标签以链接路径为键。
 const quickLinks = [
-  { name: '首页', href: '/' },
-  { name: '博客', href: '/blog' },
-  { name: '归档', href: '/archives' },
-  { name: '关于', href: '/about' },
-  { name: '联系', href: '/contact' },
-  { name: '隐私政策', href: '/privacy' }
+  { href: '/', label: m['ui:footer.link.home'] },
+  { href: '/blog', label: m['ui:footer.link.blog'] },
+  { href: '/archives', label: m['ui:footer.link.archives'] },
+  { href: '/about', label: m['ui:footer.link.about'] },
+  { href: '/contact', label: m['ui:footer.link.contact'] },
+  { href: '/privacy', label: m['ui:footer.link.privacy'] }
 ]
 </script>
 
@@ -48,10 +49,7 @@ const quickLinks = [
           <span class="font-display text-xl font-black text-foreground">{SITE_NAME_ZH}</span>
         </div>
 
-        <p class="mb-6 max-w-md text-muted-foreground">
-          一个专注于技术分享和创意设计的个人博客，探索现代Web开发的无限可能。
-          用代码编织创意，用技术改变世界。
-        </p>
+        <p class="mb-6 max-w-md text-muted-foreground">{m['ui:footer.brandIntro']()}</p>
 
         <!-- 社交链接采用直角描边方块，悬停以 signal 色反馈。 -->
         <div class="flex space-x-4">
@@ -72,14 +70,14 @@ const quickLinks = [
 
       <!-- 快速链接 - 左右两排布局 -->
       <div>
-        <h3 class="mb-4 font-semibold text-foreground">快速链接</h3>
+        <h3 class="mb-4 font-semibold text-foreground">{m['ui:footer.quickLinks']()}</h3>
         <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-          {#each quickLinks as link (link.name)}
+          {#each quickLinks as link (link.href)}
             <a
               href={link.href}
               class="text-sm text-muted-foreground transition-colors duration-200 hover:text-signal"
             >
-              {link.name}
+              {link.label()}
             </a>
           {/each}
         </div>
@@ -87,9 +85,9 @@ const quickLinks = [
 
       <!-- 分类目录 - 左右两排布局 -->
       <div>
-        <h3 class="mb-4 font-semibold text-foreground">文章分类</h3>
+        <h3 class="mb-4 font-semibold text-foreground">{m['ui:footer.categories']()}</h3>
         {#if categories.length === 0}
-          <p class="text-sm text-muted-foreground">暂无公开分类</p>
+          <p class="text-sm text-muted-foreground">{m['ui:footer.noCategories']()}</p>
         {:else}
           <div class="grid grid-cols-2 gap-x-4 gap-y-2">
             {#each categories as category (category.id)}

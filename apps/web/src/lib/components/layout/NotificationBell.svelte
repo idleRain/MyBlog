@@ -7,6 +7,7 @@ import { NotificationAPI } from '$lib/api'
 import { goto } from '$app/navigation'
 import { Bell } from '@lucide/svelte'
 import { DropdownMenu } from '$ui'
+import { m } from '$i18n'
 
 // 下拉面板展示的最近通知条数。
 const RECENT_LIMIT = 5
@@ -101,7 +102,7 @@ function handleNotificationClick(notification: Notification) {
           {...props}
           type="button"
           class="relative inline-flex h-9 w-9 items-center justify-center rounded-none text-foreground transition-colors duration-200 hover:text-signal"
-          aria-label="通知"
+          aria-label={m['ui:header.notifications']()}
         >
           <Bell class="h-4 w-4" aria-hidden="true" />
           {#if unreadCount > 0}
@@ -116,18 +117,20 @@ function handleNotificationClick(notification: Notification) {
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="end" class="w-80">
       <div class="flex items-center justify-between px-3 py-2">
-        <span class="text-sm font-bold">通知</span>
+        <span class="text-sm font-bold">{m['ui:header.notifications']()}</span>
         <button
           type="button"
           onclick={markAllRead}
           class="text-xs text-signal underline-offset-4 hover:underline"
         >
-          全部已读
+          {m['ui:header.markAllRead']()}
         </button>
       </div>
 
       {#if recent.length === 0}
-        <p class="px-3 py-6 text-center text-sm text-muted-foreground">暂无通知</p>
+        <p class="px-3 py-6 text-center text-sm text-muted-foreground">
+          {m['ui:header.noNotifications']()}
+        </p>
       {:else}
         <div class="max-h-80 overflow-y-auto">
           {#each recent as notification (notification.id)}
