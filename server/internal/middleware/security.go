@@ -83,19 +83,8 @@ func DefaultSecurityConfig() *SecurityConfig {
 		}{
 			Enabled:        true,
 			MaxRequestSize: 10 * 1024 * 1024, // 10MB
-			BlockedPatterns: []string{
-				`(?i)<script[^>]*>.*?</script>`, // XSS
-				`(?i)javascript:`,               // JavaScript URLs
-				`(?i)on\w+\s*=`,                 // Event handlers
-				`(?i)union.*select`,             // SQL Injection
-				`(?i)insert.*into`,              // SQL Injection
-				`(?i)delete.*from`,              // SQL Injection
-				`(?i)drop.*table`,               // SQL Injection
-				`(?i)exec\s*\(`,                 // Command execution
-				`(?i)system\s*\(`,               // Command execution
-				`(?i)\.\.\/`,                    // Path traversal
-				`(?i)\.\.\\`,                    // Path traversal (Windows)
-			},
+			// 阻止模式与 SecurityMiddlewareFromConfig 共用 getDefaultBlockedPatterns 单一来源。
+			BlockedPatterns:   getDefaultBlockedPatterns(),
 			AllowedUserAgents: []string{},
 			// BlockedUserAgents 为子串匹配语义，配置项必须选取明确的工具或脚本特征。
 			// 禁止收录 bot、crawler、spider 等泛化词，否则 Googlebot、Baiduspider、bingbot
@@ -466,21 +455,23 @@ func AdminSecurityMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc {
 	return middleware
 }
 
-// getDefaultBlockedPatterns 获取默认的阻止模式
+// getDefaultBlockedPatterns 获取默认的阻止模式，全部模式经词首边界或取值上下文锚定，
+// 避免宽匹配误伤博客正文中 "content ="、"for i = 1" 等正常写法（体检项 BE-07）。
 func getDefaultBlockedPatterns() []string {
 	return []string{
-		`(?i)<script[^>]*>.*?</script>`, // XSS
-		`(?i)javascript:`,               // JavaScript URLs
-		`(?i)on\w+\s*=`,                 // Event handlers
-		`(?i)union.*select`,             // SQL Injection
-		`(?i)insert.*into`,              // SQL Injection
-		`(?i)delete.*from`,              // SQL Injection
-		`(?i)drop.*table`,               // SQL Injection
-		`(?i)or.*=`,                     // SQL Injection OR patterns
-		`(?i)and.*=`,                    // SQL Injection AND patterns
-		`(?i)exec\s*\(`,                 // Command execution
-		`(?i)system\s*\(`,               // Command execution
-		`(?i)\.\.\/`,                    // Path traversal
-		`(?i)\.\.\\`,                    // Path traversal (Windows)
+		`(?i)<script[^>]*>.*?</script>`,           // XSS：script 标签对
+		`(?i)javascript:`,                         // XSS：JavaScript 伪协议 URL
+		`(?i)\bon\w+\s*=\s*\\?["']`,               // XSS：HTML 事件属性取引号值，词首边界避免命中 content 等单词内部
+		`(?i)\bon\w+\s*=\s*\w+\s*\(`,              // XSS：事件属性的无引号函数调用形式，如 onerror=alert(1)
+		`(?i)\bunion\s+select`,                    // SQL 注入：联合查询
+		`(?i)\binsert\s+into\b`,                   // SQL 注入：插入语句，词边界避免命中英文正文 inserted into
+		`(?i)\bdelete\s+from\b`,                   // SQL 注入：删除语句，词边界避免命中英文正文 deleted from
+		`(?i)\bdrop\s+table\b`,                    // SQL 注入：删表语句
+		`(?i)\b(or|and)\s+\d+\s*=\s*\d+`,          // SQL 注入：恒真式 OR 1=1
+		`(?i)\b(or|and)\s+['"]\w+['"]\s*=\s*['"]`, // SQL 注入：恒真式 OR '1'='1
+		`(?i)\bexec\s*\(`,                         // 命令执行
+		`(?i)\bsystem\s*\(`,                       // 命令执行
+		`(?i)\.\.\/`,                              // 路径穿越
+		`(?i)\.\.\\`,                              // 路径穿越（Windows）
 	}
 }
