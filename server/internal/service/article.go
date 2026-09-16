@@ -205,23 +205,9 @@ func (s *ArticleService) CreateArticle(req *CreateArticleRequest, authorID uint)
 		return nil, err
 	}
 
-	// 创建文章
-	if err := s.articleRepo.Create(article); err != nil {
+	// 在单个事务内创建文章并同步分类与标签关联，任一步失败即整体回滚。
+	if err := s.articleRepo.CreateWithRelations(article, req.CategoryIDs, req.TagIDs); err != nil {
 		return nil, err
-	}
-
-	// 同步分类关联
-	if len(req.CategoryIDs) > 0 {
-		if err := s.articleRepo.SyncCategories(article.ID, req.CategoryIDs); err != nil {
-			return nil, err
-		}
-	}
-
-	// 同步标签关联
-	if len(req.TagIDs) > 0 {
-		if err := s.articleRepo.SyncTags(article.ID, req.TagIDs); err != nil {
-			return nil, err
-		}
 	}
 
 	// 重新获取完整的文章信息

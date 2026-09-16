@@ -20,6 +20,7 @@ var ErrArticleNotFound = errors.New("文章不存在")
 type ArticleRepositoryInterface interface {
 	// 基础CRUD操作
 	Create(article *model.Article) error
+	CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error
 	GetByID(id uint) (*model.Article, error)
 	GetBySlug(slug string) (*model.Article, error)
 	Update(article *model.Article) error
@@ -87,12 +88,18 @@ func NewArticleRepository(db *gorm.DB) ArticleRepositoryInterface {
 
 // Create 创建文章
 func (r *ArticleRepository) Create(article *model.Article) error {
+	return r.createTx(r.db, article)
+}
+
+// createTx 在给定数据库句柄内完成文章创建的前置处理与写入。
+// 事务化创建复用本方法，保证 slug 生成、唯一性校验与发布时间设置逻辑一致。
+func (r *ArticleRepository) createTx(db *gorm.DB, article *model.Article) error {
 	if article.Slug == "" {
 		article.Slug = generateSlug(article.Title)
 	}
 
 	// 确保slug唯一
-	if err := r.ensureUniqueSlug(article); err != nil {
+	if err := r.ensureUniqueSlug(db, article); err != nil {
 		return err
 	}
 
@@ -102,7 +109,7 @@ func (r *ArticleRepository) Create(article *model.Article) error {
 		article.PublishedAt = &now
 	}
 
-	return r.db.Create(article).Error
+	return db.Create(article).Error
 }
 
 // GetByID 根据ID获取文章
@@ -152,7 +159,7 @@ func (r *ArticleRepository) Update(article *model.Article) error {
 	}
 
 	// 检查slug唯一性
-	if err := r.ensureUniqueSlug(article); err != nil {
+	if err := r.ensureUniqueSlug(r.db, article); err != nil {
 		return err
 	}
 
@@ -567,73 +574,107 @@ func (r *ArticleRepository) RemoveTag(articleID, tagID uint) error {
 // SyncTags 同步标签关联，替换文章的全部标签，并维护各标签使用计数。
 func (r *ArticleRepository) SyncTags(articleID uint, tagIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// 查询现有标签关联，用于回滚被移除标签的使用计数。
-		var existingTags []model.ArticleTag
-		if err := tx.Where("article_id = ?", articleID).Find(&existingTags).Error; err != nil {
-			return err
-		}
-
-		// 删除现有关联
-		if err := tx.Where("article_id = ?", articleID).Delete(&model.ArticleTag{}).Error; err != nil {
-			return err
-		}
-
-		// 回滚被移除标签的使用计数
-		for _, existing := range existingTags {
-			if err := r.decrementTagCount(tx, existing.TagID); err != nil {
-				return err
-			}
-		}
-
-		// 添加新关联并递增对应标签的使用计数
-		for _, tagID := range tagIDs {
-			articleTag := &model.ArticleTag{
-				ArticleID: articleID,
-				TagID:     tagID,
-			}
-			if err := tx.Create(articleTag).Error; err != nil {
-				return err
-			}
-			if err := r.incrementTagCount(tx, tagID); err != nil {
-				return err
-			}
-		}
-
-		return nil
+		return r.syncTagsTx(tx, articleID, tagIDs)
 	})
+}
+
+// syncTagsTx 在给定事务内同步标签关联，供独立调用与创建文章事务复用。
+func (r *ArticleRepository) syncTagsTx(tx *gorm.DB, articleID uint, tagIDs []uint) error {
+	// 查询现有标签关联，用于回滚被移除标签的使用计数。
+	var existingTags []model.ArticleTag
+	if err := tx.Where("article_id = ?", articleID).Find(&existingTags).Error; err != nil {
+		return err
+	}
+
+	// 删除现有关联
+	if err := tx.Where("article_id = ?", articleID).Delete(&model.ArticleTag{}).Error; err != nil {
+		return err
+	}
+
+	// 回滚被移除标签的使用计数
+	for _, existing := range existingTags {
+		if err := r.decrementTagCount(tx, existing.TagID); err != nil {
+			return err
+		}
+	}
+
+	// 添加新关联并递增对应标签的使用计数
+	for _, tagID := range tagIDs {
+		articleTag := &model.ArticleTag{
+			ArticleID: articleID,
+			TagID:     tagID,
+		}
+		if err := tx.Create(articleTag).Error; err != nil {
+			return err
+		}
+		if err := r.incrementTagCount(tx, tagID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // SyncCategories 同步分类关联，替换文章的全部分类，并维护各分类文章计数。
 func (r *ArticleRepository) SyncCategories(articleID uint, categoryIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// 查询现有分类关联，用于回滚被移除分类的文章计数。
-		var existingCategories []model.ArticleCategory
-		if err := tx.Where("article_id = ?", articleID).Find(&existingCategories).Error; err != nil {
+		return r.syncCategoriesTx(tx, articleID, categoryIDs)
+	})
+}
+
+// syncCategoriesTx 在给定事务内同步分类关联，供独立调用与创建文章事务复用。
+func (r *ArticleRepository) syncCategoriesTx(tx *gorm.DB, articleID uint, categoryIDs []uint) error {
+	// 查询现有分类关联，用于回滚被移除分类的文章计数。
+	var existingCategories []model.ArticleCategory
+	if err := tx.Where("article_id = ?", articleID).Find(&existingCategories).Error; err != nil {
+		return err
+	}
+
+	// 删除现有关联
+	if err := tx.Where("article_id = ?", articleID).Delete(&model.ArticleCategory{}).Error; err != nil {
+		return err
+	}
+
+	// 回滚被移除分类的文章计数
+	for _, existing := range existingCategories {
+		if err := r.decrementCategoryCount(tx, existing.CategoryID); err != nil {
+			return err
+		}
+	}
+
+	// 添加新关联并递增对应分类的文章计数
+	for _, categoryID := range categoryIDs {
+		articleCategory := &model.ArticleCategory{
+			ArticleID:  articleID,
+			CategoryID: categoryID,
+		}
+		if err := tx.Create(articleCategory).Error; err != nil {
+			return err
+		}
+		if err := r.incrementCategoryCount(tx, categoryID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// CreateWithRelations 在单个事务内创建文章并同步分类与标签关联。
+// 三段写库任一环节失败即整体回滚，杜绝文章残留与计数漂移的孤儿数据。
+func (r *ArticleRepository) CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.createTx(tx, article); err != nil {
 			return err
 		}
 
-		// 删除现有关联
-		if err := tx.Where("article_id = ?", articleID).Delete(&model.ArticleCategory{}).Error; err != nil {
-			return err
-		}
-
-		// 回滚被移除分类的文章计数
-		for _, existing := range existingCategories {
-			if err := r.decrementCategoryCount(tx, existing.CategoryID); err != nil {
+		if len(categoryIDs) > 0 {
+			if err := r.syncCategoriesTx(tx, article.ID, categoryIDs); err != nil {
 				return err
 			}
 		}
 
-		// 添加新关联并递增对应分类的文章计数
-		for _, categoryID := range categoryIDs {
-			articleCategory := &model.ArticleCategory{
-				ArticleID:  articleID,
-				CategoryID: categoryID,
-			}
-			if err := tx.Create(articleCategory).Error; err != nil {
-				return err
-			}
-			if err := r.incrementCategoryCount(tx, categoryID); err != nil {
+		if len(tagIDs) > 0 {
+			if err := r.syncTagsTx(tx, article.ID, tagIDs); err != nil {
 				return err
 			}
 		}
@@ -680,14 +721,14 @@ func (r *ArticleRepository) SetPrivate(id uint) error {
 
 // 私有辅助方法
 
-// ensureUniqueSlug 确保slug唯一
-func (r *ArticleRepository) ensureUniqueSlug(article *model.Article) error {
+// ensureUniqueSlug 在给定数据库句柄内确保slug唯一
+func (r *ArticleRepository) ensureUniqueSlug(db *gorm.DB, article *model.Article) error {
 	originalSlug := article.Slug
 	counter := 1
 
 	for {
 		var count int64
-		query := r.db.Model(&model.Article{}).Where("slug = ?", article.Slug)
+		query := db.Model(&model.Article{}).Where("slug = ?", article.Slug)
 
 		// 如果是更新操作，排除当前文章
 		if article.ID != 0 {
