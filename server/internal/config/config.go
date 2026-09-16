@@ -94,6 +94,14 @@ type SecurityConfig struct {
 	SecurityHeaders SecurityHeadersConfig `mapstructure:"security_headers"`
 	InputValidation InputValidationConfig `mapstructure:"input_validation"`
 	AdminSecurity   AdminSecurityConfig   `mapstructure:"admin_security"`
+	LoginLockout    LoginLockoutConfig    `mapstructure:"login_lockout"`
+}
+
+// LoginLockoutConfig 登录锁定配置，连续失败达到阈值后锁定账户一段时间。
+type LoginLockoutConfig struct {
+	Enabled           bool `mapstructure:"enabled"`             // 是否启用失败锁定
+	MaxFailedAttempts int  `mapstructure:"max_failed_attempts"` // 连续失败阈值
+	LockMinutes       int  `mapstructure:"lock_minutes"`        // 锁定时长，单位分钟
 }
 
 // RateLimitConfig 频率限制配置
@@ -253,6 +261,11 @@ func setDefaults() {
 	viper.SetDefault("security.admin_security.enabled", true)
 	viper.SetDefault("security.admin_security.max_requests", 30)
 	viper.SetDefault("security.admin_security.user_max_requests", 50)
+
+	// 登录锁定默认策略：连续失败 5 次锁定 15 分钟，与 service 层默认值保持一致。
+	viper.SetDefault("security.login_lockout.enabled", true)
+	viper.SetDefault("security.login_lockout.max_failed_attempts", 5)
+	viper.SetDefault("security.login_lockout.lock_minutes", 15)
 
 	// CORS 默认拒绝所有跨域，方法表遵循 POST-Only 规范仅保留 POST 与预检 OPTIONS，
 	// 需要跨域访问的部署在 config.yaml 白名单中补充具体 Origin。

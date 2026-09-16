@@ -33,6 +33,11 @@ func (f *loginUserRepo) GetByEmail(email string) (*domain.User, error) {
 	return f.user, nil
 }
 
+// Update 失败计数落库的替身实现，登录失败路径会写回累计结果。
+func (f *loginUserRepo) Update(*domain.User) error {
+	return nil
+}
+
 // loginJWTService 登录场景的 JWT 服务替身，仅覆盖令牌对生成方法。
 type loginJWTService struct {
 	JWTService

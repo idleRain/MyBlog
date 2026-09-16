@@ -10,6 +10,7 @@ import (
 	"MyBlog/internal/repository"
 	"MyBlog/internal/router"
 	"MyBlog/internal/service"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -98,10 +99,11 @@ func newServices(cfg *config.Config, repos *appRepositories) *appServices {
 	rbacService := service.NewRBACService()
 
 	return &appServices{
-		jwt:          jwtService,
-		identity:     middleware.NewIdentityProvider(jwtService, repos.user),
-		rbac:         rbacService,
-		user:         service.NewUserService(repos.user, jwtService, rbacService),
+		jwt:      jwtService,
+		identity: middleware.NewIdentityProvider(jwtService, repos.user),
+		rbac:     rbacService,
+		user: service.NewUserService(repos.user, jwtService, rbacService,
+			service.WithLoginLockoutPolicy(loginLockoutPolicyFromConfig(cfg))),
 		article:      service.NewArticleService(repos.article, repos.user, rbacService, repos.stats, repos.notification),
 		category:     service.NewCategoryService(repos.category),
 		tag:          service.NewTagService(repos.tag),
@@ -112,6 +114,15 @@ func newServices(cfg *config.Config, repos *appRepositories) *appServices {
 		stats:        service.NewStatsService(repos.stats),
 		notification: service.NewNotificationService(repos.notification),
 		follow:       service.NewUserFollowService(repos.follow, repos.user, repos.notification, repos.article),
+	}
+}
+
+// loginLockoutPolicyFromConfig 将 security.login_lockout 配置转换为服务层锁定策略。
+func loginLockoutPolicyFromConfig(cfg *config.Config) service.LoginLockoutPolicy {
+	return service.LoginLockoutPolicy{
+		Enabled:         cfg.Security.LoginLockout.Enabled,
+		MaxFailedLogins: uint(cfg.Security.LoginLockout.MaxFailedAttempts),
+		LockDuration:    time.Duration(cfg.Security.LoginLockout.LockMinutes) * time.Minute,
 	}
 }
 

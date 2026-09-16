@@ -75,6 +75,12 @@ security:
     user_max_requests: 50      # 管理员接口用户级别限制
     ip_whitelist: []           # IP白名单（空表示不启用）
 
+  # 登录锁定配置：连续密码失败达到阈值后锁定账户，到期自动解除
+  login_lockout:
+    enabled: true
+    max_failed_attempts: 5     # 连续失败阈值
+    lock_minutes: 15           # 锁定时长（分钟）
+
 # CORS 跨域配置：仅对白名单内 Origin 回显 CORS 头，白名单外请求浏览器侧直接拒绝。
 # 部署形态为 nginx 同源网关时白名单保持为空即可，浏览器同源请求不受影响；
 # 需要跨域访问时补充精确 Origin（如 "https://blog.example.com"），禁止使用通配符。

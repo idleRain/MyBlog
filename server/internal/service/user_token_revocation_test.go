@@ -15,6 +15,11 @@ type recordedJWTService struct {
 	revokedUserIDs []uint
 }
 
+func (f *recordedJWTService) GenerateTokenPair(*domain.User) (*TokenPair, error) {
+	// 成功登录路径需要真实令牌对，替身返回固定值避免依赖内嵌空接口。
+	return &TokenPair{AccessToken: "access-token", RefreshToken: "refresh-token", ExpiresIn: 900}, nil
+}
+
 func (f *recordedJWTService) RevokeToken(tokenString string) error {
 	f.revokedTokens = append(f.revokedTokens, tokenString)
 	return nil

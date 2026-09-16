@@ -7,6 +7,7 @@ import (
 	"MyBlog/internal/repository"
 	"fmt"
 	"regexp"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -59,20 +60,61 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"newPassword" binding:"required,min=8,max=64"`
 }
 
+// 登录锁定策略默认值，组合根未注入策略或配置缺省时生效。
+const (
+	// DefaultMaxFailedLogins 连续登录失败阈值，达到即触发锁定。
+	DefaultMaxFailedLogins = 5
+	// DefaultLockDuration 账户锁定时长，到期后自动解除。
+	DefaultLockDuration = 15 * time.Minute
+)
+
+// LoginLockoutPolicy 登录锁定策略，阈值与时长来源于 security.login_lockout 配置。
+type LoginLockoutPolicy struct {
+	Enabled         bool          // 是否启用失败锁定
+	MaxFailedLogins uint          // 连续失败阈值
+	LockDuration    time.Duration // 锁定时长
+}
+
+// defaultLoginLockoutPolicy 默认锁定策略，保证未配置时的生产安全底线。
+func defaultLoginLockoutPolicy() LoginLockoutPolicy {
+	return LoginLockoutPolicy{
+		Enabled:         true,
+		MaxFailedLogins: DefaultMaxFailedLogins,
+		LockDuration:    DefaultLockDuration,
+	}
+}
+
+// UserServiceOption 用户服务构造选项，可选依赖经选项注入而不破坏既有构造点。
+type UserServiceOption func(*userService)
+
+// WithLoginLockoutPolicy 注入登录锁定策略，覆盖默认策略。
+func WithLoginLockoutPolicy(policy LoginLockoutPolicy) UserServiceOption {
+	return func(s *userService) {
+		s.lockoutPolicy = policy
+	}
+}
+
 // userService 用户服务实现
 type userService struct {
-	userRepo    repository.UserRepository
-	jwtService  JWTService
-	rbacService RBACService
+	userRepo      repository.UserRepository
+	jwtService    JWTService
+	rbacService   RBACService
+	lockoutPolicy LoginLockoutPolicy
 }
 
 // NewUserService 创建用户服务实例，依赖由组合根注入，禁止内部私自实例化。
-func NewUserService(userRepo repository.UserRepository, jwtService JWTService, rbacService RBACService) UserService {
-	return &userService{
-		userRepo:    userRepo,
-		jwtService:  jwtService,
-		rbacService: rbacService,
+func NewUserService(userRepo repository.UserRepository, jwtService JWTService, rbacService RBACService,
+	opts ...UserServiceOption) UserService {
+	svc := &userService{
+		userRepo:      userRepo,
+		jwtService:    jwtService,
+		rbacService:   rbacService,
+		lockoutPolicy: defaultLoginLockoutPolicy(),
 	}
+	for _, opt := range opts {
+		opt(svc)
+	}
+	return svc
 }
 
 // CreateUser 创建用户
@@ -377,15 +419,23 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 		}
 	}
 
+	// 锁定检查先于密码校验，锁定期间即使密码正确也拒绝，阻断持续爆破。
+	if user.IsLocked() {
+		return nil, fmt.Errorf("账户已被锁定，请稍后再试")
+	}
+
 	// 验证密码
 	if !s.verifyPassword(password, user.Password) {
-		return nil, fmt.Errorf("密码错误")
+		return nil, s.recordLoginFailure(user)
 	}
 
 	// 检查用户状态
 	if user.Status != model.UserStatusActive {
 		return nil, fmt.Errorf("用户已被禁用")
 	}
+
+	// 登录成功后清零失败计数并解除历史锁定标记。
+	s.resetLoginFailure(user)
 
 	// 生成JWT令牌对
 	tokenPair, err := s.jwtService.GenerateTokenPair(user)
@@ -400,6 +450,39 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 		ExpiresIn:    tokenPair.ExpiresIn,
 		Permissions:  permissionStrings(s.rbacService.GetUserPermissions(user.Role)),
 	}, nil
+}
+
+// recordLoginFailure 累计连续登录失败次数，达到阈值时锁定账户一段时间。
+// 计数落库失败不掩盖原始的密码错误结果，仅代表本次计数未持久化。
+func (s *userService) recordLoginFailure(user *domain.User) error {
+	user.FailedLoginCount++
+	locked := false
+	if s.lockoutPolicy.Enabled && user.FailedLoginCount >= s.lockoutPolicy.MaxFailedLogins {
+		lockedUntil := time.Now().Add(s.lockoutPolicy.LockDuration)
+		user.LockedUntil = &lockedUntil
+		locked = true
+	}
+
+	if err := s.userRepo.Update(user); err != nil {
+		return fmt.Errorf("密码错误")
+	}
+
+	if locked {
+		return fmt.Errorf("密码错误，失败次数过多，账户已被锁定，请稍后再试")
+	}
+	return fmt.Errorf("密码错误")
+}
+
+// resetLoginFailure 登录成功后清零失败计数并清除锁定截止时间。
+// 计数本就为零时跳过写库，写库失败不影响本次登录结果。
+func (s *userService) resetLoginFailure(user *domain.User) {
+	if user.FailedLoginCount == 0 && user.LockedUntil == nil {
+		return
+	}
+
+	user.FailedLoginCount = 0
+	user.LockedUntil = nil
+	_ = s.userRepo.Update(user)
 }
 
 // RefreshToken 刷新令牌，换取新令牌对前必须查库校验用户存在且状态正常，
