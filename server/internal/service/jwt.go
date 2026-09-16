@@ -5,6 +5,7 @@ import (
 	"MyBlog/internal/config"
 	"MyBlog/internal/domain"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -16,6 +17,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// jtiRandomBytes 令牌唯一标识的随机字节数，Base64URL 编码后为 16 字符，
+// 足以在令牌生命周期内避免实例碰撞，同时控制令牌体积。
+const jtiRandomBytes = 12
+
+// tokenFullSegmentCount 完整三段 JWT 的段数，用于区分完整令牌与 payload-only 输入。
+const tokenFullSegmentCount = 3
+
+// tokenPayloadSegmentIndex payload 段在完整三段 JWT 中的下标位置。
+const tokenPayloadSegmentIndex = 1
+
 // TokenType 令牌类型
 type TokenType string
 
@@ -26,8 +37,9 @@ const (
 
 // JWTClaims JWT声明 - 极简版，只保留绝对必需的字段
 type JWTClaims struct {
-	UserID    uint  `json:"u"`   // 进一步缩短字段名：uid -> u
-	ExpiresAt int64 `json:"exp"` // 直接使用Unix时间戳，不用jwt.NewNumericDate包装
+	UserID    uint   `json:"u"`   // 进一步缩短字段名：uid -> u
+	JTI       string `json:"jti"` // 令牌实例唯一标识，撤销键以此区分同一秒内签发的不同令牌
+	ExpiresAt int64  `json:"exp"` // 直接使用Unix时间戳，不用jwt.NewNumericDate包装
 }
 
 // Valid 实现jwt.Claims interface
@@ -94,8 +106,9 @@ type JWTService interface {
 // jwtService JWT服务实现
 type jwtService struct {
 	config *config.Config
-	// revokedTokens 记录已撤销令牌及其撤销时间，仅支持单实例部署场景。
-	// TODO: 实现 token 撤销的持久化存储，可使用 MySQL 数据库。
+	// revokedTokens 以归一化撤销键记录已撤销令牌，值为令牌的过期时间。
+	// 过期令牌本身无法通过签名校验，对应撤销键随之失去存在意义，
+	// 撤销写入时惰性清理，防止撤销表随历史登出无界增长。
 	revokedTokens map[string]time.Time
 	// mu 保护 revokedTokens 的并发读写，避免多请求同时撤销与校验时产生数据竞争。
 	mu sync.RWMutex
@@ -138,8 +151,14 @@ func (j *jwtService) GenerateTokenPair(user *domain.User) (*TokenPair, error) {
 func (j *jwtService) generateToken(user *domain.User, tokenType TokenType,
 	issuedAt time.Time, duration time.Duration) (string, error) {
 
+	tokenID, err := newTokenJTI()
+	if err != nil {
+		return "", fmt.Errorf("生成令牌唯一标识失败: %w", err)
+	}
+
 	claims := JWTClaims{
 		UserID:    user.ID,
+		JTI:       tokenID,
 		ExpiresAt: issuedAt.Add(duration).Unix(),
 	}
 
@@ -152,6 +171,16 @@ func (j *jwtService) generateToken(user *domain.User, tokenType TokenType,
 	// 返回Base64编码的payload（去掉padding）
 	payloadBase64 := base64.RawURLEncoding.EncodeToString(payloadBytes)
 	return payloadBase64, nil
+}
+
+// newTokenJTI 生成令牌实例唯一标识，随机源不可用时返回错误，
+// 唯一性是撤销键正确性的前提，失败时令牌签发必须整体失败。
+func newTokenJTI() (string, error) {
+	randomBytes := make([]byte, jtiRandomBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", fmt.Errorf("读取随机源失败: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(randomBytes), nil
 }
 
 // ReconstructFullToken 从payload重构完整的JWT token
@@ -265,24 +294,69 @@ func (j *jwtService) RefreshAccessToken(refreshTokenString string) (*TokenPair, 
 	return tokenPair, nil
 }
 
-// RevokeToken 撤销令牌
+// tokenRevocationKey 归一化令牌的撤销键，撤销侧与校验侧共用本函数保证键一致。
+// 本系统签发的是 payload-only 串，但校验侧拿到的是重构后的完整三段 JWT，
+// 键统一取 payload 段，完整 JWT 取中段，其余输入原样返回。
+func tokenRevocationKey(tokenString string) string {
+	parts := strings.Split(tokenString, ".")
+	if len(parts) == tokenFullSegmentCount {
+		return parts[tokenPayloadSegmentIndex]
+	}
+	return tokenString
+}
+
+// tokenExpiry 解析令牌 payload 的过期时间作为撤销记录的生命周期终点。
+// payload 无法解析时回退为当前时间加刷新令牌有效期，保证撤销键至少
+// 覆盖最长令牌生命周期后才被清理，不产生撤销保护空窗。
+func (j *jwtService) tokenExpiry(payload string) time.Time {
+	decoded, err := base64.RawURLEncoding.DecodeString(payload)
+	if err == nil {
+		var claims JWTClaims
+		if jsonErr := json.Unmarshal(decoded, &claims); jsonErr == nil && claims.ExpiresAt > 0 {
+			return time.Unix(claims.ExpiresAt, 0)
+		}
+	}
+	return time.Now().Add(time.Duration(j.config.JWT.RefreshExpire) * time.Hour)
+}
+
+// RevokeToken 撤销令牌，撤销键经归一化后落表，同时惰性清理已过期的撤销记录。
 func (j *jwtService) RevokeToken(tokenString string) error {
+	key := tokenRevocationKey(tokenString)
+	if key == "" {
+		return nil
+	}
+
+	expiry := j.tokenExpiry(key)
+
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
-	// 简单的内存存储实现，生产环境应使用数据库等持久化存储。
-	j.revokedTokens[tokenString] = time.Now()
-
-	// TODO: 定期清理过期的撤销令牌，避免内存泄漏
-
+	j.revokedTokens[key] = expiry
+	j.pruneExpiredRevocationsLocked(time.Now())
 	return nil
 }
 
-// IsTokenRevoked 检查令牌是否已被撤销
+// IsTokenRevoked 检查令牌是否已被撤销，过期撤销记录对应的令牌自身也已过期，
+// 签名校验会拒绝该令牌，撤销状态随之自然失效。
 func (j *jwtService) IsTokenRevoked(tokenString string) bool {
+	key := tokenRevocationKey(tokenString)
+	if key == "" {
+		return false
+	}
+
 	j.mu.RLock()
 	defer j.mu.RUnlock()
 
-	_, revoked := j.revokedTokens[tokenString]
-	return revoked
+	expiry, revoked := j.revokedTokens[key]
+	return revoked && expiry.After(time.Now())
+}
+
+// pruneExpiredRevocationsLocked 移除生命周期已终结的撤销记录，约束撤销表规模。
+// 调用方必须已持有写锁，随撤销写入触发，无需独立清扫协程。
+func (j *jwtService) pruneExpiredRevocationsLocked(now time.Time) {
+	for key, expiry := range j.revokedTokens {
+		if !expiry.After(now) {
+			delete(j.revokedTokens, key)
+		}
+	}
 }
