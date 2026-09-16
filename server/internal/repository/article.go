@@ -23,7 +23,7 @@ type ArticleRepositoryInterface interface {
 	CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error
 	GetByID(id uint) (*model.Article, error)
 	GetBySlug(slug string) (*model.Article, error)
-	Update(article *model.Article) error
+	UpdateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error
 	Delete(id uint) error
 
 	// 查询操作
@@ -151,15 +151,16 @@ func (r *ArticleRepository) GetBySlug(slug string) (*model.Article, error) {
 	return &article, nil
 }
 
-// Update 更新文章
-func (r *ArticleRepository) Update(article *model.Article) error {
+// updateTx 更新文章，字段落库逻辑供事务方法复用；slug 为空时回退为按标题生成，
+// 唯一性检查与发布时间维护均在同一数据库句柄内完成。
+func (r *ArticleRepository) updateTx(db *gorm.DB, article *model.Article) error {
 	// 更新时若 slug 为空，回退为按标题生成，避免唯一索引写入空值。
 	if article.Slug == "" {
 		article.Slug = generateSlug(article.Title)
 	}
 
 	// 检查slug唯一性
-	if err := r.ensureUniqueSlug(r.db, article); err != nil {
+	if err := r.ensureUniqueSlug(db, article); err != nil {
 		return err
 	}
 
@@ -169,7 +170,7 @@ func (r *ArticleRepository) Update(article *model.Article) error {
 		article.PublishedAt = &now
 	}
 
-	return r.db.Save(article).Error
+	return db.Save(article).Error
 }
 
 // Delete 删除文章，采用软删除，并在同一事务内清理关联关系与回滚分类标签计数。
@@ -664,6 +665,30 @@ func (r *ArticleRepository) syncCategoriesTx(tx *gorm.DB, articleID uint, catego
 func (r *ArticleRepository) CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := r.createTx(tx, article); err != nil {
+			return err
+		}
+
+		if len(categoryIDs) > 0 {
+			if err := r.syncCategoriesTx(tx, article.ID, categoryIDs); err != nil {
+				return err
+			}
+		}
+
+		if len(tagIDs) > 0 {
+			if err := r.syncTagsTx(tx, article.ID, tagIDs); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
+// UpdateWithRelations 在单个事务内更新文章并同步分类与标签关联。
+// 与 CreateWithRelations 同族：任一环节失败即整体回滚，避免文章已更新而关联残留旧值的半程状态。
+func (r *ArticleRepository) UpdateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := r.updateTx(tx, article); err != nil {
 			return err
 		}
 

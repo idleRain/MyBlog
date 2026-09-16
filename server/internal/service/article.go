@@ -305,23 +305,9 @@ func (s *ArticleService) UpdateArticle(id uint, req *UpdateArticleRequest, userI
 		return nil, err
 	}
 
-	// 更新文章
-	if err := s.articleRepo.Update(article); err != nil {
+	// 文章更新与分类、标签关联同步在同一事务内完成，任一环节失败整体回滚。
+	if err := s.articleRepo.UpdateWithRelations(article, req.CategoryIDs, req.TagIDs); err != nil {
 		return nil, err
-	}
-
-	// 同步分类关联
-	if len(req.CategoryIDs) > 0 {
-		if err := s.articleRepo.SyncCategories(article.ID, req.CategoryIDs); err != nil {
-			return nil, err
-		}
-	}
-
-	// 同步标签关联
-	if len(req.TagIDs) > 0 {
-		if err := s.articleRepo.SyncTags(article.ID, req.TagIDs); err != nil {
-			return nil, err
-		}
 	}
 
 	// 重新获取完整的文章信息
