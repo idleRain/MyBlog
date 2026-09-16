@@ -16,9 +16,13 @@ let { posts, hotPosts, tags }: Props = $props()
 // 目录编号固定两位展示，超出 99 篇后按实际位数展开。
 const indexLabel = (position: number) => String(position + 1).padStart(2, '0')
 
-/** 订阅表单为版面演示用途，拦截提交以避免无效请求。 */
+// 订阅通道尚未建设，提交仅给出明确反馈，避免表单无响应造成假可用的错觉。
+let subscribeNoticed = $state(false)
+
+/** 拦截订阅表单提交并展示暂未开放的说明。 */
 function handleSubscribe(event: SubmitEvent) {
   event.preventDefault()
+  subscribeNoticed = true
 }
 </script>
 
@@ -169,7 +173,7 @@ function handleSubscribe(event: SubmitEvent) {
         >
           <h3 class="font-display text-xl font-black">订阅手记</h3>
           <p class="mt-2 text-sm leading-relaxed text-primary-foreground/70">
-            每月一封邮件，汇总当月文章与书单，不打扰。
+            邮件订阅正在筹备中，开放后将汇总当月文章与书单，不打扰。
           </p>
           <form class="mt-4 flex" onsubmit={handleSubscribe}>
             <label for="subscribe-email" class="sr-only">邮箱地址</label>
@@ -187,6 +191,11 @@ function handleSubscribe(event: SubmitEvent) {
               订阅
             </button>
           </form>
+          {#if subscribeNoticed}
+            <p class="mt-3 text-xs leading-relaxed text-primary-foreground/80" role="status">
+              订阅功能暂未开放，开放后会在站内公告，感谢耐心等待。
+            </p>
+          {/if}
         </div>
       </div>
     </aside>
