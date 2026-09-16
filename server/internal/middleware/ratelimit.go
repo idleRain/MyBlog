@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -132,14 +133,18 @@ func RateLimitPerUser(maxRequests int, window time.Duration) gin.HandlerFunc {
 	}
 }
 
-// getUserKey 获取用户键
+// userKeyPrefix 用户级限流键的统一前缀。
+const userKeyPrefix = "user:"
+
+// getUserKey 获取用户键，统一为十进制字符串形式。
+// 历史 rune 转换对大数值 ID 会产生非法字符与键碰撞，限流配额因此串用。
 func getUserKey(userID interface{}) string {
 	switch v := userID.(type) {
 	case string:
-		return "user:" + v
+		return userKeyPrefix + v
 	case uint:
-		return "user:" + string(rune(v))
+		return userKeyPrefix + strconv.FormatUint(uint64(v), 10)
 	default:
-		return "user:unknown"
+		return userKeyPrefix + "unknown"
 	}
 }
