@@ -153,7 +153,7 @@ function handleSubscribe(event: SubmitEvent) {
             <div class="flex flex-wrap gap-2">
               {#each tags as tag (tag.id)}
                 <a
-                  href={`/blog?search=${tag.name}`}
+                  href={`/blog?search=${encodeURIComponent(tag.name)}`}
                   class="border border-line bg-card px-3 py-1 text-xs font-medium transition-colors duration-150 hover:border-signal hover:text-signal"
                 >
                   {tag.name}
