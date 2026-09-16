@@ -2,14 +2,12 @@
 import { zod4Client } from 'sveltekit-superforms/adapters'
 import { EyeOff, Eye, LogIn } from '@lucide/svelte'
 import { superForm } from 'sveltekit-superforms'
-import { safeApiCall } from '$lib/utils/request'
 import { authStore } from '$lib/stores/auth.ts'
 import { ThemeToggle } from '$lib/components'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { ModeWatcher } from 'mode-watcher'
 import type { PageData } from './$types'
-import { Toaster } from '$ui/sonner'
 import { UserAPI } from '$lib/api'
 import { Input } from '$ui/input'
 import { onMount } from 'svelte'
@@ -23,47 +21,26 @@ const loginSchema = z.object({
   password: z.string().min(1, '请输入密码')
 })
 
-const form = superForm(data.form, {
-  validators: zod4Client(loginSchema)
-})
-
-const { form: formData } = form
-
 let isSubmitting = false
 
-// 手动处理登录提交
 async function handleLogin(e: SubmitEvent) {
   e.preventDefault()
-
   if (isSubmitting) return
 
-  // 验证表单数据
-  const validation = loginSchema.safeParse({
-    username: $formData.username,
-    password: $formData.password
-  })
-
-  if (!validation.success) {
-    toast.error('请检查输入信息')
-    return
-  }
+  // 校验走 superForm 配置的 zod validator，字段级错误经 Form.FieldErrors 展示。
+  const result = await validateForm({ update: true })
+  if (!result.valid) return
 
   isSubmitting = true
 
   try {
-    const { data: response, success } = await safeApiCall(
-      () =>
-        UserAPI.login({
-          username: $formData.username.trim(),
-          password: $formData.password.trim()
-        }),
-      {
-        showErrorToast: false, // 我们手动处理错误提示
-        redirectOnAuthError: false
-      }
-    )
+    // 登录为认证前请求，直接调用接口；401 后续处理由 http 客户端单轨负责。
+    const response = await UserAPI.login({
+      username: $formData.username.trim(),
+      password: $formData.password.trim()
+    })
 
-    if (success && response && response.code === 200 && response.data) {
+    if (response.code === 200 && response.data) {
       authStore.login(
         response.data.user,
         response.data.accessToken,
@@ -74,7 +51,7 @@ async function handleLogin(e: SubmitEvent) {
       toast.success('登录成功')
       await goto('/')
     } else {
-      toast.error(response?.message || '登录失败，请检查用户名和密码')
+      toast.error(response.message || '登录失败，请检查用户名和密码')
     }
   } catch (error) {
     console.error('Login error:', error)
@@ -83,6 +60,12 @@ async function handleLogin(e: SubmitEvent) {
     isSubmitting = false
   }
 }
+
+const form = superForm(data.form, {
+  validators: zod4Client(loginSchema)
+})
+
+const { form: formData, validateForm } = form
 
 let showPassword = false
 
@@ -110,7 +93,6 @@ function togglePasswordVisibility() {
 </svelte:head>
 
 <ModeWatcher />
-<Toaster position="top-center" />
 
 <div
   class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
