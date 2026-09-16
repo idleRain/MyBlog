@@ -13,6 +13,7 @@ import (
 type fakeArticleRepo struct {
 	repository.ArticleRepositoryInterface
 	getByID        func(id uint) (*model.Article, error)
+	list           func(params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	getByAuthor    func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	search         func(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	incrementView  func(id uint) error
@@ -24,6 +25,13 @@ type fakeArticleRepo struct {
 	existsLike     func(articleID, userID uint) (bool, error)
 	existsBookmark func(articleID, userID uint) (bool, error)
 	listBookmarks  func(userID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+}
+
+func (f *fakeArticleRepo) List(params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	if f.list != nil {
+		return f.list(params)
+	}
+	return nil, 0, errors.New("未实现的测试替身方法")
 }
 
 func (f *fakeArticleRepo) ExistsLike(articleID, userID uint) (bool, error) {

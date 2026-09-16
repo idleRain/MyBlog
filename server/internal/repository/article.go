@@ -74,6 +74,9 @@ type ArticleListParams struct {
 	SortBy   string              `json:"sortBy"` // 排序字段：created_at、updated_at、published_at、view_count、like_count
 	Order    string              `json:"order"`  // asc, desc
 	Search   string              `json:"search"`
+	// VisibleAuthorID 非管理视角的可见性边界，非零时可见范围放宽为
+	// "已发布 或 本人文章"，请求的状态筛选在该边界上叠加。
+	VisibleAuthorID uint `json:"visibleAuthorId"`
 }
 
 // ArticleRepository 文章仓储实现
@@ -838,6 +841,11 @@ func generateSlug(title string) string {
 
 // applyFilters 应用筛选条件
 func (r *ArticleRepository) applyFilters(query *gorm.DB, params *ArticleListParams) *gorm.DB {
+	// 作者可见边界先于状态筛选叠加，边界内包含本人全部状态文章。
+	if params.VisibleAuthorID != 0 {
+		query = query.Where("status = ? OR author_id = ?", model.ArticleStatusPublished, params.VisibleAuthorID)
+	}
+
 	if params.Status != "" {
 		query = query.Where("status = ?", params.Status)
 	}

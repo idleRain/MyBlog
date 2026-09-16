@@ -342,9 +342,16 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 		Search:   req.Search,
 	}
 
-	// 非管理员查看时强制已发布状态，与作者页接口共用同一可见性判定。
+	// 可见性判定：管理员按请求筛选全量；登录的非管理角色放宽为
+	// "已发布 + 本人全状态"，修复 editor 草稿在列表中不可见的问题；
+	// 匿名访问维持仅已发布语义。请求的状态筛选在可见边界上叠加，
+	// 借状态参数越权拉取他人草稿仍被边界拦截。
 	if !s.canFilterByStatus(userID) {
-		params.Status = model.ArticleStatusPublished
+		if userID != nil {
+			params.VisibleAuthorID = *userID
+		} else {
+			params.Status = model.ArticleStatusPublished
+		}
 	}
 
 	articles, total, err := s.articleRepo.List(params)
@@ -393,9 +400,14 @@ func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListR
 		Search:   req.Search,
 	}
 
-	// 非管理员查看时强制已发布，防止公开接口借状态参数越权拉取草稿与私密文章。
+	// 可见性判定：管理员全量；作者本人查看自己的作者页时放开全状态；
+	// 其余查看者强制已发布，防止公开接口借状态参数越权拉取非公开文章。
 	if !s.canFilterByStatus(userID) {
-		params.Status = model.ArticleStatusPublished
+		if userID != nil && *userID == authorID {
+			params.VisibleAuthorID = authorID
+		} else {
+			params.Status = model.ArticleStatusPublished
+		}
 	}
 
 	articles, total, err := s.articleRepo.GetByAuthor(authorID, params)
