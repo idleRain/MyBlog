@@ -100,7 +100,11 @@ onMount(loadSettings)
   <title>系统设置 - {SITE_NAME_ZH}</title>
 </svelte:head>
 
-<PageHeader title="系统设置" description="配置站点信息、内容、媒体与安全等参数" crumb="系统设置">
+<PageHeader
+  title="系统设置"
+  description="配置站点信息、内容、媒体与安全等参数；带「未生效」角标的项尚未接入业务逻辑，修改后不产生运行时效果"
+  crumb="系统设置"
+>
   {#snippet actions()}
     <Button onclick={handleSave} disabled={isSaving || isLoading}>
       <Save data-icon="inline-start" />
@@ -126,6 +130,11 @@ onMount(loadSettings)
         <Card.Root>
           <Card.Header>
             <Card.Title>{SETTING_GROUP_LABELS[group.groupName] ?? group.groupName}</Card.Title>
+            {#if group.groupName === 'security'}
+              <Card.Description>
+                安全参数的实际生效渠道为服务端 config.yaml 与安全中间件，本组配置尚未接入业务逻辑。
+              </Card.Description>
+            {/if}
           </Card.Header>
           <Card.Content>
             <div class="grid gap-6 md:grid-cols-2">
