@@ -2,93 +2,52 @@ package middleware
 
 import (
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-// CORS 跨域中间件
-func CORS() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		c.Header("Access-Control-Allow-Credentials", "true")
+// corsVaryHeaderName 告知缓存层响应随 Origin 变化的 Vary 头名称。
+const corsVaryHeaderName = "Vary"
 
-		// 处理预检请求
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
+// corsVaryHeaderValue Vary 头的 Origin 值，白名单内外请求的 CORS 头集合不同，
+// 中间层缓存禁止跨 Origin 复用响应。
+const corsVaryHeaderValue = "Origin"
 
-		c.Next()
-	}
+// CORSConfig CORS 跨域配置，来源为 config.yaml 的 cors 节。
+type CORSConfig struct {
+	AllowedOrigins   []string // 允许跨域的 Origin 白名单，精确匹配，空列表表示拒绝所有跨域
+	AllowedMethods   []string // 允许的 HTTP 方法，POST-Only 规范下仅 POST 与预检 OPTIONS
+	AllowedHeaders   []string // 允许跨域携带的请求头
+	AllowCredentials bool     // 是否允许跨域携带凭证
 }
 
-// CORSWithConfig 带配置的 CORS 中间件
+// CORSWithConfig 白名单化 CORS 中间件，仅对白名单内 Origin 回显 CORS 响应头。
+// 白名单外与未携带 Origin 的请求不返回任何 CORS 头，生产同源网关形态下白名单可为空。
 func CORSWithConfig(config CORSConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
+		allowed := slices.Contains(config.AllowedOrigins, origin)
 
-		// 检查是否允许该源
-		if config.AllowAllOrigins || contains(config.AllowedOrigins, origin) {
+		// 无论是否放行都声明响应随 Origin 变化，避免中间层缓存串用 CORS 头。
+		c.Header(corsVaryHeaderName, corsVaryHeaderValue)
+
+		if allowed {
 			c.Header("Access-Control-Allow-Origin", origin)
+			c.Header("Access-Control-Allow-Methods", strings.Join(config.AllowedMethods, ", "))
+			c.Header("Access-Control-Allow-Headers", strings.Join(config.AllowedHeaders, ", "))
+			if config.AllowCredentials {
+				c.Header("Access-Control-Allow-Credentials", "true")
+			}
 		}
 
-		c.Header("Access-Control-Allow-Methods", joinStrings(config.AllowedMethods, ", "))
-		c.Header("Access-Control-Allow-Headers", joinStrings(config.AllowedHeaders, ", "))
-
-		if config.AllowCredentials {
-			c.Header("Access-Control-Allow-Credentials", "true")
-		}
-
-		// 处理预检请求
-		if c.Request.Method == "OPTIONS" {
+		// 预检请求统一 204，白名单外请求因缺少 Allow-Origin 头在浏览器侧被拒绝。
+		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
 		c.Next()
 	}
-}
-
-// CORSConfig CORS 配置
-type CORSConfig struct {
-	AllowAllOrigins  bool
-	AllowedOrigins   []string
-	AllowedMethods   []string
-	AllowedHeaders   []string
-	AllowCredentials bool
-}
-
-// DefaultCORSConfig 默认 CORS 配置
-func DefaultCORSConfig() CORSConfig {
-	return CORSConfig{
-		AllowAllOrigins:  false,
-		AllowedOrigins:   []string{"http://localhost:3000", "http://localhost:8080"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization", "X-Requested-With"},
-		AllowCredentials: true,
-	}
-}
-
-// 辅助函数
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
-
-func joinStrings(slice []string, separator string) string {
-	if len(slice) == 0 {
-		return ""
-	}
-
-	result := slice[0]
-	for i := 1; i < len(slice); i++ {
-		result += separator + slice[i]
-	}
-	return result
 }

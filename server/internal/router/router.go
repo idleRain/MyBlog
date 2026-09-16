@@ -26,7 +26,7 @@ func NewRouter(cfg *config.Config) *Router {
 	engine.Use(middleware.Logger())                          // 自定义日志中间件
 	engine.Use(gin.Recovery())                               // 恢复中间件
 	engine.Use(middleware.RequestID())                       // 请求ID中间件
-	engine.Use(middleware.CORS())                            // CORS 中间件
+	engine.Use(corsMiddlewareFromConfig(cfg))                // CORS 中间件，白名单来自配置
 	engine.Use(middleware.SecurityMiddlewareFromConfig(cfg)) // 综合安全中间件，规则与 config.yaml 保持一致
 
 	// 统一处理未匹配路由，确保接口不存在时返回统一的 JSON 响应。
@@ -50,6 +50,16 @@ func NewRouter(cfg *config.Config) *Router {
 // GetEngine 获取 Gin 引擎实例
 func (r *Router) GetEngine() *gin.Engine {
 	return r.engine
+}
+
+// corsMiddlewareFromConfig 将 YAML 配置转换为 CORS 中间件配置。
+func corsMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc {
+	return middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowedOrigins:   cfg.CORS.AllowedOrigins,
+		AllowedMethods:   cfg.CORS.AllowedMethods,
+		AllowedHeaders:   cfg.CORS.AllowedHeaders,
+		AllowCredentials: cfg.CORS.AllowCredentials,
+	})
 }
 
 // SetupRoutes 设置所有路由

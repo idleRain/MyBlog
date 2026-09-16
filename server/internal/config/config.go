@@ -18,8 +18,17 @@ type Config struct {
 	API      APIConfig      `mapstructure:"api"`
 	JWT      JWTConfig      `mapstructure:"jwt"`
 	Security SecurityConfig `mapstructure:"security"`
+	CORS     CORSConfig     `mapstructure:"cors"`
 	Media    MediaConfig    `mapstructure:"media"`
 	RBAC     RBACConfig     `mapstructure:"rbac"`
+}
+
+// CORSConfig CORS 跨域配置，白名单为空时拒绝所有跨域请求。
+type CORSConfig struct {
+	AllowedOrigins   []string `mapstructure:"allowed_origins"`   // 允许跨域的 Origin 白名单，精确匹配
+	AllowedMethods   []string `mapstructure:"allowed_methods"`   // 允许的 HTTP 方法
+	AllowedHeaders   []string `mapstructure:"allowed_headers"`   // 允许跨域携带的请求头
+	AllowCredentials bool     `mapstructure:"allow_credentials"` // 是否允许跨域携带凭证
 }
 
 // RBACConfig 权限配置，角色层级与权限映射的生产环境唯一权威。
@@ -244,6 +253,13 @@ func setDefaults() {
 	viper.SetDefault("security.admin_security.enabled", true)
 	viper.SetDefault("security.admin_security.max_requests", 30)
 	viper.SetDefault("security.admin_security.user_max_requests", 50)
+
+	// CORS 默认拒绝所有跨域，方法表遵循 POST-Only 规范仅保留 POST 与预检 OPTIONS，
+	// 需要跨域访问的部署在 config.yaml 白名单中补充具体 Origin。
+	viper.SetDefault("cors.allowed_origins", []string{})
+	viper.SetDefault("cors.allowed_methods", []string{"POST", "OPTIONS"})
+	viper.SetDefault("cors.allowed_headers", []string{"Content-Type", "Authorization", "X-Requested-With"})
+	viper.SetDefault("cors.allow_credentials", true)
 
 	// 媒体文件存储默认配置
 	viper.SetDefault("media.upload_dir", "uploads")

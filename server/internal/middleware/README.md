@@ -54,19 +54,19 @@ publicGroup.Use(middleware.OptionalAuth(jwtService))
 
 ### 2. CORS 中间件 (`cors.go`)
 
-**功能**：跨域资源共享配置
+**功能**：白名单化跨域资源共享配置，来源为 `config.yaml` 的 `cors` 节
 
 ```go
-func CORS() gin.HandlerFunc
+func CORSWithConfig(config CORSConfig) gin.HandlerFunc
 ```
 
-**配置**：
-- **允许的源**：`http://localhost:5173` (开发环境前端)
-- **允许的方法**：GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD
-- **允许的头**：Authorization, Content-Type, Accept, Origin, User-Agent, Cache-Control, Keep-Alive
-- **暴露的头**：Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers
-- **凭据支持**：启用 (`Access-Control-Allow-Credentials: true`)
-- **预检缓存**：24小时
+**行为**：
+- **Origin 白名单**：精确匹配，白名单外与未携带 Origin 的请求不返回任何 CORS 头
+- **允许的方法**：POST, OPTIONS（POST-Only 规范，方法表来自 `cors.allowed_methods`）
+- **允许的头**：Content-Type, Authorization, X-Requested-With（来自 `cors.allowed_headers`）
+- **凭据支持**：由 `cors.allow_credentials` 控制，与 Origin 全放行互斥
+- **预检处理**：OPTIONS 统一 204，白名单外预检因缺少 Allow-Origin 头在浏览器侧被拒绝
+- **缓存安全**：所有响应声明 `Vary: Origin`，禁止中间层缓存跨 Origin 复用
 
 ### 3. 日志中间件 (`logger.go`)
 
@@ -228,7 +228,7 @@ func NewRouter() *Router {
     engine.Use(middleware.Logger())                    // 1. 日志记录
     engine.Use(gin.Recovery())                         // 2. 恢复中间件
     engine.Use(middleware.RequestID())                 // 3. 请求ID
-    engine.Use(middleware.CORS())                      // 4. CORS支持
+    engine.Use(middleware.CORSWithConfig(corsConfig))  // 4. CORS白名单放行
     engine.Use(middleware.SecurityMiddleware(          // 5. 安全防护
         middleware.DefaultSecurityConfig()))
 

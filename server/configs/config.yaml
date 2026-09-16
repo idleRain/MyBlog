@@ -75,6 +75,20 @@ security:
     user_max_requests: 50      # 管理员接口用户级别限制
     ip_whitelist: []           # IP白名单（空表示不启用）
 
+# CORS 跨域配置：仅对白名单内 Origin 回显 CORS 头，白名单外请求浏览器侧直接拒绝。
+# 部署形态为 nginx 同源网关时白名单保持为空即可，浏览器同源请求不受影响；
+# 需要跨域访问时补充精确 Origin（如 "https://blog.example.com"），禁止使用通配符。
+cors:
+  allowed_origins: []          # 允许跨域的 Origin 白名单，精确匹配，空列表拒绝所有跨域
+  allow_credentials: true      # 是否允许跨域携带凭证，与全放行互斥
+  allowed_methods:             # POST-Only 规范下仅放行 POST 与预检 OPTIONS
+    - "POST"
+    - "OPTIONS"
+  allowed_headers:             # 允许跨域携带的请求头
+    - "Content-Type"
+    - "Authorization"
+    - "X-Requested-With"
+
 # 媒体文件存储配置
 media:
   upload_dir: "uploads"        # 本地存储目录，相对服务运行目录
