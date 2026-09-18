@@ -1,0 +1,28 @@
+# 默认策略：所有文本文件在仓库与各平台工作区统一使用 LF
+# Git 无法识别为文本的文件由下方显式规则保护，避免误转换
+* text=auto eol=lf
+
+# Windows 专属脚本需要 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# 可执行脚本强制 LF，防止 CRLF 导致 POSIX sh 解析失败
+*.sh text eol=lf
+
+# Makefile 与 husky 钩子强制 LF，防止 CRLF 破坏 tab 缩进与钩子执行
+Makefile text eol=lf
+.husky/* text eol=lf
+
+# 图片与字体按二进制处理，不做任何换行转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.eot binary
