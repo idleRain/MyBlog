@@ -17,7 +17,7 @@
 
 ### 1. 用户登录
 
-用户账号密码登录，获取访问令牌。
+用户账号密码登录，获取访问令牌。连续密码失败达到 `security.login_lockout` 配置阈值后账户将被锁定一段时间，到期自动解除，登录成功后失败计数清零。
 
 #### 请求信息
 
@@ -398,7 +398,7 @@ curl -X POST http://localhost:3000/api/users/list \
 
 ### 7. 刷新访问令牌
 
-使用刷新令牌获取新的访问令牌。
+使用刷新令牌获取新的访问令牌。服务端在旋转前查库校验令牌归属用户存在且状态正常，被禁用或已删除用户的刷新令牌无法换取新令牌对。
 
 #### 请求信息
 
@@ -411,7 +411,7 @@ curl -X POST http://localhost:3000/api/users/list \
 
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
-| refreshToken | string | 是 | 刷新令牌 | JWT格式 |
+| refreshToken | string | 是 | 刷新令牌 | payload-only 线格式（见登录接口注记） |
 
 #### 请求示例
 
@@ -441,7 +441,7 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 
 ### 8. 用户登出
 
-登出用户账号，使令牌失效。
+登出用户账号，撤销访问令牌与刷新令牌构成的对。
 
 #### 请求信息
 
@@ -453,7 +453,9 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 
 #### 请求参数
 
-无需参数。
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| refreshToken | string | 否 | 刷新令牌，提交后与访问令牌一并撤销 | 最大512字符，payload-only 线格式 |
 
 #### 请求示例
 
@@ -461,8 +463,10 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 curl -X POST http://localhost:3000/api/auth/logout \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -d '{}'
+  -d '{"refreshToken": "<payload-only refresh token>"}'
 ```
+
+请求体可省略，此时仅撤销访问令牌。
 
 #### 响应示例
 
@@ -584,7 +588,7 @@ curl -X POST http://localhost:3000/api/users/profile/update \
 
 ### 11. 修改密码
 
-校验旧密码后更新为新的登录密码，新密码需满足强度要求。
+校验旧密码后更新为新的登录密码，新密码需满足强度要求。修改成功后服务端撤销该用户当前全部既有令牌，本次请求使用的令牌同样失效，客户端应清除本地会话并引导重新登录。
 
 #### 请求信息
 

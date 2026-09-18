@@ -197,7 +197,7 @@ curl -X POST http://localhost:3000/api/articles/getBySlug \
 
 - **接口地址**: `/api/articles/list`
 - **请求方式**: `POST`
-- **权限要求**: 可选认证；具备 `article:manage` 的管理员可按任意状态筛选，其他角色由服务端强制只返回已发布文章
+- **权限要求**: 可选认证；具备 `article:manage` 的管理员可按任意状态筛选，其他登录角色可见范围为已发布文章加本人全部状态文章，游客仅返回已发布文章
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -206,7 +206,7 @@ curl -X POST http://localhost:3000/api/articles/getBySlug \
 |--------|------|------|------|----------|
 | page | integer | 否 | 页码 | 大于0的整数，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100之间，默认10 |
-| status | string | 否 | 状态筛选 | draft/published/archived/private |
+| status | string | 否 | 状态筛选 | draft/published/archived/private；非管理角色的筛选叠加在本人可见边界上，如 draft 仅命中本人草稿 |
 | authorId | integer | 否 | 作者ID筛选 | 大于0的整数 |
 | sortBy | string | 否 | 排序字段 | created_at/updated_at/published_at/view_count/like_count |
 | order | string | 否 | 排序方向 | asc/desc，默认desc |
@@ -295,7 +295,7 @@ curl -X POST http://localhost:3000/api/articles/list \
 
 - **接口地址**: `/api/articles/byAuthor`
 - **请求方式**: `POST`
-- **权限要求**: 可选认证；具备 `article:manage` 的管理员可按任意状态筛选，其他角色由服务端强制只返回已发布文章
+- **权限要求**: 可选认证；具备 `article:manage` 的管理员可按任意状态筛选，作者本人查看自己的文章时可见全部状态，其余查看者仅返回已发布文章
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -305,7 +305,7 @@ curl -X POST http://localhost:3000/api/articles/list \
 | authorId | integer | 是 | 作者ID | 大于0的整数 |
 | page | integer | 否 | 页码 | 大于0的整数，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100之间，默认10 |
-| status | string | 否 | 状态筛选 | 仅具备 `article:manage` 时生效，其余角色服务端强制 published |
+| status | string | 否 | 状态筛选 | draft/published/archived/private；管理员与作者本人（查看自己时）生效，其余角色服务端强制 published |
 | sortBy | string | 否 | 排序字段 | created_at/updated_at/published_at/view_count/like_count |
 | order | string | 否 | 排序方向 | asc/desc，默认desc |
 

@@ -62,7 +62,7 @@ apps/web, apps/admin（组合根：实例化与回调注入）
 ### 2.3 验证命令
 
 ```bash
-# 在 server/ 目录下（基线：service 12 + middleware 2 + router 10 = 24 文件）
+# 在 server/ 目录下（基线：service 11 + middleware 1 + router 0 = 12 文件，`*_test.go` 测试替身不计入）
 git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router
 
 # 前端：packages 反向依赖应用（应为空）
@@ -103,13 +103,15 @@ git grep -n "interface BaseApiResponse" -- apps
 
 | 锁 | 机制 | 落地状态 |
 |---|---|---|
-| ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/login_fixture_test.go`（login.wrong-password） |
-| ② | TS 侧 vitest + `expectTypeOf(fixture).toEqualTypeOf<手写类型>` 双向精确相等 | ✅ `packages/api/src/contracts/fixtures.test.ts`（首批 3 个） |
-| ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | ✅ `apps/admin/eslint.config.js` |
+| ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/fixture_locks_test.go` + `login_fixture_test.go`（**4/4 金样本**：login.success、login.wrong-password、users.list、article.detail） |
+| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/fixtures.test.ts`（4 用例） |
+| ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | ✅ `apps/admin` 与 `apps/web` 双侧 eslint.config.js |
+
+**锁②语义说明（2026-09-15 定案）**：JSON 导入值在 TS 中推导为宽类型，与手写联合类型无法精确相等（`toEqualTypeOf` 对 `string|null` 等 nullable 联合字段必然失败）。因此引入 `WidenLiteral`（字面量与联合放宽为基础类型）后，以 `toExtend` 单向断言"金样本为手写契约类型的合法实例"：金样本缺字段、字段类型不符或手写类型收窄即编译失败。**已知弱项**：单向断言不检测"金样本多字段而类型未声明"（多余属性在 assignability 中允许），此类漂移由锁①逐字节锚定兜底。
 
 漂移必炸链：后端改 → Go 测试红 → 改 fixture → 类型测试红 → 改类型 → check 红。
 
-**门禁**：`pnpm run contract:check`（Go fixture 测试 + vitest 类型锚定）。
+**门禁**：`pnpm run contract:check`（Go fixture 测试 + `@myblog/api` 的 `tsc --noEmit` + vitest 类型锚定）。
 
 **升级触发器**（命中任一则改推 codegen 方案 2）：
 1. 接口总数 > 80–100；
@@ -117,7 +119,7 @@ git grep -n "interface BaseApiResponse" -- apps
 3. 需对外发布 API 文档；
 4. 团队扩张超单人。
 
-**备注**：C1（handler DTO 分离）是单行道决策，与本次选择正交；`article.detail` 金样本的类型锚定待 Author 窄化 DTO 后补充。未来升级 codegen 时 DTO 层零返工。
+**备注**：C1（handler DTO 分离）是单行道决策，与本次选择正交；`article.detail` 金样本的类型锚定已补齐（Author 窄化后直接锚定 `Article` 类型）。未来升级 codegen 时 DTO 层零返工。
 
 ---
 
@@ -188,7 +190,7 @@ git grep -n "NewRBACService()" -- server
      └─ 是 → 违反 A5，停下提取；否 → 正常开发
 ```
 
-已知跨 app 重复文件（债务 D5，修改任一必须同步另一份）：`stores/auth.ts`、`service/index.ts`、`components/theme-toggle.svelte`、`routes/+layout.svelte`、`routes/+error.svelte`（同构）。
+已知跨 app 重复文件（债务 D5，修改任一必须同步另一份）：`stores/auth.ts`、`service/index.ts`（仅 goto 导入路径一处既定差异，语义逐字一致）、`components/theme-toggle.svelte`（2026-09-16 经 `git diff --no-index` 校验逐字一致）、`routes/+layout.svelte`（仅导入排序与类型标注差异）。error 页两 app 已各自独立设计（web 编辑杂志版式、admin 居中后台版式），仅同名职责，2026-09-16 移出同构清单。
 
 ### 6.2 数据加载
 
@@ -204,9 +206,10 @@ git grep -n "NewRBACService()" -- server
 改动以下任何一项均属最高风险契约变更，须先更新本节再写代码：
 
 - token pair 形状：`{accessToken, refreshToken, expiresIn}`。
-- 线格式：**payload-only JWT**（前端存储与传输的是无点号 Base64 payload，后端 `ReconstructFullToken` 重构完整签名后验证）。
-- 刷新：`POST /api/auth/refresh`，body `{refreshToken}`；刷新即旋转（旧 refresh token 撤销）。
-- 撤销：内存 map（单实例前提，债务 D11）。
+- 线格式：**payload-only JWT**（前端存储与传输的是无点号 Base64 payload，后端 `ReconstructFullToken` 重构完整签名后验证；claims 为 `{u, jti, exp}`，`jti` 为实例唯一标识）。
+- 刷新：`POST /api/auth/refresh`，body `{refreshToken}`；刷新即旋转（旧 refresh token 撤销），旋转前查库校验用户存在且状态正常。
+- 撤销：内存 map（单实例前提，债务 D11）；撤销键为 payload 段归一化形式，记录随令牌过期惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
+- access 链路取舍：信任短有效期，不逐请求查库；被禁用用户的存量 access 至多存活 `jwt.access_expire` 分钟，实时失效诉求由 R4 会话方案承接。
 - 前端 401 识别：以响应体业务码 `code === 401` 判定（D10 已清偿，`TOKEN_ERROR_MESSAGES` 文案匹配已移除，禁止回退）。
 
 ---
@@ -227,11 +230,14 @@ git grep -n "NewRBACService()" -- server
 | D8 | admin 胖组件 + onMount 取数 | **users 跨页补偿已清偿（R3）**：users/list 增加 keyword 参数；12 个胖组件存量保留（新页面禁用） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码 | **已清偿（R0）**：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配 | **已清偿（R0）**：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |
-| D11 | JWT 撤销无锁内存 map | **已加锁（R0）**：`sync.RWMutex` 保护；deprecated `ValidateToken` 已删 | `git grep -n "revokedTokens" -- server` | 单实例部署前提；持久化前保持锁 |
+| D11 | JWT 撤销无锁内存 map | **已加锁（R0）+ 键归一化与过期清理**：`sync.RWMutex` 保护；撤销键统一为 payload 段，记录随令牌过期惰性清理；deprecated `ValidateToken` 已删 | `git grep -n "revokedTokens" -- server` | 单实例部署前提；持久化前保持锁 |
 | D12 | 文章响应泄漏作者审计字段 | **已清偿（R2）**：`lastLoginIP` 等审计字段改为 `json:"-"` | 读 `domain/user.go` json tag | 新增审计字段默认 `json:"-"` |
 | D13 | follow 模块仅后端 | **API 模块已补齐（R3）**：`@myblog/api/modules/follow` + 两应用注册；页面消费待 web 业务接入 | `git grep -ln "createFollowAPI" -- packages/api/src`（非空即已补齐） | 页面消费前视为功能未完成 |
 | D14 | admin 重写 `$ui` 已有组件 | **已清偿（R3）**：本地 `pagination.svelte` 已删，7 页回归 `$ui` | 目录比对 | 禁止仿效；新分页一律 `$ui` |
-| D15 | 公开端点直出实体泄漏个人信息 | **评论域与作者域已窄化（2026-09 体检第一波）**：`model.Comment` 游客邮箱/IP/UserAgent 改 `json:"-"`，评论 `user` 与文章 `author` 经 `domain.AuthorPublic` 窄化视图输出，管理端审计走 `AdminCommentView`；`/users/get` 对任意登录用户返回 email 的问题待单独收口 | 读 `model/comment.go`、`model/article.go` json tag 与 `domain/author.go`；service 层测试断言公开响应无审计字段 | 公开端点输出个人信息前必须经窄化 DTO 或字段白名单；实体新增隐私/审计字段默认 `json:"-"` |
+| D15 | 公开端点直出实体泄漏个人信息 | **评论域与作者域已窄化（2026-09 体检）**：`model.Comment` 游客邮箱/IP/UserAgent 改 `json:"-"`，评论 `user` 与文章 `author` 经 `domain.AuthorPublic` 窄化视图输出，管理端审计走 `AdminCommentView`；`/users/get` 对任意登录用户返回 email 的问题待单独收口 | 读 `model/comment.go`、`model/article.go` json tag 与 `domain/author.go`；service 层测试断言公开响应无审计字段 | 公开端点输出个人信息前必须经窄化 DTO 或字段白名单；实体新增隐私/审计字段默认 `json:"-"` |
+| D16 | WAF 内容级黑名单的固有误伤面 | **误伤回归已锚定（BE-07）**：默认模式全部经词首边界或取值上下文锚定，攻击拦截与误伤回归两组用例在位；残余风险为讲解 SQL/XSS 的技术文章正文命中关键词模式仍会被拦，根治需内容感知解析或按路由豁免 | `go test ./internal/middleware/ -run "TestDefaultBlockedPatterns\|TestSecurityMiddleware" -count=1` | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
+| D17 | 测试替身内嵌空接口的运行时脆性 | **既有约定（三处实证）**：service 层 fake 以内嵌接口继承全部方法，接口新增方法被既有测试路径调用时以 nil panic 暴露而非编译错误（`recordedJWTService.GenerateTokenPair`、`loginUserRepo.Update`、`lockoutUserRepo.GetByUsername` 三例） | `go test ./internal/... -count=1` | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写；禁止依赖内嵌空接口的静默兼容 |
+| D18 | web 界面多语言局部接入 | **UI-27 拍板半程态（2026-09-16）**：语言切换对 Header/Footer/错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败） | `git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、+error） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进 |
 
 ---
 

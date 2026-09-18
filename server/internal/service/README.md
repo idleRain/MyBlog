@@ -16,10 +16,33 @@
 ```go
 type UserService interface {
     CreateUser(req *domain.CreateUserRequest) (*domain.User, error)
+    UpdateUser(req *domain.UpdateUserRequest) (*domain.User, error)
     GetUserByID(id uint) (*domain.User, error)
-    GetUserList(page, pageSize int) ([]*domain.User, int64, error)
+    GetUserList(page, pageSize int, keyword string) ([]*domain.User, int64, error)
     DeleteUser(id uint) error
+    Login(username, password string) (*LoginResponse, error)
+    RefreshToken(refreshToken string) (*TokenPair, error)
+    Logout(accessToken, refreshToken string) error
+    GetProfile(userID uint) (*domain.User, error)
+    UpdateProfile(userID uint, req *UpdateProfileRequest) (*domain.User, error)
+    ChangePassword(userID uint, req *ChangePasswordRequest) error
+    CanUserManageRole(managerRole, targetRole string) bool
+    ValidateRoleTransition(currentRole, newRole string) error
 }
+```
+
+### 构造与依赖
+
+依赖经构造函数注入，组合根可经选项注入登录锁定策略：
+
+```go
+// 组合根内构造（第三参起为可选选项，缺省时启用默认锁定策略）
+userService := service.NewUserService(userRepo, jwtService, rbacService,
+    service.WithLoginLockoutPolicy(service.LoginLockoutPolicy{
+        Enabled:         true,
+        MaxFailedLogins: 5,
+        LockDuration:    15 * time.Minute,
+    }))
 ```
 
 ### 核心功能
@@ -28,13 +51,13 @@ type UserService interface {
 
 - 验证用户名和邮箱的唯一性
 - 密码加密处理
-- 设置默认昵称
+- 设置默认昵称与默认角色
 - 数据持久化
 
 #### 用户查询
 
 - 根据ID查询用户信息
-- 分页查询用户列表
+- 分页查询用户列表，keyword 非空时按用户名、邮箱或昵称模糊匹配
 - 参数验证和默认值处理
 
 #### 用户删除
@@ -42,37 +65,44 @@ type UserService interface {
 - 验证用户存在性
 - 执行软删除操作
 
+### 认证语义
+
+- **登录**：用户名未命中时回退邮箱查找；连续密码失败达到 `security.login_lockout` 配置阈值后置 `locked_until` 锁定账户，到期自动解除，登录成功清零计数
+- **刷新**：换取新令牌对前查库校验用户存在且状态正常，被禁用或已删除用户拒绝刷新
+- **登出**：撤销访问与刷新令牌构成的对，刷新令牌经请求体可选提交
+- **改密**：成功后撤销该用户全部既有令牌，当前会话一并失效
+
 ### 业务规则
 
 1. **用户名唯一性**: 不允许重复的用户名
 2. **邮箱唯一性**: 不允许重复的邮箱地址
-3. **密码安全**: 使用bcrypt加密密码（向后兼容MD5格式）
+3. **密码安全**: 使用bcrypt加密密码
 4. **默认昵称**: 如果不提供昵称，使用用户名作为默认昵称
 5. **分页限制**: 每页最多100条记录，默认10条
 
 ### 使用示例
 
 ```go
-// 初始化服务
-userService := service.NewUserService(userRepo)
-
 // 创建用户
-req := &repository.CreateUserRequest{
+req := &domain.CreateUserRequest{
     Username: "john_doe",
     Email:    "john@example.com",
-    Password: "123456",
+    Password: "Passw0rd123",
     Nickname: "John",
 }
 user, err := userService.CreateUser(req)
 
-// 获取用户
-user, err := userService.GetUserByID(1)
+// 登录
+login, err := userService.Login("john_doe", "Passw0rd123")
 
-// 获取用户列表
-users, total, err := userService.GetUserList(1, 10)
+// 获取用户列表（keyword 支持用户名、邮箱、昵称模糊匹配）
+users, total, err := userService.GetUserList(1, 10, "john")
 
-// 删除用户
-err := userService.DeleteUser(1)
+// 修改密码（成功后撤销该用户全部既有令牌）
+err = userService.ChangePassword(1, &ChangePasswordRequest{
+    OldPassword: "Passw0rd123",
+    NewPassword: "N3wPassw0rd456",
+})
 ```
 
 ### 密码加密

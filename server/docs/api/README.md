@@ -224,8 +224,10 @@ curl http://localhost:3000/api/health/ready
 ### 认证流程
 1. 使用 `/api/users/login` 登录获取令牌
 2. 在请求头中添加 `Authorization: Bearer {accessToken}`
-3. 令牌过期时使用 `/api/auth/refresh` 刷新
-4. 使用 `/api/auth/logout` 安全登出
+3. 令牌过期时使用 `/api/auth/refresh` 刷新（旋转前校验用户状态）
+4. 使用 `/api/auth/logout` 安全登出（请求体可选提交 refreshToken 一并撤销令牌对）
+
+完整认证协议见 `contracts/auth-protocol.md`。
 
 ### 错误处理
 - `400` - 请求参数错误
@@ -236,7 +238,18 @@ curl http://localhost:3000/api/health/ready
 
 ## 更新日志
 
-### v1.3.0 (当前版本)
+### v1.4.0 (当前版本)
+- ✅ 认证止损真实化：JWT 撤销键归一化，登出后访问令牌在有效期内即失效，旧刷新令牌旋转后不可再刷
+- ✅ 登出撤销令牌对：`/api/auth/logout` 请求体可选提交 `refreshToken`，与访问令牌一并撤销
+- ✅ 改密全局失效：`/api/users/change-password` 成功后撤销该用户全部既有令牌，客户端需重新登录
+- ✅ 刷新链路状态校验：`/api/auth/refresh` 旋转前查库校验用户存在且状态正常，被禁用用户令牌无法续期
+- ✅ 登录失败锁定：连续密码失败达到 `security.login_lockout` 阈值后锁定账户，到期自动解除
+- ✅ 文章列表可见性放宽：非管理登录角色可见范围为已发布文章加本人全部状态文章，editor 草稿不再从列表消失；状态筛选叠加在本人可见边界上，越权拉取他人草稿仍被拦截
+- ✅ 浏览上报事务化：计数、访客明细与日统计合并单事务，中断不再产生统计漂移
+- ✅ CORS 白名单化：仅白名单内 Origin 回显 CORS 头，方法表收敛 POST/OPTIONS（`config.yaml` cors 节）
+- ✅ WAF 模式锚定：XSS/SQL 注入正则加词首边界与取值上下文，`content =`、`for i = 1` 等正常正文不再被误拦
+
+### v1.3.0
 - ✅ 文章搜索升级为 MySQL ngram 全文索引，中文按双字切分检索，替代 LIKE 模糊匹配
 - ✅ 新增 `friendly-links/apply`：访客提交友链申请，闭合友链申请与审核流程
 - ✅ 用户自助资料端点：`users/profile`、`users/profile/update` 与 `users/change-password`，登录用户可自助维护资料与密码

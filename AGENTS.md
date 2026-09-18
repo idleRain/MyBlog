@@ -157,7 +157,7 @@ pnpm run migrate [create|up|down|version|help]
 - **数据库**：MySQL 单库（GORM）；迁移由 `internal/database/migrate.go` 与根 `migrate` 脚本管理（开发模式 AutoMigrate / 生产 golang-migrate 双轨）。模型见 `internal/model/*.go`，架构细节见 `docs/database-architecture.md`。
 - **数据库设计可持续性**：表结构以可长期健康演进为目标设计。每张业务表须具备完整的生命周期字段、状态字段、业务字段与必要的预留扩展字段，且每个字段均带 `comment` 说明业务含义，字段类型与长度须贴合真实数据需求。
 - **规范化与索引**：遵循第三范式，多对多关系使用独立关联表，树形结构使用 `parent_id`、`root_id`、`level` 字段；唯一性字段加唯一索引，外键与高频查询字段加普通索引，禁止无索引的大表查询。
-- **数据一致性**：显式声明 GORM 关联关系与外键删除策略，如 `OnDelete:CASCADE` 与 `OnDelete:SET NULL`；状态类字段使用命名常量枚举，时间字段统一为 `datetime(3)` 精度。多步骤写库操作必须用事务包裹（存量违例：`ArticleService.CreateArticle` 三段写库无统一事务，触碰时必须修复）。
+- **数据一致性**：显式声明 GORM 关联关系与外键删除策略，如 `OnDelete:CASCADE` 与 `OnDelete:SET NULL`；状态类字段使用命名常量枚举，时间字段统一为 `datetime(3)` 精度。多步骤写库操作必须用事务包裹（`CreateArticle`/`UpdateArticle`/`ViewArticle` 均已按事务化模式清偿，新增多段写库沿用 repository 的 `xxxTx` 事务方法先例）。
 - **密码**：bcrypt（成本常量 `BcryptCost = 12`），密码强度校验在 `service/user.go`（待迁移公共工具）。
 - **命名**：Go 结构体字段与 JSON tag 使用小驼峰；接口与实现同包定义，命名统一为 `XxxInterface` 后缀，如 `ArticleHandlerInterface`、`ArticleServiceInterface`、`ArticleRepositoryInterface`。存量不一致：user 模块的 `UserService`、`JWTService`、`RBACService`、`UserRepository` 未带后缀（触碰时统一，不强制专项重构）。各层只依赖接口而非具体实现。
 - **接口定义位置**：接口统一声明在各层实现所在包，即 `handler`、`service`、`repository` 内；`router` 只引用各层接口完成依赖注入，**不得在 `router` 包重复定义接口**（存量违例：router 包重复定义 11 个 handler 接口 + `Dependencies` 字段为 `interface{}` 运行时断言，见 D3，禁止扩大）。
@@ -172,7 +172,7 @@ pnpm run migrate [create|up|down|version|help]
 - **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 11 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow）；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
 - **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用薄封装各持一份）；admin 认证域工具 D6 已收敛（`utils/jwt.ts`、`utils/auth.ts` 已删，刷新/登出单轨）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
 - **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`（i18n 演示沙盒）；后台使用 `(admin)`、`(auth)`（登录页归属后台）。数据加载纪律见 A6：web 用 load，admin 新页面优先 load。
-- **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。
+- **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。接入现状与文案取词纪律见债务 D18（Header/Footer/错误页已接入，其余页面待页面大变动后分批）。
 - **类型**：接口类型唯一来源 `@myblog/api`（铁律 A2）。D7 已清偿：`types/api.d.ts` 影子层已删并加 eslint 守门，禁止回潮。
 - 前端代码改动需运行对应应用 `cd apps/web && pnpm run check` 或 `cd apps/admin && pnpm run check`（svelte-check + svelte-kit sync）。
 
@@ -205,11 +205,14 @@ pnpm run migrate [create|up|down|version|help]
 | D8 | admin 12 个页面胖组件 + onMount 取数（users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码（**已清偿**） | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |
-| D11 | JWT 撤销内存 map（**已加锁**；deprecated `ValidateToken` 已删） | 单实例部署前提；持久化前保持锁 |
+| D11 | JWT 撤销内存 map（**已加锁**；撤销键已归一化并随令牌过期惰性清理，撤销检查真实生效；deprecated `ValidateToken` 已删） | 单实例部署前提；持久化前保持锁 |
 | D12 | 文章响应泄漏作者审计字段（**已清偿**：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
 | D13 | `user_follow` 前端零消费（**已收口**：作者页 FollowButton 消费 follow/isFollowing 接口） | 关注数据仅经 service 域端点读写 |
 | D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（**已清偿**：7 页回归 `$ui`） | 禁止仿效；新分页一律 `$ui` |
 | D15 | 公开端点直出实体泄漏个人信息（评论审计字段与作者 email **已窄化**，`/users/get` 待收口） | 公开端点输出个人信息必须经窄化 DTO 或字段白名单；新增隐私/审计字段默认 `json:"-"` |
+| D16 | WAF 内容级黑名单的固有误伤面（**BE-07 已锚定**：模式全部词首边界/取值上下文锚定，误伤回归在位；SQL/XSS 教学正文残余误拦待内容感知解析） | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
+| D17 | 测试替身内嵌空接口的运行时脆性（接口加方法以 nil panic 暴露，三处实证） | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写，禁止依赖内嵌空接口的静默兼容 |
+| D18 | web 界面多语言局部接入（**UI-27 拍板半程态**：Header/Footer/错误页已接入 paraglide，其余页面文案硬编码中文） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；词表文件保持 JSON 兼容写法 |
 
 ## 10. 开发进度概览
 
@@ -218,10 +221,13 @@ pnpm run migrate [create|up|down|version|help]
 - 后端：11 个业务模块（用户/认证/JWT 双 token/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数约 90，详见 `server/docs/api/`）。
 - 后端数据管道：通知生产链路（评论回复/点赞/关注）、浏览明细与日统计、搜索日志、评论设置开关消费均已打通。
 - 前端 admin：14 个页面（仪表盘、文章管理、分类、标签、评论、媒体、用户、设置、友链、统计、通知、登录）+ markdown 编辑器组件。
-- 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题（详见 `temp/todos/web-alignment-gaps.md`）。
+- 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题。
+- 2026-09-16：通知铃铛移动端入口、博客目录检索框、个人资料页、友链申请表单、三展位页、订阅暂未开放反馈、隐私政策页、设置未生效标注、ErrUserNotFound 映射收敛、主题按钮定位参数化、Header/Footer/错误页多语言、UpdateArticle 事务化。
+- 认证止损真实化：JWT 撤销键归一化、登出/改密撤销、CORS 白名单、登录锁定、Server 超时、ViewArticle 事务化、WAF 模式锚定等。
 
 待办：
-- 通知铃铛移动端入口、响应式完善、部署与 Docker。
-- 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配、SSR 会话（token 迁 cookie）与内容多语言待产品拍板。
+- 响应式完善（当前无边界定义，建议拆为页面级清单后推进）。
+- 后续候选：R4 cookie 会话（**已拍板**：方案 A + 双轨过渡 + `POST /auth/session`）；多语言其余页面接入（D18，待页面大变动后分批）。
+- 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配。
 
-架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D15 只减不增。
+架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D18 只减不增。

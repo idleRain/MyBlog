@@ -21,7 +21,8 @@
 
 **前端存储与传输的是无点号的 Base64 payload，不是标准三段式 JWT。**
 
-- 服务端 `GenerateTokenPair` 仅序列化 `{u: userID, exp: unix}` 为 JSON 后 Base64 URL 编码，**不含签名**。
+- 服务端 `GenerateTokenPair` 仅序列化 `{u: userID, jti: 随机实例标识, exp: unix}` 为 JSON 后 Base64 URL 编码，**不含签名**。
+- `jti` 为每次签发随机生成的实例唯一标识，保证同一秒内重复签发的令牌互不相同，撤销键据此区分令牌实例。
 - 服务端 `ValidateAccessToken` / `ValidateRefreshToken` 在收到无点号 token 时，经 `ReconstructFullToken` 补回固定 Header 与 HMAC-SHA256 签名后校验。
 - 任何新前端实现者必须知晓此怪癖，否则无法通过服务端校验。
 
@@ -31,6 +32,7 @@
 
 - 端点：`POST /api/auth/refresh`，请求体 `{ "refreshToken": "<refresh token>" }`。
 - 刷新即旋转：成功后旧 refresh token 被撤销，响应返回全新令牌对。
+- 旋转前服务端查库校验令牌归属用户存在且状态正常，被禁用或已删除用户的刷新请求返回业务码 401。
 - 前端 `service/index.ts` 的 `refreshAccessToken` 以**裸 ky 直连**该端点（豁免 A1 页面直连 ky 规则，避免循环依赖）。
 
 ## 4. 401 语义
@@ -43,12 +45,14 @@
 ## 5. 登出语义
 
 - 端点：`POST /api/auth/logout`，请求头 `Authorization: Bearer <access token>`。
-- 服务端撤销访问令牌（内存实现，仅单实例生效，见 D11）。
+- 请求体可选提交 `{ "refreshToken": "<refresh token>" }`，提交后访问与刷新令牌一并撤销；请求体可省略，此时仅撤销访问令牌。
+- 修改密码成功后服务端撤销该用户当前全部既有令牌，客户端须清除本地会话并引导重新登录。
+- 撤销键为令牌 payload 段的归一化形式，撤销记录以令牌过期时间为生命周期并随撤销写入惰性清理（内存实现，仅单实例生效，见 D11）。
 
 ## 6. 已知限制（登记）
 
 | 限制 | 影响 | 计划 |
 |---|---|---|
-| 撤销表为无锁内存 map（A1 已加互斥锁） | 多实例部署即失效 | D11：换持久化存储前保持单实例前提 |
+| 撤销表为内存 map（已加互斥锁，撤销键归一化并随令牌过期惰性清理） | 多实例部署即失效 | D11：换持久化存储前保持单实例前提 |
 | 刷新成功后不自动重试原请求 | 极端竞态下用户需手动重试 | C3 后续：调用方按新令牌重试 |
 | 登录失败（密码错误）同样返回 code 401 | 前端已排除登录端点不触发刷新 | 已在 client.ts 固化 |

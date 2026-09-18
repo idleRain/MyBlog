@@ -207,8 +207,8 @@ Handler层会将不同类型的错误映射到相应的HTTP响应：
 可以添加各种中间件：
 
 ```go
-// 跨域中间件
-r.Use(cors.Default())
+// 跨域中间件（白名单来自 config.yaml 的 cors 节，禁止全放行）
+r.Use(middleware.CORSWithConfig(corsConfig))
 
 // 日志中间件
 r.Use(gin.Logger())

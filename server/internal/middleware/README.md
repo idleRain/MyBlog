@@ -143,9 +143,9 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains (仅HTTPS)
 
 ##### 🔍 输入验证
 
-**恶意模式检测**：
-- XSS攻击：`<script>` 标签、`javascript:` URL、事件处理器
-- SQL注入：`UNION SELECT`、`INSERT INTO`、`DROP TABLE`、`OR/AND` 模式
+**恶意模式检测**（全部模式经词首边界或取值上下文锚定，避免误伤正文，见体检项 BE-07）：
+- XSS攻击：`<script>` 标签、`javascript:` URL、HTML 事件属性（词首边界 + 引号或函数调用取值）
+- SQL注入：`UNION SELECT`、`INSERT INTO`、`DELETE FROM`、`DROP TABLE`、`OR/AND` 恒真式
 - 命令执行：`exec()`、`system()` 调用
 - 路径遍历：`../`、`..\` 模式
 
@@ -161,10 +161,9 @@ blocked_user_agents:
   - "curl"
   - "wget"  
   - "python-requests"
-  - "bot"
-  - "crawler"
-  - "spider"
 ```
+
+> 子串匹配语义，配置项必须选取明确的工具或脚本特征，禁止收录 bot/crawler/spider 等泛化词，否则搜索引擎爬虫会被整体 403（体检项 BE-04 定案）。
 
 **请求大小限制**：
 - 普通接口：10MB
