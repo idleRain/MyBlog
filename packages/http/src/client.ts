@@ -1,4 +1,3 @@
-import ky, { type AfterResponseHook, type BeforeRequestHook, type Options } from 'ky'
 import {
   isApiSuccess,
   extractApiData,
@@ -6,6 +5,7 @@ import {
   normalizeError,
   type BaseApiResponse
 } from './response.ts'
+import ky, { type AfterResponseHook, type BeforeRequestHook, type Options } from 'ky'
 
 /**
  * HTTP 客户端认证相关回调集合。
@@ -48,6 +48,12 @@ export interface CreateHttpClientOptions {
   auth?: HttpClientAuthHooks
 
   /**
+   * 语言回调，返回值经 Accept-Language 请求头携带，返回 null 时省略请求头。
+   * 前台应用注入当前界面语言，管理端可注入通配符表示全量翻译包。
+   */
+  getLanguage?: () => string | null | Promise<string | null>
+
+  /**
    * 全局错误提示回调，例如 toast。
    */
   onError?: (message: string) => void
@@ -59,6 +65,9 @@ const LOGIN_PATH = '/users/login'
 
 // Authorization 请求头名称，重放守卫依赖比对请求携带的令牌代际。
 const AUTHORIZATION_HEADER = 'Authorization'
+
+// 内容语言协商请求头名称，遵循 HTTP 标准 Accept-Language 语义。
+const ACCEPT_LANGUAGE_HEADER = 'Accept-Language'
 
 /**
  * 解析响应体中的业务码与消息，解析失败时返回空值。
@@ -81,10 +90,16 @@ async function parseResponseBody(
  * 创建带认证刷新、超时与错误提示的 HTTP 客户端。
  */
 export function createHttpClient(options: CreateHttpClientOptions) {
-  const { prefixUrl, timeout = 30000, auth, onError } = options
+  const { prefixUrl, timeout = 30000, auth, getLanguage, onError } = options
 
-  // 请求拦截器：为请求附加访问令牌。
+  // 请求拦截器：为请求附加访问令牌与内容语言标识。
   const requestInterceptor: BeforeRequestHook = async request => {
+    if (getLanguage) {
+      const language = await getLanguage()
+      if (language) {
+        request.headers.set(ACCEPT_LANGUAGE_HEADER, language)
+      }
+    }
     if (!auth) return
     const token = await auth.getAccessToken()
     if (token) {

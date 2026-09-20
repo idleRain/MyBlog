@@ -1,13 +1,31 @@
-import type { ApiResponse } from '@myblog/shared'
-import type { AuthorPublic } from '@myblog/api/modules/user/types'
 import type { Category } from '@myblog/api/modules/category/types'
+import type { AuthorPublic } from '@myblog/api/modules/user/types'
 import type { Tag } from '@myblog/api/modules/tag/types'
+import type { ApiResponse } from '@myblog/shared'
 
 // 文章状态枚举，与后端 model.ArticleStatus 一致。
 export type ArticleStatus = 'draft' | 'published' | 'archived' | 'private'
 
 // 文章来源类型枚举
 export type ArticleOriginType = 'original' | 'translation' | 'reprint'
+
+// 文章单语言翻译行，与后端 model.ArticleTranslation 的 JSON tag 一致，
+// 仅管理端全量包请求携带，公共请求按语言输出后不包含该结构。
+export interface ArticleTranslation {
+  id: number
+  articleId: number
+  locale: string
+  title: string | null
+  summary: string | null
+  content: string | null
+  contentHtml: string | null
+  wordCount: number
+  seoTitle: string | null
+  seoDescription: string | null
+  seoKeywords: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 // 文章信息接口，字段与后端 model.Article 的 JSON tag 一致。
 export interface Article {
@@ -48,6 +66,10 @@ export interface Article {
   category: Category | null
   categories: Category[]
   tags: Tag[]
+  // 已填写有效翻译内容的语言列表，轻量翻译状态标记，不含翻译内容。
+  translationLocales?: string[]
+  // 全量翻译行数组，仅 Accept-Language: * 的管理端请求返回。
+  translations?: ArticleTranslation[]
 }
 
 // 文章列表数据，后端分页响应不返回 pages 字段。
@@ -87,6 +109,19 @@ export interface GetArticleListRequest {
   search?: string
 }
 
+// 文章单语言翻译补丁，字段可选，提供即更新，未提供保留既有翻译值。
+export interface ArticleI18nPatch {
+  title?: string
+  summary?: string
+  content?: string
+  seoTitle?: string
+  seoDescription?: string
+  seoKeywords?: string
+}
+
+// 按语言组织的翻译字段包，键为语言标识，缺省语言走主字段不允许出现。
+export type ArticleI18nPayload = Record<string, ArticleI18nPatch>
+
 // 创建文章请求参数，status 仅允许 draft / published / private。
 export interface CreateArticleRequest {
   title: string
@@ -104,6 +139,7 @@ export interface CreateArticleRequest {
   seoTitle?: string
   seoDescription?: string
   seoKeywords?: string
+  i18n?: ArticleI18nPayload
 }
 
 // 更新文章请求参数，可选字段显式传入才更新。
@@ -124,6 +160,7 @@ export interface UpdateArticleRequest {
   seoTitle?: string | null
   seoDescription?: string | null
   seoKeywords?: string | null
+  i18n?: ArticleI18nPayload
 }
 
 // 文章操作类接口的消息响应
