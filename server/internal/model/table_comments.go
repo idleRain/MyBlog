@@ -15,13 +15,16 @@ var tableComments = map[string]string{
 	"auth_tokens":     "认证令牌表，支撑密码找回与邮箱验证流程",
 
 	// 内容模块
-	"categories":         "文章分类表，树形结构支撑栏目导航",
-	"tags":               "标签表，文章主题的轻量归类维度",
-	"articles":           "文章表，博客核心内容实体",
-	"article_tags":       "文章标签关联表，多对多挂载关系",
-	"article_categories": "文章分类关联表，支持一文多分类",
-	"article_views":      "文章浏览统计表，按访客与日期去重计数",
-	"article_revisions":  "文章修订历史表，保存正文快照支持回滚",
+	"categories":            "文章分类表，树形结构支撑栏目导航",
+	"tags":                  "标签表，文章主题的轻量归类维度",
+	"articles":              "文章表，博客核心内容实体",
+	"article_tags":          "文章标签关联表，多对多挂载关系",
+	"article_categories":    "文章分类关联表，支持一文多分类",
+	"article_views":         "文章浏览统计表，按访客与日期去重计数",
+	"article_revisions":     "文章修订历史表，保存正文快照支持回滚",
+	"article_translations":  "文章翻译表，按语言存储标题摘要正文的翻译内容",
+	"category_translations": "分类翻译表，按语言存储分类名称与描述的翻译内容",
+	"tag_translations":      "标签翻译表，按语言存储标签名称与描述的翻译内容",
 
 	// 评论模块
 	"comments":      "评论表，树形结构支持多级回复与审核流",

@@ -23,6 +23,9 @@ func Models() []interface{} {
 		&ArticleCategory{},
 		&ArticleView{},
 		&ArticleRevision{},
+		&ArticleTranslation{},
+		&CategoryTranslation{},
+		&TagTranslation{},
 
 		// 评论模块
 		&Comment{},

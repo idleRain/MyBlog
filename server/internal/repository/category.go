@@ -32,6 +32,9 @@ type CategoryRepositoryInterface interface {
 	// 工具方法
 	EnsureUniqueSlug(category *model.Category) error
 	UpdatePath(id uint, path string) error
+
+	// 多语言翻译
+	UpsertTranslations(categoryID uint, translations []model.CategoryTranslation) error
 }
 
 // CategoryListParams 分类列表查询参数
@@ -69,7 +72,7 @@ func (r *CategoryRepository) Create(category *model.Category) error {
 // GetByID 根据ID获取分类
 func (r *CategoryRepository) GetByID(id uint) (*model.Category, error) {
 	var category model.Category
-	if err := r.db.First(&category, id).Error; err != nil {
+	if err := r.db.Preload("Translations").First(&category, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrCategoryNotFound
 		}
@@ -81,7 +84,7 @@ func (r *CategoryRepository) GetByID(id uint) (*model.Category, error) {
 // GetBySlug 根据Slug获取分类
 func (r *CategoryRepository) GetBySlug(slug string) (*model.Category, error) {
 	var category model.Category
-	if err := r.db.Where("slug = ?", slug).First(&category).Error; err != nil {
+	if err := r.db.Preload("Translations").Where("slug = ?", slug).First(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrCategoryNotFound
 		}
@@ -111,7 +114,7 @@ func (r *CategoryRepository) Delete(id uint) error {
 
 // List 分页查询分类列表
 func (r *CategoryRepository) List(params *CategoryListParams) ([]*model.Category, int64, error) {
-	query := r.db.Model(&model.Category{})
+	query := r.db.Model(&model.Category{}).Preload("Translations")
 
 	if params.Status != nil {
 		query = query.Where("status = ?", *params.Status)
@@ -146,7 +149,7 @@ func (r *CategoryRepository) List(params *CategoryListParams) ([]*model.Category
 // ListAll 查询全部分类，用于构建分类树。
 func (r *CategoryRepository) ListAll() ([]*model.Category, error) {
 	var categories []*model.Category
-	if err := r.db.Order("sort_order ASC, id ASC").Find(&categories).Error; err != nil {
+	if err := r.db.Preload("Translations").Order("sort_order ASC, id ASC").Find(&categories).Error; err != nil {
 		return nil, fmt.Errorf("查询分类列表失败: %w", err)
 	}
 	return categories, nil
@@ -155,7 +158,7 @@ func (r *CategoryRepository) ListAll() ([]*model.Category, error) {
 // GetByParentID 查询指定父分类下的直接子分类。
 func (r *CategoryRepository) GetByParentID(parentID uint) ([]*model.Category, error) {
 	var categories []*model.Category
-	if err := r.db.Where("parent_id = ?", parentID).Order("sort_order ASC, id ASC").Find(&categories).Error; err != nil {
+	if err := r.db.Preload("Translations").Where("parent_id = ?", parentID).Order("sort_order ASC, id ASC").Find(&categories).Error; err != nil {
 		return nil, fmt.Errorf("查询子分类失败: %w", err)
 	}
 	return categories, nil

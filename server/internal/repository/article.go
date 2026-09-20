@@ -60,6 +60,9 @@ type ArticleRepositoryInterface interface {
 	SyncTags(articleID uint, tagIDs []uint) error
 	SyncCategories(articleID uint, categoryIDs []uint) error
 
+	// 多语言翻译
+	UpsertTranslations(articleID uint, translations []model.ArticleTranslation) error
+
 	// 状态管理
 	Publish(id uint) error
 	Unpublish(id uint) error
@@ -91,6 +94,16 @@ func NewArticleRepository(db *gorm.DB) ArticleRepositoryInterface {
 	return &ArticleRepository{db: db}
 }
 
+// withTranslationPreloads 附加文章本体与内嵌分类标签的翻译行预加载。
+// 本地化输出依赖翻译行，全部读路径统一装配，无翻译行时预加载结果为空集不影响既有输出。
+func withTranslationPreloads(query *gorm.DB) *gorm.DB {
+	return query.
+		Preload("Translations").
+		Preload("Category.Translations").
+		Preload("Categories.Translations").
+		Preload("Tags.Translations")
+}
+
 // Create 创建文章
 func (r *ArticleRepository) Create(article *model.Article) error {
 	return r.createTx(r.db, article)
@@ -120,10 +133,10 @@ func (r *ArticleRepository) createTx(db *gorm.DB, article *model.Article) error 
 // GetByID 根据ID获取文章
 func (r *ArticleRepository) GetByID(id uint) (*model.Article, error) {
 	var article model.Article
-	err := r.db.Preload("Author").
+	err := withTranslationPreloads(r.db.Preload("Author").
 		Preload("Category").
 		Preload("Categories").
-		Preload("Tags").
+		Preload("Tags")).
 		First(&article, id).Error
 
 	if err != nil {
@@ -139,10 +152,10 @@ func (r *ArticleRepository) GetByID(id uint) (*model.Article, error) {
 // GetBySlug 根据Slug获取文章
 func (r *ArticleRepository) GetBySlug(slug string) (*model.Article, error) {
 	var article model.Article
-	err := r.db.Preload("Author").
+	err := withTranslationPreloads(r.db.Preload("Author").
 		Preload("Category").
 		Preload("Categories").
-		Preload("Tags").
+		Preload("Tags")).
 		Where("slug = ?", slug).
 		First(&article).Error
 
@@ -218,10 +231,10 @@ func (r *ArticleRepository) Delete(id uint) error {
 
 // List 获取文章列表
 func (r *ArticleRepository) List(params *ArticleListParams) ([]*model.Article, int64, error) {
-	query := r.db.Model(&model.Article{}).
+	query := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags")
+		Preload("Tags"))
 
 	// 应用筛选条件
 	query = r.applyFilters(query, params)
@@ -252,10 +265,10 @@ func (r *ArticleRepository) GetByAuthor(authorID uint, params *ArticleListParams
 
 // GetByCategory 获取指定分类的文章
 func (r *ArticleRepository) GetByCategory(categoryID uint, params *ArticleListParams) ([]*model.Article, int64, error) {
-	query := r.db.Model(&model.Article{}).
+	query := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags").
+		Preload("Tags")).
 		Where("category_id = ? OR EXISTS (SELECT 1 FROM article_categories WHERE article_categories.article_id = articles.id AND article_categories.category_id = ?)", categoryID, categoryID)
 
 	// 应用其他筛选条件
@@ -279,10 +292,10 @@ func (r *ArticleRepository) GetByCategory(categoryID uint, params *ArticleListPa
 
 // GetByTag 获取指定标签的文章
 func (r *ArticleRepository) GetByTag(tagID uint, params *ArticleListParams) ([]*model.Article, int64, error) {
-	query := r.db.Model(&model.Article{}).
+	query := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags").
+		Preload("Tags")).
 		Joins("JOIN article_tags ON article_tags.article_id = articles.id").
 		Where("article_tags.tag_id = ?", tagID)
 
@@ -311,10 +324,10 @@ func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([
 		return r.List(params)
 	}
 
-	query := r.db.Model(&model.Article{}).
+	query := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags").
+		Preload("Tags")).
 		Where("MATCH(title, content, summary) AGAINST(? IN BOOLEAN MODE)", keyword)
 
 	// 应用其他筛选条件
@@ -339,11 +352,11 @@ func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([
 // ListArchives 查询全部已发布文章用于归档分组，按发布时间倒序。
 func (r *ArticleRepository) ListArchives() ([]*model.Article, error) {
 	var articles []*model.Article
-	err := r.db.Model(&model.Article{}).
+	err := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
 		Preload("Categories").
-		Preload("Tags").
+		Preload("Tags")).
 		Where("status = ?", model.ArticleStatusPublished).
 		Order("published_at DESC").
 		Find(&articles).Error
@@ -376,10 +389,10 @@ func (r *ArticleRepository) recordArticleView(db *gorm.DB, view *model.ArticleVi
 // GetPopular 获取热门文章
 func (r *ArticleRepository) GetPopular(limit int) ([]*model.Article, error) {
 	var articles []*model.Article
-	err := r.db.Model(&model.Article{}).
+	err := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags").
+		Preload("Tags")).
 		Where("status = ?", model.ArticleStatusPublished).
 		Order("view_count DESC, like_count DESC").
 		Limit(limit).
@@ -391,10 +404,10 @@ func (r *ArticleRepository) GetPopular(limit int) ([]*model.Article, error) {
 // GetRecent 获取最新文章
 func (r *ArticleRepository) GetRecent(limit int) ([]*model.Article, error) {
 	var articles []*model.Article
-	err := r.db.Model(&model.Article{}).
+	err := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
-		Preload("Tags").
+		Preload("Tags")).
 		Where("status = ?", model.ArticleStatusPublished).
 		Order("published_at DESC").
 		Limit(limit).
@@ -557,12 +570,12 @@ func (r *ArticleRepository) ListBookmarks(userID uint, params *ArticleListParams
 
 	var articles []*model.Article
 	offset := (params.Page - 1) * params.PageSize
-	err := r.db.Model(&model.Article{}).
+	err := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Joins(joinCondition, userID).
 		Preload("Author").
 		Preload("Category").
 		Preload("Categories").
-		Preload("Tags").
+		Preload("Tags")).
 		Order("article_bookmarks.created_at DESC").
 		Offset(offset).Limit(params.PageSize).
 		Find(&articles).Error

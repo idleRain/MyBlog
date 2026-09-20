@@ -30,6 +30,9 @@ type TagRepositoryInterface interface {
 
 	// 工具方法
 	EnsureUniqueSlug(tag *model.Tag) error
+
+	// 多语言翻译
+	UpsertTranslations(tagID uint, translations []model.TagTranslation) error
 }
 
 // TagListParams 标签列表查询参数
@@ -68,7 +71,7 @@ func (r *TagRepository) Create(tag *model.Tag) error {
 // GetByID 根据ID获取标签
 func (r *TagRepository) GetByID(id uint) (*model.Tag, error) {
 	var tag model.Tag
-	if err := r.db.First(&tag, id).Error; err != nil {
+	if err := r.db.Preload("Translations").First(&tag, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrTagNotFound
 		}
@@ -80,7 +83,7 @@ func (r *TagRepository) GetByID(id uint) (*model.Tag, error) {
 // GetByName 根据名称获取标签
 func (r *TagRepository) GetByName(name string) (*model.Tag, error) {
 	var tag model.Tag
-	if err := r.db.Where("name = ?", name).First(&tag).Error; err != nil {
+	if err := r.db.Preload("Translations").Where("name = ?", name).First(&tag).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrTagNotFound
 		}
@@ -110,7 +113,7 @@ func (r *TagRepository) Delete(id uint) error {
 
 // List 分页查询标签列表
 func (r *TagRepository) List(params *TagListParams) ([]*model.Tag, int64, error) {
-	query := r.db.Model(&model.Tag{})
+	query := r.db.Model(&model.Tag{}).Preload("Translations")
 
 	if params.Status != nil {
 		query = query.Where("status = ?", *params.Status)
@@ -148,7 +151,7 @@ func (r *TagRepository) List(params *TagListParams) ([]*model.Tag, int64, error)
 // GetPopular 获取热门标签，按使用次数倒序。
 func (r *TagRepository) GetPopular(limit int) ([]*model.Tag, error) {
 	var tags []*model.Tag
-	if err := r.db.Where("status = ?", model.TagStatusEnabled).
+	if err := r.db.Preload("Translations").Where("status = ?", model.TagStatusEnabled).
 		Order("usage_count DESC, id ASC").
 		Limit(limit).
 		Find(&tags).Error; err != nil {
@@ -160,7 +163,7 @@ func (r *TagRepository) GetPopular(limit int) ([]*model.Tag, error) {
 // ListAll 查询全部标签，供文章编辑选择使用，返回启用与隐藏的全部标签。
 func (r *TagRepository) ListAll() ([]*model.Tag, error) {
 	var tags []*model.Tag
-	if err := r.db.Order("usage_count DESC, id ASC").Find(&tags).Error; err != nil {
+	if err := r.db.Preload("Translations").Order("usage_count DESC, id ASC").Find(&tags).Error; err != nil {
 		return nil, fmt.Errorf("查询全部标签失败: %w", err)
 	}
 	return tags, nil

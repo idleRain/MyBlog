@@ -30,9 +30,10 @@ type Category struct {
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Parent   *Category  `json:"parent,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:SET NULL"`
-	Children []Category `json:"children,omitempty" gorm:"foreignKey:ParentID"`
-	Articles []Article  `json:"-" gorm:"foreignKey:CategoryID"`
+	Parent       *Category             `json:"parent,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:SET NULL"`
+	Children     []Category            `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Articles     []Article             `json:"-" gorm:"foreignKey:CategoryID"`
+	Translations []CategoryTranslation `json:"translations,omitempty" gorm:"foreignKey:CategoryID"`
 }
 
 // TableName 指定表名
@@ -65,7 +66,8 @@ type Tag struct {
 	UpdatedAt   time.Time `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
 
 	// 关联关系
-	Articles []Article `json:"-" gorm:"many2many:article_tags"`
+	Articles     []Article        `json:"-" gorm:"many2many:article_tags"`
+	Translations []TagTranslation `json:"translations,omitempty" gorm:"foreignKey:TagID"`
 }
 
 // TableName 指定表名
@@ -129,6 +131,7 @@ type Article struct {
 	Category     *Category            `json:"category,omitempty" gorm:"foreignKey:CategoryID;constraint:OnDelete:SET NULL"`
 	Categories   []Category           `json:"categories,omitempty" gorm:"many2many:article_categories"`
 	Tags         []Tag                `json:"tags,omitempty" gorm:"many2many:article_tags"`
+	Translations []ArticleTranslation `json:"translations,omitempty" gorm:"foreignKey:ArticleID"`
 	Comments     []Comment            `json:"-" gorm:"foreignKey:ArticleID"`
 	Views        []ArticleView        `json:"-" gorm:"foreignKey:ArticleID"`
 	Likes        []ArticleLike        `json:"-" gorm:"foreignKey:ArticleID"`

@@ -104,9 +104,12 @@ func initDatabase(cfg *config.Config) *gorm.DB {
 		}
 	}
 
-	// 确保文章全文索引存在，GORM AutoMigrate 无法声明 FULLTEXT 索引。
+	// 确保文章与其翻译表的全文索引存在，GORM AutoMigrate 无法声明 FULLTEXT 索引。
 	if err := database.EnsureArticleFulltextIndex(db); err != nil {
 		log.Fatal("创建全文索引失败:", err)
+	}
+	if err := database.EnsureArticleTranslationFulltextIndex(db); err != nil {
+		log.Fatal("创建翻译表全文索引失败:", err)
 	}
 
 	return db
