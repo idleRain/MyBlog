@@ -18,6 +18,37 @@ const DefaultLanguage = LanguageChinese
 // LanguageContextKey 语言标识在 gin 上下文中的存取键，由语言中间件写入、handler 层读取。
 const LanguageContextKey = "language"
 
+// LanguagePolicy 语言协商策略，白名单与缺省语言的运行时载体。
+type LanguagePolicy struct {
+	Default   Language
+	Supported []Language
+}
+
+// DefaultLanguagePolicy 服务层未显式注入策略时使用的默认值，与配置默认值保持一致。
+var DefaultLanguagePolicy = LanguagePolicy{
+	Default:   LanguageChinese,
+	Supported: []Language{LanguageChinese, LanguageEnglish},
+}
+
+// IsSupported 判断语言是否在白名单内，全量包标识不属于语言白名单成员。
+func (p LanguagePolicy) IsSupported(language Language) bool {
+	if language == LanguageAll {
+		return false
+	}
+	for _, item := range p.Supported {
+		if language == item {
+			return true
+		}
+	}
+	return false
+}
+
+// IsWritableTranslation 判断语言是否可作为翻译写入键。
+// 缺省语言内容走主列存储，全量包标识仅用于读取语义，两者均不可作为翻译键。
+func (p LanguagePolicy) IsWritableTranslation(language Language) bool {
+	return language != p.Default && p.IsSupported(language)
+}
+
 // ParseLanguage 解析 Accept-Language 头并返回受支持的语言标识。
 // 解析仅遵循标签出现顺序，未实现质量值加权匹配，当前客户端均显式携带单一语言标签。
 // 地区与书写变体折叠为主子标签，zh-CN 与 zh-Hans 均折叠为 zh；

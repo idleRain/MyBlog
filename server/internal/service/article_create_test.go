@@ -12,13 +12,14 @@ import (
 // fakeCreateArticleRepo 创建文章场景的仓储替身，覆盖创建与关联同步方法。
 type fakeCreateArticleRepo struct {
 	repository.ArticleRepositoryInterface
-	createErr       error
-	createdArticle  *model.Article
-	lastCategoryIDs []uint
-	lastTagIDs      []uint
+	createErr        error
+	createdArticle   *model.Article
+	lastCategoryIDs  []uint
+	lastTagIDs       []uint
+	lastTranslations []model.ArticleTranslation
 }
 
-func (f *fakeCreateArticleRepo) CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error {
+func (f *fakeCreateArticleRepo) CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint, translations []model.ArticleTranslation) error {
 	if f.createErr != nil {
 		return f.createErr
 	}
@@ -26,6 +27,7 @@ func (f *fakeCreateArticleRepo) CreateWithRelations(article *model.Article, cate
 	f.createdArticle = article
 	f.lastCategoryIDs = categoryIDs
 	f.lastTagIDs = tagIDs
+	f.lastTranslations = translations
 	return nil
 }
 

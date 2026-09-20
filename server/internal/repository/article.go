@@ -20,10 +20,10 @@ var ErrArticleNotFound = errors.New("文章不存在")
 type ArticleRepositoryInterface interface {
 	// 基础CRUD操作
 	Create(article *model.Article) error
-	CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error
+	CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint, translations []model.ArticleTranslation) error
 	GetByID(id uint) (*model.Article, error)
 	GetBySlug(slug string) (*model.Article, error)
-	UpdateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error
+	UpdateWithRelations(article *model.Article, categoryIDs, tagIDs []uint, translations []model.ArticleTranslation) error
 	Delete(id uint) error
 
 	// 查询操作
@@ -59,9 +59,6 @@ type ArticleRepositoryInterface interface {
 	RemoveTag(articleID, tagID uint) error
 	SyncTags(articleID uint, tagIDs []uint) error
 	SyncCategories(articleID uint, categoryIDs []uint) error
-
-	// 多语言翻译
-	UpsertTranslations(articleID uint, translations []model.ArticleTranslation) error
 
 	// 状态管理
 	Publish(id uint) error
@@ -324,11 +321,12 @@ func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([
 		return r.List(params)
 	}
 
+	// 主表与翻译表分别全文匹配后合并，任一语言命中关键词的文章均纳入结果。
 	query := withTranslationPreloads(r.db.Model(&model.Article{}).
 		Preload("Author").
 		Preload("Category").
 		Preload("Tags")).
-		Where("MATCH(title, content, summary) AGAINST(? IN BOOLEAN MODE)", keyword)
+		Where("MATCH(title, content, summary) AGAINST(? IN BOOLEAN MODE) OR id IN (SELECT article_id FROM article_translations WHERE MATCH(title, content, summary) AGAINST(? IN BOOLEAN MODE))", keyword, keyword)
 
 	// 应用其他筛选条件
 	query = r.applyFilters(query, params)
@@ -703,9 +701,9 @@ func (r *ArticleRepository) syncCategoriesTx(tx *gorm.DB, articleID uint, catego
 	return nil
 }
 
-// CreateWithRelations 在单个事务内创建文章并同步分类与标签关联。
-// 三段写库任一环节失败即整体回滚，杜绝文章残留与计数漂移的孤儿数据。
-func (r *ArticleRepository) CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error {
+// CreateWithRelations 在单个事务内创建文章并同步分类、标签关联与翻译行。
+// 多段写库任一环节失败即整体回滚，杜绝文章残留与计数漂移的孤儿数据。
+func (r *ArticleRepository) CreateWithRelations(article *model.Article, categoryIDs, tagIDs []uint, translations []model.ArticleTranslation) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := r.createTx(tx, article); err != nil {
 			return err
@@ -723,13 +721,13 @@ func (r *ArticleRepository) CreateWithRelations(article *model.Article, category
 			}
 		}
 
-		return nil
+		return upsertArticleTranslationRows(tx, article.ID, translations)
 	})
 }
 
-// UpdateWithRelations 在单个事务内更新文章并同步分类与标签关联。
+// UpdateWithRelations 在单个事务内更新文章并同步分类、标签关联与翻译行。
 // 与 CreateWithRelations 同族：任一环节失败即整体回滚，避免文章已更新而关联残留旧值的半程状态。
-func (r *ArticleRepository) UpdateWithRelations(article *model.Article, categoryIDs, tagIDs []uint) error {
+func (r *ArticleRepository) UpdateWithRelations(article *model.Article, categoryIDs, tagIDs []uint, translations []model.ArticleTranslation) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if err := r.updateTx(tx, article); err != nil {
 			return err
@@ -747,7 +745,7 @@ func (r *ArticleRepository) UpdateWithRelations(article *model.Article, category
 			}
 		}
 
-		return nil
+		return upsertArticleTranslationRows(tx, article.ID, translations)
 	})
 }
 

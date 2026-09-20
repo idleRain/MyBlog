@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -23,6 +24,14 @@ type CategoryServiceInterface interface {
 	GetCategoryTree() ([]*CategoryTreeNode, error)
 }
 
+// CategoryI18nPayload 单语言翻译字段包，字段可选，提供即更新，缺省时保留既有翻译值。
+type CategoryI18nPayload struct {
+	Name           *string `json:"name" binding:"omitempty,min=1,max=50"`
+	Description    *string `json:"description" binding:"omitempty,max=1000"`
+	SEOTitle       *string `json:"seoTitle" binding:"omitempty,max=100"`
+	SEODescription *string `json:"seoDescription" binding:"omitempty,max=255"`
+}
+
 // CreateCategoryRequest 创建分类请求
 type CreateCategoryRequest struct {
 	Name           string `json:"name" binding:"required,min=1,max=50"`
@@ -35,6 +44,8 @@ type CreateCategoryRequest struct {
 	IsFeatured     *bool  `json:"isFeatured"`
 	SEOTitle       string `json:"seoTitle" binding:"omitempty,max=100"`
 	SEODescription string `json:"seoDescription" binding:"omitempty,max=255"`
+	// I18n 按语言组织的翻译字段包，键为语言标识，缺省语言与白名单外语言在服务层拒绝。
+	I18n map[domain.Language]CategoryI18nPayload `json:"i18n" binding:"omitempty,dive"`
 }
 
 // UpdateCategoryRequest 更新分类请求
@@ -49,6 +60,8 @@ type UpdateCategoryRequest struct {
 	IsFeatured     *bool   `json:"isFeatured"`
 	SEOTitle       *string `json:"seoTitle" binding:"omitempty,max=100"`
 	SEODescription *string `json:"seoDescription" binding:"omitempty,max=255"`
+	// I18n 按语言组织的翻译字段包，提供即更新，未提供的字段保留既有翻译值。
+	I18n map[domain.Language]CategoryI18nPayload `json:"i18n" binding:"omitempty,dive"`
 }
 
 // ListCategoriesRequest 分类列表请求
@@ -76,13 +89,21 @@ type CategoryTreeNode struct {
 // CategoryService 分类服务实现
 type CategoryService struct {
 	categoryRepo repository.CategoryRepositoryInterface
+	languagePolicyHolder
 }
 
 // NewCategoryService 创建分类服务实例
-func NewCategoryService(categoryRepo repository.CategoryRepositoryInterface) CategoryServiceInterface {
-	return &CategoryService{
+func NewCategoryService(categoryRepo repository.CategoryRepositoryInterface, options ...CategoryServiceOption) CategoryServiceInterface {
+	service := &CategoryService{
 		categoryRepo: categoryRepo,
+		languagePolicyHolder: languagePolicyHolder{
+			languagePolicy: domain.DefaultLanguagePolicy,
+		},
 	}
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 // CreateCategory 创建分类
@@ -130,6 +151,12 @@ func (s *CategoryService) CreateCategory(req *CreateCategoryRequest, operatorID 
 		category.Level = parent.Level + 1
 	}
 
+	// 校验并构造翻译行，非法语言键在写库前拒绝。
+	translations, err := s.buildCategoryTranslationRows(nil, req.I18n)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := s.categoryRepo.Create(category); err != nil {
 		return nil, fmt.Errorf("创建分类失败: %w", err)
 	}
@@ -137,6 +164,11 @@ func (s *CategoryService) CreateCategory(req *CreateCategoryRequest, operatorID 
 	// 首次创建后回填物化路径，便于一次查询整棵子树。
 	if err := s.updateCategoryPath(category); err != nil {
 		return nil, err
+	}
+
+	// 分类翻译行与主表写入分两步提交，翻译写入失败不影响分类本体的创建结果。
+	if err := s.categoryRepo.UpsertTranslations(category.ID, translations); err != nil {
+		return nil, fmt.Errorf("写入分类翻译失败: %w", err)
 	}
 
 	return s.categoryRepo.GetByID(category.ID)
@@ -178,11 +210,57 @@ func (s *CategoryService) UpdateCategory(req *UpdateCategoryRequest, operatorID 
 		category.SEODescription = *req.SEODescription
 	}
 
+	// 校验并构造翻译行，以既有翻译行为底合并补丁。
+	translations, err := s.buildCategoryTranslationRows(category.Translations, req.I18n)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := s.categoryRepo.Update(category); err != nil {
 		return nil, fmt.Errorf("更新分类失败: %w", err)
 	}
 
+	// 分类翻译行与主表更新分两步提交，翻译写入失败不影响分类本体的更新结果。
+	if err := s.categoryRepo.UpsertTranslations(category.ID, translations); err != nil {
+		return nil, fmt.Errorf("写入分类翻译失败: %w", err)
+	}
+
 	return s.categoryRepo.GetByID(category.ID)
+}
+
+// buildCategoryTranslationRows 校验语言键并构造待写入的分类翻译行集合。
+// 以既有翻译行为底合并补丁字段，提供即更新，未提供的字段保留既有翻译值。
+func (s *CategoryService) buildCategoryTranslationRows(existing []model.CategoryTranslation, patches map[domain.Language]CategoryI18nPayload) ([]model.CategoryTranslation, error) {
+	if len(patches) == 0 {
+		return nil, nil
+	}
+
+	rows := make([]model.CategoryTranslation, 0, len(patches))
+	for language, patch := range patches {
+		if err := s.requireWritableTranslation(language); err != nil {
+			return nil, err
+		}
+
+		// 以既有翻译行为底，无既有行时从零值开始合并补丁。
+		row := model.CategoryTranslation{Locale: string(language)}
+		if existingRow := findCategoryTranslation(existing, language); existingRow != nil {
+			row = *existingRow
+		}
+		if patch.Name != nil {
+			row.Name = *patch.Name
+		}
+		if patch.Description != nil {
+			row.Description = *patch.Description
+		}
+		if patch.SEOTitle != nil {
+			row.SEOTitle = *patch.SEOTitle
+		}
+		if patch.SEODescription != nil {
+			row.SEODescription = *patch.SEODescription
+		}
+		rows = append(rows, row)
+	}
+	return rows, nil
 }
 
 // DeleteCategory 删除分类

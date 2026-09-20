@@ -50,11 +50,15 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 
 	category, err := h.categoryService.CreateCategory(&req, operatorID)
 	if err != nil {
+		if errors.Is(err, service.ErrInvalidRequest) {
+			response.BadRequest(c, err.Error())
+			return
+		}
 		response.InternalError(c, err.Error())
 		return
 	}
 
-	response.SuccessWithMessage(c, "分类创建成功", category)
+	respondLocalizedCategoryMessage(c, "分类创建成功", category)
 }
 
 // UpdateCategory 更新分类 POST /api/admin/categories/update
@@ -77,11 +81,15 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 			response.NotFound(c, err.Error())
 			return
 		}
+		if errors.Is(err, service.ErrInvalidRequest) {
+			response.BadRequest(c, err.Error())
+			return
+		}
 		response.InternalError(c, err.Error())
 		return
 	}
 
-	response.SuccessWithMessage(c, "分类更新成功", category)
+	respondLocalizedCategoryMessage(c, "分类更新成功", category)
 }
 
 // DeleteCategory 删除分类 POST /api/admin/categories/delete
@@ -136,7 +144,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, category)
+	respondLocalizedCategory(c, category)
 }
 
 // GetCategoryBySlug 根据Slug获取分类 POST /api/categories/getBySlug
@@ -161,7 +169,7 @@ func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, category)
+	respondLocalizedCategory(c, category)
 }
 
 // ListCategories 分页查询分类列表 POST /api/admin/categories/list
@@ -178,7 +186,7 @@ func (h *CategoryHandler) ListCategories(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedCategoryList(c, result)
 }
 
 // GetCategoryTree 获取分类树 POST /api/categories/tree
@@ -189,5 +197,5 @@ func (h *CategoryHandler) GetCategoryTree(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"tree": tree})
+	respondLocalizedCategoryTree(c, gin.H{"tree": tree})
 }

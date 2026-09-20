@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"MyBlog/pkg/markdown"
@@ -56,6 +57,16 @@ type ArticleServiceInterface interface {
 	CanDelete(article *model.Article, userID uint) bool
 }
 
+// ArticleI18nPayload 单语言翻译字段包，字段可选，提供即更新，缺省时保留既有翻译值。
+type ArticleI18nPayload struct {
+	Title          *string `json:"title" binding:"omitempty,max=200"`
+	Summary        *string `json:"summary" binding:"omitempty,max=500"`
+	Content        *string `json:"content"`
+	SEOTitle       *string `json:"seoTitle" binding:"omitempty,max=100"`
+	SEODescription *string `json:"seoDescription" binding:"omitempty,max=255"`
+	SEOKeywords    *string `json:"seoKeywords" binding:"omitempty,max=200"`
+}
+
 // 请求和响应结构体
 type CreateArticleRequest struct {
 	Title          string `json:"title" binding:"required,min=1,max=200"`
@@ -73,6 +84,8 @@ type CreateArticleRequest struct {
 	SEOTitle       string `json:"seoTitle" binding:"max=100"`
 	SEODescription string `json:"seoDescription" binding:"max=255"`
 	SEOKeywords    string `json:"seoKeywords" binding:"max=200"`
+	// I18n 按语言组织的翻译字段包，键为语言标识，缺省语言与白名单外语言在服务层拒绝。
+	I18n map[domain.Language]ArticleI18nPayload `json:"i18n" binding:"omitempty,dive"`
 }
 
 type UpdateArticleRequest struct {
@@ -91,6 +104,8 @@ type UpdateArticleRequest struct {
 	SEOTitle       *string `json:"seoTitle" binding:"omitempty,max=100"`
 	SEODescription *string `json:"seoDescription" binding:"omitempty,max=255"`
 	SEOKeywords    *string `json:"seoKeywords" binding:"omitempty,max=200"`
+	// I18n 按语言组织的翻译字段包，提供即更新，未提供的字段保留既有翻译值。
+	I18n map[domain.Language]ArticleI18nPayload `json:"i18n" binding:"omitempty,dive"`
 }
 
 type GetArticleListRequest struct {
@@ -130,6 +145,7 @@ type ArticleService struct {
 	rbacService      RBACService
 	statsRepo        repository.StatsRepositoryInterface
 	notificationRepo repository.NotificationRepositoryInterface
+	languagePolicyHolder
 }
 
 // NewArticleService 创建文章服务实例
@@ -139,14 +155,22 @@ func NewArticleService(
 	rbacService RBACService,
 	statsRepo repository.StatsRepositoryInterface,
 	notificationRepo repository.NotificationRepositoryInterface,
+	options ...ArticleServiceOption,
 ) ArticleServiceInterface {
-	return &ArticleService{
+	service := &ArticleService{
 		articleRepo:      articleRepo,
 		userRepo:         userRepo,
 		rbacService:      rbacService,
 		statsRepo:        statsRepo,
 		notificationRepo: notificationRepo,
+		languagePolicyHolder: languagePolicyHolder{
+			languagePolicy: domain.DefaultLanguagePolicy,
+		},
 	}
+	for _, option := range options {
+		option(service)
+	}
+	return service
 }
 
 // CreateArticle 创建文章
@@ -205,8 +229,14 @@ func (s *ArticleService) CreateArticle(req *CreateArticleRequest, authorID uint)
 		return nil, err
 	}
 
-	// 在单个事务内创建文章并同步分类与标签关联，任一步失败即整体回滚。
-	if err := s.articleRepo.CreateWithRelations(article, req.CategoryIDs, req.TagIDs); err != nil {
+	// 校验并构造翻译行，非法语言键在写库前拒绝。
+	translations, err := s.buildArticleTranslationRows(nil, req.I18n)
+	if err != nil {
+		return nil, err
+	}
+
+	// 在单个事务内创建文章并同步分类标签关联与翻译行，任一步失败即整体回滚。
+	if err := s.articleRepo.CreateWithRelations(article, req.CategoryIDs, req.TagIDs, translations); err != nil {
 		return nil, err
 	}
 
@@ -305,13 +335,74 @@ func (s *ArticleService) UpdateArticle(id uint, req *UpdateArticleRequest, userI
 		return nil, err
 	}
 
-	// 文章更新与分类、标签关联同步在同一事务内完成，任一环节失败整体回滚。
-	if err := s.articleRepo.UpdateWithRelations(article, req.CategoryIDs, req.TagIDs); err != nil {
+	// 校验并构造翻译行，以既有翻译行为底合并补丁，随文章更新在同一事务内写入。
+	translations, err := s.buildArticleTranslationRows(article.Translations, req.I18n)
+	if err != nil {
+		return nil, err
+	}
+
+	// 文章更新与分类标签关联同步、翻译行写入在同一事务内完成，任一环节失败整体回滚。
+	if err := s.articleRepo.UpdateWithRelations(article, req.CategoryIDs, req.TagIDs, translations); err != nil {
 		return nil, err
 	}
 
 	// 重新获取完整的文章信息
 	return s.articleRepo.GetByID(article.ID)
+}
+
+// buildArticleTranslationRows 校验语言键并构造待写入的翻译行集合。
+// 以既有翻译行为底合并补丁字段，提供即更新，未提供的字段保留既有翻译值；
+// 提供了正文的翻译执行与主列一致的渲染管线，生成渲染缓存与字数统计。
+func (s *ArticleService) buildArticleTranslationRows(existing []model.ArticleTranslation, patches map[domain.Language]ArticleI18nPayload) ([]model.ArticleTranslation, error) {
+	if len(patches) == 0 {
+		return nil, nil
+	}
+
+	rows := make([]model.ArticleTranslation, 0, len(patches))
+	for language, patch := range patches {
+		if err := s.requireWritableTranslation(language); err != nil {
+			return nil, err
+		}
+
+		// 以既有翻译行为底，无既有行时从零值开始合并补丁。
+		row := model.ArticleTranslation{Locale: string(language)}
+		if existingRow := findArticleTranslation(existing, language); existingRow != nil {
+			row = *existingRow
+		}
+		if patch.Title != nil {
+			row.Title = *patch.Title
+		}
+		if patch.Summary != nil {
+			row.Summary = *patch.Summary
+		}
+		if patch.Content != nil {
+			row.Content = *patch.Content
+		}
+		if patch.SEOTitle != nil {
+			row.SEOTitle = *patch.SEOTitle
+		}
+		if patch.SEODescription != nil {
+			row.SEODescription = *patch.SEODescription
+		}
+		if patch.SEOKeywords != nil {
+			row.SEOKeywords = *patch.SEOKeywords
+		}
+
+		// 渲染管线与主列一致：字数按 Unicode 字符统计，正文渲染为 HTML 缓存。
+		if row.Content != "" {
+			row.WordCount = uint(utf8.RuneCountInString(row.Content))
+			rendered, err := markdown.Render(row.Content)
+			if err != nil {
+				return nil, err
+			}
+			row.ContentHTML = rendered
+		} else {
+			row.WordCount = 0
+			row.ContentHTML = ""
+		}
+		rows = append(rows, row)
+	}
+	return rows, nil
 }
 
 // DeleteArticle 删除文章

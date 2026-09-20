@@ -11,9 +11,17 @@ import (
 // fakeCategoryRepo 分类仓储的测试替身，记录调用并返回可配置结果。
 type fakeCategoryRepo struct {
 	repository.CategoryRepositoryInterface
-	categories    []*model.Category
-	getByID       func(id uint) (*model.Category, error)
-	countByParent func(parentID uint) (int64, error)
+	categories     []*model.Category
+	getByID        func(id uint) (*model.Category, error)
+	countByParent  func(parentID uint) (int64, error)
+	lastTranslates uint
+	translateErr   error
+}
+
+// UpsertTranslations 显式覆写翻译写入，记录调用并支持注入失败，避免内嵌空接口的 nil panic。
+func (f *fakeCategoryRepo) UpsertTranslations(categoryID uint, translations []model.CategoryTranslation) error {
+	f.lastTranslates = categoryID
+	return f.translateErr
 }
 
 func (f *fakeCategoryRepo) GetByID(id uint) (*model.Category, error) {

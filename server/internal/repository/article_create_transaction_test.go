@@ -41,7 +41,7 @@ func TestCreateWithRelationsRollsBackOnCategoryFailure(t *testing.T) {
 	mock.ExpectRollback()
 
 	article := &model.Article{Title: "测试文章", Slug: "test-article", AuthorID: 1, Status: model.ArticleStatusDraft}
-	err := repo.CreateWithRelations(article, []uint{1}, nil)
+	err := repo.CreateWithRelations(article, []uint{1}, nil, nil)
 	if err == nil {
 		t.Fatal("分类同步失败时 CreateWithRelations 应返回错误")
 	}
@@ -94,7 +94,7 @@ func TestCreateWithRelationsRollsBackOnTagFailure(t *testing.T) {
 	mock.ExpectRollback()
 
 	article := &model.Article{Title: "测试文章", Slug: "test-article", AuthorID: 1, Status: model.ArticleStatusDraft}
-	err := repo.CreateWithRelations(article, []uint{1}, []uint{1})
+	err := repo.CreateWithRelations(article, []uint{1}, []uint{1}, nil)
 	if err == nil {
 		t.Fatal("标签同步失败时 CreateWithRelations 应返回错误")
 	}

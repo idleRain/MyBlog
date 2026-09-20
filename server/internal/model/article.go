@@ -132,10 +132,12 @@ type Article struct {
 	Categories   []Category           `json:"categories,omitempty" gorm:"many2many:article_categories"`
 	Tags         []Tag                `json:"tags,omitempty" gorm:"many2many:article_tags"`
 	Translations []ArticleTranslation `json:"translations,omitempty" gorm:"foreignKey:ArticleID"`
-	Comments     []Comment            `json:"-" gorm:"foreignKey:ArticleID"`
-	Views        []ArticleView        `json:"-" gorm:"foreignKey:ArticleID"`
-	Likes        []ArticleLike        `json:"-" gorm:"foreignKey:ArticleID"`
-	Bookmarks    []ArticleBookmark    `json:"-" gorm:"foreignKey:ArticleID"`
+	// TranslationLocales 已填写有效翻译内容的语言列表，仅在本地化输出时装配，非数据库列。
+	TranslationLocales []string          `json:"translationLocales,omitempty" gorm:"-"`
+	Comments           []Comment         `json:"-" gorm:"foreignKey:ArticleID"`
+	Views              []ArticleView     `json:"-" gorm:"foreignKey:ArticleID"`
+	Likes              []ArticleLike     `json:"-" gorm:"foreignKey:ArticleID"`
+	Bookmarks          []ArticleBookmark `json:"-" gorm:"foreignKey:ArticleID"`
 }
 
 // AfterFind 查询后从预加载的作者关联同步公开作者视图。

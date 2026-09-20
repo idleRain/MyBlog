@@ -74,7 +74,7 @@ func (h *ArticleHandler) CreateArticle(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, article)
+	respondLocalizedArticle(c, article)
 }
 
 // GetArticle 获取文章详情
@@ -100,7 +100,7 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, article)
+	respondLocalizedArticle(c, article)
 }
 
 // GetArticleBySlug 根据Slug获取文章
@@ -126,7 +126,7 @@ func (h *ArticleHandler) GetArticleBySlug(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, article)
+	respondLocalizedArticle(c, article)
 }
 
 // UpdateArticle 更新文章
@@ -157,7 +157,7 @@ func (h *ArticleHandler) UpdateArticle(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, article)
+	respondLocalizedArticle(c, article)
 }
 
 // DeleteArticle 删除文章
@@ -217,7 +217,7 @@ func (h *ArticleHandler) GetArticleList(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedArticleList(c, result)
 }
 
 // GetArticlesByAuthor 获取指定作者的文章
@@ -252,7 +252,7 @@ func (h *ArticleHandler) GetArticlesByAuthor(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedArticleList(c, result)
 }
 
 // GetArticlesByCategory 获取指定分类的文章
@@ -284,7 +284,7 @@ func (h *ArticleHandler) GetArticlesByCategory(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedArticleList(c, result)
 }
 
 // GetArticlesByTag 获取指定标签的文章
@@ -316,7 +316,7 @@ func (h *ArticleHandler) GetArticlesByTag(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedArticleList(c, result)
 }
 
 // SearchArticles 搜索文章
@@ -348,7 +348,7 @@ func (h *ArticleHandler) SearchArticles(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedArticleList(c, result)
 }
 
 // GetPopularArticles 获取热门文章
@@ -375,7 +375,7 @@ func (h *ArticleHandler) GetPopularArticles(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"articles": articles})
+	respondLocalizedArticleCollection(c, articles)
 }
 
 // GetRecentArticles 获取最新文章
@@ -402,7 +402,7 @@ func (h *ArticleHandler) GetRecentArticles(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"articles": articles})
+	respondLocalizedArticleCollection(c, articles)
 }
 
 // GetArticleArchives 获取按年月分组的公开文章归档，无请求参数。
@@ -413,7 +413,7 @@ func (h *ArticleHandler) GetArticleArchives(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, groups)
+	respondLocalizedArchives(c, groups)
 }
 
 // GetRelatedArticles 获取相关文章
@@ -442,7 +442,7 @@ func (h *ArticleHandler) GetRelatedArticles(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"articles": articles})
+	respondLocalizedArticleCollection(c, articles)
 }
 
 // ViewArticle 记录文章浏览
@@ -617,7 +617,7 @@ func (h *ArticleHandler) GetArticleBookmarks(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedArticleList(c, result)
 }
 
 // BookmarkArticle 收藏文章

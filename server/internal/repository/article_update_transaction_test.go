@@ -42,7 +42,7 @@ func TestUpdateWithRelationsRollsBackOnCategoryFailure(t *testing.T) {
 	mock.ExpectRollback()
 
 	article := &model.Article{ID: 1, Title: "测试文章", Slug: "test-article", AuthorID: 1, Status: model.ArticleStatusDraft}
-	err := repo.UpdateWithRelations(article, []uint{1}, nil)
+	err := repo.UpdateWithRelations(article, []uint{1}, nil, nil)
 	if err == nil {
 		t.Fatal("分类同步失败时 UpdateWithRelations 应返回错误")
 	}
@@ -95,7 +95,7 @@ func TestUpdateWithRelationsRollsBackOnTagFailure(t *testing.T) {
 	mock.ExpectRollback()
 
 	article := &model.Article{ID: 1, Title: "测试文章", Slug: "test-article", AuthorID: 1, Status: model.ArticleStatusDraft}
-	err := repo.UpdateWithRelations(article, []uint{1}, []uint{1})
+	err := repo.UpdateWithRelations(article, []uint{1}, []uint{1}, nil)
 	if err == nil {
 		t.Fatal("标签同步失败时 UpdateWithRelations 应返回错误")
 	}

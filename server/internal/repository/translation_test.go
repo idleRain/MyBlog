@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"regexp"
 	"testing"
 
 	"MyBlog/internal/model"
@@ -34,12 +35,19 @@ func newTranslationTestRepo(t *testing.T) (*CategoryRepository, *TagRepository, 
 	return &CategoryRepository{db: gormDB}, &TagRepository{db: gormDB}, mock
 }
 
-// TestArticleUpsertTranslationsInsertsOnDuplicate 验证文章翻译写入携带冲突整行更新子句并回填文章ID。
-func TestArticleUpsertTranslationsInsertsOnDuplicate(t *testing.T) {
+// TestCreateWithRelationsUpsertsTranslations 验证创建文章事务内写入翻译行并回填文章ID。
+func TestCreateWithRelationsUpsertsTranslations(t *testing.T) {
 	repo, mock := newMockArticleRepo(t)
 
-	// 事务开始，冲突时整行更新的多行写入，事务提交。
+	// 事务开始，slug 唯一性检查通过，文章写入成功。
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT count(*) FROM `articles` WHERE slug = ?")).
+		WithArgs("test-article").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `articles`")).
+		WillReturnResult(sqlmock.NewResult(7, 1))
+
+	// 翻译行随主事务写入，携带冲突整行更新子句。
 	mock.ExpectExec("INSERT INTO `article_translations`.*ON DUPLICATE KEY UPDATE").
 		WillReturnResult(sqlmock.NewResult(2, 2))
 	mock.ExpectCommit()
@@ -48,9 +56,10 @@ func TestArticleUpsertTranslationsInsertsOnDuplicate(t *testing.T) {
 		{Locale: "en", Title: "Hello", Summary: "greeting"},
 		{Locale: "ja", Title: "こんにちは"},
 	}
-	err := repo.UpsertTranslations(7, translations)
+	article := &model.Article{Title: "测试文章", Slug: "test-article", AuthorID: 1, Status: model.ArticleStatusDraft}
+	err := repo.CreateWithRelations(article, nil, nil, translations)
 	if err != nil {
-		t.Fatalf("翻译写入不应返回错误: %v", err)
+		t.Fatalf("创建文章不应返回错误: %v", err)
 	}
 
 	// 写入前必须回填文章ID，服务层只负责构造语言字段。
@@ -65,36 +74,32 @@ func TestArticleUpsertTranslationsInsertsOnDuplicate(t *testing.T) {
 	}
 }
 
-// TestArticleUpsertTranslationsRollsBackOnError 验证翻译写入失败时事务整体回滚。
-func TestArticleUpsertTranslationsRollsBackOnError(t *testing.T) {
+// TestUpdateWithRelationsRollsBackOnTranslationFailure 验证翻译行写入失败时更新事务整体回滚。
+func TestUpdateWithRelationsRollsBackOnTranslationFailure(t *testing.T) {
 	repo, mock := newMockArticleRepo(t)
 
+	// 事务开始，slug 检查与文章更新成功。
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT count(*) FROM `articles` WHERE slug = ? AND id != ?")).
+		WithArgs("test-article", uint(7)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(0))
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE `articles`")).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	// 翻译行写入失败，事务回滚撤销文章更新。
 	mock.ExpectExec("INSERT INTO `article_translations`").
 		WillReturnError(errors.New("翻译写入失败"))
 	mock.ExpectRollback()
 
 	translations := []model.ArticleTranslation{{Locale: "en", Title: "Hello"}}
-	err := repo.UpsertTranslations(1, translations)
+	article := &model.Article{ID: 7, Title: "测试文章", Slug: "test-article", AuthorID: 1, Status: model.ArticleStatusDraft}
+	err := repo.UpdateWithRelations(article, nil, nil, translations)
 	if err == nil {
-		t.Fatal("翻译写入失败时应返回错误")
+		t.Fatal("翻译写入失败时更新文章应返回错误")
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("未满足的 SQL 期望，回滚未按预期执行: %v", err)
-	}
-}
-
-// TestArticleUpsertTranslationsSkipsEmpty 验证空翻译列表不开启事务直接返回。
-func TestArticleUpsertTranslationsSkipsEmpty(t *testing.T) {
-	repo, mock := newMockArticleRepo(t)
-
-	if err := repo.UpsertTranslations(1, nil); err != nil {
-		t.Fatalf("空翻译列表不应返回错误: %v", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("空列表不应产生任何 SQL 调用: %v", err)
 	}
 }
 

@@ -98,15 +98,18 @@ func newServices(cfg *config.Config, repos *appRepositories) *appServices {
 	jwtService := service.NewJWTService(cfg)
 	rbacService := service.NewRBACService()
 
+	// 语言协商策略来自 i18n 配置节，作为内容多语言读写的唯一权威。
+	languagePolicy := middleware.LanguagePolicyFromConfig(cfg.I18N)
+
 	return &appServices{
 		jwt:      jwtService,
 		identity: middleware.NewIdentityProvider(jwtService, repos.user),
 		rbac:     rbacService,
 		user: service.NewUserService(repos.user, jwtService, rbacService,
 			service.WithLoginLockoutPolicy(loginLockoutPolicyFromConfig(cfg))),
-		article:      service.NewArticleService(repos.article, repos.user, rbacService, repos.stats, repos.notification),
-		category:     service.NewCategoryService(repos.category),
-		tag:          service.NewTagService(repos.tag),
+		article:      service.NewArticleService(repos.article, repos.user, rbacService, repos.stats, repos.notification, service.WithArticleLanguagePolicy(languagePolicy)),
+		category:     service.NewCategoryService(repos.category, service.WithCategoryLanguagePolicy(languagePolicy)),
+		tag:          service.NewTagService(repos.tag, service.WithTagLanguagePolicy(languagePolicy)),
 		comment:      service.NewCommentService(repos.comment, repos.article, repos.setting, repos.notification),
 		media:        service.NewMediaService(repos.media, cfg),
 		setting:      service.NewSettingService(repos.setting),

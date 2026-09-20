@@ -10,8 +10,15 @@ import (
 // fakeTagRepo 标签仓储的测试替身，记录调用并返回可配置结果。
 type fakeTagRepo struct {
 	repository.TagRepositoryInterface
-	tags    []*model.Tag
-	getByID func(id uint) (*model.Tag, error)
+	tags        []*model.Tag
+	getByID     func(id uint) (*model.Tag, error)
+	lastWritten bool
+}
+
+// UpsertTranslations 显式覆写翻译写入，记录调用，避免内嵌空接口的 nil panic。
+func (f *fakeTagRepo) UpsertTranslations(tagID uint, translations []model.TagTranslation) error {
+	f.lastWritten = true
+	return nil
 }
 
 func (f *fakeTagRepo) GetByID(id uint) (*model.Tag, error) {

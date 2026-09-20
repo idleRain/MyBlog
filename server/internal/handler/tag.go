@@ -54,7 +54,7 @@ func (h *TagHandler) CreateTag(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithMessage(c, "标签创建成功", tag)
+	respondLocalizedTagMessage(c, "标签创建成功", tag)
 }
 
 // UpdateTag 更新标签 POST /api/admin/tags/update
@@ -81,7 +81,7 @@ func (h *TagHandler) UpdateTag(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithMessage(c, "标签更新成功", tag)
+	respondLocalizedTagMessage(c, "标签更新成功", tag)
 }
 
 // DeleteTag 删除标签 POST /api/admin/tags/delete
@@ -136,7 +136,7 @@ func (h *TagHandler) GetTag(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, tag)
+	respondLocalizedTag(c, tag)
 }
 
 // ListTags 分页查询标签列表 POST /api/admin/tags/list
@@ -153,7 +153,7 @@ func (h *TagHandler) ListTags(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, result)
+	respondLocalizedTagList(c, result)
 }
 
 // GetPopularTags 获取热门标签 POST /api/tags/popular
@@ -174,7 +174,7 @@ func (h *TagHandler) GetPopularTags(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"tags": tags})
+	respondLocalizedTagCollection(c, tags)
 }
 
 // ListAllTags 获取全部标签 POST /api/tags/list
@@ -186,5 +186,5 @@ func (h *TagHandler) ListAllTags(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, gin.H{"tags": tags})
+	respondLocalizedTagCollection(c, tags)
 }

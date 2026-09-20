@@ -8,19 +8,9 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// 内容多语言翻译写入实现。
-// 翻译行的字段合并、语言校验与派生值计算由服务层完成，本层只负责原子写入。
-
-// UpsertTranslations 批量写入文章翻译行，命中唯一索引时整行更新。
-// 单事务包裹保证多语言写入的原子性。
-func (r *ArticleRepository) UpsertTranslations(articleID uint, translations []model.ArticleTranslation) error {
-	if len(translations) == 0 {
-		return nil
-	}
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		return upsertArticleTranslationRows(tx, articleID, translations)
-	})
-}
+// 文章翻译写入辅助。
+// 翻译行的字段合并、语言校验与派生值计算由服务层完成，本层只负责原子写入；
+// 文章翻译随 CreateWithRelations/UpdateWithRelations 的主事务写入，不设独立入口。
 
 // upsertArticleTranslationRows 在给定句柄内写入文章翻译行，写入前回填文章ID。
 func upsertArticleTranslationRows(tx *gorm.DB, articleID uint, translations []model.ArticleTranslation) error {
