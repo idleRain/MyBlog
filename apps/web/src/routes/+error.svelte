@@ -1,11 +1,13 @@
 <script lang="ts">
 import Header from '$lib/components/layout/Header.svelte'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import { ModeWatcher } from 'mode-watcher'
+import { page } from '$app/state'
 import { m } from '$i18n'
 import '../app.css'
 
-let { error, status }: { error: App.Error; status: number } = $props()
+// 404 等加载与路由错误不经过渲染边界流程，错误页组件的 props 中不含状态码与错误对象，必须从 page 对象读取。
+const status = $derived(page.status)
+const error = $derived(page.error)
 
 // 依据状态码区分文案，500 为服务端故障，其余视为目标资源缺失。
 const isServerError = $derived(status === 500)
@@ -18,7 +20,7 @@ const errorSubtitle = $derived(
 </script>
 
 <svelte:head>
-  <title>{status} - {SITE_NAME_ZH}</title>
+  <title>{status} - {m['ui:site.name']()}</title>
 </svelte:head>
 
 <!-- 主题监听器 -->
@@ -45,7 +47,7 @@ const errorSubtitle = $derived(
     <!-- 说明引语：朱红竖线引出，保持编辑手记的口吻。 -->
     <div class="mt-10 max-w-xl border-l-2 border-signal pl-6">
       <p class="font-display text-xl leading-relaxed font-medium">{errorSubtitle}</p>
-      {#if isServerError && error.message}
+      {#if isServerError && error}
         <p class="mt-3 font-mono text-xs text-muted-foreground">{error.message}</p>
       {/if}
     </div>

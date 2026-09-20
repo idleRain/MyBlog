@@ -1,4 +1,7 @@
 {
+  "site": {
+    "name": "IdleRain Blogs"
+  },
   "button": {
     "save": "Save",
     "cancel": "Cancel",
@@ -28,6 +31,7 @@
     "myFavorites": "Favorites",
     "menu": "Menu",
     "openMenu": "Open menu",
+    "more": "More",
     "userMenu": "User menu",
     "userFallback": "User",
     "switchLanguage": "Switch language",

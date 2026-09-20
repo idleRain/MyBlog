@@ -4,7 +4,7 @@ import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { ExternalLink } from '@lucide/svelte'
 import { FriendlyLinkAPI } from '$lib/api'
 import { toast } from 'svelte-sonner'
-import { Button, Dialog } from '$ui'
+import { Dialog } from '$ui'
 import { m } from '$i18n'
 
 // 申请字段长度上限，与后端 ApplyFriendlyLinkRequest 的 binding 规则一致。
@@ -14,11 +14,13 @@ const APPLY_DESCRIPTION_MAX_LENGTH = 255
 const APPLY_EMAIL_MAX_LENGTH = 100
 
 // 展示中的友情链接，由根布局的全站数据提供；错误页等无数据场景降级为空列表。
+// open 为受控开关：触发入口由调用方承载，本组件只负责弹窗内容。
 interface Props {
   friendlyLinks?: FriendlyLink[]
+  open?: boolean
 }
 
-let { friendlyLinks = [] }: Props = $props()
+let { friendlyLinks = [], open = $bindable(false) }: Props = $props()
 
 // 申请表单状态。
 let applyName = $state('')
@@ -61,12 +63,7 @@ async function handleApply(event: SubmitEvent) {
 }
 </script>
 
-<Dialog.Root>
-  <Dialog.Trigger>
-    <Button variant="ghost" size="icon" class="h-9 w-9" aria-label={m['ui:linkDialog.title']()}>
-      <ExternalLink class="h-4 w-4" />
-    </Button>
-  </Dialog.Trigger>
+<Dialog.Root bind:open>
   <Dialog.Content class="max-h-[85vh] overflow-y-auto bg-popover/95 backdrop-blur-md sm:max-w-md">
     <Dialog.Header>
       <Dialog.Title>{m['ui:linkDialog.title']()}</Dialog.Title>

@@ -1,14 +1,13 @@
 <script lang="ts">
+import { Globe, User, ExternalLink, Menu, LogIn, Settings, Ellipsis } from '@lucide/svelte'
 import FriendlyLinkDialog from '$lib/components/layout/FriendlyLinkDialog.svelte'
 import NotificationBell from '$lib/components/layout/NotificationBell.svelte'
 import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
 import type { User as UserType } from '@myblog/api/modules/user/types'
-import { Globe, User, Menu, LogIn, Settings } from '@lucide/svelte'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
 import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
 import { m } from '$i18n'
@@ -21,6 +20,9 @@ interface Props {
 let { friendlyLinks = [] }: Props = $props()
 
 let isMobileMenuOpen = $state(false)
+// 更多菜单收纳的低频入口弹窗状态，触发权在菜单项上。
+let isAuthorDialogOpen = $state(false)
+let isFriendlyLinkDialogOpen = $state(false)
 
 // 订阅认证状态
 let isAuthenticated = $state(false)
@@ -46,9 +48,17 @@ const setLanguage = (lang: 'zh' | 'en') => {
 // 后台管理地址，开发环境为独立端口，生产环境为同源子路径。
 const adminUrl = import.meta.env.VITE_ADMIN_URL || '/admin'
 
-// 打开后台管理控制台，使用新标签页并禁用 opener 反向引用。
+// GitHub 主页地址，桌面更多菜单与移动抽屉共用同一外链来源。
+const GITHUB_URL = 'https://github.com/idleRain'
+
+// 外部链接统一经用户手势打开新标签页，并禁用 opener 反向引用。
+function openExternal(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+// 打开后台管理控制台
 function openAdminConsole() {
-  window.open(adminUrl, '_blank', 'noopener,noreferrer')
+  openExternal(adminUrl)
 }
 </script>
 
@@ -70,14 +80,14 @@ function openAdminConsole() {
             </div>
           </div>
           <span class="hidden font-display text-lg font-black text-foreground sm:block">
-            {SITE_NAME_ZH}
+            {m['ui:site.name']()}
           </span>
         </a>
       </div>
 
-      <!-- 中部导航 - 绝对居中 -->
+      <!-- 中部导航 - 绝对居中；lg 以下隐藏以避免与右侧功能区在中屏重叠，导航入口由抽屉承接 -->
       <nav
-        class="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 transform items-center space-x-8 md:flex"
+        class="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 transform items-center space-x-8 lg:flex"
       >
         <a
           href="/"
@@ -109,14 +119,14 @@ function openAdminConsole() {
       </nav>
 
       <!-- 右侧功能区 -->
-      <div class="ml-auto flex items-center space-x-3">
+      <div class="ml-auto flex items-center">
         <!-- 移动端通知入口：与桌面铃铛共用组件，未登录时组件内部不渲染 -->
         <div class="md:hidden">
           <NotificationBell />
         </div>
 
-        <!-- 桌面端功能按钮 -->
-        <div class="hidden items-center space-x-3 md:flex">
+        <!-- 桌面端功能按钮：高频开关常驻，低频信息类入口收纳进更多菜单 -->
+        <div class="hidden items-center space-x-1.5 md:flex">
           <!-- 通知铃铛：登录后展示未读数与最近通知 -->
           <NotificationBell />
 
@@ -132,44 +142,46 @@ function openAdminConsole() {
                 <Globe class="h-4 w-4" />
               </Button>
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end" class="bg-popover/90 backdrop-blur-md">
+            <DropdownMenu.Content align="end" class="w-max bg-popover/90 backdrop-blur-md">
               <DropdownMenu.Item onclick={() => setLanguage('zh')}>简体中文</DropdownMenu.Item>
               <DropdownMenu.Item onclick={() => setLanguage('en')}>English</DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu.Root>
 
           <!-- 主题切换 -->
-          <ThemeToggle label={m['ui:header.themeToggle']()} />
+          <ThemeToggle variant="ghost" label={m['ui:header.themeToggle']()} />
 
-          <!-- GitHub链接 -->
-          <a
-            href="https://github.com/idleRain"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="group"
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-9 w-9"
-              aria-label={m['ui:header.githubHome']()}
-            >
-              <GithubIcon class="h-4 w-4 transition-colors group-hover:text-signal" />
-            </Button>
-          </a>
-
-          <!-- 个人介绍 -->
-          <Dialog.Root>
-            <Dialog.Trigger>
+          <!-- 更多：GitHub、关于作者与友情链接等低频入口 -->
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
               <Button
                 variant="ghost"
                 size="icon"
                 class="h-9 w-9"
-                aria-label={m['ui:header.aboutAuthor']()}
+                aria-label={m['ui:header.more']()}
               >
-                <User class="h-4 w-4" />
+                <Ellipsis class="h-4 w-4" />
               </Button>
-            </Dialog.Trigger>
+            </DropdownMenu.Trigger>
+            <!-- w-max 覆盖 $ui 默认的锚点宽度绑定，图标触发器下菜单按内容自适应不换行 -->
+            <DropdownMenu.Content align="end" class="w-max bg-popover/90 backdrop-blur-md">
+              <DropdownMenu.Item onclick={() => openExternal(GITHUB_URL)}>
+                <GithubIcon class="h-4 w-4" />
+                GitHub
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => (isAuthorDialogOpen = true)}>
+                <User class="h-4 w-4" />
+                {m['ui:header.aboutAuthor']()}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item onclick={() => (isFriendlyLinkDialogOpen = true)}>
+                <ExternalLink class="h-4 w-4" />
+                {m['ui:linkDialog.title']()}
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+
+          <!-- 关于作者弹窗：由更多菜单触发 -->
+          <Dialog.Root bind:open={isAuthorDialogOpen}>
             <Dialog.Content class="bg-popover/95 backdrop-blur-md sm:max-w-md">
               <Dialog.Header>
                 <Dialog.Title>{m['ui:header.aboutAuthor']()}</Dialog.Title>
@@ -189,8 +201,8 @@ function openAdminConsole() {
             </Dialog.Content>
           </Dialog.Root>
 
-          <!-- 友情链接：列表展示与互换申请 -->
-          <FriendlyLinkDialog {friendlyLinks} />
+          <!-- 友情链接：列表展示与互换申请，由更多菜单触发 -->
+          <FriendlyLinkDialog {friendlyLinks} bind:open={isFriendlyLinkDialogOpen} />
         </div>
 
         <!-- 登录/登出和后台按钮 -->
@@ -223,7 +235,7 @@ function openAdminConsole() {
                   </div>
                 </Button>
               </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end" class="w-48 bg-popover/90 backdrop-blur-md">
+              <DropdownMenu.Content align="end" class="min-w-48 bg-popover/90 backdrop-blur-md">
                 <div class="border-b border-border px-3 py-2">
                   <p class="text-sm font-medium text-foreground">
                     {currentUser?.username || m['ui:header.userFallback']()}
@@ -265,7 +277,7 @@ function openAdminConsole() {
             <Button
               variant="ghost"
               size="icon"
-              class="h-9 w-9 md:hidden"
+              class="h-9 w-9 lg:hidden"
               aria-label={m['ui:header.openMenu']()}
             >
               <Menu class="h-5 w-5" />
@@ -312,7 +324,7 @@ function openAdminConsole() {
 
               <!-- GitHub链接 -->
               <a
-                href="https://github.com/idleRain"
+                href={GITHUB_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex items-center justify-between bg-secondary px-4 py-2 transition-colors hover:bg-accent"

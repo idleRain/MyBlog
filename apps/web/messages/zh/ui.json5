@@ -1,4 +1,7 @@
 {
+  "site": {
+    "name": "闲雨小筑"
+  },
   "button": {
     "save": "保存",
     "cancel": "取消",
@@ -28,6 +31,7 @@
     "myFavorites": "我的收藏",
     "menu": "菜单",
     "openMenu": "打开菜单",
+    "more": "更多",
     "userMenu": "用户菜单",
     "userFallback": "用户",
     "switchLanguage": "切换语言",

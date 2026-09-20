@@ -1,7 +1,6 @@
 <script lang="ts">
 import type { CategoryTreeNode } from '@myblog/api/modules/category/types'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import { Separator } from '$ui/separator'
 import { Mail } from '@lucide/svelte'
 import { m } from '$i18n'
@@ -46,7 +45,9 @@ const quickLinks = [
               <span class="font-mono text-lg font-bold text-signal">M</span>
             </div>
           </div>
-          <span class="font-display text-xl font-black text-foreground">{SITE_NAME_ZH}</span>
+          <span class="font-display text-xl font-black text-foreground">
+            {m['ui:site.name']()}
+          </span>
         </div>
 
         <p class="mb-6 max-w-md text-muted-foreground">{m['ui:footer.brandIntro']()}</p>
@@ -113,7 +114,7 @@ const quickLinks = [
       <p
         class="flex flex-wrap items-center justify-center gap-2 font-mono text-xs tracking-[0.18em] text-muted-foreground uppercase md:justify-start"
       >
-        <span>© {currentYear} {SITE_NAME_ZH}</span>
+        <span>© {currentYear} {m['ui:site.name']()}</span>
         <span class="text-signal">//</span>
         <span>crafted with precision</span>
       </p>

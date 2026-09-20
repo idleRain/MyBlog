@@ -176,9 +176,11 @@
     font-family: var(--font-display);
   }
 
-  /* 平滑滚动 */
+  /* 平滑滚动，并始终为滚动条保留空槽，模态类组件锁定滚动时布局保持零位移 */
   html {
     scroll-behavior: smooth;
+    /* bits-ui 锁定滚动时仅在无 stable 空槽的情况下补偿 body 内边距，fixed 定位元素不在补偿范围内 */
+    scrollbar-gutter: stable;
   }
 
   /* 自定义滚动条 */
