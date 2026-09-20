@@ -72,6 +72,41 @@ func LocalizeTag(tag *model.Tag, language domain.Language) domain.Language {
 	return domain.DefaultLanguage
 }
 
+// LocalizeDictType 按目标语言就地替换字典类型的本地化字段，返回实际输出语言。
+// 未命中任何翻译字段时实际语言回退缺省语言。
+func LocalizeDictType(dictType *model.DictType, language domain.Language) domain.Language {
+	if language == domain.LanguageAll || dictType == nil {
+		return language
+	}
+	if localizeDictTypeInPlace(dictType, language) {
+		return language
+	}
+	return domain.DefaultLanguage
+}
+
+// LocalizeDictItem 按目标语言就地替换字典项的本地化字段，返回实际输出语言。
+// 未命中任何翻译字段时实际语言回退缺省语言。
+func LocalizeDictItem(item *model.DictItem, language domain.Language) domain.Language {
+	if language == domain.LanguageAll || item == nil {
+		return language
+	}
+	if localizeDictItemInPlace(item, language) {
+		return language
+	}
+	return domain.DefaultLanguage
+}
+
+// LocalizeDictGroup 按目标语言就地本地化字典分组内的类型与全部字典项。
+func LocalizeDictGroup(group *EnabledDictGroup, language domain.Language) {
+	if group == nil || language == domain.LanguageAll {
+		return
+	}
+	LocalizeDictType(&group.DictType, language)
+	for _, item := range group.Items {
+		LocalizeDictItem(item, language)
+	}
+}
+
 // LocalizeCategoryTree 按目标语言本地化分类树的全部节点，缺失翻译的节点保留缺省语言内容。
 func LocalizeCategoryTree(nodes []*CategoryTreeNode, language domain.Language) {
 	if language == domain.LanguageAll {
@@ -227,6 +262,66 @@ func findCategoryTranslation(rows []model.CategoryTranslation, language domain.L
 
 // findTagTranslation 按语言定位标签翻译行，未命中时返回 nil。
 func findTagTranslation(rows []model.TagTranslation, language domain.Language) *model.TagTranslation {
+	for index := range rows {
+		if rows[index].Locale == string(language) {
+			return &rows[index]
+		}
+	}
+	return nil
+}
+
+// localizeDictTypeInPlace 就地替换字典类型的本地化字段并清空翻译行，返回是否存在有效翻译字段。
+func localizeDictTypeInPlace(dictType *model.DictType, language domain.Language) bool {
+	translation := findDictTypeTranslation(dictType.Translations, language)
+	if translation == nil {
+		return false
+	}
+
+	localized := false
+	if translation.Name != "" {
+		dictType.Name = translation.Name
+		localized = true
+	}
+	if translation.Description != "" {
+		dictType.Description = translation.Description
+		localized = true
+	}
+	dictType.Translations = nil
+	return localized
+}
+
+// localizeDictItemInPlace 就地替换字典项的本地化字段并清空翻译行，返回是否存在有效翻译字段。
+func localizeDictItemInPlace(item *model.DictItem, language domain.Language) bool {
+	translation := findDictItemTranslation(item.Translations, language)
+	if translation == nil {
+		return false
+	}
+
+	localized := false
+	if translation.Label != "" {
+		item.Label = translation.Label
+		localized = true
+	}
+	if translation.Description != "" {
+		item.Description = translation.Description
+		localized = true
+	}
+	item.Translations = nil
+	return localized
+}
+
+// findDictTypeTranslation 按语言定位字典类型翻译行，未命中时返回 nil。
+func findDictTypeTranslation(rows []model.DictTypeTranslation, language domain.Language) *model.DictTypeTranslation {
+	for index := range rows {
+		if rows[index].Locale == string(language) {
+			return &rows[index]
+		}
+	}
+	return nil
+}
+
+// findDictItemTranslation 按语言定位字典项翻译行，未命中时返回 nil。
+func findDictItemTranslation(rows []model.DictItemTranslation, language domain.Language) *model.DictItemTranslation {
 	for index := range rows {
 		if rows[index].Locale == string(language) {
 			return &rows[index]

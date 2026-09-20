@@ -53,3 +53,13 @@ func WithTagLanguagePolicy(policy domain.LanguagePolicy) TagServiceOption {
 		s.languagePolicy = policy
 	}
 }
+
+// DictServiceOption 字典服务功能选项。
+type DictServiceOption func(*DictService)
+
+// WithDictLanguagePolicy 注入字典服务的语言协商策略。
+func WithDictLanguagePolicy(policy domain.LanguagePolicy) DictServiceOption {
+	return func(s *DictService) {
+		s.languagePolicy = policy
+	}
+}

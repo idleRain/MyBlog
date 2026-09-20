@@ -32,6 +32,7 @@ type DictRepositoryInterface interface {
 	UpdateDictItem(item *model.DictItem) error
 	DeleteDictItem(id uint) error
 	GetDictItemByID(id uint) (*model.DictItem, error)
+	GetDictItemByValue(typeID uint, value string) (*model.DictItem, error)
 	ListDictItems(params *DictItemListParams) ([]*model.DictItem, int64, error)
 	ListEnabledItemsByType(typeID uint) ([]*model.DictItem, error)
 	ListEnabledItemsByTypes(typeIDs []uint) ([]*model.DictItem, error)
@@ -207,6 +208,18 @@ func (r *DictRepository) DeleteDictItem(id uint) error {
 func (r *DictRepository) GetDictItemByID(id uint) (*model.DictItem, error) {
 	var item model.DictItem
 	if err := r.db.Preload("Translations").First(&item, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrDictItemNotFound
+		}
+		return nil, fmt.Errorf("查询字典项失败: %w", err)
+	}
+	return &item, nil
+}
+
+// GetDictItemByValue 按类型与值定位字典项，供同类型内的唯一性校验使用。
+func (r *DictRepository) GetDictItemByValue(typeID uint, value string) (*model.DictItem, error) {
+	var item model.DictItem
+	if err := r.db.Where("type_id = ? AND value = ?", typeID, value).First(&item).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrDictItemNotFound
 		}
