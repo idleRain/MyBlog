@@ -4,6 +4,7 @@ import {
   createArticleAPI,
   createCategoryAPI,
   createCommentAPI,
+  createDictAPI,
   createFollowAPI,
   createFriendlyLinkAPI,
   createMediaAPI,
@@ -26,6 +27,7 @@ const FriendlyLinkAPI = createFriendlyLinkAPI(request)
 const StatsAPI = createStatsAPI(request)
 const NotificationAPI = createNotificationAPI(request)
 const FollowAPI = createFollowAPI(request)
+const DictAPI = createDictAPI(request)
 
 const API = {
   user: UserAPI,
@@ -38,7 +40,8 @@ const API = {
   friendlyLink: FriendlyLinkAPI,
   stats: StatsAPI,
   notification: NotificationAPI,
-  follow: FollowAPI
+  follow: FollowAPI,
+  dict: DictAPI
 }
 
 export {
@@ -52,7 +55,8 @@ export {
   FriendlyLinkAPI,
   StatsAPI,
   NotificationAPI,
-  FollowAPI
+  FollowAPI,
+  DictAPI
 }
 
 export default API

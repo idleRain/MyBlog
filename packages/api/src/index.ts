@@ -43,3 +43,7 @@ export * from './modules/notification/types.ts'
 export { createFollowAPI } from './modules/follow/index.ts'
 export type { FollowAPI } from './modules/follow/index.ts'
 export * from './modules/follow/types.ts'
+
+export { createDictAPI } from './modules/dict/index.ts'
+export type { DictAPI } from './modules/dict/index.ts'
+export * from './modules/dict/types.ts'
