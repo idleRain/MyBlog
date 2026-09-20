@@ -12,5 +12,5 @@
     }
   },
   "baseLocale": "zh",
-  "locales": ["en", "zh"]
+  "locales": ["zh", "en"]
 }
