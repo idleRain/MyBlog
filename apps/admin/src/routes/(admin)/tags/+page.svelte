@@ -5,14 +5,17 @@ import type {
   TagStatus,
   UpdateTagRequest
 } from '@myblog/api/modules/tag/types'
+import { dictItemLabel, DICT_TYPE_CODE_TAG_STATUS, findDictItem } from '@myblog/api'
 import { Badge, Button, Card, Input, Pagination, Table, ToggleGroup } from '$ui'
 import { Plus, Search, Trash2, Pencil, Tags as TagsIcon } from '@lucide/svelte'
 import TagFormDialog from '$lib/components/admin/tag/tag-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
+import type { EnabledDictGroup } from '@myblog/api/modules/dict/types'
 import { TAG_PAGE_SIZE, TAG_STATUS_CONFIG } from '$lib/constants/tag'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { TagAPI } from '$lib/api'
+import type { BadgeVariant } from '$ui/badge'
+import { DictAPI, TagAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
 let tags = $state<Tag[]>([])
@@ -20,10 +23,13 @@ let isLoading = $state(true)
 let total = $state(0)
 let currentPage = $state(1)
 let search = $state('')
-// 状态筛选使用字符串值：'' 全部、'1' 启用、'0' 隐藏。
+// 状态筛选使用字符串值：'' 全部，其余为字典项值，与标签整型状态的字符串形式对齐。
 let statusFilter = $state('')
 // 热门筛选：'' 全部、'1' 仅热门。
 let hotFilter = $state('')
+
+// 标签状态字典分组，状态文案与徽标样式经该字典动态读取，加载失败时回退内置配置。
+let tagStatusDict = $state<EnabledDictGroup | null>(null)
 
 // 弹窗与删除确认状态
 let isDialogOpen = $state(false)
@@ -31,6 +37,37 @@ let dialogTarget = $state<Tag | null>(null)
 let deleteTarget = $state<Tag | null>(null)
 let isDeleting = $state(false)
 let isSubmitting = $state(false)
+
+// Badge 合法样式集合，用于校验字典扩展元数据中的样式值。
+const BADGE_VARIANTS: BadgeVariant[] = ['default', 'secondary', 'destructive', 'outline']
+
+// 状态筛选项，字典可用时按字典项生成并保持排序；停用字典项仍参与筛选，保证存量数据可被过滤。
+const statusFilterOptions = $derived.by(() => {
+  if (!tagStatusDict) {
+    return [
+      { value: '1', label: '启用' },
+      { value: '0', label: '隐藏' }
+    ]
+  }
+  return [...tagStatusDict.items]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map(item => ({ value: item.value, label: item.label }))
+})
+
+// 解析标签状态的展示文案：优先字典项显示名，缺失时回退内置配置。
+function resolveStatusLabel(status: number): string {
+  return dictItemLabel(tagStatusDict, String(status), TAG_STATUS_CONFIG[status]?.label ?? '未知')
+}
+
+// 解析标签状态的徽标样式：优先字典扩展元数据，缺失或非法时回退内置配置。
+function resolveStatusVariant(status: number): BadgeVariant {
+  const fallback = TAG_STATUS_CONFIG[status]?.variant ?? 'secondary'
+  const variant = findDictItem(tagStatusDict, String(status))?.extra?.variant
+  if (typeof variant === 'string' && BADGE_VARIANTS.includes(variant as BadgeVariant)) {
+    return variant as BadgeVariant
+  }
+  return fallback
+}
 
 /**
  * 加载标签列表，携带搜索、状态与热门筛选。
@@ -123,7 +160,22 @@ function handlePageChange(page: number) {
   loadTags()
 }
 
-onMount(loadTags)
+// 加载标签状态字典，失败时静默回退内置配置，不阻断列表使用。
+async function loadTagStatusDict() {
+  try {
+    const response = await DictAPI.getByType(DICT_TYPE_CODE_TAG_STATUS)
+    if (response.code === 200 && response.data) {
+      tagStatusDict = response.data
+    }
+  } catch (error) {
+    console.error('加载标签状态字典失败:', error)
+  }
+}
+
+onMount(() => {
+  loadTags()
+  loadTagStatusDict()
+})
 </script>
 
 <svelte:head>
@@ -168,8 +220,9 @@ onMount(loadTags)
         <div class="flex flex-col gap-2">
           <ToggleGroup.Root type="single" bind:value={statusFilter} variant="outline" size="sm">
             <ToggleGroup.Item value="">全部</ToggleGroup.Item>
-            <ToggleGroup.Item value="1">启用</ToggleGroup.Item>
-            <ToggleGroup.Item value="0">隐藏</ToggleGroup.Item>
+            {#each statusFilterOptions as option (option.value)}
+              <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
+            {/each}
           </ToggleGroup.Root>
 
           <ToggleGroup.Root type="single" bind:value={hotFilter} variant="outline" size="sm">
@@ -246,8 +299,9 @@ onMount(loadTags)
                   {/if}
                 </Table.Cell>
                 <Table.Cell>
-                  {@const statusConfig = TAG_STATUS_CONFIG[tag.status]!}
-                  <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                  <Badge variant={resolveStatusVariant(tag.status)}>
+                    {resolveStatusLabel(tag.status)}
+                  </Badge>
                 </Table.Cell>
                 <Table.Cell>
                   <span class="text-sm text-muted-foreground">

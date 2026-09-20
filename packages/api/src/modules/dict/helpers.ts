@@ -3,6 +3,10 @@ import type { DictItem, EnabledDictGroup } from './types.ts'
 // 字典消费辅助：业务侧以字符串形式的存储值定位字典项，
 // 标签状态等整型状态经 String(status) 转换后即可直接匹配。
 
+// DICT_TYPE_CODE_TAG_STATUS 标签状态字典码，与后端 DictTypeCodeTagStatus 常量对齐，
+// 标签启用状态的展示文案与样式经该字典读取。
+export const DICT_TYPE_CODE_TAG_STATUS = 'tag_status'
+
 // findDictItem 在字典分组内按存储值定位字典项，未命中返回 undefined。
 export function findDictItem(
   group: EnabledDictGroup | null | undefined,
