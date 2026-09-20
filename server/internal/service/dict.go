@@ -423,7 +423,7 @@ func (s *DictService) requireDictTypeCodeAvailable(code string, excludeID uint) 
 		return err
 	}
 	if existing.ID != excludeID {
-		return fmt.Errorf("字典码已存在")
+		return fmt.Errorf("%w：字典码已存在", ErrInvalidRequest)
 	}
 	return nil
 }
@@ -438,7 +438,7 @@ func (s *DictService) requireDictItemValueAvailable(typeID uint, value string, e
 		return err
 	}
 	if existing.ID != excludeID {
-		return fmt.Errorf("字典项值已存在")
+		return fmt.Errorf("%w：字典项值已存在", ErrInvalidRequest)
 	}
 	return nil
 }

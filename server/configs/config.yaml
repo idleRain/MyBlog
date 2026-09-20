@@ -126,6 +126,7 @@ rbac:
       - "system:config"
       - "system:logs"
       - "system:stats"
+      - "dict:manage"
       - "user:create"
       - "user:read"
       - "user:update"
@@ -151,6 +152,7 @@ rbac:
     admin:
       - "system:logs"
       - "system:stats"
+      - "dict:manage"
       - "user:create"
       - "user:read"
       - "user:update"

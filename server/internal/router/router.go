@@ -119,6 +119,10 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	// 注册用户关注相关路由
 	followRoutes := NewUserFollowRoutes(deps.UserFollowHandler, deps.JWTService)
 	followRoutes.RegisterRoutes(api)
+
+	// 注册字典相关路由
+	dictRoutes := NewDictRoutes(deps.DictHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	dictRoutes.RegisterRoutes(api, adminAPI)
 }
 
 // Dependencies 依赖注入结构，handler 字段使用 handler 包内的具体接口类型，编译期即可校验注入正确性。
@@ -134,6 +138,7 @@ type Dependencies struct {
 	StatsHandler        handler.StatsHandlerInterface        // 站点统计处理器接口
 	NotificationHandler handler.NotificationHandlerInterface // 通知处理器接口
 	UserFollowHandler   handler.UserFollowHandlerInterface   // 用户关注处理器接口
+	DictHandler         handler.DictHandlerInterface         // 字典处理器接口
 	JWTService          service.JWTService                   // JWT服务
 	IdentityProvider    middleware.IdentityProvider          // 身份解析抽象
 	RBACService         service.RBACService                  // RBAC权限服务

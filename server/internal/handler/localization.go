@@ -139,3 +139,94 @@ func localizeTags(tags []*model.Tag, language domain.Language) domain.Language {
 	}
 	return language
 }
+
+// respondLocalizedDictGroups 本地化后按 dicts 包裹形状输出全量字典分组。
+func respondLocalizedDictGroups(c *gin.Context, groups []*service.EnabledDictGroup) {
+	language := getRequestLanguage(c)
+	if language != domain.LanguageAll {
+		for _, group := range groups {
+			service.LocalizeDictGroup(group, language)
+		}
+	}
+	c.Header(ContentLanguageHeader, string(language))
+	response.Success(c, gin.H{"dicts": groups})
+}
+
+// respondLocalizedDictGroup 本地化后输出单个字典分组。
+// 分组属于集合形状，组内条目按字段独立回退，Content-Language 标注请求语言。
+func respondLocalizedDictGroup(c *gin.Context, group *service.EnabledDictGroup) {
+	language := getRequestLanguage(c)
+	if language != domain.LanguageAll {
+		service.LocalizeDictGroup(group, language)
+	}
+	c.Header(ContentLanguageHeader, string(language))
+	response.Success(c, group)
+}
+
+// respondLocalizedDictType 按请求语言本地化后输出字典类型，响应头标注实际输出语言。
+func respondLocalizedDictType(c *gin.Context, dictType *model.DictType) {
+	language := getRequestLanguage(c)
+	actual := service.LocalizeDictType(dictType, language)
+	c.Header(ContentLanguageHeader, string(actual))
+	response.Success(c, dictType)
+}
+
+// respondLocalizedDictTypeMessage 本地化后输出带提示消息的字典类型响应。
+func respondLocalizedDictTypeMessage(c *gin.Context, message string, dictType *model.DictType) {
+	language := getRequestLanguage(c)
+	actual := service.LocalizeDictType(dictType, language)
+	c.Header(ContentLanguageHeader, string(actual))
+	response.SuccessWithMessage(c, message, dictType)
+}
+
+// respondLocalizedDictTypeList 按请求语言本地化后输出字典类型分页列表。
+func respondLocalizedDictTypeList(c *gin.Context, list *service.DictTypeListResponse) {
+	language := localizeDictTypes(list.Types, getRequestLanguage(c))
+	c.Header(ContentLanguageHeader, string(language))
+	response.Success(c, list)
+}
+
+// respondLocalizedDictItem 按请求语言本地化后输出字典项，响应头标注实际输出语言。
+func respondLocalizedDictItem(c *gin.Context, item *model.DictItem) {
+	language := getRequestLanguage(c)
+	actual := service.LocalizeDictItem(item, language)
+	c.Header(ContentLanguageHeader, string(actual))
+	response.Success(c, item)
+}
+
+// respondLocalizedDictItemMessage 本地化后输出带提示消息的字典项响应。
+func respondLocalizedDictItemMessage(c *gin.Context, message string, item *model.DictItem) {
+	language := getRequestLanguage(c)
+	actual := service.LocalizeDictItem(item, language)
+	c.Header(ContentLanguageHeader, string(actual))
+	response.SuccessWithMessage(c, message, item)
+}
+
+// respondLocalizedDictItemList 按请求语言本地化后输出字典项分页列表。
+func respondLocalizedDictItemList(c *gin.Context, list *service.DictItemListResponse) {
+	language := localizeDictItems(list.Items, getRequestLanguage(c))
+	c.Header(ContentLanguageHeader, string(language))
+	response.Success(c, list)
+}
+
+// localizeDictTypes 就地本地化字典类型集合，全量包请求原样保留。
+func localizeDictTypes(types []*model.DictType, language domain.Language) domain.Language {
+	if language == domain.LanguageAll {
+		return language
+	}
+	for _, dictType := range types {
+		service.LocalizeDictType(dictType, language)
+	}
+	return language
+}
+
+// localizeDictItems 就地本地化字典项集合，全量包请求原样保留。
+func localizeDictItems(items []*model.DictItem, language domain.Language) domain.Language {
+	if language == domain.LanguageAll {
+		return language
+	}
+	for _, item := range items {
+		service.LocalizeDictItem(item, language)
+	}
+	return language
+}

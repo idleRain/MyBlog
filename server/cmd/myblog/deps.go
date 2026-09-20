@@ -33,6 +33,7 @@ func newDependencies(cfg *config.Config, db *gorm.DB) *router.Dependencies {
 		StatsHandler:        handlers.stats,
 		NotificationHandler: handlers.notification,
 		UserFollowHandler:   handlers.userFollow,
+		DictHandler:         handlers.dict,
 		JWTService:          services.jwt,
 		IdentityProvider:    services.identity,
 		RBACService:         services.rbac,
@@ -53,6 +54,7 @@ type appRepositories struct {
 	stats        repository.StatsRepositoryInterface
 	notification repository.NotificationRepositoryInterface
 	follow       repository.UserFollowRepositoryInterface
+	dict         repository.DictRepositoryInterface
 }
 
 // newRepositories 构造全部仓储实例。
@@ -69,6 +71,7 @@ func newRepositories(db *gorm.DB) *appRepositories {
 		stats:        repository.NewStatsRepository(db),
 		notification: repository.NewNotificationRepository(db),
 		follow:       repository.NewUserFollowRepository(db),
+		dict:         repository.NewDictRepository(db),
 	}
 }
 
@@ -88,6 +91,7 @@ type appServices struct {
 	stats        service.StatsServiceInterface
 	notification service.NotificationServiceInterface
 	follow       service.UserFollowServiceInterface
+	dict         service.DictServiceInterface
 }
 
 // newServices 构造全部服务实例，跨域依赖经仓储参数显式传递。
@@ -117,6 +121,7 @@ func newServices(cfg *config.Config, repos *appRepositories) *appServices {
 		stats:        service.NewStatsService(repos.stats),
 		notification: service.NewNotificationService(repos.notification),
 		follow:       service.NewUserFollowService(repos.follow, repos.user, repos.notification, repos.article),
+		dict:         service.NewDictService(repos.dict, service.WithDictLanguagePolicy(languagePolicy)),
 	}
 }
 
@@ -142,6 +147,7 @@ type appHandlers struct {
 	stats        handler.StatsHandlerInterface
 	notification handler.NotificationHandlerInterface
 	userFollow   handler.UserFollowHandlerInterface
+	dict         handler.DictHandlerInterface
 }
 
 // newHandlers 构造全部处理器实例。
@@ -158,5 +164,6 @@ func newHandlers(services *appServices) *appHandlers {
 		stats:        handler.NewStatsHandler(services.stats),
 		notification: handler.NewNotificationHandler(services.notification),
 		userFollow:   handler.NewUserFollowHandler(services.follow),
+		dict:         handler.NewDictHandler(services.dict),
 	}
 }

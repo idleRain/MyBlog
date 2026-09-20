@@ -182,8 +182,8 @@ func TestCreateDictTypeUniqueCode(t *testing.T) {
 	svc := NewDictService(repo)
 
 	req := &CreateDictTypeRequest{Code: "tag_status", Name: "重复字典"}
-	if _, err := svc.CreateDictType(req); err == nil || err.Error() != "字典码已存在" {
-		t.Errorf("重复字典码应返回已存在错误, 实际: %v", err)
+	if _, err := svc.CreateDictType(req); !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("重复字典码应返回 ErrInvalidRequest, 实际: %v", err)
 	}
 }
 
@@ -243,8 +243,8 @@ func TestCreateDictItemUniqueValueInType(t *testing.T) {
 	svc := NewDictService(repo)
 
 	duplicate := &CreateDictItemRequest{TypeID: 1, Value: "1", Label: "再次启用"}
-	if _, err := svc.CreateDictItem(duplicate); err == nil || err.Error() != "字典项值已存在" {
-		t.Errorf("同类型内重复值应返回已存在错误, 实际: %v", err)
+	if _, err := svc.CreateDictItem(duplicate); !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("同类型内重复值应返回 ErrInvalidRequest, 实际: %v", err)
 	}
 
 	otherType := &model.DictType{ID: 2, Code: "comment_status", Name: "评论状态"}

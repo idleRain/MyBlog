@@ -23,6 +23,7 @@ const (
 	PermissionSystemConfig Permission = "system:config" // 系统配置管理
 	PermissionSystemLogs   Permission = "system:logs"   // 系统日志查看
 	PermissionSystemStats  Permission = "system:stats"  // 系统统计信息
+	PermissionDictManage   Permission = "dict:manage"   // 字典管理
 
 	// 用户管理权限
 	PermissionUserCreate Permission = "user:create" // 创建用户
@@ -62,7 +63,7 @@ const (
 var RolePermissions = map[Role][]Permission{
 	RoleSuperAdmin: {
 		// 超级管理员拥有所有权限
-		PermissionSystemConfig, PermissionSystemLogs, PermissionSystemStats,
+		PermissionSystemConfig, PermissionSystemLogs, PermissionSystemStats, PermissionDictManage,
 		PermissionUserCreate, PermissionUserRead, PermissionUserUpdate, PermissionUserDelete, PermissionUserList,
 		PermissionArticleCreate, PermissionArticleRead, PermissionArticleUpdate, PermissionArticleDelete, PermissionArticleList, PermissionArticlePublish, PermissionArticleManage,
 		PermissionCategoryManage, PermissionTagManage,
@@ -71,7 +72,7 @@ var RolePermissions = map[Role][]Permission{
 	},
 	RoleAdmin: {
 		// 管理员权限（除系统配置外的大部分权限）
-		PermissionSystemLogs, PermissionSystemStats,
+		PermissionSystemLogs, PermissionSystemStats, PermissionDictManage,
 		PermissionUserCreate, PermissionUserRead, PermissionUserUpdate, PermissionUserDelete, PermissionUserList,
 		PermissionArticleCreate, PermissionArticleRead, PermissionArticleUpdate, PermissionArticleDelete, PermissionArticleList, PermissionArticlePublish, PermissionArticleManage,
 		PermissionCategoryManage, PermissionTagManage,

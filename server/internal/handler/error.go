@@ -13,7 +13,7 @@ import (
 
 // HandleServiceError 将 service 层返回的错误按语义映射为对应的 HTTP 响应。
 // "资源不存在"哨兵错误统一映射为 404，权限不足哨兵错误映射为 403，
-// 其余作为内部错误处理，避免一律返回 500。
+// 业务规则校验失败映射为 400，其余作为内部错误处理，避免一律返回 500。
 // 后续接入错误码契约时，可将本表迁移为基于错误码的判定，保持单一映射点。
 func HandleServiceError(c *gin.Context, err error) {
 	switch {
@@ -28,8 +28,12 @@ func HandleServiceError(c *gin.Context, err error) {
 		errors.Is(err, repository.ErrFriendlyLinkNotFound),
 		errors.Is(err, repository.ErrSettingNotFound),
 		errors.Is(err, repository.ErrUserNotFound),
-		errors.Is(err, repository.ErrFollowNotFound):
+		errors.Is(err, repository.ErrFollowNotFound),
+		errors.Is(err, repository.ErrDictTypeNotFound),
+		errors.Is(err, repository.ErrDictItemNotFound):
 		response.NotFound(c, err.Error())
+	case errors.Is(err, service.ErrInvalidRequest):
+		response.BadRequest(c, err.Error())
 	default:
 		response.InternalError(c, err.Error())
 	}
