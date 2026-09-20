@@ -83,7 +83,17 @@ function formatDate(value: string | null): string {
             <Table.Row>
               <Table.Cell>
                 <div class="max-w-64 space-y-1">
-                  <p class="truncate font-medium">{article.title}</p>
+                  <p class="truncate font-medium">
+                    {article.title}
+                    {#if article.translationLocales?.includes('en')}
+                      <span
+                        class="ml-1 inline-flex items-center rounded-sm bg-muted px-1 align-middle text-[10px] font-medium tracking-wide text-muted-foreground"
+                        title="已提供英文翻译"
+                      >
+                        EN
+                      </span>
+                    {/if}
+                  </p>
                   {#if article.summary}
                     <p class="truncate text-sm text-muted-foreground">{article.summary}</p>
                   {/if}

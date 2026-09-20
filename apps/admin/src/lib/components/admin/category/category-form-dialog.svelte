@@ -28,6 +28,12 @@ let status = $state<CategoryStatus>(1)
 let isFeatured = $state(false)
 let seoTitle = $state('')
 let seoDescription = $state('')
+// 英文翻译字段，enSnapshot 记录回填值，编辑既有翻译时始终携带补丁以支持清空。
+let enName = $state('')
+let enDescription = $state('')
+let enSeoTitle = $state('')
+let enSeoDescription = $state('')
+let enSnapshot = $state('')
 let formError = $state('')
 
 /**
@@ -45,8 +51,31 @@ $effect(() => {
   isFeatured = target?.isFeatured ?? false
   seoTitle = target?.seoTitle ?? ''
   seoDescription = target?.seoDescription ?? ''
+
+  // 英文翻译行允许按字段缺失，缺失字段回填为空串。
+  const en = target?.translations?.find(row => row.locale === 'en') ?? null
+  enName = en?.name ?? ''
+  enDescription = en?.description ?? ''
+  enSeoTitle = en?.seoTitle ?? ''
+  enSeoDescription = en?.seoDescription ?? ''
+  enSnapshot = JSON.stringify([enName, enDescription, enSeoTitle, enSeoDescription])
   formError = ''
 })
+
+/**
+ * 组装英文翻译补丁，存在既有翻译或任一字段非空时携带。
+ */
+function buildI18nPayload(): Record<string, unknown> | null {
+  const patch: Record<string, unknown> = {}
+  if (enName.trim()) patch.name = enName.trim()
+  if (enDescription.trim()) patch.description = enDescription.trim()
+  if (enSeoTitle.trim()) patch.seoTitle = enSeoTitle.trim()
+  if (enSeoDescription.trim()) patch.seoDescription = enSeoDescription.trim()
+  const hasAnyValue = Object.keys(patch).length > 0
+  const hadTranslation = isEditMode && enSnapshot !== JSON.stringify(['', '', '', ''])
+  if (!hasAnyValue && !hadTranslation) return null
+  return { en: patch }
+}
 
 /**
  * 校验并提交表单，分类名称必填。
@@ -71,6 +100,10 @@ function handleSubmit() {
   if (seoTitle.trim()) payload.seoTitle = seoTitle.trim()
   if (seoDescription.trim()) payload.seoDescription = seoDescription.trim()
   if (!isEditMode && parentId !== '') payload.parentId = Number(parentId)
+
+  // 英文翻译补丁存在时携带，由后端校验语言键并按语言存储。
+  const i18n = buildI18nPayload()
+  if (i18n) payload.i18n = i18n
 
   onConfirm(payload)
 }
@@ -209,6 +242,57 @@ function handleSubmit() {
           <Input.Root
             id="category-seo-desc"
             bind:value={seoDescription}
+            maxlength={255}
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      <Separator.Root />
+
+      <div class="space-y-2">
+        <p class="text-sm font-medium">英文翻译（可选）</p>
+        <p class="text-xs text-muted-foreground">未填写的字段回退展示中文</p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label.Root for="category-en-name">英文名称</Label.Root>
+          <Input.Root
+            id="category-en-name"
+            bind:value={enName}
+            maxlength={50}
+            placeholder="English name"
+            disabled={isSubmitting}
+          />
+        </div>
+        <div class="space-y-2">
+          <Label.Root for="category-en-description">英文描述</Label.Root>
+          <Input.Root
+            id="category-en-description"
+            bind:value={enDescription}
+            maxlength={1000}
+            placeholder="English description"
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label.Root for="category-en-seo-title">英文 SEO 标题</Label.Root>
+          <Input.Root
+            id="category-en-seo-title"
+            bind:value={enSeoTitle}
+            maxlength={100}
+            disabled={isSubmitting}
+          />
+        </div>
+        <div class="space-y-2">
+          <Label.Root for="category-en-seo-desc">英文 SEO 描述</Label.Root>
+          <Input.Root
+            id="category-en-seo-desc"
+            bind:value={enSeoDescription}
             maxlength={255}
             disabled={isSubmitting}
           />

@@ -2,9 +2,9 @@
 import CategoryTagPicker, {
   type CategoryTagSelection
 } from '$lib/components/admin/article/category-tag-picker.svelte'
+import type { Article, ArticleI18nPayload } from '@myblog/api/modules/article/types'
 import MarkdownEditor from '$lib/components/admin/markdown-editor.svelte'
 import SeoFields from '$lib/components/admin/article/seo-fields.svelte'
-import type { Article } from '@myblog/api/modules/article/types'
 import { Button, Card, Input, Label, Switch } from '$ui'
 import { ArrowLeft, Save, Send } from '@lucide/svelte'
 import { goto } from '$lib/utils/navigation'
@@ -44,7 +44,23 @@ let seoTitle = $state('')
 let seoDescription = $state('')
 let seoKeywords = $state('')
 
+// 英文翻译字段，enSnapshot 记录回填值，用于判定编辑时是否需要携带翻译补丁以支持清空。
+let enTitle = $state('')
+let enSummary = $state('')
+let enContent = $state('')
+let enSeoTitle = $state('')
+let enSeoDescription = $state('')
+let enSeoKeywords = $state('')
+let enSnapshot = $state('')
+
 let isSubmitting = $state(false)
+
+/**
+ * 从翻译行中定位指定语言的翻译内容。
+ */
+function findTranslation(article: Article | null, locale: string) {
+  return article?.translations?.find(row => row.locale === locale) ?? null
+}
 
 /**
  * 组件挂载后从文章数据回填表单，编辑场景下父组件在数据加载完成后才渲染本组件。
@@ -66,6 +82,23 @@ onMount(() => {
   seoTitle = article?.seoTitle ?? ''
   seoDescription = article?.seoDescription ?? ''
   seoKeywords = article?.seoKeywords ?? ''
+
+  // 英文翻译行允许按字段缺失，缺失字段回填为空串。
+  const en = findTranslation(article, 'en')
+  enTitle = en?.title ?? ''
+  enSummary = en?.summary ?? ''
+  enContent = en?.content ?? ''
+  enSeoTitle = en?.seoTitle ?? ''
+  enSeoDescription = en?.seoDescription ?? ''
+  enSeoKeywords = en?.seoKeywords ?? ''
+  enSnapshot = JSON.stringify([
+    enTitle,
+    enSummary,
+    enContent,
+    enSeoTitle,
+    enSeoDescription,
+    enSeoKeywords
+  ])
 })
 
 /**
@@ -78,9 +111,29 @@ function validateForm(): string {
 }
 
 /**
+ * 组装英文翻译补丁，存在既有翻译或任一字段非空时携带，未填写时省略。
+ * 存在既有翻译时始终携带，保证用户清空字段后可以移除对应翻译内容。
+ */
+function buildI18nPayload(): ArticleI18nPayload | null {
+  const patch = {
+    ...(enTitle.trim() ? { title: enTitle.trim() } : {}),
+    ...(enSummary.trim() ? { summary: enSummary.trim() } : {}),
+    ...(enContent.trim() ? { content: enContent } : {}),
+    ...(enSeoTitle.trim() ? { seoTitle: enSeoTitle.trim() } : {}),
+    ...(enSeoDescription.trim() ? { seoDescription: enSeoDescription.trim() } : {}),
+    ...(enSeoKeywords.trim() ? { seoKeywords: enSeoKeywords.trim() } : {})
+  }
+  const hasAnyValue = Object.keys(patch).length > 0
+  const hadTranslation = isEditMode && enSnapshot !== JSON.stringify(['', '', '', '', '', ''])
+  if (!hasAnyValue && !hadTranslation) return null
+  return { en: patch }
+}
+
+/**
  * 组装请求载荷，可选字段仅在非空时携带，适配 exactOptionalPropertyTypes 约束。
  */
 function buildPayload(status: 'draft' | 'published') {
+  const i18n = buildI18nPayload()
   return {
     title: title.trim(),
     content,
@@ -96,7 +149,8 @@ function buildPayload(status: 'draft' | 'published') {
     ...(coverImage.trim() ? { coverImage: coverImage.trim() } : {}),
     ...(seoTitle.trim() ? { seoTitle: seoTitle.trim() } : {}),
     ...(seoDescription.trim() ? { seoDescription: seoDescription.trim() } : {}),
-    ...(seoKeywords.trim() ? { seoKeywords: seoKeywords.trim() } : {})
+    ...(seoKeywords.trim() ? { seoKeywords: seoKeywords.trim() } : {}),
+    ...(i18n ? { i18n } : {})
   }
 }
 
@@ -196,6 +250,48 @@ async function handleSave(targetStatus: 'draft' | 'published') {
     </Card.Header>
     <Card.Content>
       <MarkdownEditor bind:value={content} />
+    </Card.Content>
+  </Card.Root>
+
+  <!-- 英文翻译 -->
+  <Card.Root>
+    <Card.Header>
+      <Card.Title>英文翻译（可选）</Card.Title>
+      <Card.Description>为前台英文读者提供英文内容，未填写的字段回退展示中文</Card.Description>
+    </Card.Header>
+    <Card.Content class="space-y-4">
+      <div class="space-y-2">
+        <Label.Root for="article-en-title">英文标题</Label.Root>
+        <Input.Root
+          id="article-en-title"
+          bind:value={enTitle}
+          maxlength={200}
+          placeholder="English title"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <div class="space-y-2">
+        <Label.Root for="article-en-summary">英文摘要</Label.Root>
+        <Input.Root
+          id="article-en-summary"
+          bind:value={enSummary}
+          maxlength={500}
+          placeholder="English summary"
+          disabled={isSubmitting}
+        />
+      </div>
+
+      <div class="space-y-2">
+        <Label.Root>英文正文</Label.Root>
+        <MarkdownEditor bind:value={enContent} />
+      </div>
+
+      <SeoFields
+        bind:seoTitle={enSeoTitle}
+        bind:seoDescription={enSeoDescription}
+        bind:seoKeywords={enSeoKeywords}
+      />
     </Card.Content>
   </Card.Root>
 

@@ -22,6 +22,10 @@ let color = $state('#808080')
 let description = $state('')
 let status = $state<TagStatus>(1)
 let isHot = $state(false)
+// 英文翻译字段，enSnapshot 记录回填值，编辑既有翻译时始终携带补丁以支持清空。
+let enName = $state('')
+let enDescription = $state('')
+let enSnapshot = $state('')
 let formError = $state('')
 
 /**
@@ -35,8 +39,27 @@ $effect(() => {
   description = target?.description ?? ''
   status = target?.status ?? 1
   isHot = target?.isHot ?? false
+
+  // 英文翻译行允许按字段缺失，缺失字段回填为空串。
+  const en = target?.translations?.find(row => row.locale === 'en') ?? null
+  enName = en?.name ?? ''
+  enDescription = en?.description ?? ''
+  enSnapshot = JSON.stringify([enName, enDescription])
   formError = ''
 })
+
+/**
+ * 组装英文翻译补丁，存在既有翻译或任一字段非空时携带。
+ */
+function buildI18nPayload(): Record<string, unknown> | null {
+  const patch: Record<string, unknown> = {}
+  if (enName.trim()) patch.name = enName.trim()
+  if (enDescription.trim()) patch.description = enDescription.trim()
+  const hasAnyValue = Object.keys(patch).length > 0
+  const hadTranslation = isEditMode && enSnapshot !== JSON.stringify(['', ''])
+  if (!hasAnyValue && !hadTranslation) return null
+  return { en: patch }
+}
 
 /**
  * 校验并提交表单，标签名称必填。
@@ -55,6 +78,10 @@ function handleSubmit() {
   }
   if (slug.trim()) payload.slug = slug.trim()
   if (description.trim()) payload.description = description.trim()
+
+  // 英文翻译补丁存在时携带，由后端校验语言键并按语言存储。
+  const i18n = buildI18nPayload()
+  if (i18n) payload.i18n = i18n
 
   onConfirm(payload)
 }
@@ -145,6 +172,36 @@ function handleSubmit() {
           placeholder="标签简介"
           disabled={isSubmitting}
         />
+      </div>
+
+      <Separator.Root />
+
+      <div class="space-y-2">
+        <p class="text-sm font-medium">英文翻译（可选）</p>
+        <p class="text-xs text-muted-foreground">未填写的字段回退展示中文</p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label.Root for="tag-en-name">英文名称</Label.Root>
+          <Input.Root
+            id="tag-en-name"
+            bind:value={enName}
+            maxlength={30}
+            placeholder="English name"
+            disabled={isSubmitting}
+          />
+        </div>
+        <div class="space-y-2">
+          <Label.Root for="tag-en-description">英文描述</Label.Root>
+          <Input.Root
+            id="tag-en-description"
+            bind:value={enDescription}
+            maxlength={200}
+            placeholder="English description"
+            disabled={isSubmitting}
+          />
+        </div>
       </div>
     </div>
 

@@ -62,6 +62,8 @@ async function doRefreshAccessToken(): Promise<string | null> {
 const request = createHttpClient({
   prefixUrl,
   timeout: +import.meta.env.VITE_REQUEST_TIMEOUT || 30000,
+  // 管理端请求全量翻译包，编辑表单需要各语言内容；后台界面本身不提供多语言。
+  getLanguage: () => '*',
   auth: {
     // 从认证 store 读取当前访问令牌。
     getAccessToken: () => {
