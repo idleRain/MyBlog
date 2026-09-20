@@ -1,6 +1,7 @@
 // HTTP 客户端实例：基于 @myblog/http 工厂创建，认证逻辑在此注入。
 // 此文件是应用层与请求器之间的适配层，负责接入认证 store 与界面提示。
 
+import { getLocale } from '$lib/paraglide/runtime'
 import { createHttpClient } from '@myblog/http'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
@@ -62,6 +63,9 @@ async function doRefreshAccessToken(): Promise<string | null> {
 const request = createHttpClient({
   prefixUrl,
   timeout: +import.meta.env.VITE_REQUEST_TIMEOUT || 30000,
+  // 内容语言跟随界面语言，后端按 Accept-Language 输出本地化字段；
+  // SSR 场景经 paraglide 请求上下文解析，浏览器场景读取语言 cookie。
+  getLanguage: () => getLocale(),
   auth: {
     // 从认证 store 读取当前访问令牌。
     getAccessToken: () => {

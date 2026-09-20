@@ -39,10 +39,11 @@ function handleLogout() {
   goto('/')
 }
 
-// 切换语言
+// 切换语言：写入语言 cookie 后整页刷新，确保 SSR 数据与界面文案同步切换。
 const setLanguage = (lang: 'zh' | 'en') => {
   if (getLocale() === lang) return
   setLocale(lang)
+  location.reload()
 }
 
 // 后台管理地址，开发环境为独立端口，生产环境为同源子路径。
