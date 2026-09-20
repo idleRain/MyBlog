@@ -112,5 +112,10 @@ func initDatabase(cfg *config.Config) *gorm.DB {
 		log.Fatal("创建翻译表全文索引失败:", err)
 	}
 
+	// 字典种子数据幂等写入，开发与生产两条迁移路径执行后均保持初始字典可用。
+	if err := database.SeedDicts(db); err != nil {
+		log.Fatal("字典种子数据写入失败:", err)
+	}
+
 	return db
 }

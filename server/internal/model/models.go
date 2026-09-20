@@ -44,6 +44,12 @@ func Models() []interface{} {
 		&Setting{},
 		&FriendlyLink{},
 
+		// 字典模块
+		&DictType{},
+		&DictItem{},
+		&DictTypeTranslation{},
+		&DictItemTranslation{},
+
 		// 统计与日志模块
 		&OperationLog{},
 		&SearchLog{},

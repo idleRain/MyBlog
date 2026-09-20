@@ -43,6 +43,12 @@ var tableComments = map[string]string{
 	"settings":       "系统设置表，键值化全局配置",
 	"friendly_links": "友情链接表，互链申请与展示管理",
 
+	// 字典模块
+	"dict_types":             "字典类型表，状态类枚举的动态配置维度",
+	"dict_items":             "字典项表，字典类型下的可选值集合",
+	"dict_type_translations": "字典类型翻译表，按语言存储名称与描述的翻译内容",
+	"dict_item_translations": "字典项翻译表，按语言存储显示名与描述的翻译内容",
+
 	// 统计与日志模块
 	"operation_logs": "操作日志表，安全审计与问题追踪",
 	"search_logs":    "搜索记录表，搜索行为分析",
