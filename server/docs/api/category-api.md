@@ -4,6 +4,10 @@
 
 分类管理模块提供文章分类的树形管理与展示功能。分类采用 `parent_id`、`root_id`、`level`、`path` 四字段描述层级结构，支持子树查询与排序。
 
+## 内容多语言说明
+
+分类模块支持内容多语言，完整规则见 [`contracts/i18n-protocol.md`](../../../contracts/i18n-protocol.md)：请求头 `Accept-Language` 决定 `name`、`description` 与 SEO 字段输出语言，缺省中文，缺失翻译按字段回退；`Accept-Language: *` 时响应额外携带 `translations` 翻译行数组；创建与更新请求体可选 `i18n` 字段按语言提交翻译补丁（`{"en": {"name": "..."}}`），缺省语言键与白名单外语言键返回 400。
+
 ## 分类树结构说明
 
 | 字段 | 类型 | 说明 |

@@ -224,6 +224,7 @@ pnpm run migrate [create|up|down|version|help]
 - 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题。
 - 2026-09-16：通知铃铛移动端入口、博客目录检索框、个人资料页、友链申请表单、三展位页、订阅暂未开放反馈、隐私政策页、设置未生效标注、ErrUserNotFound 映射收敛、主题按钮定位参数化、Header/Footer/错误页多语言、UpdateArticle 事务化。
 - 认证止损真实化：JWT 撤销键归一化、登出/改密撤销、CORS 白名单、登录锁定、Server 超时、ViewArticle 事务化、WAF 模式锚定等。
+- 内容多语言（i18n）：文章/分类/标签翻译表（`*_translations`，主列恒为缺省中文）；后端按 `Accept-Language` 输出本地化字段并附 `Content-Language`，`*` 供管理端读全量翻译包，`i18n` 补丁随创建/更新写入，搜索合并翻译表匹配；语言白名单权威在 `config.yaml` 的 `i18n` 节，契约见 `contracts/i18n-protocol.md`；web 注入 paraglide 语言回调并随切换刷新，admin 注入全量包标识并提供英文翻译编辑（界面本身不做多语言）。
 
 待办：
 - 响应式完善（当前无边界定义，建议拆为页面级清单后推进）。

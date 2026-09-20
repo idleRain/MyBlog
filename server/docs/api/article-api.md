@@ -4,6 +4,18 @@
 
 文章管理模块提供文章的完整生命周期管理，包括创建、发布、编辑、删除等功能，支持分类、标签、搜索、统计等高级特性。
 
+## 内容多语言说明
+
+文章模块支持内容多语言，完整规则见 [`contracts/i18n-protocol.md`](../../../contracts/i18n-protocol.md)：
+
+- 请求头 `Accept-Language`（`zh`/`en`，地区变体折叠为主子标签）决定 `title`、`summary`、`content`、`contentHtml`、SEO 字段的输出语言，缺省中文，缺失翻译的字段按字段回退中文；
+- 响应头 `Content-Language` 标注实际输出语言；
+- `Accept-Language: *` 时响应额外携带 `translations` 全量翻译行数组与 `translationLocales` 翻译状态，供管理端编辑使用，列表项始终附带 `translationLocales`；
+- 创建与更新请求体可选 `i18n` 字段按语言提交翻译补丁（`{"en": {"title": "...", "content": "..."}}`），缺省语言键与白名单外语言键返回 400；
+- 翻译正文随保存渲染 `contentHtml` 并统计 `wordCount`，阅读时长按当前语言字数估算；
+- 全文搜索同时匹配主表与翻译表，任一语言命中即纳入结果；
+- 修订快照暂不包含翻译内容。
+
 ## 文章状态说明
 
 | 状态 | 说明 | 权限要求 |
