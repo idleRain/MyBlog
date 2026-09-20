@@ -15,6 +15,7 @@ import {
   Link as LinkIcon,
   Bell,
   BarChart3,
+  ListTree,
   type LucideIcon
 } from '@lucide/svelte'
 import { Avatar, Badge, Button, Separator, Sidebar } from '$ui'
@@ -90,6 +91,13 @@ const navigationGroups: NavGroup[] = [
         title: '站点统计',
         icon: BarChart3,
         url: '/stats',
+        roles: ['admin', 'superadmin']
+      },
+      {
+        id: 'dicts',
+        title: '字典管理',
+        icon: ListTree,
+        url: '/dicts',
         roles: ['admin', 'superadmin']
       },
       {

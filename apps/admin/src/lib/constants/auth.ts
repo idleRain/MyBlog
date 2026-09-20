@@ -7,6 +7,7 @@ export const PERMISSIONS = {
   SYSTEM_CONFIG: 'system:config',
   SYSTEM_LOGS: 'system:logs',
   SYSTEM_STATS: 'system:stats',
+  DICT_MANAGE: 'dict:manage',
 
   // 用户管理
   USER_CREATE: 'user:create',
@@ -67,6 +68,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   admin: [
     PERMISSIONS.SYSTEM_LOGS,
     PERMISSIONS.SYSTEM_STATS,
+    PERMISSIONS.DICT_MANAGE,
     PERMISSIONS.USER_CREATE,
     PERMISSIONS.USER_READ,
     PERMISSIONS.USER_UPDATE,

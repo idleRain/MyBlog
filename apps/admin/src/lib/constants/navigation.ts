@@ -12,6 +12,7 @@ export interface RouteRoleRule {
 // 全部后台路由的角色规则，顺序不影响匹配，匹配时取最长前缀。
 export const ADMIN_ROUTE_RULES: RouteRoleRule[] = [
   { prefix: '/notifications', roles: ['user', 'editor', 'admin', 'superadmin'] },
+  { prefix: '/dicts', roles: ['admin', 'superadmin'] },
   { prefix: '/posts', roles: ['editor', 'admin', 'superadmin'] },
   { prefix: '/categories', roles: ['admin', 'superadmin'] },
   { prefix: '/tags', roles: ['admin', 'superadmin'] },

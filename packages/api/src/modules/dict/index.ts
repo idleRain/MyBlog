@@ -75,6 +75,8 @@ export function createDictAPI(request: KyInstance) {
 
 export type DictAPI = ReturnType<typeof createDictAPI>
 
+export { dictItemLabel, findDictItem } from './helpers.ts'
+
 export type {
   AllDictsResponse,
   CreateDictItemRequest,
