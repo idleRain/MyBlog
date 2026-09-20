@@ -28,6 +28,7 @@ func NewRouter(cfg *config.Config) *Router {
 	engine.Use(middleware.RequestID())                       // 请求ID中间件
 	engine.Use(corsMiddlewareFromConfig(cfg))                // CORS 中间件，白名单来自配置
 	engine.Use(middleware.SecurityMiddlewareFromConfig(cfg)) // 综合安全中间件，规则与 config.yaml 保持一致
+	engine.Use(middleware.LanguageMiddlewareFromConfig(cfg.I18N)) // 语言协商中间件，解析 Accept-Language 写入请求上下文
 
 	// 统一处理未匹配路由，确保接口不存在时返回统一的 JSON 响应。
 	engine.NoRoute(func(c *gin.Context) {

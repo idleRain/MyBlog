@@ -12,6 +12,7 @@
 | C3 认证协议 | `auth-protocol.md` | 本文档 | ✅ 已文档化（含 payload-only 怪癖） |
 | C4 权限下发 | 后端 RBAC（终态后端下发） | 后端 | 🟡 阶段 D 落地 |
 | C5 类型生成 | 三把锁方案（见下） | 后端 DTO / fixtures | 🟡 阶段 C 落地 |
+| C6 内容语言协商 | `i18n-protocol.md` | 本文档 | 🟡 分期落地中 |
 
 ## fixtures —— 金样本响应
 

@@ -107,6 +107,13 @@ media:
     - "image/webp"
     - "application/pdf"
 
+# 多语言配置：内容语言协商的白名单唯一权威，语言标识使用 ISO 639-1 主子标签
+i18n:
+  default_language: "zh"       # 缺省语言，请求未携带或白名单外回退到该语言
+  supported_languages:         # 受支持语言列表，与前台 paraglide locales 保持一致
+    - "zh"
+    - "en"
+
 # RBAC权限配置：生产环境角色权限的唯一权威，修改后重启生效，无需重新编译
 rbac:
   role_hierarchy:

@@ -100,6 +100,10 @@ func validTestConfig() *Config {
 				"user":       {"article:read"},
 			},
 		},
+		I18N: I18NConfig{
+			DefaultLanguage:    "zh",
+			SupportedLanguages: []string{"zh", "en"},
+		},
 	}
 }
 
@@ -151,9 +155,36 @@ func TestValidateConfigRejectsIdenticalSecrets(t *testing.T) {
 	}
 }
 
-// TestLoadParsesRBACSection 验证 config.yaml 的 rbac 节可被正确解析并通过校验。
+// TestValidateConfigRejectsEmptyI18NSupportedLanguages 验证 i18n 白名单为空即拒绝启动。
+func TestValidateConfigRejectsEmptyI18NSupportedLanguages(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.I18N.SupportedLanguages = nil
+	if err := validateConfig(cfg); err == nil {
+		t.Error("受支持语言列表为空应返回错误")
+	}
+}
+
+// TestValidateConfigRejectsEmptyI18NDefaultLanguage 验证 i18n 缺省语言缺失即拒绝启动。
+func TestValidateConfigRejectsEmptyI18NDefaultLanguage(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.I18N.DefaultLanguage = ""
+	if err := validateConfig(cfg); err == nil {
+		t.Error("缺省语言为空应返回错误")
+	}
+}
+
+// TestValidateConfigRejectsI18NDefaultOutsideWhitelist 验证缺省语言不在白名单内即拒绝启动。
+func TestValidateConfigRejectsI18NDefaultOutsideWhitelist(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.I18N.DefaultLanguage = "fr"
+	if err := validateConfig(cfg); err == nil {
+		t.Error("缺省语言不在白名单内应返回错误")
+	}
+}
+
+// TestLoadParsesConfigSections 验证 config.yaml 的 rbac 与 i18n 节可被正确解析并通过校验。
 // YAML 中的 JWT 密钥为空值，经环境变量注入后应通过环境覆盖链路生效。
-func TestLoadParsesRBACSection(t *testing.T) {
+func TestLoadParsesConfigSections(t *testing.T) {
 	t.Setenv("MYBLOG_JWT_ACCESS_SECRET", "config-test-access-secret")
 	t.Setenv("MYBLOG_JWT_REFRESH_SECRET", "config-test-refresh-secret")
 
@@ -176,5 +207,11 @@ func TestLoadParsesRBACSection(t *testing.T) {
 	}
 	if len(cfg.RBAC.RolePermissions["user"]) == 0 {
 		t.Error("user 角色应配置基础权限")
+	}
+	if cfg.I18N.DefaultLanguage != "zh" {
+		t.Errorf("DefaultLanguage = %q, 期望解析为 zh", cfg.I18N.DefaultLanguage)
+	}
+	if len(cfg.I18N.SupportedLanguages) == 0 {
+		t.Error("受支持语言列表应解析出成员")
 	}
 }

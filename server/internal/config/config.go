@@ -21,6 +21,13 @@ type Config struct {
 	CORS     CORSConfig     `mapstructure:"cors"`
 	Media    MediaConfig    `mapstructure:"media"`
 	RBAC     RBACConfig     `mapstructure:"rbac"`
+	I18N     I18NConfig     `mapstructure:"i18n"`
+}
+
+// I18NConfig 多语言配置，受支持语言白名单与缺省语言的唯一权威。
+type I18NConfig struct {
+	DefaultLanguage    string   `mapstructure:"default_language"`    // 缺省语言，请求未携带或白名单外回退到该语言
+	SupportedLanguages []string `mapstructure:"supported_languages"` // 受支持语言主子标签列表，与前台 paraglide locales 保持一致
 }
 
 // CORSConfig CORS 跨域配置，白名单为空时拒绝所有跨域请求。
@@ -278,6 +285,10 @@ func setDefaults() {
 	viper.SetDefault("media.upload_dir", "uploads")
 	viper.SetDefault("media.base_url", "/uploads")
 	viper.SetDefault("media.max_size_mb", 10)
+
+	// 多语言默认配置：缺省语言必须始终在白名单内，为白名单外请求提供明确回退目标。
+	viper.SetDefault("i18n.default_language", "zh")
+	viper.SetDefault("i18n.supported_languages", []string{"zh", "en"})
 }
 
 // applyEnvOverrides 使用环境变量覆盖标量配置项，环境变量优先级高于 YAML 与代码默认值。
@@ -376,6 +387,27 @@ func validateConfig(cfg *Config) error {
 		if _, ok := cfg.RBAC.RolePermissions[role]; !ok {
 			return fmt.Errorf("RBAC角色权限映射缺少 %s 的定义", role)
 		}
+	}
+
+	// i18n 配置校验：白名单为空或缺省语言缺失都会让语言协商失去回退目标。
+	if len(cfg.I18N.SupportedLanguages) == 0 {
+		return fmt.Errorf("i18n受支持语言列表不能为空")
+	}
+
+	if cfg.I18N.DefaultLanguage == "" {
+		return fmt.Errorf("i18n缺省语言不能为空")
+	}
+
+	// 缺省语言必须在白名单内，否则白名单外请求将回退到无法解析的语言。
+	defaultSupported := false
+	for _, language := range cfg.I18N.SupportedLanguages {
+		if language == cfg.I18N.DefaultLanguage {
+			defaultSupported = true
+			break
+		}
+	}
+	if !defaultSupported {
+		return fmt.Errorf("i18n缺省语言 %s 必须在受支持语言列表内", cfg.I18N.DefaultLanguage)
 	}
 
 	return nil
