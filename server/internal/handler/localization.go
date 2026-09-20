@@ -163,14 +163,6 @@ func respondLocalizedDictGroup(c *gin.Context, group *service.EnabledDictGroup) 
 	response.Success(c, group)
 }
 
-// respondLocalizedDictType 按请求语言本地化后输出字典类型，响应头标注实际输出语言。
-func respondLocalizedDictType(c *gin.Context, dictType *model.DictType) {
-	language := getRequestLanguage(c)
-	actual := service.LocalizeDictType(dictType, language)
-	c.Header(ContentLanguageHeader, string(actual))
-	response.Success(c, dictType)
-}
-
 // respondLocalizedDictTypeMessage 本地化后输出带提示消息的字典类型响应。
 func respondLocalizedDictTypeMessage(c *gin.Context, message string, dictType *model.DictType) {
 	language := getRequestLanguage(c)
@@ -184,14 +176,6 @@ func respondLocalizedDictTypeList(c *gin.Context, list *service.DictTypeListResp
 	language := localizeDictTypes(list.Types, getRequestLanguage(c))
 	c.Header(ContentLanguageHeader, string(language))
 	response.Success(c, list)
-}
-
-// respondLocalizedDictItem 按请求语言本地化后输出字典项，响应头标注实际输出语言。
-func respondLocalizedDictItem(c *gin.Context, item *model.DictItem) {
-	language := getRequestLanguage(c)
-	actual := service.LocalizeDictItem(item, language)
-	c.Header(ContentLanguageHeader, string(actual))
-	response.Success(c, item)
 }
 
 // respondLocalizedDictItemMessage 本地化后输出带提示消息的字典项响应。
