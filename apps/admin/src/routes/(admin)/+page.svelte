@@ -206,15 +206,15 @@ onMount(loadDashboard)
             <Card.Header>
               <Card.Title>最新文章</Card.Title>
             </Card.Header>
-            <Card.Content class="space-y-3">
+            <Card.Content class="divide-y">
               {#each recentArticles as article (article.id)}
                 <button
                   type="button"
                   onclick={() => goto(`/posts/${article.id}`)}
-                  class="flex w-full items-center justify-between gap-2 text-left transition-colors hover:text-primary"
+                  class="flex w-full items-center justify-between gap-2 py-2.5 text-left transition-colors first:pt-0 last:pb-0 hover:text-primary"
                 >
                   <span class="line-clamp-1 text-sm font-medium">{article.title}</span>
-                  <span class="shrink-0 text-xs text-muted-foreground">
+                  <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
                     {new Date(article.createdAt).toLocaleDateString('zh-CN')}
                   </span>
                 </button>

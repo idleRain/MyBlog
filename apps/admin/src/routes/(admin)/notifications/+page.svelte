@@ -5,9 +5,9 @@ import {
   NOTIFICATION_TYPE_OPTIONS
 } from '$lib/constants/notification'
 import type { Notification, NotificationType } from '@myblog/api/modules/notification/types'
+import { Bell, CheckCheck, Inbox, RotateCcw } from '@lucide/svelte'
 import { Badge, Button, Card, Pagination, ToggleGroup } from '$ui'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import { Bell, CheckCheck, Inbox } from '@lucide/svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { NotificationAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -18,6 +18,9 @@ let total = $state(0)
 let unreadCount = $state(0)
 let currentPage = $state(1)
 let typeFilter = $state<NotificationType | ''>('')
+
+// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(typeFilter !== '')
 
 /**
  * 加载通知列表并同步未读数。
@@ -43,6 +46,24 @@ async function loadNotifications() {
   } finally {
     isLoading = false
   }
+}
+
+/**
+ * 类型筛选变更后立即回到第一页并重新加载。
+ */
+function handleTypeFilterChange(value: string) {
+  typeFilter = value as NotificationType | ''
+  currentPage = 1
+  loadNotifications()
+}
+
+/**
+ * 重置筛选并回到第一页。
+ */
+function resetAndReload() {
+  typeFilter = ''
+  currentPage = 1
+  loadNotifications()
 }
 
 /**
@@ -103,24 +124,33 @@ onMount(loadNotifications)
     </Button>
   {/snippet}
 
-  <Card.Root>
-    <Card.Content class="p-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <ToggleGroup.Root type="single" bind:value={typeFilter} variant="outline" size="sm">
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+        <ToggleGroup.Root
+          type="single"
+          variant="outline"
+          size="sm"
+          value={typeFilter}
+          onValueChange={handleTypeFilterChange}
+        >
           {#each NOTIFICATION_TYPE_OPTIONS as option (option.label)}
             <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
           {/each}
         </ToggleGroup.Root>
-        <span class="text-sm text-muted-foreground">
-          <Bell class="mr-1 inline size-3.5" />
-          {unreadCount} 条未读
-        </span>
-      </div>
-    </Card.Content>
-  </Card.Root>
 
-  <Card.Root>
-    <Card.Content class="p-0">
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-muted-foreground tabular-nums">
+            <Bell class="mr-1 inline size-3.5" />
+            {unreadCount} 条未读
+          </span>
+          <Button variant="ghost" size="sm" onclick={resetAndReload}>
+            <RotateCcw data-icon="inline-start" />
+            重置
+          </Button>
+        </div>
+      </div>
+
       {#if isLoading}
         <div class="flex h-48 items-center justify-center">
           <span
@@ -128,11 +158,24 @@ onMount(loadNotifications)
           ></span>
         </div>
       {:else if notifications.length === 0}
-        <div class="flex h-48 items-center justify-center">
-          <div class="text-center">
-            <Inbox class="mx-auto size-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">暂无通知</h3>
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <Inbox class="size-6 text-muted-foreground" />
           </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的通知' : '暂无通知'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters ? '调整或重置筛选条件后再试' : '新的评论回复与点赞会在这里提醒你'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={resetAndReload}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {/if}
         </div>
       {:else}
         <div class="divide-y">
@@ -140,7 +183,7 @@ onMount(loadNotifications)
             <button
               type="button"
               onclick={() => handleMarkRead(notification)}
-              class="flex w-full items-start gap-4 px-6 py-4 text-left transition-colors hover:bg-accent/50 {notification.isRead
+              class="flex w-full items-start gap-4 px-4 py-3.5 text-left transition-colors hover:bg-accent/50 {notification.isRead
                 ? ''
                 : 'bg-accent/30'}"
             >
@@ -159,29 +202,33 @@ onMount(loadNotifications)
                 {#if notification.content}
                   <p class="text-sm text-muted-foreground">{notification.content}</p>
                 {/if}
-                <p class="text-xs text-muted-foreground">
+                <p class="text-xs text-muted-foreground tabular-nums">
                   {new Date(notification.createdAt).toLocaleString('zh-CN')}
                 </p>
               </div>
             </button>
           {/each}
         </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 条通知</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={NOTIFICATION_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / NOTIFICATION_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
       {/if}
     </Card.Content>
   </Card.Root>
-
-  <Pagination.Root
-    count={total}
-    perPage={NOTIFICATION_PAGE_SIZE}
-    page={currentPage}
-    onPageChange={handlePageChange}
-  >
-    <Pagination.Content>
-      <Pagination.PrevButton />
-      <span class="px-2 text-sm text-muted-foreground">
-        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / NOTIFICATION_PAGE_SIZE))} 页
-      </span>
-      <Pagination.NextButton />
-    </Pagination.Content>
-  </Pagination.Root>
 </PageHeader>

@@ -133,12 +133,18 @@ async function handleDelete() {
             ></span>
           </div>
         {:else if dictPageState.types.length === 0}
-          <div class="flex h-64 items-center justify-center">
-            <div class="text-center">
-              <BookText class="mx-auto size-12 text-muted-foreground" />
-              <h3 class="mt-4 text-lg font-medium">暂无字典类型</h3>
+          <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+            <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+              <BookText class="size-6 text-muted-foreground" />
+            </div>
+            <div class="space-y-1">
+              <h3 class="text-base font-medium">暂无字典类型</h3>
               <p class="text-sm text-muted-foreground">创建第一个字典类型开始使用</p>
             </div>
+            <Button size="sm" onclick={() => (isTypeDialogOpen = true)}>
+              <Plus data-icon="inline-start" />
+              新建字典类型
+            </Button>
           </div>
         {:else}
           <ul class="max-h-[32rem] divide-y overflow-y-auto">
@@ -219,12 +225,18 @@ async function handleDelete() {
             ></span>
           </div>
         {:else if dictPageState.items.length === 0}
-          <div class="flex h-64 items-center justify-center">
-            <div class="text-center">
-              <ListTree class="mx-auto size-12 text-muted-foreground" />
-              <h3 class="mt-4 text-lg font-medium">暂无字典项</h3>
+          <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+            <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+              <ListTree class="size-6 text-muted-foreground" />
+            </div>
+            <div class="space-y-1">
+              <h3 class="text-base font-medium">暂无字典项</h3>
               <p class="text-sm text-muted-foreground">为当前字典类型添加可选值</p>
             </div>
+            <Button size="sm" onclick={openCreateItem}>
+              <Plus data-icon="inline-start" />
+              新建字典项
+            </Button>
           </div>
         {:else}
           <Table.Root>
@@ -235,14 +247,18 @@ async function handleDelete() {
                 <Table.Head>描述</Table.Head>
                 <Table.Head>排序</Table.Head>
                 <Table.Head>状态</Table.Head>
-                <Table.Head class="text-right">操作</Table.Head>
+                <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
               </Table.Row>
             </Table.Header>
             <Table.Body>
               {#each dictPageState.items as item (item.id)}
                 <Table.Row>
                   <Table.Cell>
-                    <span class="font-mono text-sm">{item.value}</span>
+                    <code
+                      class="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+                    >
+                      {item.value}
+                    </code>
                   </Table.Cell>
                   <Table.Cell>
                     <span class="font-medium">{item.label}</span>
@@ -251,7 +267,7 @@ async function handleDelete() {
                     <span class="text-sm text-muted-foreground">{item.description || '—'}</span>
                   </Table.Cell>
                   <Table.Cell>
-                    <span class="text-sm">{item.sortOrder}</span>
+                    <span class="text-sm tabular-nums">{item.sortOrder}</span>
                   </Table.Cell>
                   <Table.Cell>
                     <Badge variant={DICT_STATUS_CONFIG[item.status]?.variant ?? 'secondary'}>
@@ -259,7 +275,7 @@ async function handleDelete() {
                     </Badge>
                   </Table.Cell>
                   <Table.Cell>
-                    <div class="flex items-center justify-end gap-1">
+                    <div class="flex items-center justify-center gap-1">
                       <Button
                         variant="ghost"
                         size="sm"

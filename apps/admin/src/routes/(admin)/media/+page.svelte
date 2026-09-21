@@ -1,11 +1,10 @@
 <script lang="ts">
-import { Upload, Image, Film, FileText, Copy, Trash2, Loader2 } from '@lucide/svelte'
+import { Upload, Image, Film, FileText, Copy, Trash2, Loader2, RotateCcw } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { MediaFile } from '@myblog/api/modules/media/types'
 import { Button, Card, Pagination, ToggleGroup } from '$ui'
-import { SITE_NAME_ZH } from '@myblog/shared'
-import { getFileSize } from '@myblog/shared'
+import { SITE_NAME_ZH, getFileSize } from '@myblog/shared'
 import { MediaAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -16,6 +15,9 @@ const TYPE_FILTERS: Array<{ value: string; label: string }> = [
   { value: 'video/', label: '视频' },
   { value: 'application/', label: '文档' }
 ]
+
+// 媒体库网格每页加载数量，与分页组件取值保持一致。
+const MEDIA_PAGE_SIZE = 12
 
 let media = $state<MediaFile[]>([])
 let isLoading = $state(true)
@@ -28,6 +30,9 @@ let fileInput: HTMLInputElement | undefined = $state()
 let deleteTarget = $state<MediaFile | null>(null)
 let isDeleting = $state(false)
 
+// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(mimeTypeFilter !== '')
+
 /**
  * 加载媒体列表，携带类型筛选与分页参数。
  */
@@ -36,7 +41,7 @@ async function loadMedia() {
   try {
     const response = await MediaAPI.list({
       page: currentPage,
-      pageSize: 12,
+      pageSize: MEDIA_PAGE_SIZE,
       ...(mimeTypeFilter ? { mimeType: mimeTypeFilter } : {})
     })
     if (response.code === 200 && response.data) {
@@ -51,6 +56,31 @@ async function loadMedia() {
   } finally {
     isLoading = false
   }
+}
+
+/**
+ * 类型筛选变更后立即回到第一页并重新加载。
+ */
+function handleTypeFilterChange(value: string) {
+  mimeTypeFilter = value
+  currentPage = 1
+  loadMedia()
+}
+
+/**
+ * 重置筛选并回到第一页。
+ */
+function resetAndReload() {
+  mimeTypeFilter = ''
+  currentPage = 1
+  loadMedia()
+}
+
+/**
+ * 触发隐藏文件输入框，打开系统选择文件对话框。
+ */
+function openFilePicker() {
+  fileInput?.click()
 }
 
 /**
@@ -147,7 +177,7 @@ onMount(loadMedia)
       accept="image/*,video/*,audio/*,application/pdf,text/*"
       onchange={handleUpload}
     />
-    <Button onclick={() => fileInput?.click()} disabled={isUploading}>
+    <Button onclick={openFilePicker} disabled={isUploading}>
       {#if isUploading}
         <Loader2 data-icon="inline-start" class="animate-spin" />
         上传中...
@@ -158,80 +188,122 @@ onMount(loadMedia)
     </Button>
   {/snippet}
 
-  <Card.Root>
-    <Card.Content class="p-4">
-      <ToggleGroup.Root type="single" bind:value={mimeTypeFilter} variant="outline" size="sm">
-        {#each TYPE_FILTERS as filter (filter.value)}
-          <ToggleGroup.Item value={filter.value}>{filter.label}</ToggleGroup.Item>
-        {/each}
-      </ToggleGroup.Root>
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+        <ToggleGroup.Root
+          type="single"
+          variant="outline"
+          size="sm"
+          value={mimeTypeFilter}
+          onValueChange={handleTypeFilterChange}
+        >
+          {#each TYPE_FILTERS as filter (filter.value)}
+            <ToggleGroup.Item value={filter.value}>{filter.label}</ToggleGroup.Item>
+          {/each}
+        </ToggleGroup.Root>
+
+        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+          <RotateCcw data-icon="inline-start" />
+          重置
+        </Button>
+      </div>
+
+      {#if isLoading}
+        <div class="flex h-48 items-center justify-center">
+          <span
+            class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+          ></span>
+        </div>
+      {:else if media.length === 0}
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <Image class="size-6 text-muted-foreground" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的文件' : '暂无媒体文件'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters
+                ? '调整或重置筛选条件后再试'
+                : '上传第一个文件，丰富博客的图片与素材'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={resetAndReload}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {:else}
+            <Button size="sm" onclick={openFilePicker} disabled={isUploading}>
+              <Upload data-icon="inline-start" />
+              上传文件
+            </Button>
+          {/if}
+        </div>
+      {:else}
+        <div class="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {#each media as file (file.id)}
+            <div class="overflow-hidden rounded-lg border bg-card">
+              <div class="flex h-36 items-center justify-center border-b bg-muted/40">
+                {#if file.mimeType.startsWith('image/')}
+                  <img
+                    src={file.thumbnailUrl || file.fileUrl}
+                    alt={file.filename}
+                    class="h-full w-full object-cover"
+                  />
+                {:else}
+                  {@const IconComponent = typeIcon(file)}
+                  <IconComponent class="size-10 text-muted-foreground" />
+                {/if}
+              </div>
+              <div class="space-y-2 p-3">
+                <p class="truncate text-sm font-medium" title={file.filename}>{file.filename}</p>
+                <p class="truncate text-xs text-muted-foreground">
+                  {getFileSize(file.fileSize)} · {file.mimeType}
+                </p>
+                <div class="flex gap-2">
+                  <Button variant="outline" size="sm" class="flex-1" onclick={() => copyUrl(file)}>
+                    <Copy data-icon="inline-start" />
+                    复制链接
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label="删除文件"
+                    class="text-destructive hover:text-destructive"
+                    onclick={() => (deleteTarget = file)}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 个文件</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={MEDIA_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / MEDIA_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
+      {/if}
     </Card.Content>
   </Card.Root>
-
-  {#if isLoading}
-    <div class="flex h-48 items-center justify-center">
-      <span class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-      ></span>
-    </div>
-  {:else if media.length === 0}
-    <div class="flex h-48 items-center justify-center">
-      <div class="text-center">
-        <Image class="mx-auto size-12 text-muted-foreground" />
-        <h3 class="mt-4 text-lg font-medium">暂无媒体文件</h3>
-        <p class="text-sm text-muted-foreground">点击右上角上传第一个文件</p>
-      </div>
-    </div>
-  {:else}
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {#each media as file (file.id)}
-        <Card.Root class="overflow-hidden">
-          <div class="flex h-36 items-center justify-center border-b bg-muted/40">
-            {#if file.mimeType.startsWith('image/')}
-              <img
-                src={file.thumbnailUrl || file.fileUrl}
-                alt={file.filename}
-                class="h-full w-full object-cover"
-              />
-            {:else}
-              {@const IconComponent = typeIcon(file)}
-              <IconComponent class="size-10 text-muted-foreground" />
-            {/if}
-          </div>
-          <Card.Content class="space-y-2 p-3">
-            <p class="truncate text-sm font-medium" title={file.filename}>{file.filename}</p>
-            <p class="text-xs text-muted-foreground">
-              {getFileSize(file.fileSize)} · {file.mimeType}
-            </p>
-            <div class="flex gap-2">
-              <Button variant="outline" size="sm" class="flex-1" onclick={() => copyUrl(file)}>
-                <Copy data-icon="inline-start" />
-                复制链接
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                aria-label="删除文件"
-                class="text-destructive hover:text-destructive"
-                onclick={() => (deleteTarget = file)}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-          </Card.Content>
-        </Card.Root>
-      {/each}
-    </div>
-
-    <Pagination.Root count={total} perPage={12} page={currentPage} onPageChange={handlePageChange}>
-      <Pagination.Content>
-        <Pagination.PrevButton />
-        <span class="px-2 text-sm text-muted-foreground">
-          第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / 12))} 页
-        </span>
-        <Pagination.NextButton />
-      </Pagination.Content>
-    </Pagination.Root>
-  {/if}
 
   <ConfirmDialog
     title="删除文件"

@@ -8,6 +8,7 @@ import {
   CircleCheck,
   CircleX,
   EyeOff,
+  RotateCcw,
   type LucideIcon
 } from '@lucide/svelte'
 import type {
@@ -54,6 +55,9 @@ let deleteTarget = $state<FriendlyLink | null>(null)
 let isDeleting = $state(false)
 let isSubmitting = $state(false)
 
+// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(statusFilter !== '')
+
 /**
  * 加载友链列表。
  */
@@ -77,6 +81,32 @@ async function loadLinks() {
   } finally {
     isLoading = false
   }
+}
+
+/**
+ * 状态筛选变更后立即回到第一页并重新加载。
+ */
+function handleStatusFilterChange(value: string) {
+  statusFilter = value as LinkStatus | ''
+  currentPage = 1
+  loadLinks()
+}
+
+/**
+ * 重置筛选并回到第一页。
+ */
+function resetAndReload() {
+  statusFilter = ''
+  currentPage = 1
+  loadLinks()
+}
+
+/**
+ * 打开添加友链弹窗。
+ */
+function openCreateDialog() {
+  dialogTarget = null
+  isDialogOpen = true
 }
 
 /**
@@ -162,29 +192,33 @@ onMount(loadLinks)
 
 <PageHeader title="友情链接" description="管理互链申请，覆盖申请、审核与展示状态" crumb="友情链接">
   {#snippet actions()}
-    <Button
-      onclick={() => {
-        dialogTarget = null
-        isDialogOpen = true
-      }}
-    >
+    <Button onclick={openCreateDialog}>
       <Plus data-icon="inline-start" />
       添加友链
     </Button>
   {/snippet}
 
-  <Card.Root>
-    <Card.Content class="p-4">
-      <ToggleGroup.Root type="single" bind:value={statusFilter} variant="outline" size="sm">
-        {#each LINK_STATUS_OPTIONS as option (option.label)}
-          <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
-        {/each}
-      </ToggleGroup.Root>
-    </Card.Content>
-  </Card.Root>
-
-  <Card.Root>
+  <Card.Root class="overflow-hidden">
     <Card.Content class="p-0">
+      <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+        <ToggleGroup.Root
+          type="single"
+          variant="outline"
+          size="sm"
+          value={statusFilter}
+          onValueChange={handleStatusFilterChange}
+        >
+          {#each LINK_STATUS_OPTIONS as option (option.label)}
+            <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
+          {/each}
+        </ToggleGroup.Root>
+
+        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+          <RotateCcw data-icon="inline-start" />
+          重置
+        </Button>
+      </div>
+
       {#if isLoading}
         <div class="flex h-48 items-center justify-center">
           <span
@@ -192,12 +226,31 @@ onMount(loadLinks)
           ></span>
         </div>
       {:else if links.length === 0}
-        <div class="flex h-48 items-center justify-center">
-          <div class="text-center">
-            <LinkIcon class="mx-auto size-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">暂无友链</h3>
-            <p class="text-sm text-muted-foreground">添加第一条友情链接</p>
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <LinkIcon class="size-6 text-muted-foreground" />
           </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的友链' : '暂无友链'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters
+                ? '调整或重置筛选条件后再试'
+                : '添加第一条友情链接，与友邻站点互相推荐'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={resetAndReload}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {:else}
+            <Button size="sm" onclick={openCreateDialog}>
+              <Plus data-icon="inline-start" />
+              添加友链
+            </Button>
+          {/if}
         </div>
       {:else}
         <Table.Root>
@@ -208,7 +261,7 @@ onMount(loadLinks)
               <Table.Head>回链</Table.Head>
               <Table.Head>状态</Table.Head>
               <Table.Head>添加时间</Table.Head>
-              <Table.Head class="text-right">操作</Table.Head>
+              <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -242,7 +295,11 @@ onMount(loadLinks)
                   </span>
                 </Table.Cell>
                 <Table.Cell>
-                  <span class="text-sm">{link.isReciprocal ? '已回链' : '—'}</span>
+                  {#if link.isReciprocal}
+                    <Badge variant="outline">已回链</Badge>
+                  {:else}
+                    <span class="text-sm text-muted-foreground">—</span>
+                  {/if}
                 </Table.Cell>
                 <Table.Cell>
                   <Badge variant={LINK_STATUS_CONFIG[link.status].variant}>
@@ -250,12 +307,12 @@ onMount(loadLinks)
                   </Badge>
                 </Table.Cell>
                 <Table.Cell>
-                  <span class="text-sm text-muted-foreground">
+                  <span class="text-sm text-muted-foreground tabular-nums">
                     {new Date(link.createdAt).toLocaleDateString('zh-CN')}
                   </span>
                 </Table.Cell>
                 <Table.Cell>
-                  <div class="flex items-center justify-end gap-1">
+                  <div class="flex items-center justify-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -296,24 +353,28 @@ onMount(loadLinks)
             {/each}
           </Table.Body>
         </Table.Root>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 个友链</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={LINK_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / LINK_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
       {/if}
     </Card.Content>
   </Card.Root>
-
-  <Pagination.Root
-    count={total}
-    perPage={LINK_PAGE_SIZE}
-    page={currentPage}
-    onPageChange={handlePageChange}
-  >
-    <Pagination.Content>
-      <Pagination.PrevButton />
-      <span class="px-2 text-sm text-muted-foreground">
-        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / LINK_PAGE_SIZE))} 页
-      </span>
-      <Pagination.NextButton />
-    </Pagination.Content>
-  </Pagination.Root>
 
   <LinkFormDialog
     {isSubmitting}

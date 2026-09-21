@@ -18,7 +18,7 @@ let { label, value, icon: IconComponent, hint }: Props = $props()
     <IconComponent class="size-4 text-muted-foreground" />
   </Card.Header>
   <Card.Content>
-    <div class="text-2xl font-bold">{value}</div>
+    <div class="text-2xl font-bold tabular-nums">{value}</div>
     {#if hint}
       <p class="text-xs text-muted-foreground">{hint}</p>
     {/if}

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Button, Dialog, Input, Label, Separator, Switch } from '$ui'
+import { Button, Dialog, Input, Label, Separator, Switch, Textarea } from '$ui'
 import type { Tag, TagStatus } from '@myblog/api/modules/tag/types'
 
 interface Props {
@@ -98,7 +98,11 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="tag-name">名称 *</Label.Root>
+        <Label.Root for="tag-name">
+          名称
+          <span class="text-destructive" aria-hidden="true">*</span>
+          <span class="sr-only">必填</span>
+        </Label.Root>
         <Input.Root
           id="tag-name"
           bind:value={name}
@@ -111,18 +115,17 @@ function handleSubmit() {
         {/if}
       </div>
 
-      <div class="space-y-2">
-        <Label.Root for="tag-slug">URL 标识</Label.Root>
-        <Input.Root
-          id="tag-slug"
-          bind:value={slug}
-          maxlength={30}
-          placeholder="留空时由名称自动生成"
-          disabled={isSubmitting}
-        />
-      </div>
-
       <div class="grid gap-4 sm:grid-cols-2">
+        <div class="space-y-2">
+          <Label.Root for="tag-slug">URL 标识</Label.Root>
+          <Input.Root
+            id="tag-slug"
+            bind:value={slug}
+            maxlength={30}
+            placeholder="留空时由名称自动生成"
+            disabled={isSubmitting}
+          />
+        </div>
         <div class="space-y-2">
           <Label.Root for="tag-color">标签颜色</Label.Root>
           <div class="flex items-center gap-2">
@@ -136,36 +139,35 @@ function handleSubmit() {
             <Input.Root bind:value={color} maxlength={7} disabled={isSubmitting} />
           </div>
         </div>
+      </div>
 
-        <div class="space-y-3 pt-2">
-          <div class="flex items-center justify-between gap-2">
-            <div class="space-y-0.5">
-              <Label.Root>启用状态</Label.Root>
-              <p class="text-xs text-muted-foreground">隐藏后不再展示</p>
-            </div>
-            <Switch.Switch
-              checked={status === 1}
-              onCheckedChange={(checked: boolean) => {
-                status = checked ? 1 : 0
-              }}
-              disabled={isSubmitting}
-            />
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div class="flex items-center justify-between gap-2">
+          <div class="space-y-0.5">
+            <Label.Root for="tag-status">启用状态</Label.Root>
+            <p class="text-xs text-muted-foreground">隐藏后不再展示</p>
           </div>
-          <div class="flex items-center justify-between gap-2">
-            <div class="space-y-0.5">
-              <Label.Root>热门标签</Label.Root>
-              <p class="text-xs text-muted-foreground">在热门标签区优先展示</p>
-            </div>
-            <Switch.Switch bind:checked={isHot} disabled={isSubmitting} />
+          <Switch.Switch
+            id="tag-status"
+            checked={status === 1}
+            onCheckedChange={(checked: boolean) => {
+              status = checked ? 1 : 0
+            }}
+            disabled={isSubmitting}
+          />
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <div class="space-y-0.5">
+            <Label.Root for="tag-hot">热门标签</Label.Root>
+            <p class="text-xs text-muted-foreground">在热门标签区优先展示</p>
           </div>
+          <Switch.Switch id="tag-hot" bind:checked={isHot} disabled={isSubmitting} />
         </div>
       </div>
 
-      <Separator.Root />
-
       <div class="space-y-2">
         <Label.Root for="tag-description">描述</Label.Root>
-        <Input.Root
+        <Textarea.Root
           id="tag-description"
           bind:value={description}
           maxlength={200}

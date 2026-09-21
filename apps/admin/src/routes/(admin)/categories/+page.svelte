@@ -12,7 +12,8 @@ import {
   MoreHorizontal,
   Trash2,
   Pencil,
-  Search
+  Search,
+  RotateCcw
 } from '@lucide/svelte'
 import CategoryFormDialog from '$lib/components/admin/category/category-form-dialog.svelte'
 import { Button, Card, Badge, DropdownMenu, Input, ToggleGroup } from '$ui'
@@ -166,15 +167,15 @@ onMount(loadCategories)
   crumb="分类管理"
 >
   {#snippet actions()}
-    <Button onclick={() => openCreate()}>
+    <Button onclick={openCreate}>
       <Plus data-icon="inline-start" />
       新建分类
     </Button>
   {/snippet}
 
-  <Card.Root>
-    <Card.Content class="p-4">
-      <div class="flex flex-wrap items-center gap-3">
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-52 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input.Root
@@ -190,13 +191,12 @@ onMount(loadCategories)
           <ToggleGroup.Item value="0">隐藏</ToggleGroup.Item>
         </ToggleGroup.Root>
 
-        <Button variant="outline" onclick={resetFilters}>重置</Button>
+        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetFilters}>
+          <RotateCcw data-icon="inline-start" />
+          重置
+        </Button>
       </div>
-    </Card.Content>
-  </Card.Root>
 
-  <Card.Root>
-    <Card.Content class="p-0">
       {#if isLoading}
         <div class="flex h-48 items-center justify-center">
           <span
@@ -204,23 +204,36 @@ onMount(loadCategories)
           ></span>
         </div>
       {:else if filteredRows.length === 0}
-        <div class="flex h-48 items-center justify-center">
-          <div class="text-center">
-            <FolderTree class="mx-auto size-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <FolderTree class="size-6 text-muted-foreground" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
               {rows.length === 0 ? '暂无分类' : '没有匹配的分类'}
             </h3>
             <p class="text-sm text-muted-foreground">
-              {rows.length === 0 ? '创建第一个分类来组织文章' : '调整筛选条件后再试'}
+              {rows.length === 0 ? '创建第一个分类来组织文章' : '调整或重置筛选条件后再试'}
             </p>
           </div>
+          {#if rows.length === 0}
+            <Button size="sm" onclick={openCreate}>
+              <Plus data-icon="inline-start" />
+              新建分类
+            </Button>
+          {:else}
+            <Button variant="outline" size="sm" onclick={resetFilters}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {/if}
         </div>
       {:else}
         <div class="divide-y">
           {#each filteredRows as row (row.category.id)}
             {@const statusConfig = CATEGORY_STATUS_CONFIG[row.category.status]!}
             <div
-              class="flex items-center gap-4 px-6 py-3"
+              class="flex items-center gap-4 px-4 py-3"
               style="padding-left: {1 + row.depth * 1.5}rem"
             >
               <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -228,13 +241,13 @@ onMount(loadCategories)
                   <span class="text-muted-foreground">└</span>
                 {/if}
                 <span class="font-medium">{row.category.name}</span>
-                <span class="text-sm text-muted-foreground">/slug: {row.category.slug}</span>
+                <span class="font-mono text-xs text-muted-foreground">/{row.category.slug}</span>
                 <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
                 {#if row.category.isFeatured}
                   <Badge variant="outline">精选</Badge>
                 {/if}
               </div>
-              <span class="shrink-0 text-sm text-muted-foreground">
+              <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
                 {row.category.articleCount} 篇文章
               </span>
 
@@ -269,6 +282,13 @@ onMount(loadCategories)
               </DropdownMenu.Root>
             </div>
           {/each}
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {rows.length} 个分类</p>
+          <p class="text-sm text-muted-foreground">
+            当前显示 {filteredRows.length} 个
+          </p>
         </div>
       {/if}
     </Card.Content>

@@ -120,7 +120,11 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="category-name">名称 *</Label.Root>
+        <Label.Root for="category-name">
+          名称
+          <span class="text-destructive" aria-hidden="true">*</span>
+          <span class="sr-only">必填</span>
+        </Label.Root>
         <Input.Root
           id="category-name"
           bind:value={name}

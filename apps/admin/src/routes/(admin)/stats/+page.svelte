@@ -82,7 +82,9 @@ onMount(loadStats)
             <IconComponent class="size-4 text-muted-foreground" />
           </Card.Header>
           <Card.Content>
-            <div class="text-2xl font-bold">{overview ? overview[card.key] : '—'}</div>
+            <div class="text-2xl font-bold tabular-nums">
+              {overview ? overview[card.key] : '—'}
+            </div>
           </Card.Content>
         </Card.Root>
       {/each}

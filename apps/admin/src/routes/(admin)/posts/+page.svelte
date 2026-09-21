@@ -8,13 +8,13 @@ import { ARTICLE_PAGE_SIZE, type ArticleStatusAction } from '$lib/constants/arti
 import ArticleFilter from '$lib/components/admin/article/article-filter.svelte'
 import ArticleTable from '$lib/components/admin/article/article-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { FileText, Plus, RotateCcw } from '@lucide/svelte'
+import { SITE_NAME_ZH, debounce } from '@myblog/shared'
 import { hasPermission } from '$lib/utils/permissions'
 import { PERMISSIONS } from '$lib/constants/auth'
-import { SITE_NAME_ZH } from '@myblog/shared'
+import { Button, Card, Pagination } from '$ui'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
-import { Button, Pagination } from '$ui'
-import { Plus } from '@lucide/svelte'
 import { ArticleAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -32,6 +32,12 @@ let order = $state<'asc' | 'desc'>('desc')
 
 // 当前用户是否具备 article:manage 权限，用于控制状态筛选是否可用。
 let canManageAllArticles = $state(false)
+
+// 搜索输入停顿时长，避免每次按键都触发请求。
+const SEARCH_DEBOUNCE_MS = 300
+
+// 是否存在生效中的搜索与状态筛选，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(search.trim() !== '' || status !== '')
 
 // 文章状态操作到接口方法的映射，统一走 /api/articles 端点，权限由后端判定。
 const STATUS_ACTION_METHODS: Record<
@@ -74,9 +80,17 @@ async function loadArticles() {
 }
 
 /**
- * 搜索按钮触发时回到第一页并重新加载。
+ * 防抖应用搜索词，连续输入只在停顿后请求一次。
  */
-function handleSearch() {
+const applySearchDebounced = debounce(() => {
+  currentPage = 1
+  loadArticles()
+}, SEARCH_DEBOUNCE_MS)
+
+/**
+ * 下拉筛选变更后立即回到第一页并重新加载。
+ */
+function handleFilterChange() {
   currentPage = 1
   loadArticles()
 }
@@ -153,35 +167,72 @@ onMount(() => {
     </Button>
   {/snippet}
 
-  <ArticleFilter
-    bind:search
-    bind:status
-    bind:sortBy
-    bind:order
-    statusDisabled={!canManageAllArticles}
-    onSearch={handleSearch}
-    onReset={handleReset}
-  />
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <ArticleFilter
+        bind:search
+        bind:status
+        bind:sortBy
+        bind:order
+        statusDisabled={!canManageAllArticles}
+        onSearch={applySearchDebounced}
+        onFilterChange={handleFilterChange}
+        onReset={handleReset}
+      />
 
-  <ArticleTable
-    {articles}
-    {isLoading}
-    onStatusAction={handleStatusAction}
-    onDelete={handleDelete}
-  />
+      {#if isLoading}
+        <div class="flex h-48 items-center justify-center">
+          <span
+            class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+          ></span>
+        </div>
+      {:else if articles.length === 0}
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <FileText class="size-6 text-muted-foreground" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的文章' : '暂无文章'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters ? '调整或重置筛选条件后再试' : '写下第一篇博客文章'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={handleReset}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {:else}
+            <Button size="sm" onclick={() => goto('/posts/new')}>
+              <Plus data-icon="inline-start" />
+              新建文章
+            </Button>
+          {/if}
+        </div>
+      {:else}
+        <ArticleTable {articles} onStatusAction={handleStatusAction} onDelete={handleDelete} />
 
-  <Pagination.Root
-    count={total}
-    perPage={ARTICLE_PAGE_SIZE}
-    page={currentPage}
-    onPageChange={handlePageChange}
-  >
-    <Pagination.Content>
-      <Pagination.PrevButton />
-      <span class="px-2 text-sm text-muted-foreground">
-        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / ARTICLE_PAGE_SIZE))} 页
-      </span>
-      <Pagination.NextButton />
-    </Pagination.Content>
-  </Pagination.Root>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 篇文章</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={ARTICLE_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / ARTICLE_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
+      {/if}
+    </Card.Content>
+  </Card.Root>
 </PageHeader>

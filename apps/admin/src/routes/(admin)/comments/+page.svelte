@@ -14,10 +14,10 @@ import type {
   CommentActionResponse
 } from '@myblog/api/modules/comment/types'
 import { Badge, Button, Card, DropdownMenu, Input, Pagination, Table, ToggleGroup } from '$ui'
+import { Search, MessageSquare, MoreHorizontal, RotateCcw } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
-import { Search, MessageSquare, MoreHorizontal } from '@lucide/svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import { SITE_NAME_ZH } from '@myblog/shared'
+import { SITE_NAME_ZH, debounce } from '@myblog/shared'
 import { CommentAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
@@ -41,6 +41,12 @@ const ACTION_METHODS: Record<
 
 let deleteTarget = $state<Comment | null>(null)
 let isDeleting = $state(false)
+
+// 搜索输入停顿时长，避免每次按键都触发请求。
+const SEARCH_DEBOUNCE_MS = 300
+
+// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(keyword.trim() !== '' || statusFilter !== '')
 
 /**
  * 加载评论列表，携带状态与关键词筛选。
@@ -66,6 +72,33 @@ async function loadComments() {
   } finally {
     isLoading = false
   }
+}
+
+/**
+ * 防抖应用搜索关键词，连续输入只在停顿后请求一次。
+ */
+const applyKeywordDebounced = debounce(() => {
+  currentPage = 1
+  loadComments()
+}, SEARCH_DEBOUNCE_MS)
+
+/**
+ * 状态筛选变更后立即回到第一页并重新加载。
+ */
+function handleStatusFilterChange(value: string) {
+  statusFilter = value as CommentStatus | ''
+  currentPage = 1
+  loadComments()
+}
+
+/**
+ * 重置筛选并回到第一页。
+ */
+function resetAndReload() {
+  keyword = ''
+  statusFilter = ''
+  currentPage = 1
+  loadComments()
 }
 
 /**
@@ -133,45 +166,37 @@ onMount(loadComments)
 </svelte:head>
 
 <PageHeader title="评论管理" description="审核与管理文章评论，覆盖完整审核状态机" crumb="评论管理">
-  <Card.Root>
-    <Card.Content class="p-4">
-      <div class="flex flex-wrap items-center gap-3">
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-52 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input.Root
             class="pl-9"
             placeholder="搜索评论内容或评论者..."
             bind:value={keyword}
-            onkeydown={(event: KeyboardEvent) => {
-              if (event.key === 'Enter') {
-                currentPage = 1
-                loadComments()
-              }
-            }}
+            oninput={applyKeywordDebounced}
           />
         </div>
 
-        <ToggleGroup.Root type="single" bind:value={statusFilter} variant="outline" size="sm">
+        <ToggleGroup.Root
+          type="single"
+          variant="outline"
+          size="sm"
+          value={statusFilter}
+          onValueChange={handleStatusFilterChange}
+        >
           {#each COMMENT_STATUS_OPTIONS as option (option.label)}
             <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
           {/each}
         </ToggleGroup.Root>
 
-        <Button
-          onclick={() => {
-            currentPage = 1
-            loadComments()
-          }}
-        >
-          <Search data-icon="inline-start" />
-          搜索
+        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+          <RotateCcw data-icon="inline-start" />
+          重置
         </Button>
       </div>
-    </Card.Content>
-  </Card.Root>
 
-  <Card.Root>
-    <Card.Content class="p-0">
       {#if isLoading}
         <div class="flex h-48 items-center justify-center">
           <span
@@ -179,12 +204,24 @@ onMount(loadComments)
           ></span>
         </div>
       {:else if comments.length === 0}
-        <div class="flex h-48 items-center justify-center">
-          <div class="text-center">
-            <MessageSquare class="mx-auto size-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">暂无评论</h3>
-            <p class="text-sm text-muted-foreground">调整筛选条件后再试</p>
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <MessageSquare class="size-6 text-muted-foreground" />
           </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的评论' : '暂无评论'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters ? '调整或重置筛选条件后再试' : '文章收到评论后会展示在这里'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={resetAndReload}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {/if}
         </div>
       {:else}
         <Table.Root>
@@ -195,7 +232,7 @@ onMount(loadComments)
               <Table.Head>所属文章</Table.Head>
               <Table.Head>状态</Table.Head>
               <Table.Head>评论时间</Table.Head>
-              <Table.Head class="text-right">操作</Table.Head>
+              <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -218,12 +255,12 @@ onMount(loadComments)
                   </Badge>
                 </Table.Cell>
                 <Table.Cell>
-                  <span class="text-sm text-muted-foreground">
+                  <span class="text-sm text-muted-foreground tabular-nums">
                     {new Date(comment.createdAt).toLocaleString('zh-CN')}
                   </span>
                 </Table.Cell>
                 <Table.Cell>
-                  <div class="flex items-center justify-end">
+                  <div class="flex items-center justify-center gap-1">
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger>
                         <Button variant="ghost" size="sm" aria-label="评论操作">
@@ -249,24 +286,28 @@ onMount(loadComments)
             {/each}
           </Table.Body>
         </Table.Root>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 条评论</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={COMMENT_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / COMMENT_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
       {/if}
     </Card.Content>
   </Card.Root>
-
-  <Pagination.Root
-    count={total}
-    perPage={COMMENT_PAGE_SIZE}
-    page={currentPage}
-    onPageChange={handlePageChange}
-  >
-    <Pagination.Content>
-      <Pagination.PrevButton />
-      <span class="px-2 text-sm text-muted-foreground">
-        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / COMMENT_PAGE_SIZE))} 页
-      </span>
-      <Pagination.NextButton />
-    </Pagination.Content>
-  </Pagination.Root>
 
   <ConfirmDialog
     title="删除评论"

@@ -5,15 +5,15 @@ import type {
   TagStatus,
   UpdateTagRequest
 } from '@myblog/api/modules/tag/types'
+import { Flame, Pencil, Plus, RotateCcw, Search, Tags as TagsIcon, Trash2 } from '@lucide/svelte'
 import { dictItemLabel, DICT_TYPE_CODE_TAG_STATUS, findDictItem } from '@myblog/api'
 import { Badge, Button, Card, Input, Pagination, Table, ToggleGroup } from '$ui'
-import { Plus, Search, Trash2, Pencil, Tags as TagsIcon } from '@lucide/svelte'
 import TagFormDialog from '$lib/components/admin/tag/tag-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import type { EnabledDictGroup } from '@myblog/api/modules/dict/types'
 import { TAG_PAGE_SIZE, TAG_STATUS_CONFIG } from '$lib/constants/tag'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import { SITE_NAME_ZH } from '@myblog/shared'
+import { SITE_NAME_ZH, debounce } from '@myblog/shared'
 import type { BadgeVariant } from '$ui/badge'
 import { DictAPI, TagAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -41,6 +41,9 @@ let isSubmitting = $state(false)
 // Badge 合法样式集合，用于校验字典扩展元数据中的样式值。
 const BADGE_VARIANTS: BadgeVariant[] = ['default', 'secondary', 'destructive', 'outline']
 
+// 搜索输入停顿时长，避免每次按键都触发请求。
+const SEARCH_DEBOUNCE_MS = 300
+
 // 状态筛选项，字典可用时按字典项生成并保持排序；停用字典项仍参与筛选，保证存量数据可被过滤。
 const statusFilterOptions = $derived.by(() => {
   if (!tagStatusDict) {
@@ -53,6 +56,9 @@ const statusFilterOptions = $derived.by(() => {
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(item => ({ value: item.value, label: item.label }))
 })
+
+// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(search.trim() !== '' || statusFilter !== '' || hotFilter !== '')
 
 // 解析标签状态的展示文案：优先字典项显示名，缺失时回退内置配置。
 function resolveStatusLabel(status: number): string {
@@ -97,6 +103,32 @@ async function loadTags() {
 }
 
 /**
+ * 防抖应用搜索词，连续输入只在停顿后请求一次。
+ */
+const applySearchDebounced = debounce(() => {
+  currentPage = 1
+  loadTags()
+}, SEARCH_DEBOUNCE_MS)
+
+/**
+ * 状态筛选变更后立即回到第一页并重新加载。
+ */
+function handleStatusFilterChange(value: string) {
+  statusFilter = value
+  currentPage = 1
+  loadTags()
+}
+
+/**
+ * 热门筛选变更后立即回到第一页并重新加载。
+ */
+function handleHotFilterChange(value: string) {
+  hotFilter = value
+  currentPage = 1
+  loadTags()
+}
+
+/**
  * 重置筛选并回到第一页。
  */
 function resetAndReload() {
@@ -105,6 +137,14 @@ function resetAndReload() {
   hotFilter = ''
   currentPage = 1
   loadTags()
+}
+
+/**
+ * 打开新建标签弹窗。
+ */
+function openCreateDialog() {
+  dialogTarget = null
+  isDialogOpen = true
 }
 
 /**
@@ -188,67 +228,56 @@ onMount(() => {
   crumb="标签管理"
 >
   {#snippet actions()}
-    <Button
-      onclick={() => {
-        dialogTarget = null
-        isDialogOpen = true
-      }}
-    >
+    <Button onclick={openCreateDialog}>
       <Plus data-icon="inline-start" />
       新建标签
     </Button>
   {/snippet}
 
-  <Card.Root>
-    <Card.Content class="p-4">
-      <div class="flex flex-wrap items-end gap-3">
-        <div class="relative min-w-52 flex-1">
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <!-- 工具栏：搜索即输即搜，筛选即点即用，仅保留重置作为整体撤销入口 -->
+      <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+        <div class="relative min-w-56 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input.Root
             class="pl-9"
             placeholder="搜索标签名称或描述..."
             bind:value={search}
-            onkeydown={(event: KeyboardEvent) => {
-              if (event.key === 'Enter') {
-                currentPage = 1
-                loadTags()
-              }
-            }}
+            oninput={applySearchDebounced}
           />
         </div>
 
-        <div class="flex flex-col gap-2">
-          <ToggleGroup.Root type="single" bind:value={statusFilter} variant="outline" size="sm">
-            <ToggleGroup.Item value="">全部</ToggleGroup.Item>
-            {#each statusFilterOptions as option (option.value)}
-              <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
-            {/each}
-          </ToggleGroup.Root>
+        <ToggleGroup.Root
+          type="single"
+          variant="outline"
+          size="sm"
+          value={statusFilter}
+          onValueChange={handleStatusFilterChange}
+        >
+          <ToggleGroup.Item value="">全部</ToggleGroup.Item>
+          {#each statusFilterOptions as option (option.value)}
+            <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
+          {/each}
+        </ToggleGroup.Root>
 
-          <ToggleGroup.Root type="single" bind:value={hotFilter} variant="outline" size="sm">
-            <ToggleGroup.Item value="">全部标签</ToggleGroup.Item>
-            <ToggleGroup.Item value="1">仅热门</ToggleGroup.Item>
-          </ToggleGroup.Root>
-        </div>
+        <ToggleGroup.Root
+          type="single"
+          variant="outline"
+          size="sm"
+          value={hotFilter}
+          onValueChange={handleHotFilterChange}
+        >
+          <ToggleGroup.Item value="">全部</ToggleGroup.Item>
+          <ToggleGroup.Item value="1">仅热门</ToggleGroup.Item>
+        </ToggleGroup.Root>
 
-        <div class="flex gap-2">
-          <Button
-            onclick={() => {
-              currentPage = 1
-              loadTags()
-            }}
-          >
-            <Search data-icon="inline-start" />
-            搜索
-          </Button>
-          <Button variant="outline" onclick={resetAndReload}>重置</Button>
-        </div>
+        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+          <RotateCcw data-icon="inline-start" />
+          重置
+        </Button>
       </div>
-    </Card.Content>
-  </Card.Root>
 
-  <Card.Root>
-    <Card.Content class="p-0">
       {#if isLoading}
         <div class="flex h-48 items-center justify-center">
           <span
@@ -256,12 +285,29 @@ onMount(() => {
           ></span>
         </div>
       {:else if tags.length === 0}
-        <div class="flex h-48 items-center justify-center">
-          <div class="text-center">
-            <TagsIcon class="mx-auto size-12 text-muted-foreground" />
-            <h3 class="mt-4 text-lg font-medium">暂无标签</h3>
-            <p class="text-sm text-muted-foreground">调整筛选条件或创建第一个标签</p>
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <TagsIcon class="size-6 text-muted-foreground" />
           </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的标签' : '暂无标签'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters ? '调整或重置筛选条件后再试' : '创建第一个标签，开始组织文章内容'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={resetAndReload}>
+              <RotateCcw data-icon="inline-start" />
+              重置筛选
+            </Button>
+          {:else}
+            <Button size="sm" onclick={openCreateDialog}>
+              <Plus data-icon="inline-start" />
+              新建标签
+            </Button>
+          {/if}
         </div>
       {:else}
         <Table.Root>
@@ -270,33 +316,53 @@ onMount(() => {
               <Table.Head>标签</Table.Head>
               <Table.Head>URL 标识</Table.Head>
               <Table.Head>使用次数</Table.Head>
-              <Table.Head>热门</Table.Head>
               <Table.Head>状态</Table.Head>
               <Table.Head>创建时间</Table.Head>
-              <Table.Head class="text-right">操作</Table.Head>
+              <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
             </Table.Row>
           </Table.Header>
           <Table.Body>
             {#each tags as tag (tag.id)}
               <Table.Row>
                 <Table.Cell>
-                  <div class="flex items-center gap-2">
-                    <span class="size-3 rounded-full" style="background-color: {tag.color}"></span>
-                    <span class="font-medium">{tag.name}</span>
+                  <div class="flex flex-col gap-1">
+                    <span
+                      class="inline-flex w-fit items-center gap-1.5 rounded-md border px-2 py-0.5 text-sm font-medium"
+                      style="border-color: color-mix(in oklab, {tag.color} 35%, transparent); background-color: color-mix(in oklab, {tag.color} 10%, transparent);"
+                    >
+                      <span
+                        class="size-2 rounded-full"
+                        style="background-color: {tag.color}"
+                        aria-hidden="true"
+                      ></span>
+                      {tag.name}
+                      {#if tag.isHot}
+                        <Flame class="size-3.5 fill-primary text-primary" aria-hidden="true" />
+                        <span class="sr-only">热门</span>
+                      {/if}
+                    </span>
+                    {#if tag.description}
+                      <p class="max-w-72 truncate text-xs text-muted-foreground">
+                        {tag.description}
+                      </p>
+                    {/if}
                   </div>
                 </Table.Cell>
                 <Table.Cell>
-                  <span class="text-sm text-muted-foreground">{tag.slug}</span>
+                  <code
+                    class="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
+                  >
+                    {tag.slug}
+                  </code>
                 </Table.Cell>
                 <Table.Cell>
-                  <span class="text-sm">{tag.usageCount}</span>
-                </Table.Cell>
-                <Table.Cell>
-                  {#if tag.isHot}
-                    <Badge variant="outline">热门</Badge>
-                  {:else}
-                    <span class="text-sm text-muted-foreground">—</span>
-                  {/if}
+                  <span
+                    class="text-sm tabular-nums {tag.usageCount > 0
+                      ? 'text-foreground'
+                      : 'text-muted-foreground'}"
+                  >
+                    {tag.usageCount}
+                  </span>
                 </Table.Cell>
                 <Table.Cell>
                   <Badge variant={resolveStatusVariant(tag.status)}>
@@ -304,12 +370,12 @@ onMount(() => {
                   </Badge>
                 </Table.Cell>
                 <Table.Cell>
-                  <span class="text-sm text-muted-foreground">
+                  <span class="text-sm text-muted-foreground tabular-nums">
                     {new Date(tag.createdAt).toLocaleDateString('zh-CN')}
                   </span>
                 </Table.Cell>
                 <Table.Cell>
-                  <div class="flex items-center justify-end gap-1">
+                  <div class="flex items-center justify-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -336,24 +402,28 @@ onMount(() => {
             {/each}
           </Table.Body>
         </Table.Root>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 个标签</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={TAG_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / TAG_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
       {/if}
     </Card.Content>
   </Card.Root>
-
-  <Pagination.Root
-    count={total}
-    perPage={TAG_PAGE_SIZE}
-    page={currentPage}
-    onPageChange={handlePageChange}
-  >
-    <Pagination.Content>
-      <Pagination.PrevButton />
-      <span class="px-2 text-sm text-muted-foreground">
-        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / TAG_PAGE_SIZE))} 页
-      </span>
-      <Pagination.NextButton />
-    </Pagination.Content>
-  </Pagination.Root>
 
   <TagFormDialog
     {isSubmitting}

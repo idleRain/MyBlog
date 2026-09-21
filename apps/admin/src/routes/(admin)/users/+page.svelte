@@ -6,14 +6,14 @@ import type {
   UserRole
 } from '@myblog/api/modules/user/types'
 import UserFormDialog from '$lib/components/admin/user/user-form-dialog.svelte'
+import { Plus, Search, RotateCcw, Users as UsersIcon } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import UserTable from '$lib/components/admin/user/user-table.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { getAssignableRoles } from '$lib/utils/permissions'
+import { SITE_NAME_ZH, debounce } from '@myblog/shared'
 import { Button, Card, Input, Pagination } from '$ui'
 import { USER_PAGE_SIZE } from '$lib/constants/user'
-import { SITE_NAME_ZH } from '@myblog/shared'
-import { Plus, Search } from '@lucide/svelte'
 import { authStore } from '$lib/stores/auth'
 import { UserAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -41,6 +41,12 @@ let assignableRoles = $state<UserRole[]>(['user', 'editor', 'admin', 'superadmin
 let batchConfirm = $state<{ action: 'enable' | 'disable' | 'delete' } | null>(null)
 let isBatchExecuting = $state(false)
 
+// 搜索输入停顿时长，避免每次按键都触发请求。
+const SEARCH_DEBOUNCE_MS = 300
+
+// 是否存在生效中的搜索条件，用于空态区分「无数据」与「无匹配」。
+const hasActiveFilters = $derived(searchQuery.trim() !== '')
+
 /**
  * 加载用户列表，搜索词经 keyword 参数交由后端模糊匹配。
  */
@@ -62,6 +68,31 @@ async function loadUsers() {
   } finally {
     isLoading = false
   }
+}
+
+/**
+ * 防抖应用搜索词，连续输入只在停顿后请求一次。
+ */
+const applySearchDebounced = debounce(() => {
+  currentPage = 1
+  loadUsers()
+}, SEARCH_DEBOUNCE_MS)
+
+/**
+ * 清空搜索并回到第一页。
+ */
+function resetAndReload() {
+  searchQuery = ''
+  currentPage = 1
+  loadUsers()
+}
+
+/**
+ * 打开创建用户弹窗。
+ */
+function openCreateDialog() {
+  dialogTarget = null
+  isDialogOpen = true
 }
 
 /**
@@ -231,43 +262,34 @@ onMount(() => {
 
 <PageHeader title="用户管理" description="管理系统用户，包括创建、编辑与删除操作" crumb="用户管理">
   {#snippet actions()}
-    <Button
-      onclick={() => {
-        dialogTarget = null
-        isDialogOpen = true
-      }}
-    >
+    <Button onclick={openCreateDialog}>
       <Plus data-icon="inline-start" />
       创建用户
     </Button>
   {/snippet}
 
-  <Card.Root>
-    <Card.Content class="p-4">
-      <div class="flex flex-wrap items-center gap-3">
+  <Card.Root class="overflow-hidden">
+    <Card.Content class="p-0">
+      <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-52 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input.Root
             class="pl-9"
             placeholder="搜索用户名、邮箱或昵称..."
             bind:value={searchQuery}
-            onkeydown={(event: KeyboardEvent) => {
-              if (event.key === 'Enter') {
-                currentPage = 1
-                loadUsers()
-              }
-            }}
+            oninput={applySearchDebounced}
           />
         </div>
-        <span class="text-sm text-muted-foreground">共 {total} 个用户</span>
+        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+          <RotateCcw data-icon="inline-start" />
+          重置
+        </Button>
       </div>
-    </Card.Content>
-  </Card.Root>
 
-  {#if selectedIds.length > 0}
-    <Card.Root>
-      <Card.Content class="p-4">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+      {#if selectedIds.length > 0}
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2.5"
+        >
           <span class="text-sm text-muted-foreground">已选择 {selectedIds.length} 个用户</span>
           <div class="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onclick={() => requestBatchStatus(1)}>
@@ -280,39 +302,75 @@ onMount(() => {
             <Button variant="ghost" size="sm" onclick={() => (selectedIds = [])}>取消选择</Button>
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
-  {/if}
+      {/if}
 
-  <UserTable
-    {users}
-    {selectedIds}
-    {isAllSelected}
-    {isLoading}
-    onToggleSelectAll={toggleSelectAll}
-    onToggleSelect={toggleSelect}
-    onEdit={user => {
-      dialogTarget = user
-      isDialogOpen = true
-    }}
-    onToggleStatus={handleToggleStatus}
-    onDelete={user => (deleteTarget = user)}
-  />
+      {#if isLoading}
+        <div class="flex h-48 items-center justify-center">
+          <span
+            class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+          ></span>
+        </div>
+      {:else if users.length === 0}
+        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+            <UsersIcon class="size-6 text-muted-foreground" />
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-base font-medium">
+              {hasActiveFilters ? '没有匹配的用户' : '暂无用户'}
+            </h3>
+            <p class="text-sm text-muted-foreground">
+              {hasActiveFilters ? '调整或重置搜索条件后再试' : '创建第一个用户账号'}
+            </p>
+          </div>
+          {#if hasActiveFilters}
+            <Button variant="outline" size="sm" onclick={resetAndReload}>
+              <RotateCcw data-icon="inline-start" />
+              重置搜索
+            </Button>
+          {:else}
+            <Button size="sm" onclick={openCreateDialog}>
+              <Plus data-icon="inline-start" />
+              创建用户
+            </Button>
+          {/if}
+        </div>
+      {:else}
+        <UserTable
+          {users}
+          {selectedIds}
+          {isAllSelected}
+          onToggleSelectAll={toggleSelectAll}
+          onToggleSelect={toggleSelect}
+          onEdit={user => {
+            dialogTarget = user
+            isDialogOpen = true
+          }}
+          onToggleStatus={handleToggleStatus}
+          onDelete={user => (deleteTarget = user)}
+        />
 
-  <Pagination.Root
-    count={total}
-    perPage={USER_PAGE_SIZE}
-    page={currentPage}
-    onPageChange={handlePageChange}
-  >
-    <Pagination.Content>
-      <Pagination.PrevButton />
-      <span class="px-2 text-sm text-muted-foreground">
-        第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / USER_PAGE_SIZE))} 页
-      </span>
-      <Pagination.NextButton />
-    </Pagination.Content>
-  </Pagination.Root>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+          <p class="text-sm text-muted-foreground">共 {total} 个用户</p>
+          <Pagination.Root
+            class="mx-0 w-auto"
+            count={total}
+            perPage={USER_PAGE_SIZE}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          >
+            <Pagination.Content>
+              <Pagination.PrevButton />
+              <span class="px-2 text-sm text-muted-foreground tabular-nums">
+                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / USER_PAGE_SIZE))} 页
+              </span>
+              <Pagination.NextButton />
+            </Pagination.Content>
+          </Pagination.Root>
+        </div>
+      {/if}
+    </Card.Content>
+  </Card.Root>
 
   <UserFormDialog
     {isSubmitting}

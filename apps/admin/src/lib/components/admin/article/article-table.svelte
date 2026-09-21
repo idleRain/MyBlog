@@ -5,21 +5,20 @@ import {
   ARTICLE_ACTIONS,
   type ArticleStatusAction
 } from '$lib/constants/article'
-import { Edit, Eye, MessageSquare, MoreHorizontal, Trash2, FileText } from '@lucide/svelte'
 import ArticleStatusBadge from '$lib/components/admin/article/article-status-badge.svelte'
+import { Edit, Eye, MessageSquare, MoreHorizontal, Trash2 } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import type { Article } from '@myblog/api/modules/article/types'
-import { Button, Card, DropdownMenu, Table } from '$ui'
+import { Button, DropdownMenu, Table } from '$ui'
 import { goto } from '$lib/utils/navigation'
 
 interface Props {
   articles: Article[]
-  isLoading: boolean
   onStatusAction: (article: Article, action: ArticleStatusAction) => void
   onDelete: (article: Article) => void
 }
 
-let { articles, isLoading, onStatusAction, onDelete }: Props = $props()
+let { articles, onStatusAction, onDelete }: Props = $props()
 
 // 待删除文章，用于确认对话框；为空时隐藏对话框。
 let deleteTarget = $state<Article | null>(null)
@@ -51,125 +50,105 @@ function formatDate(value: string | null): string {
 }
 </script>
 
-<Card.Root>
-  <Card.Content class="p-0">
-    {#if isLoading}
-      <div class="flex h-48 items-center justify-center">
-        <span class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-        ></span>
-      </div>
-    {:else if articles.length === 0}
-      <div class="flex h-48 items-center justify-center">
-        <div class="text-center">
-          <FileText class="mx-auto size-12 text-muted-foreground" />
-          <h3 class="mt-4 text-lg font-medium">暂无文章</h3>
-          <p class="text-sm text-muted-foreground">调整筛选条件或创建第一篇博客文章</p>
-        </div>
-      </div>
-    {:else}
-      <Table.Root>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head class="min-w-64">标题</Table.Head>
-            <Table.Head>作者</Table.Head>
-            <Table.Head>分类</Table.Head>
-            <Table.Head>状态</Table.Head>
-            <Table.Head>统计</Table.Head>
-            <Table.Head>发布时间</Table.Head>
-            <Table.Head class="text-right">操作</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {#each articles as article (article.id)}
-            <Table.Row>
-              <Table.Cell>
-                <div class="max-w-64 space-y-1">
-                  <p class="truncate font-medium">
-                    {article.title}
-                    {#if article.translationLocales?.includes('en')}
-                      <span
-                        class="ml-1 inline-flex items-center rounded-sm bg-muted px-1 align-middle text-[10px] font-medium tracking-wide text-muted-foreground"
-                        title="已提供英文翻译"
-                      >
-                        EN
-                      </span>
-                    {/if}
-                  </p>
-                  {#if article.summary}
-                    <p class="truncate text-sm text-muted-foreground">{article.summary}</p>
-                  {/if}
-                </div>
-              </Table.Cell>
-              <Table.Cell>
-                <span class="text-sm">
-                  {article.author?.nickname || article.author?.username || '未知'}
+<Table.Root>
+  <Table.Header>
+    <Table.Row>
+      <Table.Head class="min-w-64">标题</Table.Head>
+      <Table.Head>作者</Table.Head>
+      <Table.Head>分类</Table.Head>
+      <Table.Head>状态</Table.Head>
+      <Table.Head>统计</Table.Head>
+      <Table.Head>发布时间</Table.Head>
+      <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
+    </Table.Row>
+  </Table.Header>
+  <Table.Body>
+    {#each articles as article (article.id)}
+      <Table.Row>
+        <Table.Cell>
+          <div class="max-w-64 space-y-1">
+            <p class="truncate font-medium">
+              {article.title}
+              {#if article.translationLocales?.includes('en')}
+                <span
+                  class="ml-1 inline-flex items-center rounded-sm bg-muted px-1 align-middle text-[10px] font-medium tracking-wide text-muted-foreground"
+                  title="已提供英文翻译"
+                >
+                  EN
                 </span>
-              </Table.Cell>
-              <Table.Cell>
-                <span class="text-sm text-muted-foreground">
-                  {article.category?.name || '—'}
-                </span>
-              </Table.Cell>
-              <Table.Cell>
-                <ArticleStatusBadge status={article.status} />
-              </Table.Cell>
-              <Table.Cell>
-                <div class="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span class="inline-flex items-center gap-1">
-                    <Eye class="size-3.5" />{article.viewCount}
-                  </span>
-                  <span class="inline-flex items-center gap-1">
-                    <MessageSquare class="size-3.5" />{article.commentCount}
-                  </span>
-                </div>
-              </Table.Cell>
-              <Table.Cell>
-                <span class="text-sm text-muted-foreground">{formatDate(article.publishedAt)}</span>
-              </Table.Cell>
-              <Table.Cell>
-                <div class="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label="编辑文章"
-                    onclick={() => goto(`/posts/${article.id}`)}
-                  >
-                    <Edit data-icon="inline-start" />
-                    编辑
-                  </Button>
+              {/if}
+            </p>
+            {#if article.summary}
+              <p class="truncate text-sm text-muted-foreground">{article.summary}</p>
+            {/if}
+          </div>
+        </Table.Cell>
+        <Table.Cell>
+          <span class="text-sm">
+            {article.author?.nickname || article.author?.username || '未知'}
+          </span>
+        </Table.Cell>
+        <Table.Cell>
+          <span class="text-sm text-muted-foreground">
+            {article.category?.name || '—'}
+          </span>
+        </Table.Cell>
+        <Table.Cell>
+          <ArticleStatusBadge status={article.status} />
+        </Table.Cell>
+        <Table.Cell>
+          <div class="flex items-center gap-3 text-sm text-muted-foreground tabular-nums">
+            <span class="inline-flex items-center gap-1">
+              <Eye class="size-3.5" />{article.viewCount}
+            </span>
+            <span class="inline-flex items-center gap-1">
+              <MessageSquare class="size-3.5" />{article.commentCount}
+            </span>
+          </div>
+        </Table.Cell>
+        <Table.Cell>
+          <span class="text-sm text-muted-foreground tabular-nums">
+            {formatDate(article.publishedAt)}
+          </span>
+        </Table.Cell>
+        <Table.Cell>
+          <div class="flex items-center justify-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="编辑文章"
+              onclick={() => goto(`/posts/${article.id}`)}
+            >
+              <Edit data-icon="inline-start" />
+              编辑
+            </Button>
 
-                  <DropdownMenu.Root>
-                    <DropdownMenu.Trigger>
-                      <Button variant="ghost" size="sm" aria-label="更多操作">
-                        <MoreHorizontal />
-                      </Button>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content align="end">
-                      {#each ARTICLE_ACTIONS[article.status] as action (action)}
-                        {@const ActionIcon = ARTICLE_ACTION_ICONS[action]}
-                        <DropdownMenu.Item onSelect={() => onStatusAction(article, action)}>
-                          <ActionIcon data-icon="inline-start" />
-                          {ARTICLE_ACTION_LABELS[action]}
-                        </DropdownMenu.Item>
-                      {/each}
-                      <DropdownMenu.Item
-                        variant="destructive"
-                        onSelect={() => (deleteTarget = article)}
-                      >
-                        <Trash2 data-icon="inline-start" />
-                        删除
-                      </DropdownMenu.Item>
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Root>
-                </div>
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    {/if}
-  </Card.Content>
-</Card.Root>
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                <Button variant="ghost" size="sm" aria-label="更多操作">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                {#each ARTICLE_ACTIONS[article.status] as action (action)}
+                  {@const ActionIcon = ARTICLE_ACTION_ICONS[action]}
+                  <DropdownMenu.Item onSelect={() => onStatusAction(article, action)}>
+                    <ActionIcon data-icon="inline-start" />
+                    {ARTICLE_ACTION_LABELS[action]}
+                  </DropdownMenu.Item>
+                {/each}
+                <DropdownMenu.Item variant="destructive" onSelect={() => (deleteTarget = article)}>
+                  <Trash2 data-icon="inline-start" />
+                  删除
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+        </Table.Cell>
+      </Table.Row>
+    {/each}
+  </Table.Body>
+</Table.Root>
 
 <!-- 删除确认对话框 -->
 <ConfirmDialog

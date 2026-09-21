@@ -118,10 +118,13 @@ onMount(loadSettings)
       ></span>
     </div>
   {:else if settings.length === 0}
-    <div class="flex h-48 items-center justify-center">
-      <div class="text-center">
-        <SettingsIcon class="mx-auto size-12 text-muted-foreground" />
-        <h3 class="mt-4 text-lg font-medium">暂无设置项</h3>
+    <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
+      <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
+        <SettingsIcon class="size-6 text-muted-foreground" />
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-base font-medium">暂无设置项</h3>
+        <p class="text-sm text-muted-foreground">系统配置加载后展示在这里</p>
       </div>
     </div>
   {:else}

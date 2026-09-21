@@ -197,7 +197,11 @@ async function handleSave(targetStatus: 'draft' | 'published') {
     </Card.Header>
     <Card.Content class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="article-title">标题 *</Label.Root>
+        <Label.Root for="article-title">
+          标题
+          <span class="text-destructive" aria-hidden="true">*</span>
+          <span class="sr-only">必填</span>
+        </Label.Root>
         <Input.Root
           id="article-title"
           bind:value={title}
@@ -245,7 +249,11 @@ async function handleSave(targetStatus: 'draft' | 'published') {
   <!-- 正文内容 -->
   <Card.Root>
     <Card.Header>
-      <Card.Title>正文内容 *</Card.Title>
+      <Card.Title>
+        正文内容
+        <span class="text-destructive" aria-hidden="true">*</span>
+        <span class="sr-only">必填</span>
+      </Card.Title>
       <Card.Description>支持 Markdown 语法，可切换编辑与预览模式</Card.Description>
     </Card.Header>
     <Card.Content>
