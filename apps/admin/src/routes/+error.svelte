@@ -1,7 +1,6 @@
 <script lang="ts">
 import { toAdminPath } from '$lib/utils/navigation'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { ModeWatcher } from 'mode-watcher'
 import { Button } from '$ui'
 import '@/app.css'
 
@@ -16,9 +15,6 @@ const errorHint = $derived(isServerError ? '请稍后重试或联系系统管理
 <svelte:head>
   <title>{status} - {SITE_NAME_ZH} 管理后台</title>
 </svelte:head>
-
-<!-- 主题监听器 -->
-<ModeWatcher />
 
 <section class="flex min-h-screen items-center justify-center bg-background text-foreground">
   <div class="mx-auto w-full max-w-md px-6 text-center">

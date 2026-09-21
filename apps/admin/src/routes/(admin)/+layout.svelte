@@ -6,7 +6,6 @@ import { AppSidebar } from '$lib/components/admin'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
-import { ModeWatcher } from 'mode-watcher'
 import { page } from '$app/stores'
 import { onMount } from 'svelte'
 import { Sidebar } from '$ui'
@@ -59,8 +58,6 @@ $effect(() => {
 <svelte:head>
   <title>管理后台 - {SITE_NAME_ZH}</title>
 </svelte:head>
-
-<ModeWatcher />
 
 {#if isLoading}
   <div class="flex h-screen items-center justify-center">

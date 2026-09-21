@@ -1,5 +1,6 @@
 <script lang="ts">
 import { toAdminPath } from '$lib/utils/navigation'
+import { ThemeToggle } from '$lib/components'
 import { Breadcrumb, Sidebar } from '$ui'
 
 interface Props {
@@ -27,6 +28,7 @@ let { title, description, crumb, actions, children }: Props = $props()
       </Breadcrumb.Item>
     </Breadcrumb.List>
   </Breadcrumb.Root>
+  <ThemeToggle variant="ghost" class="ml-auto" />
 </header>
 
 <main class="flex-1 space-y-6 p-6">
