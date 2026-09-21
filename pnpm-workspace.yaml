@@ -7,6 +7,10 @@ allowBuilds:
   esbuild: true
   unrs-resolver: true
 
+# 统一 markdown 管线的 unified 实例，防止多版本并存的 Processor 类型结构性不兼容。
+overrides:
+  unified: 11.0.5
+
 # 公共依赖版本单一事实来源，跨包共用的依赖统一经 catalog: 协议引用。
 catalog:
   # 构建工具链，统一提升至根 devDependencies，仅被 CLI 命令与构建配置文件引用。

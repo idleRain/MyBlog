@@ -22,12 +22,13 @@
     "tw-animate-css": "catalog:"
   },
   "dependencies": {
+    "@milkdown/crepe": "7.22.1",
+    "@milkdown/kit": "7.22.1",
     "@myblog/api": "workspace:*",
     "@myblog/auth": "workspace:*",
     "@myblog/http": "workspace:*",
     "@myblog/shared": "workspace:*",
     "@myblog/ui": "workspace:*",
-    "@toast-ui/editor": "^3.2.2",
     "ky": "catalog:",
     "sveltekit-superforms": "catalog:",
     "zod": "catalog:"

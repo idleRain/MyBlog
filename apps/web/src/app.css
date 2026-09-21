@@ -231,3 +231,19 @@
       transparent 48px
     );
 }
+
+/*
+ * Shiki 双主题切换：亮色主题作为内联默认值，暗色经 --shiki-dark 系列变量生效。
+ * 变量切换为 Shiki 官方方案，要求暗色选择器同时覆盖 .shiki 容器与其行内 span。
+ */
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+html.dark .shiki {
+  background-color: var(--shiki-dark-bg);
+}

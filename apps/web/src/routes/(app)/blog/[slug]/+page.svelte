@@ -64,11 +64,11 @@ $effect(() => {
         />
       {/if}
 
-      <!-- 正文：服务端渲染的 HTML 缓存，排版由 .article-body 作用域控制。 -->
+      <!-- 正文：服务端渲染的 HTML，由前台管线接入 Shiki 双主题高亮，排版由 .article-body 作用域控制。 -->
       <div class="article-body mt-12">
-        <!-- 内容由服务端 goldmark 渲染生成，Unsafe 关闭时原始脚本标签不进入输出，可安全挂载。 -->
+        <!-- 原始 HTML 在渲染管线中统一丢弃，输出可安全挂载。 -->
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html article.contentHtml}
+        {@html data.contentHtml}
       </div>
 
       {#if article.tags.length > 0}
