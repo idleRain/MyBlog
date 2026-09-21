@@ -128,8 +128,8 @@ const quickLinks = [
             target="_blank"
             class="transition-colors hover:text-signal"
           >
-            SvelteKit</a
-          >
+            SvelteKit
+          </a>
         </span>
         <span class="hidden sm:block">•</span>
         <span class="flex items-center gap-1">

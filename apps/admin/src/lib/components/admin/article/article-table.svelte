@@ -1,5 +1,6 @@
 <script lang="ts">
 import {
+  ARTICLE_ACTION_ICONS,
   ARTICLE_ACTION_LABELS,
   ARTICLE_ACTIONS,
   type ArticleStatusAction
@@ -100,9 +101,9 @@ function formatDate(value: string | null): string {
                 </div>
               </Table.Cell>
               <Table.Cell>
-                <span class="text-sm"
-                  >{article.author?.nickname || article.author?.username || '未知'}</span
-                >
+                <span class="text-sm">
+                  {article.author?.nickname || article.author?.username || '未知'}
+                </span>
               </Table.Cell>
               <Table.Cell>
                 <span class="text-sm text-muted-foreground">
@@ -145,13 +146,15 @@ function formatDate(value: string | null): string {
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end">
                       {#each ARTICLE_ACTIONS[article.status] as action (action)}
-                        <DropdownMenu.Item onselect={() => onStatusAction(article, action)}>
+                        {@const ActionIcon = ARTICLE_ACTION_ICONS[action]}
+                        <DropdownMenu.Item onSelect={() => onStatusAction(article, action)}>
+                          <ActionIcon data-icon="inline-start" />
                           {ARTICLE_ACTION_LABELS[action]}
                         </DropdownMenu.Item>
                       {/each}
                       <DropdownMenu.Item
                         variant="destructive"
-                        onselect={() => (deleteTarget = article)}
+                        onSelect={() => (deleteTarget = article)}
                       >
                         <Trash2 data-icon="inline-start" />
                         删除

@@ -1,5 +1,6 @@
 <script lang="ts">
 import {
+  COMMENT_ACTION_ICONS,
   COMMENT_ACTION_LABELS,
   COMMENT_ACTIONS,
   COMMENT_PAGE_SIZE,
@@ -231,10 +232,12 @@ onMount(loadComments)
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Content align="end">
                         {#each COMMENT_ACTIONS[comment.status] as action (action)}
+                          {@const ActionIcon = COMMENT_ACTION_ICONS[action]}
                           <DropdownMenu.Item
                             variant={action === 'delete' ? 'destructive' : 'default'}
-                            onselect={() => handleAction(comment, action)}
+                            onSelect={() => handleAction(comment, action)}
                           >
+                            <ActionIcon data-icon="inline-start" />
                             {COMMENT_ACTION_LABELS[action]}
                           </DropdownMenu.Item>
                         {/each}

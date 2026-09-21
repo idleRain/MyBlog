@@ -124,17 +124,17 @@ let {
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Content align="end">
                       {#if user.status === 1}
-                        <DropdownMenu.Item onselect={() => onToggleStatus(user)}>
+                        <DropdownMenu.Item onSelect={() => onToggleStatus(user)}>
                           <Power data-icon="inline-start" />
                           禁用
                         </DropdownMenu.Item>
                       {:else if user.status === 0}
-                        <DropdownMenu.Item onselect={() => onToggleStatus(user)}>
+                        <DropdownMenu.Item onSelect={() => onToggleStatus(user)}>
                           <Power data-icon="inline-start" />
                           启用
                         </DropdownMenu.Item>
                       {/if}
-                      <DropdownMenu.Item variant="destructive" onselect={() => onDelete(user)}>
+                      <DropdownMenu.Item variant="destructive" onSelect={() => onDelete(user)}>
                         <Trash2 data-icon="inline-start" />
                         删除
                       </DropdownMenu.Item>

@@ -10,6 +10,7 @@ export default {
     "derived": true,
     "dev": true,
     "get": true,
+    "goto": true,
     "invalidate": true,
     "invalidateAll": true,
     "navigating": true,

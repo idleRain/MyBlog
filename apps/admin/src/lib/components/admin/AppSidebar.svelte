@@ -19,13 +19,14 @@ import {
   type LucideIcon
 } from '@lucide/svelte'
 import { Avatar, Badge, Button, Separator, Sidebar } from '$ui'
+import { goto, toAdminPath } from '$lib/utils/navigation'
 import { getRoleInfo } from '$lib/utils/permissions'
 import { performLogout } from '$lib/utils/logout'
 import type { User, UserRole } from '$lib/types'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { NotificationAPI } from '$lib/api'
+import { page } from '$app/stores'
 import { onMount } from 'svelte'
 
 // 侧边栏导航分组配置
@@ -117,6 +118,20 @@ let currentUser = $state<User | null>(null)
 let userRole = $state<UserRole>('user')
 let unreadCount = $state(0)
 
+// 根路径导航项的 URL，匹配时要求全等，避免所有子页面都命中仪表盘的选中态。
+const ROOT_NAV_URL = '/'
+
+/**
+ * 判断导航项是否与当前路由匹配。
+ * 先经 toAdminPath 拼上部署基准路径，再与 page.url.pathname 比较；
+ * 非根路径按前缀匹配，使 /posts/new、/posts/1 等子路由高亮所属导航项。
+ */
+function isNavItemActive(currentPathname: string, itemUrl: string): boolean {
+  const targetPath = toAdminPath(itemUrl)
+  if (itemUrl === ROOT_NAV_URL) return currentPathname === targetPath
+  return currentPathname === targetPath || currentPathname.startsWith(`${targetPath}/`)
+}
+
 /**
  * 加载当前用户与通知未读数。
  */
@@ -150,6 +165,9 @@ async function handleLogout() {
 
 const roleInfo = $derived(getRoleInfo(userRole))
 
+// 当前路由路径，驱动导航项的选中态随路由切换实时更新。
+const currentPathname = $derived($page.url.pathname)
+
 onMount(loadUserState)
 </script>
 
@@ -162,7 +180,7 @@ onMount(loadUserState)
         <Shield class="size-4" />
       </div>
       <div class="flex flex-col">
-        <span class="text-sm font-semibold">{SITE_NAME_ZH} 管理后台</span>
+        <span class="text-sm font-semibold">{SITE_NAME_ZH}</span>
         <span class="text-xs text-muted-foreground">管理控制面板</span>
       </div>
     </div>
@@ -232,14 +250,14 @@ onMount(loadUserState)
           {#each group.items as item (item.id)}
             {@const IconComponent = item.icon}
             <Sidebar.MenuItem class="list-none">
-              <Button
-                variant="ghost"
-                class="h-9 w-full justify-start"
+              <Sidebar.MenuButton
+                isActive={isNavItemActive(currentPathname, item.url)}
+                class="h-9 w-full cursor-pointer justify-start"
                 onclick={() => goto(item.url)}
               >
-                <IconComponent class="mr-3 size-4" />
-                {item.title}
-              </Button>
+                <IconComponent />
+                <span>{item.title}</span>
+              </Sidebar.MenuButton>
             </Sidebar.MenuItem>
           {/each}
         </div>

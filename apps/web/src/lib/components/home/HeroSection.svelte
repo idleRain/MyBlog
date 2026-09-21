@@ -102,8 +102,9 @@ $effect(() => {
               编译成<span class="text-signal">界面</span>
               <span
                 class="ml-4 align-middle font-mono text-sm font-normal tracking-normal text-muted-foreground sm:text-base"
-                >// 工程 × 设计</span
               >
+                // 工程 × 设计
+              </span>
             </span>
           </span>
         </h1>

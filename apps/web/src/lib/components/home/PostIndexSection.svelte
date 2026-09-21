@@ -54,9 +54,9 @@ function handleSubscribe(event: SubmitEvent) {
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <p class="mb-2 flex items-center gap-3 font-mono text-xs text-muted-foreground">
-                    <span class="post-index font-display text-lg font-black"
-                      >{indexLabel(position)}</span
-                    >
+                    <span class="post-index font-display text-lg font-black">
+                      {indexLabel(position)}
+                    </span>
                     {formatDate(post.publishedAt ?? post.createdAt)} · 阅读 {post.readingTime} 分钟
                   </p>
                   <h3 class="font-display text-xl leading-snug font-bold">

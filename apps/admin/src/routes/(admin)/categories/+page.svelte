@@ -5,8 +5,16 @@ import type {
   CreateCategoryRequest,
   UpdateCategoryRequest
 } from '@myblog/api/modules/category/types'
+import {
+  FolderPlus,
+  FolderTree,
+  Plus,
+  MoreHorizontal,
+  Trash2,
+  Pencil,
+  Search
+} from '@lucide/svelte'
 import CategoryFormDialog from '$lib/components/admin/category/category-form-dialog.svelte'
-import { FolderTree, Plus, MoreHorizontal, Trash2, Pencil, Search } from '@lucide/svelte'
 import { Button, Card, Badge, DropdownMenu, Input, ToggleGroup } from '$ui'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
@@ -237,9 +245,12 @@ onMount(loadCategories)
                   </Button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Content align="end">
-                  <DropdownMenu.Item onselect={() => openCreate()}>新建子分类</DropdownMenu.Item>
+                  <DropdownMenu.Item onSelect={() => openCreate()}>
+                    <FolderPlus data-icon="inline-start" />
+                    新建子分类
+                  </DropdownMenu.Item>
                   <DropdownMenu.Item
-                    onselect={() => {
+                    onSelect={() => {
                       dialogTarget = row.category
                       isDialogOpen = true
                     }}
@@ -249,7 +260,7 @@ onMount(loadCategories)
                   </DropdownMenu.Item>
                   <DropdownMenu.Item
                     variant="destructive"
-                    onselect={() => (deleteTarget = row.category)}
+                    onSelect={() => (deleteTarget = row.category)}
                   >
                     <Trash2 data-icon="inline-start" />
                     删除

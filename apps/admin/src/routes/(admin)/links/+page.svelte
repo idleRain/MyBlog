@@ -1,4 +1,15 @@
 <script lang="ts">
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Link as LinkIcon,
+  CircleCheck,
+  CircleX,
+  EyeOff,
+  type LucideIcon
+} from '@lucide/svelte'
 import type {
   CreateFriendlyLinkRequest,
   FriendlyLink,
@@ -6,7 +17,6 @@ import type {
   UpdateFriendlyLinkRequest
 } from '@myblog/api/modules/friendlyLink/types'
 import { LINK_PAGE_SIZE, LINK_STATUS_CONFIG, LINK_STATUS_OPTIONS } from '$lib/constants/link'
-import { Plus, MoreHorizontal, Pencil, Trash2, Link as LinkIcon } from '@lucide/svelte'
 import { Badge, Button, Card, DropdownMenu, Pagination, Table, ToggleGroup } from '$ui'
 import LinkFormDialog from '$lib/components/admin/link/link-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
@@ -15,21 +25,21 @@ import { SITE_NAME_ZH } from '@myblog/shared'
 import { FriendlyLinkAPI } from '$lib/api'
 import { onMount } from 'svelte'
 
-// 各状态下可执行的审核动作
+// 各状态下可执行的审核动作，icon 供下拉菜单项渲染语义图标。
 const STATUS_ACTIONS: Record<
   LinkStatus,
-  Array<{ key: 'approve' | 'hide' | 'reject'; label: string }>
+  Array<{ key: 'approve' | 'hide' | 'reject'; label: string; icon: LucideIcon }>
 > = {
   pending: [
-    { key: 'approve', label: '通过' },
-    { key: 'reject', label: '拒绝' }
+    { key: 'approve', label: '通过', icon: CircleCheck },
+    { key: 'reject', label: '拒绝', icon: CircleX }
   ],
-  active: [{ key: 'hide', label: '下架' }],
+  active: [{ key: 'hide', label: '下架', icon: EyeOff }],
   hidden: [
-    { key: 'approve', label: '重新上架' },
-    { key: 'reject', label: '拒绝' }
+    { key: 'approve', label: '重新上架', icon: CircleCheck },
+    { key: 'reject', label: '拒绝', icon: CircleX }
   ],
-  rejected: [{ key: 'approve', label: '重新上架' }]
+  rejected: [{ key: 'approve', label: '重新上架', icon: CircleCheck }]
 }
 
 let links = $state<FriendlyLink[]>([])
@@ -265,13 +275,15 @@ onMount(loadLinks)
                       </DropdownMenu.Trigger>
                       <DropdownMenu.Content align="end">
                         {#each STATUS_ACTIONS[link.status] as action (action.key)}
-                          <DropdownMenu.Item onselect={() => handleStatusAction(link, action.key)}>
+                          {@const ActionIcon = action.icon}
+                          <DropdownMenu.Item onSelect={() => handleStatusAction(link, action.key)}>
+                            <ActionIcon data-icon="inline-start" />
                             {action.label}
                           </DropdownMenu.Item>
                         {/each}
                         <DropdownMenu.Item
                           variant="destructive"
-                          onselect={() => (deleteTarget = link)}
+                          onSelect={() => (deleteTarget = link)}
                         >
                           <Trash2 data-icon="inline-start" />
                           删除
