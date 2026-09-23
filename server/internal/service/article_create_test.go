@@ -33,7 +33,7 @@ func (f *fakeCreateArticleRepo) CreateWithRelations(article *model.Article, cate
 
 func (f *fakeCreateArticleRepo) GetByID(id uint) (*model.Article, error) {
 	if f.createdArticle == nil {
-		return nil, repository.ErrArticleNotFound
+		return nil, domain.ErrArticleNotFound
 	}
 	return f.createdArticle, nil
 }

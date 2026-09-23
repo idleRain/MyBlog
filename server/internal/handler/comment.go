@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -98,7 +98,7 @@ func (h *CommentHandler) LikeComment(c *gin.Context) {
 	}
 
 	if err := h.commentService.LikeComment(req.ID, userID); err != nil {
-		if errors.Is(err, repository.ErrCommentNotFound) {
+		if errors.Is(err, domain.ErrCommentNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -182,7 +182,7 @@ func (h *CommentHandler) DeleteComment(c *gin.Context) {
 	}
 
 	if err := h.commentService.DeleteComment(req.ID, operatorID); err != nil {
-		if errors.Is(err, repository.ErrCommentNotFound) {
+		if errors.Is(err, domain.ErrCommentNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -229,7 +229,7 @@ func (h *CommentHandler) moderate(c *gin.Context, action func(id, operatorID uin
 	}
 
 	if err := action(req.ID, operatorID); err != nil {
-		if errors.Is(err, repository.ErrCommentNotFound) {
+		if errors.Is(err, domain.ErrCommentNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}

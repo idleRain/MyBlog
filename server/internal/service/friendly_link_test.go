@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -24,7 +25,7 @@ func (f *fakeLinkRepo) GetByID(id uint) (*model.FriendlyLink, error) {
 			return link, nil
 		}
 	}
-	return nil, repository.ErrFriendlyLinkNotFound
+	return nil, domain.ErrFriendlyLinkNotFound
 }
 
 func (f *fakeLinkRepo) GetByURL(url string) (*model.FriendlyLink, error) {
@@ -36,7 +37,7 @@ func (f *fakeLinkRepo) GetByURL(url string) (*model.FriendlyLink, error) {
 			return link, nil
 		}
 	}
-	return nil, repository.ErrFriendlyLinkNotFound
+	return nil, domain.ErrFriendlyLinkNotFound
 }
 
 func (f *fakeLinkRepo) Create(link *model.FriendlyLink) error {
@@ -52,7 +53,7 @@ func (f *fakeLinkRepo) UpdateStatus(id uint, status model.LinkStatus) error {
 			return nil
 		}
 	}
-	return repository.ErrFriendlyLinkNotFound
+	return domain.ErrFriendlyLinkNotFound
 }
 
 // TestCreateLinkDefaultPending 验证新友情链接默认待审核。

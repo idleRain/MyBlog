@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -65,7 +66,7 @@ func (s *SettingService) UpdateSettings(items []UpdateSettingItem, operatorID ui
 		// 读取现有设置项，不存在或只读时拒绝更新。
 		setting, err := s.settingRepo.GetByKey(item.KeyName)
 		if err != nil {
-			if errors.Is(err, repository.ErrSettingNotFound) {
+			if errors.Is(err, domain.ErrSettingNotFound) {
 				return nil, fmt.Errorf("设置项 %s 不存在", item.KeyName)
 			}
 			return nil, err

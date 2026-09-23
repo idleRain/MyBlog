@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -90,7 +90,7 @@ func (h *NotificationHandler) MarkNotificationRead(c *gin.Context) {
 	}
 
 	if err := h.notificationService.MarkNotificationRead(req.ID, userID); err != nil {
-		if errors.Is(err, repository.ErrNotificationNotFound) {
+		if errors.Is(err, domain.ErrNotificationNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}

@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
 )
-
-// ErrNotificationNotFound 通知不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrNotificationNotFound = errors.New("通知不存在")
 
 // NotificationRepositoryInterface 通知仓储接口
 type NotificationRepositoryInterface interface {
@@ -57,7 +55,7 @@ func (r *NotificationRepository) GetByID(id uint) (*model.Notification, error) {
 	var notification model.Notification
 	if err := r.db.First(&notification, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrNotificationNotFound
+			return nil, domain.ErrNotificationNotFound
 		}
 		return nil, fmt.Errorf("查询通知失败: %w", err)
 	}
@@ -125,7 +123,7 @@ func (r *NotificationRepository) MarkAsRead(id uint, userID uint) error {
 		return fmt.Errorf("标记通知已读失败: %w", result.Error)
 	}
 	if result.RowsAffected == 0 {
-		return ErrNotificationNotFound
+		return domain.ErrNotificationNotFound
 	}
 	return nil
 }

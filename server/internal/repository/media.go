@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
 )
-
-// ErrMediaNotFound 媒体文件不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrMediaNotFound = errors.New("媒体文件不存在")
 
 // MediaRepositoryInterface 媒体仓储接口
 type MediaRepositoryInterface interface {
@@ -55,7 +53,7 @@ func (r *MediaRepository) GetByID(id uint) (*model.MediaFile, error) {
 	var media model.MediaFile
 	if err := r.db.Preload("Uploader").First(&media, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrMediaNotFound
+			return nil, domain.ErrMediaNotFound
 		}
 		return nil, fmt.Errorf("查询媒体文件失败: %w", err)
 	}
@@ -67,7 +65,7 @@ func (r *MediaRepository) GetByFileHash(hash string) (*model.MediaFile, error) {
 	var media model.MediaFile
 	if err := r.db.Where("file_hash = ?", hash).First(&media).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrMediaNotFound
+			return nil, domain.ErrMediaNotFound
 		}
 		return nil, fmt.Errorf("查询媒体文件失败: %w", err)
 	}

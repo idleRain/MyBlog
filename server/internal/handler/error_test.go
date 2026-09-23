@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -18,16 +18,16 @@ func TestHandleServiceError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	notFoundErrors := map[string]error{
-		"文章不存在":   repository.ErrArticleNotFound,
-		"分类不存在":   repository.ErrCategoryNotFound,
-		"标签不存在":   repository.ErrTagNotFound,
-		"评论不存在":   repository.ErrCommentNotFound,
-		"媒体文件不存在": repository.ErrMediaNotFound,
-		"通知不存在":   repository.ErrNotificationNotFound,
-		"友情链接不存在": repository.ErrFriendlyLinkNotFound,
-		"设置项不存在":  repository.ErrSettingNotFound,
-		"用户不存在":   repository.ErrUserNotFound,
-		"关注关系不存在": repository.ErrFollowNotFound,
+		"文章不存在":   domain.ErrArticleNotFound,
+		"分类不存在":   domain.ErrCategoryNotFound,
+		"标签不存在":   domain.ErrTagNotFound,
+		"评论不存在":   domain.ErrCommentNotFound,
+		"媒体文件不存在": domain.ErrMediaNotFound,
+		"通知不存在":   domain.ErrNotificationNotFound,
+		"友情链接不存在": domain.ErrFriendlyLinkNotFound,
+		"设置项不存在":  domain.ErrSettingNotFound,
+		"用户不存在":   domain.ErrUserNotFound,
+		"关注关系不存在": domain.ErrFollowNotFound,
 	}
 
 	for name, sentinel := range notFoundErrors {

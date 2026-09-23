@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/pkg/slug"
 
 	"gorm.io/gorm"
 )
-
-// ErrTagNotFound 标签不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrTagNotFound = errors.New("标签不存在")
 
 // TagRepositoryInterface 标签仓储接口
 type TagRepositoryInterface interface {
@@ -73,7 +71,7 @@ func (r *TagRepository) GetByID(id uint) (*model.Tag, error) {
 	var tag model.Tag
 	if err := r.db.Preload("Translations").First(&tag, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrTagNotFound
+			return nil, domain.ErrTagNotFound
 		}
 		return nil, fmt.Errorf("查询标签失败: %w", err)
 	}
@@ -85,7 +83,7 @@ func (r *TagRepository) GetByName(name string) (*model.Tag, error) {
 	var tag model.Tag
 	if err := r.db.Preload("Translations").Where("name = ?", name).First(&tag).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrTagNotFound
+			return nil, domain.ErrTagNotFound
 		}
 		return nil, fmt.Errorf("查询标签失败: %w", err)
 	}

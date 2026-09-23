@@ -5,16 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
 )
-
-// ErrDictTypeNotFound 字典类型不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrDictTypeNotFound = errors.New("字典类型不存在")
-
-// ErrDictItemNotFound 字典项不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrDictItemNotFound = errors.New("字典项不存在")
 
 // DictRepositoryInterface 字典仓储接口
 type DictRepositoryInterface interface {
@@ -118,7 +113,7 @@ func (r *DictRepository) GetDictTypeByID(id uint) (*model.DictType, error) {
 	var dictType model.DictType
 	if err := r.db.Preload("Translations").First(&dictType, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrDictTypeNotFound
+			return nil, domain.ErrDictTypeNotFound
 		}
 		return nil, fmt.Errorf("查询字典类型失败: %w", err)
 	}
@@ -130,7 +125,7 @@ func (r *DictRepository) GetDictTypeByCode(code string) (*model.DictType, error)
 	var dictType model.DictType
 	if err := r.db.Preload("Translations").Where("code = ?", code).First(&dictType).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrDictTypeNotFound
+			return nil, domain.ErrDictTypeNotFound
 		}
 		return nil, fmt.Errorf("查询字典类型失败: %w", err)
 	}
@@ -209,7 +204,7 @@ func (r *DictRepository) GetDictItemByID(id uint) (*model.DictItem, error) {
 	var item model.DictItem
 	if err := r.db.Preload("Translations").First(&item, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrDictItemNotFound
+			return nil, domain.ErrDictItemNotFound
 		}
 		return nil, fmt.Errorf("查询字典项失败: %w", err)
 	}
@@ -221,7 +216,7 @@ func (r *DictRepository) GetDictItemByValue(typeID uint, value string) (*model.D
 	var item model.DictItem
 	if err := r.db.Where("type_id = ? AND value = ?", typeID, value).First(&item).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrDictItemNotFound
+			return nil, domain.ErrDictItemNotFound
 		}
 		return nil, fmt.Errorf("查询字典项失败: %w", err)
 	}

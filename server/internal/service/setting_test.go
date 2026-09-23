@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -34,7 +35,7 @@ func (f *fakeSettingRepo) GetByKey(keyName string) (*model.Setting, error) {
 			return setting, nil
 		}
 	}
-	return nil, repository.ErrSettingNotFound
+	return nil, domain.ErrSettingNotFound
 }
 
 func (f *fakeSettingRepo) Upsert(setting *model.Setting) error {

@@ -5,14 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/pkg/slug"
 
 	"gorm.io/gorm"
 )
-
-// ErrCategoryNotFound 分类不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrCategoryNotFound = errors.New("分类不存在")
 
 // CategoryRepositoryInterface 分类仓储接口
 type CategoryRepositoryInterface interface {
@@ -74,7 +72,7 @@ func (r *CategoryRepository) GetByID(id uint) (*model.Category, error) {
 	var category model.Category
 	if err := r.db.Preload("Translations").First(&category, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrCategoryNotFound
+			return nil, domain.ErrCategoryNotFound
 		}
 		return nil, fmt.Errorf("查询分类失败: %w", err)
 	}
@@ -86,7 +84,7 @@ func (r *CategoryRepository) GetBySlug(slug string) (*model.Category, error) {
 	var category model.Category
 	if err := r.db.Preload("Translations").Where("slug = ?", slug).First(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrCategoryNotFound
+			return nil, domain.ErrCategoryNotFound
 		}
 		return nil, fmt.Errorf("查询分类失败: %w", err)
 	}

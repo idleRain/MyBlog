@@ -6,15 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/pkg/slug"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
-
-// ErrArticleNotFound 文章不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrArticleNotFound = errors.New("文章不存在")
 
 // ArticleRepositoryInterface 文章仓储接口
 type ArticleRepositoryInterface interface {
@@ -138,7 +136,7 @@ func (r *ArticleRepository) GetByID(id uint) (*model.Article, error) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrArticleNotFound
+			return nil, domain.ErrArticleNotFound
 		}
 		return nil, err
 	}
@@ -158,7 +156,7 @@ func (r *ArticleRepository) GetBySlug(slug string) (*model.Article, error) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrArticleNotFound
+			return nil, domain.ErrArticleNotFound
 		}
 		return nil, err
 	}

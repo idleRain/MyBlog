@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -73,7 +73,7 @@ func (h *TagHandler) UpdateTag(c *gin.Context) {
 
 	tag, err := h.tagService.UpdateTag(&req, operatorID)
 	if err != nil {
-		if errors.Is(err, repository.ErrTagNotFound) {
+		if errors.Is(err, domain.ErrTagNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -103,7 +103,7 @@ func (h *TagHandler) DeleteTag(c *gin.Context) {
 	}
 
 	if err := h.tagService.DeleteTag(req.ID, operatorID); err != nil {
-		if errors.Is(err, repository.ErrTagNotFound) {
+		if errors.Is(err, domain.ErrTagNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -128,7 +128,7 @@ func (h *TagHandler) GetTag(c *gin.Context) {
 
 	tag, err := h.tagService.GetTag(req.ID)
 	if err != nil {
-		if errors.Is(err, repository.ErrTagNotFound) {
+		if errors.Is(err, domain.ErrTagNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}

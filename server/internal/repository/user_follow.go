@@ -2,7 +2,6 @@
 package repository
 
 import (
-	"errors"
 	"fmt"
 
 	"MyBlog/internal/model"
@@ -10,9 +9,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
-
-// ErrFollowNotFound 关注关系不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrFollowNotFound = errors.New("关注关系不存在")
 
 // UserFollowRepositoryInterface 用户关注仓储接口
 type UserFollowRepositoryInterface interface {

@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"MyBlog/internal/domain"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -40,12 +39,12 @@ func TestGetUserByIDErrorMapping(t *testing.T) {
 	}{
 		{
 			name:     "用户不存在统一返回业务码404",
-			err:      repository.ErrUserNotFound,
+			err:      domain.ErrUserNotFound,
 			wantCode: 404,
 		},
 		{
 			name:     "包装后的用户不存在错误经errors.Is识别返回业务码404",
-			err:      fmt.Errorf("查询用户失败: %w", repository.ErrUserNotFound),
+			err:      fmt.Errorf("查询用户失败: %w", domain.ErrUserNotFound),
 			wantCode: 404,
 		},
 		{

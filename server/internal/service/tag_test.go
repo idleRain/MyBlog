@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -30,7 +31,7 @@ func (f *fakeTagRepo) GetByID(id uint) (*model.Tag, error) {
 			return tag, nil
 		}
 	}
-	return nil, repository.ErrTagNotFound
+	return nil, domain.ErrTagNotFound
 }
 
 func (f *fakeTagRepo) GetByName(name string) (*model.Tag, error) {
@@ -39,7 +40,7 @@ func (f *fakeTagRepo) GetByName(name string) (*model.Tag, error) {
 			return tag, nil
 		}
 	}
-	return nil, repository.ErrTagNotFound
+	return nil, domain.ErrTagNotFound
 }
 
 func (f *fakeTagRepo) Create(tag *model.Tag) error {
@@ -55,7 +56,7 @@ func (f *fakeTagRepo) Update(tag *model.Tag) error {
 			return nil
 		}
 	}
-	return repository.ErrTagNotFound
+	return domain.ErrTagNotFound
 }
 
 // TestCreateTagUniqueName 验证标签名称重复时返回业务错误。

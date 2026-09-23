@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -77,7 +77,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 	category, err := h.categoryService.UpdateCategory(&req, operatorID)
 	if err != nil {
-		if errors.Is(err, repository.ErrCategoryNotFound) {
+		if errors.Is(err, domain.ErrCategoryNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -111,7 +111,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) {
 	}
 
 	if err := h.categoryService.DeleteCategory(req.ID, operatorID); err != nil {
-		if errors.Is(err, repository.ErrCategoryNotFound) {
+		if errors.Is(err, domain.ErrCategoryNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -136,7 +136,7 @@ func (h *CategoryHandler) GetCategory(c *gin.Context) {
 
 	category, err := h.categoryService.GetCategory(req.ID)
 	if err != nil {
-		if errors.Is(err, repository.ErrCategoryNotFound) {
+		if errors.Is(err, domain.ErrCategoryNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -161,7 +161,7 @@ func (h *CategoryHandler) GetCategoryBySlug(c *gin.Context) {
 
 	category, err := h.categoryService.GetCategoryBySlug(req.Slug)
 	if err != nil {
-		if errors.Is(err, repository.ErrCategoryNotFound) {
+		if errors.Is(err, domain.ErrCategoryNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}

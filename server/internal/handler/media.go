@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -82,7 +82,7 @@ func (h *MediaHandler) GetMedia(c *gin.Context) {
 
 	media, err := h.mediaService.GetMedia(req.ID)
 	if err != nil {
-		if errors.Is(err, repository.ErrMediaNotFound) {
+		if errors.Is(err, domain.ErrMediaNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -143,7 +143,7 @@ func (h *MediaHandler) DeleteMedia(c *gin.Context) {
 	adminFlag, _ := isAdmin.(bool)
 
 	if err := h.mediaService.DeleteMedia(req.ID, userID, adminFlag); err != nil {
-		if errors.Is(err, repository.ErrMediaNotFound) {
+		if errors.Is(err, domain.ErrMediaNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}

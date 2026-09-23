@@ -10,7 +10,6 @@ import (
 
 	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -144,7 +143,7 @@ func TestGetAllDictsLocalizesAndWrapsGroups(t *testing.T) {
 // TestGetDictByTypeMapsUnknownTypeToNotFound 验证字典类型不存在时业务码映射 404。
 func TestGetDictByTypeMapsUnknownTypeToNotFound(t *testing.T) {
 	dictHandler := NewDictHandler(&fakeDictService{
-		byCodeErr: repository.ErrDictTypeNotFound,
+		byCodeErr: domain.ErrDictTypeNotFound,
 	})
 	router := newDictProbeRouter(dictHandler, domain.DefaultLanguage)
 
@@ -212,7 +211,7 @@ func TestCreateDictTypeMapsBusinessErrors(t *testing.T) {
 		{
 			name:         "类型不存在映射 404",
 			requestBody:  `{"code":"tag_status","name":"标签状态"}`,
-			serviceError: repository.ErrDictTypeNotFound,
+			serviceError: domain.ErrDictTypeNotFound,
 			expectedCode: response.CodeNotFound,
 		},
 	}

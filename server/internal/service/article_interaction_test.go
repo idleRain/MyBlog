@@ -238,12 +238,12 @@ func TestLikeArticleRejectsInvisibleArticle(t *testing.T) {
 func TestLikeArticleNotFound(t *testing.T) {
 	repo := &fakeArticleRepo{
 		getByID: func(id uint) (*model.Article, error) {
-			return nil, repository.ErrArticleNotFound
+			return nil, domain.ErrArticleNotFound
 		},
 	}
 	svc := newArticleTestService(repo)
 
-	if err := svc.LikeArticle(999, 1); !errors.Is(err, repository.ErrArticleNotFound) {
+	if err := svc.LikeArticle(999, 1); !errors.Is(err, domain.ErrArticleNotFound) {
 		t.Errorf("点赞不存在文章应返回 ErrArticleNotFound，实际为 %v", err)
 	}
 }

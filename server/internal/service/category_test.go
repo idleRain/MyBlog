@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -33,7 +34,7 @@ func (f *fakeCategoryRepo) GetByID(id uint) (*model.Category, error) {
 			return category, nil
 		}
 	}
-	return nil, repository.ErrCategoryNotFound
+	return nil, domain.ErrCategoryNotFound
 }
 
 func (f *fakeCategoryRepo) CountByParentID(parentID uint) (int64, error) {
@@ -75,7 +76,7 @@ func (f *fakeCategoryRepo) Delete(id uint) error {
 			return nil
 		}
 	}
-	return repository.ErrCategoryNotFound
+	return domain.ErrCategoryNotFound
 }
 
 // TestBuildCategoryTree 验证扁平分类列表正确构建为树形结构。
@@ -152,13 +153,13 @@ func TestDeleteCategoryWithChildren(t *testing.T) {
 func TestDeleteCategoryNotFound(t *testing.T) {
 	repo := &fakeCategoryRepo{
 		getByID: func(id uint) (*model.Category, error) {
-			return nil, repository.ErrCategoryNotFound
+			return nil, domain.ErrCategoryNotFound
 		},
 	}
 	svc := NewCategoryService(repo)
 
 	err := svc.DeleteCategory(999, 1)
-	if !errors.Is(err, repository.ErrCategoryNotFound) {
+	if !errors.Is(err, domain.ErrCategoryNotFound) {
 		t.Errorf("删除不存在分类应返回 ErrCategoryNotFound，实际为 %v", err)
 	}
 }

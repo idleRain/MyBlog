@@ -10,9 +10,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// ErrUserNotFound 用户不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrUserNotFound = errors.New("用户不存在")
-
 // UserRepository 用户仓库接口，实体类型统一使用 domain.User。
 type UserRepository interface {
 	Create(user *domain.User) error
@@ -47,7 +44,7 @@ func (r *userRepository) GetByID(id uint) (*domain.User, error) {
 	var user domain.User
 	if err := r.db.First(&user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
+			return nil, domain.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
@@ -59,7 +56,7 @@ func (r *userRepository) GetByUsername(username string) (*domain.User, error) {
 	var user domain.User
 	if err := r.db.Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
+			return nil, domain.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
@@ -71,7 +68,7 @@ func (r *userRepository) GetByEmail(email string) (*domain.User, error) {
 	var user domain.User
 	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrUserNotFound
+			return nil, domain.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}

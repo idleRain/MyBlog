@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
 )
-
-// ErrSettingNotFound 设置项不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrSettingNotFound = errors.New("设置项不存在")
 
 // SettingRepositoryInterface 设置仓储接口
 type SettingRepositoryInterface interface {
@@ -37,7 +35,7 @@ func (r *SettingRepository) GetByKey(keyName string) (*model.Setting, error) {
 	var setting model.Setting
 	if err := r.db.Where("key_name = ?", keyName).First(&setting).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrSettingNotFound
+			return nil, domain.ErrSettingNotFound
 		}
 		return nil, fmt.Errorf("查询设置项失败: %w", err)
 	}

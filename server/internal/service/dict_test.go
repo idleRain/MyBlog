@@ -49,7 +49,7 @@ func (f *fakeDictRepo) GetDictTypeByID(id uint) (*model.DictType, error) {
 			return dictType, nil
 		}
 	}
-	return nil, repository.ErrDictTypeNotFound
+	return nil, domain.ErrDictTypeNotFound
 }
 
 // GetDictTypeByCode 按字典码返回字典类型，未命中返回哨兵错误。
@@ -59,7 +59,7 @@ func (f *fakeDictRepo) GetDictTypeByCode(code string) (*model.DictType, error) {
 			return dictType, nil
 		}
 	}
-	return nil, repository.ErrDictTypeNotFound
+	return nil, domain.ErrDictTypeNotFound
 }
 
 // UpsertTypeTranslations 显式覆写类型翻译写入，记录调用。
@@ -100,7 +100,7 @@ func (f *fakeDictRepo) GetDictItemByID(id uint) (*model.DictItem, error) {
 			return item, nil
 		}
 	}
-	return nil, repository.ErrDictItemNotFound
+	return nil, domain.ErrDictItemNotFound
 }
 
 // GetDictItemByValue 按类型与值返回字典项，未命中返回哨兵错误。
@@ -110,7 +110,7 @@ func (f *fakeDictRepo) GetDictItemByValue(typeID uint, value string) (*model.Dic
 			return item, nil
 		}
 	}
-	return nil, repository.ErrDictItemNotFound
+	return nil, domain.ErrDictItemNotFound
 }
 
 // UpsertItemTranslations 显式覆写字典项翻译写入，记录调用。
@@ -229,7 +229,7 @@ func TestCreateDictItemRequiresExistingType(t *testing.T) {
 	svc := NewDictService(repo)
 
 	req := &CreateDictItemRequest{TypeID: 99, Value: "1", Label: "启用"}
-	if _, err := svc.CreateDictItem(req); !errors.Is(err, repository.ErrDictTypeNotFound) {
+	if _, err := svc.CreateDictItem(req); !errors.Is(err, domain.ErrDictTypeNotFound) {
 		t.Errorf("字典类型不存在应返回哨兵错误, 实际: %v", err)
 	}
 }
@@ -334,7 +334,7 @@ func TestListEnabledItemsByTypeCodeHidesDisabledType(t *testing.T) {
 	}
 	svc := NewDictService(repo)
 
-	if _, err := svc.ListEnabledItemsByTypeCode("disabled_type"); !errors.Is(err, repository.ErrDictTypeNotFound) {
+	if _, err := svc.ListEnabledItemsByTypeCode("disabled_type"); !errors.Is(err, domain.ErrDictTypeNotFound) {
 		t.Errorf("停用类型应返回类型不存在, 实际: %v", err)
 	}
 }

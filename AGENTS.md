@@ -12,7 +12,7 @@
 
 ### A1 依赖方向，只准向下
 
-- 后端：`handler → service → repository → domain` 单向依赖。禁止：service import handler；repository import service/handler；middleware/router 直接 import repository（D1 已清偿：router 归零、middleware 仅 `identity.go` 实现 1 处，只减不增）。领域类型统一来自 `internal/domain`。
+- 后端：`handler → service → repository → domain` 单向依赖。禁止：service import handler；repository import service/handler；handler/middleware/router 直接 import repository（router 归零，middleware 仅 `identity.go` 实现 1 处，handler 已随哨兵错误上移 `internal/domain/errors.go` 归零，只减不增）。领域类型统一来自 `internal/domain`。
 - 前端：`apps → @myblog/api → @myblog/http → @myblog/shared` 单向依赖。禁止：packages 反向 import apps；页面/组件直接 import `ky`（唯一豁免：各应用 `src/lib/service/index.ts` 的令牌刷新直连，为避免循环依赖）。
 - 验证（在 `server/` 目录下执行）：
 

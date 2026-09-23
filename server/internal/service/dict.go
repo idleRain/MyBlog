@@ -373,7 +373,7 @@ func (s *DictService) ListEnabledItemsByTypeCode(code string) (*EnabledDictGroup
 		return nil, err
 	}
 	if !dictType.IsEnabled() {
-		return nil, repository.ErrDictTypeNotFound
+		return nil, domain.ErrDictTypeNotFound
 	}
 
 	items, err := s.dictRepo.ListEnabledItemsByType(dictType.ID)
@@ -417,7 +417,7 @@ func validateDictExtra(extra json.RawMessage) error {
 func (s *DictService) requireDictTypeCodeAvailable(code string, excludeID uint) error {
 	existing, err := s.dictRepo.GetDictTypeByCode(code)
 	if err != nil {
-		if errors.Is(err, repository.ErrDictTypeNotFound) {
+		if errors.Is(err, domain.ErrDictTypeNotFound) {
 			return nil
 		}
 		return err
@@ -432,7 +432,7 @@ func (s *DictService) requireDictTypeCodeAvailable(code string, excludeID uint) 
 func (s *DictService) requireDictItemValueAvailable(typeID uint, value string, excludeID uint) error {
 	existing, err := s.dictRepo.GetDictItemByValue(typeID, value)
 	if err != nil {
-		if errors.Is(err, repository.ErrDictItemNotFound) {
+		if errors.Is(err, domain.ErrDictItemNotFound) {
 			return nil
 		}
 		return err

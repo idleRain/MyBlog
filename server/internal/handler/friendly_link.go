@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -63,7 +63,7 @@ func (h *FriendlyLinkHandler) UpdateLink(c *gin.Context) {
 
 	link, err := h.linkService.UpdateLink(&req)
 	if err != nil {
-		if errors.Is(err, repository.ErrFriendlyLinkNotFound) {
+		if errors.Is(err, domain.ErrFriendlyLinkNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -93,7 +93,7 @@ func (h *FriendlyLinkHandler) DeleteLink(c *gin.Context) {
 	}
 
 	if err := h.linkService.DeleteLink(req.ID, operatorID); err != nil {
-		if errors.Is(err, repository.ErrFriendlyLinkNotFound) {
+		if errors.Is(err, domain.ErrFriendlyLinkNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}
@@ -183,7 +183,7 @@ func (h *FriendlyLinkHandler) transition(c *gin.Context, action func(id, operato
 	}
 
 	if err := action(req.ID, operatorID); err != nil {
-		if errors.Is(err, repository.ErrFriendlyLinkNotFound) {
+		if errors.Is(err, domain.ErrFriendlyLinkNotFound) {
 			response.NotFound(c, err.Error())
 			return
 		}

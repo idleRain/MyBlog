@@ -33,7 +33,7 @@ func (f *fakeCommentRepo) GetByID(id uint) (*model.Comment, error) {
 			return comment, nil
 		}
 	}
-	return nil, repository.ErrCommentNotFound
+	return nil, domain.ErrCommentNotFound
 }
 
 func (f *fakeCommentRepo) Create(comment *model.Comment) error {
@@ -52,7 +52,7 @@ func (f *fakeCommentRepo) UpdateStatus(id uint, status model.CommentStatus) erro
 			return nil
 		}
 	}
-	return repository.ErrCommentNotFound
+	return domain.ErrCommentNotFound
 }
 
 func (f *fakeCommentRepo) IncrementReplyCount(id uint) error {

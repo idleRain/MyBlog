@@ -4,7 +4,7 @@ package handler
 import (
 	"errors"
 
-	"MyBlog/internal/repository"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -19,18 +19,18 @@ func HandleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, service.ErrPermissionDenied):
 		response.Forbidden(c, err.Error())
-	case errors.Is(err, repository.ErrArticleNotFound),
-		errors.Is(err, repository.ErrCategoryNotFound),
-		errors.Is(err, repository.ErrTagNotFound),
-		errors.Is(err, repository.ErrCommentNotFound),
-		errors.Is(err, repository.ErrMediaNotFound),
-		errors.Is(err, repository.ErrNotificationNotFound),
-		errors.Is(err, repository.ErrFriendlyLinkNotFound),
-		errors.Is(err, repository.ErrSettingNotFound),
-		errors.Is(err, repository.ErrUserNotFound),
-		errors.Is(err, repository.ErrFollowNotFound),
-		errors.Is(err, repository.ErrDictTypeNotFound),
-		errors.Is(err, repository.ErrDictItemNotFound):
+	case errors.Is(err, domain.ErrArticleNotFound),
+		errors.Is(err, domain.ErrCategoryNotFound),
+		errors.Is(err, domain.ErrTagNotFound),
+		errors.Is(err, domain.ErrCommentNotFound),
+		errors.Is(err, domain.ErrMediaNotFound),
+		errors.Is(err, domain.ErrNotificationNotFound),
+		errors.Is(err, domain.ErrFriendlyLinkNotFound),
+		errors.Is(err, domain.ErrSettingNotFound),
+		errors.Is(err, domain.ErrUserNotFound),
+		errors.Is(err, domain.ErrFollowNotFound),
+		errors.Is(err, domain.ErrDictTypeNotFound),
+		errors.Is(err, domain.ErrDictItemNotFound):
 		response.NotFound(c, err.Error())
 	case errors.Is(err, service.ErrInvalidRequest):
 		response.BadRequest(c, err.Error())

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"MyBlog/internal/config"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -36,7 +37,7 @@ func (f *fakeMediaRepo) GetByFileHash(hash string) (*model.MediaFile, error) {
 			return media, nil
 		}
 	}
-	return nil, repository.ErrMediaNotFound
+	return nil, domain.ErrMediaNotFound
 }
 
 func (f *fakeMediaRepo) GetByID(id uint) (*model.MediaFile, error) {
@@ -48,7 +49,7 @@ func (f *fakeMediaRepo) GetByID(id uint) (*model.MediaFile, error) {
 			return media, nil
 		}
 	}
-	return nil, repository.ErrMediaNotFound
+	return nil, domain.ErrMediaNotFound
 }
 
 func (f *fakeMediaRepo) Delete(id uint) error {
@@ -58,7 +59,7 @@ func (f *fakeMediaRepo) Delete(id uint) error {
 			return nil
 		}
 	}
-	return repository.ErrMediaNotFound
+	return domain.ErrMediaNotFound
 }
 
 // newTestMediaService 创建注入测试替身的媒体服务实例。
@@ -99,7 +100,7 @@ func TestUploadFileDeduplicates(t *testing.T) {
 			if hash == contentHash {
 				return existing, nil
 			}
-			return nil, repository.ErrMediaNotFound
+			return nil, domain.ErrMediaNotFound
 		},
 	}
 	svc := newTestMediaService(t, repo)

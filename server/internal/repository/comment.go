@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
 )
-
-// ErrCommentNotFound 评论不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrCommentNotFound = errors.New("评论不存在")
 
 // CommentRepositoryInterface 评论仓储接口
 type CommentRepositoryInterface interface {
@@ -65,7 +63,7 @@ func (r *CommentRepository) GetByID(id uint) (*model.Comment, error) {
 	var comment model.Comment
 	if err := r.db.Preload("User").First(&comment, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrCommentNotFound
+			return nil, domain.ErrCommentNotFound
 		}
 		return nil, fmt.Errorf("查询评论失败: %w", err)
 	}

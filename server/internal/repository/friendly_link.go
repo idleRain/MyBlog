@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 
 	"gorm.io/gorm"
 )
-
-// ErrFriendlyLinkNotFound 友情链接不存在的哨兵错误，供 service 与 handler 层识别业务错误。
-var ErrFriendlyLinkNotFound = errors.New("友情链接不存在")
 
 // FriendlyLinkRepositoryInterface 友情链接仓储接口
 type FriendlyLinkRepositoryInterface interface {
@@ -55,7 +53,7 @@ func (r *FriendlyLinkRepository) GetByID(id uint) (*model.FriendlyLink, error) {
 	var link model.FriendlyLink
 	if err := r.db.First(&link, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrFriendlyLinkNotFound
+			return nil, domain.ErrFriendlyLinkNotFound
 		}
 		return nil, fmt.Errorf("查询友情链接失败: %w", err)
 	}
@@ -67,7 +65,7 @@ func (r *FriendlyLinkRepository) GetByURL(url string) (*model.FriendlyLink, erro
 	var link model.FriendlyLink
 	if err := r.db.Where("url = ?", url).First(&link).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, ErrFriendlyLinkNotFound
+			return nil, domain.ErrFriendlyLinkNotFound
 		}
 		return nil, fmt.Errorf("查询友情链接失败: %w", err)
 	}
