@@ -1,15 +1,15 @@
 # 认证协议契约（C3）
 
 > 本文档是前后端认证协议的**唯一权威描述**。任何实现变更必须先改本文档，再双端同步切换。
-> 生效范围：`server/internal/service/jwt.go`、`packages/http/src/client.ts`、两应用 `src/lib/service/index.ts`。
+> 生效范围：`server/internal/service/token.go`、`packages/http/src/client.ts`、两应用 `src/lib/service/index.ts`。
 > 相关债务登记见 `docs/architecture-rules.md` §6.3 与 D10/D11。
 
 ## 1. 令牌对形状
 
 ```json
 {
-  "accessToken": "<payload-only jwt>",
-  "refreshToken": "<payload-only jwt>",
+  "accessToken": "<opaque token>",
+  "refreshToken": "<opaque token>",
   "expiresIn": 1800
 }
 ```
@@ -17,16 +17,15 @@
 - `expiresIn` 为访问令牌有效期，单位秒，来源于 `config.yaml` 的 `jwt.access_expire`（分钟）换算。
 - 刷新令牌有效期以 `jwt.refresh_expire`（小时）为准，不随响应下发。
 
-## 2. 线格式：payload-only JWT（已知怪癖）
+## 2. 线格式：不透明令牌
 
-**前端存储与传输的是无点号的 Base64 payload，不是标准三段式 JWT。**
+**前端存储与传输的是服务端签发的随机串，不含任何可解码的身份信息。**
 
-- 服务端 `GenerateTokenPair` 仅序列化 `{u: userID, jti: 随机实例标识, exp: unix}` 为 JSON 后 Base64 URL 编码，**不含签名**。
-- `jti` 为每次签发随机生成的实例唯一标识，保证同一秒内重复签发的令牌互不相同，撤销键据此区分令牌实例。
-- 服务端 `ValidateAccessToken` / `ValidateRefreshToken` 在收到无点号 token 时，经 `ReconstructFullToken` 补回固定 Header 与 HMAC-SHA256 签名后校验。
-- 任何新前端实现者必须知晓此怪癖，否则无法通过服务端校验。
-
-> 迁移标记：若未来切换为标准 JWT，按本文档流程「先改文档 → 双端同窗口切换 → 更新 fixtures」。
+- 服务端 `GenerateTokenPair` 为每次签发生成 16 字节密码学随机量，十六进制编码为 32 个字符作为令牌串。
+- 令牌自身不承载用户标识与有效期，身份与生命周期登记在服务端令牌表；`ValidateAccessToken` 与 `ValidateRefreshToken` 以查表结果为唯一依据。
+- 校验同时核对令牌类型，访问令牌与刷新令牌不可互换使用。
+- 令牌不可由调用方构造：任何未经服务端签发的串都会因查表失败被拒绝，不存在依据请求内容现算凭证的路径。
+- 服务重启会清空令牌表，所有用户需重新登录。这是有状态方案的固有代价，多实例部署前必须将令牌表迁至共享存储，见 D11。
 
 ## 3. 刷新协议
 
@@ -47,12 +46,12 @@
 - 端点：`POST /api/auth/logout`，请求头 `Authorization: Bearer <access token>`。
 - 请求体可选提交 `{ "refreshToken": "<refresh token>" }`，提交后访问与刷新令牌一并撤销；请求体可省略，此时仅撤销访问令牌。
 - 修改密码成功后服务端撤销该用户当前全部既有令牌，客户端须清除本地会话并引导重新登录。
-- 撤销键为令牌 payload 段的归一化形式，撤销记录以令牌过期时间为生命周期并随撤销写入惰性清理（内存实现，仅单实例生效，见 D11）。
+- 撤销即从服务端令牌表移除记录，过期记录随签发惰性清理（内存实现，仅单实例生效，见 D11）。
 
 ## 6. 已知限制（登记）
 
 | 限制 | 影响 | 计划 |
 |---|---|---|
-| 撤销表为内存 map（已加互斥锁，撤销键归一化并随令牌过期惰性清理） | 多实例部署即失效 | D11：换持久化存储前保持单实例前提 |
+| 令牌表为内存 map（已加互斥锁，过期记录随签发惰性清理） | 服务重启导致全部会话失效；多实例部署即失效 | D11：换持久化存储前保持单实例前提 |
 | 刷新成功后不自动重试原请求 | 极端竞态下用户需手动重试 | C3 后续：调用方按新令牌重试 |
 | 登录失败（密码错误）同样返回 code 401 | 前端已排除登录端点不触发刷新 | 已在 client.ts 固化 |

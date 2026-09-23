@@ -11,17 +11,17 @@ import (
 // UserFollowRoutes 用户关注路由模块
 type UserFollowRoutes struct {
 	followHandler handler.UserFollowHandlerInterface
-	jwtService    service.JWTService
+	tokenService  service.TokenServiceInterface
 }
 
 // NewUserFollowRoutes 创建用户关注路由模块
 func NewUserFollowRoutes(
 	followHandler handler.UserFollowHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 ) *UserFollowRoutes {
 	return &UserFollowRoutes{
 		followHandler: followHandler,
-		jwtService:    jwtService,
+		tokenService:  tokenService,
 	}
 }
 
@@ -29,7 +29,7 @@ func NewUserFollowRoutes(
 func (uf *UserFollowRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	// 关注与取消关注接口，需要登录。
 	authUsers := api.Group("/users")
-	authUsers.Use(middleware.Auth(uf.jwtService))
+	authUsers.Use(middleware.Auth(uf.tokenService))
 	{
 		authUsers.POST("/follow", uf.followHandler.Follow)           // 关注用户
 		authUsers.POST("/unfollow", uf.followHandler.Unfollow)       // 取消关注

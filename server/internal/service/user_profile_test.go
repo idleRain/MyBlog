@@ -10,9 +10,9 @@ import (
 )
 
 // newTestUserService 创建注入测试替身的用户服务实例，
-// jwtService 使用记录型替身承接改密后的按用户撤销调用。
+// tokenService 使用记录型替身承接改密后的按用户撤销调用。
 func newTestUserService(userRepo *fakeUserRepo) *userService {
-	return NewUserService(userRepo, &recordedJWTService{}, NewRBACService()).(*userService)
+	return NewUserService(userRepo, &recordedTokenService{}, NewRBACService()).(*userService)
 }
 
 // TestUpdateProfileAppliesOptionalFields 验证自助资料仅更新显式传入的字段。

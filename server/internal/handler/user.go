@@ -13,7 +13,7 @@ import (
 )
 
 // LogoutRequest 登出请求体，刷新令牌可选提交。
-// 上限 512 字符为保护性约束，payload-only 令牌实际长度约百余字符。
+// 上限 512 字符为保护性约束，不透明令牌实际长度为 32 个字符。
 type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken" binding:"omitempty,max=512"`
 }
@@ -280,13 +280,8 @@ func (h *UserHandler) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	data := gin.H{
-		"accessToken":  tokenPair.AccessToken,
-		"refreshToken": tokenPair.RefreshToken,
-		"expiresIn":    tokenPair.ExpiresIn,
-	}
-
-	response.SuccessWithMessage(c, "令牌刷新成功", data)
+	// TokenPair 的字段名即契约，直接序列化避免手工拼装与契约漂移。
+	response.SuccessWithMessage(c, "令牌刷新成功", tokenPair)
 }
 
 // Logout 用户登出 POST /api/auth/logout

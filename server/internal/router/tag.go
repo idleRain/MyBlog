@@ -10,24 +10,24 @@ import (
 
 // TagRoutes 标签路由模块
 type TagRoutes struct {
-	tagHandler  handler.TagHandlerInterface
-	jwtService  service.JWTService
-	identity    middleware.IdentityProvider
-	rbacService service.RBACService
+	tagHandler   handler.TagHandlerInterface
+	tokenService service.TokenServiceInterface
+	identity     middleware.IdentityProvider
+	rbacService  service.RBACService
 }
 
 // NewTagRoutes 创建标签路由模块
 func NewTagRoutes(
 	tagHandler handler.TagHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *TagRoutes {
 	return &TagRoutes{
-		tagHandler:  tagHandler,
-		jwtService:  jwtService,
-		identity:    identity,
-		rbacService: rbacService,
+		tagHandler:   tagHandler,
+		tokenService: tokenService,
+		identity:     identity,
+		rbacService:  rbacService,
 	}
 }
 
@@ -43,7 +43,7 @@ func (tr *TagRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGr
 	// 文章编辑可读的标签列表，需登录且具备文章读取权限，供前端选择标签使用。
 	authTags := api.Group("/tags")
 	authTags.Use(
-		middleware.Auth(tr.jwtService),
+		middleware.Auth(tr.tokenService),
 		middleware.RequirePermission(tr.identity, tr.rbacService, service.PermissionArticleRead),
 	)
 	{

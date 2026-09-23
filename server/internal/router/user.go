@@ -10,19 +10,19 @@ import (
 
 // UserRoutes 用户路由模块
 type UserRoutes struct {
-	userHandler handler.UserHandlerInterface
-	jwtService  service.JWTService
-	identity    middleware.IdentityProvider
-	rbacService service.RBACService
+	userHandler  handler.UserHandlerInterface
+	tokenService service.TokenServiceInterface
+	identity     middleware.IdentityProvider
+	rbacService  service.RBACService
 }
 
 // NewUserRoutes 创建用户路由模块，RBAC 服务由组合根注入。
-func NewUserRoutes(userHandler handler.UserHandlerInterface, jwtService service.JWTService, identity middleware.IdentityProvider, rbacService service.RBACService) *UserRoutes {
+func NewUserRoutes(userHandler handler.UserHandlerInterface, tokenService service.TokenServiceInterface, identity middleware.IdentityProvider, rbacService service.RBACService) *UserRoutes {
 	return &UserRoutes{
-		userHandler: userHandler,
-		jwtService:  jwtService,
-		identity:    identity,
-		rbacService: rbacService,
+		userHandler:  userHandler,
+		tokenService: tokenService,
+		identity:     identity,
+		rbacService:  rbacService,
 	}
 }
 
@@ -36,7 +36,7 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 
 		// 用户查看接口，需要基础认证。
 		userGroup.POST("/get",
-			middleware.Auth(ur.jwtService),
+			middleware.Auth(ur.tokenService),
 			ur.userHandler.GetUserByID)
 
 		// 用户创建接口，需要用户创建权限。
@@ -61,13 +61,13 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 
 		// 自助资料接口，需要登录，仅操作本人数据。
 		userGroup.POST("/profile",
-			middleware.Auth(ur.jwtService),
+			middleware.Auth(ur.tokenService),
 			ur.userHandler.GetProfile)
 		userGroup.POST("/profile/update",
-			middleware.Auth(ur.jwtService),
+			middleware.Auth(ur.tokenService),
 			ur.userHandler.UpdateProfile)
 		userGroup.POST("/change-password",
-			middleware.Auth(ur.jwtService),
+			middleware.Auth(ur.tokenService),
 			ur.userHandler.ChangePassword)
 	}
 
@@ -78,6 +78,6 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 		authGroup.POST("/refresh", ur.userHandler.RefreshToken)
 
 		// 登出接口，需要认证。
-		authGroup.POST("/logout", middleware.Auth(ur.jwtService), ur.userHandler.Logout)
+		authGroup.POST("/logout", middleware.Auth(ur.tokenService), ur.userHandler.Logout)
 	}
 }

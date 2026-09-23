@@ -11,7 +11,7 @@ import (
 // StatsRoutes 站点统计路由模块
 type StatsRoutes struct {
 	statsHandler handler.StatsHandlerInterface
-	jwtService   service.JWTService
+	tokenService service.TokenServiceInterface
 	identity     middleware.IdentityProvider
 	rbacService  service.RBACService
 }
@@ -19,13 +19,13 @@ type StatsRoutes struct {
 // NewStatsRoutes 创建站点统计路由模块
 func NewStatsRoutes(
 	statsHandler handler.StatsHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *StatsRoutes {
 	return &StatsRoutes{
 		statsHandler: statsHandler,
-		jwtService:   jwtService,
+		tokenService: tokenService,
 		identity:     identity,
 		rbacService:  rbacService,
 	}

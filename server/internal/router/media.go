@@ -11,7 +11,7 @@ import (
 // MediaRoutes 媒体路由模块
 type MediaRoutes struct {
 	mediaHandler handler.MediaHandlerInterface
-	jwtService   service.JWTService
+	tokenService service.TokenServiceInterface
 	identity     middleware.IdentityProvider
 	rbacService  service.RBACService
 }
@@ -19,13 +19,13 @@ type MediaRoutes struct {
 // NewMediaRoutes 创建媒体路由模块
 func NewMediaRoutes(
 	mediaHandler handler.MediaHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *MediaRoutes {
 	return &MediaRoutes{
 		mediaHandler: mediaHandler,
-		jwtService:   jwtService,
+		tokenService: tokenService,
 		identity:     identity,
 		rbacService:  rbacService,
 	}

@@ -11,25 +11,25 @@ import (
 // errInvalidRefreshTokenForTest 模拟刷新令牌校验失败的替身错误。
 var errInvalidRefreshTokenForTest = errors.New("刷新令牌无效")
 
-// refreshJWTService 刷新链路的 JWT 服务替身，返回可配置的 claims 与令牌对，
+// refreshTokenService 刷新链路的 JWT 服务替身，返回可配置的 claims 与令牌对，
 // 并记录 RefreshAccessToken 是否被调用，用于断言状态校验先于旋转发生。
-type refreshJWTService struct {
-	JWTService
-	claims        *JWTClaims
+type refreshTokenService struct {
+	tokenService
+	claims        *TokenIdentity
 	claimsErr     error
 	pair          *TokenPair
 	pairErr       error
 	refreshCalled bool
 }
 
-func (f *refreshJWTService) ValidateRefreshToken(string) (*JWTClaims, error) {
+func (f *refreshTokenService) ValidateRefreshToken(string) (*TokenIdentity, error) {
 	if f.claimsErr != nil {
 		return nil, f.claimsErr
 	}
 	return f.claims, nil
 }
 
-func (f *refreshJWTService) RefreshAccessToken(string) (*TokenPair, error) {
+func (f *refreshTokenService) RefreshAccessToken(string) (*TokenPair, error) {
 	f.refreshCalled = true
 	if f.pairErr != nil {
 		return nil, f.pairErr
@@ -41,8 +41,8 @@ func (f *refreshJWTService) RefreshAccessToken(string) (*TokenPair, error) {
 // 被禁用用户的 refresh 不得继续换取新令牌。
 func TestRefreshTokenRejectsDisabledUser(t *testing.T) {
 	repo := &fakeUserRepo{user: &domain.User{ID: 5, Username: "user5", Role: "user", Status: 0}}
-	jwtFake := &refreshJWTService{
-		claims: &JWTClaims{UserID: 5},
+	jwtFake := &refreshTokenService{
+		claims: &TokenIdentity{UserID: 5},
 		pair:   &TokenPair{AccessToken: "a", RefreshToken: "r"},
 	}
 	svc := NewUserService(repo, jwtFake, NewRBACService())
@@ -60,7 +60,7 @@ func TestRefreshTokenRejectsDisabledUser(t *testing.T) {
 func TestRefreshTokenRejectsMissingUser(t *testing.T) {
 	// 仓储中的用户 ID 与 claims 不一致，模拟用户已被删除。
 	repo := &fakeUserRepo{user: &domain.User{ID: 6, Username: "user6", Role: "user", Status: 1}}
-	jwtFake := &refreshJWTService{claims: &JWTClaims{UserID: 99}}
+	jwtFake := &refreshTokenService{claims: &TokenIdentity{UserID: 99}}
 	svc := NewUserService(repo, jwtFake, NewRBACService())
 
 	_, err := svc.RefreshToken("refresh-token")
@@ -75,7 +75,7 @@ func TestRefreshTokenRejectsMissingUser(t *testing.T) {
 // TestRefreshTokenRejectsInvalidToken 刷新令牌本身无效时直接拒绝，不触发查库与旋转。
 func TestRefreshTokenRejectsInvalidToken(t *testing.T) {
 	repo := &fakeUserRepo{user: &domain.User{ID: 7, Username: "user7", Role: "user", Status: 1}}
-	jwtFake := &refreshJWTService{claimsErr: errInvalidRefreshTokenForTest}
+	jwtFake := &refreshTokenService{claimsErr: errInvalidRefreshTokenForTest}
 	svc := NewUserService(repo, jwtFake, NewRBACService())
 
 	_, err := svc.RefreshToken("broken-token")
@@ -90,8 +90,8 @@ func TestRefreshTokenRejectsInvalidToken(t *testing.T) {
 // TestRefreshTokenAllowsActiveUser 正常用户的刷新链路应完成令牌旋转并返回新令牌对。
 func TestRefreshTokenAllowsActiveUser(t *testing.T) {
 	repo := &fakeUserRepo{user: &domain.User{ID: 8, Username: "user8", Role: "user", Status: 1}}
-	jwtFake := &refreshJWTService{
-		claims: &JWTClaims{UserID: 8},
+	jwtFake := &refreshTokenService{
+		claims: &TokenIdentity{UserID: 8},
 		pair:   &TokenPair{AccessToken: "new-a", RefreshToken: "new-r", ExpiresIn: 900},
 	}
 	svc := NewUserService(repo, jwtFake, NewRBACService())

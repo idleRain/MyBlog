@@ -77,51 +77,51 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	healthRoutes.RegisterRoutes(api)
 
 	// 注册用户相关路由
-	userRoutes := NewUserRoutes(deps.UserHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	userRoutes := NewUserRoutes(deps.UserHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	userRoutes.RegisterRoutes(api)
 
 	// 注册文章相关路由
-	articleRoutes := NewArticleRoutes(deps.ArticleHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	articleRoutes := NewArticleRoutes(deps.ArticleHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	articleRoutes.RegisterRoutes(api, adminAPI)
 
 	// 注册分类相关路由
-	categoryRoutes := NewCategoryRoutes(deps.CategoryHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	categoryRoutes := NewCategoryRoutes(deps.CategoryHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	categoryRoutes.RegisterRoutes(api, adminAPI)
 
 	// 注册标签相关路由
-	tagRoutes := NewTagRoutes(deps.TagHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	tagRoutes := NewTagRoutes(deps.TagHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	tagRoutes.RegisterRoutes(api, adminAPI)
 
 	// 注册评论相关路由
-	commentRoutes := NewCommentRoutes(deps.CommentHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	commentRoutes := NewCommentRoutes(deps.CommentHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	commentRoutes.RegisterRoutes(api, adminAPI)
 
 	// 注册媒体相关路由
-	mediaRoutes := NewMediaRoutes(deps.MediaHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	mediaRoutes := NewMediaRoutes(deps.MediaHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	mediaRoutes.RegisterRoutes(api)
 
 	// 注册设置相关路由
-	settingRoutes := NewSettingRoutes(deps.SettingHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	settingRoutes := NewSettingRoutes(deps.SettingHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	settingRoutes.RegisterRoutes(api, adminAPI)
 
 	// 注册友情链接相关路由
-	linkRoutes := NewFriendlyLinkRoutes(deps.FriendlyLinkHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	linkRoutes := NewFriendlyLinkRoutes(deps.FriendlyLinkHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	linkRoutes.RegisterRoutes(api, adminAPI)
 
 	// 注册站点统计相关路由
-	statsRoutes := NewStatsRoutes(deps.StatsHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	statsRoutes := NewStatsRoutes(deps.StatsHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	statsRoutes.RegisterRoutes(adminAPI)
 
 	// 注册通知相关路由
-	notificationRoutes := NewNotificationRoutes(deps.NotificationHandler, deps.JWTService)
+	notificationRoutes := NewNotificationRoutes(deps.NotificationHandler, deps.TokenService)
 	notificationRoutes.RegisterRoutes(api)
 
 	// 注册用户关注相关路由
-	followRoutes := NewUserFollowRoutes(deps.UserFollowHandler, deps.JWTService)
+	followRoutes := NewUserFollowRoutes(deps.UserFollowHandler, deps.TokenService)
 	followRoutes.RegisterRoutes(api)
 
 	// 注册字典相关路由
-	dictRoutes := NewDictRoutes(deps.DictHandler, deps.JWTService, deps.IdentityProvider, deps.RBACService)
+	dictRoutes := NewDictRoutes(deps.DictHandler, deps.TokenService, deps.IdentityProvider, deps.RBACService)
 	dictRoutes.RegisterRoutes(api, adminAPI)
 }
 
@@ -139,7 +139,7 @@ type Dependencies struct {
 	NotificationHandler handler.NotificationHandlerInterface // 通知处理器接口
 	UserFollowHandler   handler.UserFollowHandlerInterface   // 用户关注处理器接口
 	DictHandler         handler.DictHandlerInterface         // 字典处理器接口
-	JWTService          service.JWTService                   // JWT服务
+	TokenService        service.TokenServiceInterface        // 令牌服务
 	IdentityProvider    middleware.IdentityProvider          // 身份解析抽象
 	RBACService         service.RBACService                  // RBAC权限服务
 	DBHealthCheck       func() error                         // 数据库连通性探针，供就绪检查使用

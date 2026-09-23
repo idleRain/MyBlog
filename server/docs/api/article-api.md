@@ -644,7 +644,7 @@ curl -X POST http://localhost:3000/api/articles/view \
 ```bash
 curl -X POST http://localhost:3000/api/articles/like \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -687,7 +687,7 @@ curl -X POST http://localhost:3000/api/articles/like \
 ```bash
 curl -X POST http://localhost:3000/api/articles/unlike \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -730,7 +730,7 @@ curl -X POST http://localhost:3000/api/articles/unlike \
 ```bash
 curl -X POST http://localhost:3000/api/articles/bookmark \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -773,7 +773,7 @@ curl -X POST http://localhost:3000/api/articles/bookmark \
 ```bash
 curl -X POST http://localhost:3000/api/articles/unbookmark \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -834,7 +834,7 @@ curl -X POST http://localhost:3000/api/articles/unbookmark \
 ```bash
 curl -X POST http://localhost:3000/api/articles/create \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "title": "我的新文章",
     "slug": "my-new-article",
@@ -896,7 +896,7 @@ curl -X POST http://localhost:3000/api/articles/create \
 ```bash
 curl -X POST http://localhost:3000/api/articles/update \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1,
     "title": "更新后的文章标题",
@@ -934,7 +934,7 @@ curl -X POST http://localhost:3000/api/articles/update \
 ```bash
 curl -X POST http://localhost:3000/api/articles/delete \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -977,7 +977,7 @@ curl -X POST http://localhost:3000/api/articles/delete \
 ```bash
 curl -X POST http://localhost:3000/api/articles/publish \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -1020,7 +1020,7 @@ curl -X POST http://localhost:3000/api/articles/publish \
 ```bash
 curl -X POST http://localhost:3000/api/articles/unpublish \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -1063,7 +1063,7 @@ curl -X POST http://localhost:3000/api/articles/unpublish \
 ```bash
 curl -X POST http://localhost:3000/api/articles/archive \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -1106,7 +1106,7 @@ curl -X POST http://localhost:3000/api/articles/archive \
 ```bash
 curl -X POST http://localhost:3000/api/articles/private \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'

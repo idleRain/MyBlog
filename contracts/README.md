@@ -9,7 +9,7 @@
 |---|---|---|---|
 | C1 API 形状 | 后端 `pkg/response` + `@myblog/shared` 的 `ApiResponse` | 后端 | ✅ 已固化 |
 | C2 错误码 | `errors.yaml` | 本文件（唯一编辑点） | 🟡 初版，业务码细分待落地 |
-| C3 认证协议 | `auth-protocol.md` | 本文档 | ✅ 已文档化（含 payload-only 怪癖） |
+| C3 认证协议 | `auth-protocol.md` | 本文档 | ✅ 已文档化（含不透明令牌说明） |
 | C4 权限下发 | 后端 RBAC（终态后端下发） | 后端 | 🟡 阶段 D 落地 |
 | C5 类型生成 | 三把锁方案（见下） | 后端 DTO / fixtures | 🟡 阶段 C 落地 |
 | C6 内容语言协商 | `i18n-protocol.md` | 本文档 | 🟡 分期落地中 |

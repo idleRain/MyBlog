@@ -11,7 +11,7 @@ import (
 // CommentRoutes 评论路由模块
 type CommentRoutes struct {
 	commentHandler handler.CommentHandlerInterface
-	jwtService     service.JWTService
+	tokenService   service.TokenServiceInterface
 	identity       middleware.IdentityProvider
 	rbacService    service.RBACService
 }
@@ -19,13 +19,13 @@ type CommentRoutes struct {
 // NewCommentRoutes 创建评论路由模块
 func NewCommentRoutes(
 	commentHandler handler.CommentHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *CommentRoutes {
 	return &CommentRoutes{
 		commentHandler: commentHandler,
-		jwtService:     jwtService,
+		tokenService:   tokenService,
 		identity:       identity,
 		rbacService:    rbacService,
 	}
@@ -40,13 +40,13 @@ func (cr *CommentRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.Rout
 
 		// 评论创建接口，登录用户自动绑定身份，游客匿名提交。
 		publicComments.POST("/create",
-			middleware.OptionalAuth(cr.jwtService),
+			middleware.OptionalAuth(cr.tokenService),
 			cr.commentHandler.CreateComment)
 	}
 
 	// 评论点赞接口，需要登录。
 	authComments := api.Group("/comments")
-	authComments.Use(middleware.Auth(cr.jwtService))
+	authComments.Use(middleware.Auth(cr.tokenService))
 	{
 		authComments.POST("/like", cr.commentHandler.LikeComment)     // 点赞评论
 		authComments.POST("/unlike", cr.commentHandler.UnlikeComment) // 取消点赞评论

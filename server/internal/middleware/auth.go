@@ -12,7 +12,7 @@ import (
 const bearerTokenPrefix = "Bearer "
 
 // Auth 认证中间件
-func Auth(jwtService service.JWTService) gin.HandlerFunc {
+func Auth(tokenService service.TokenServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 
@@ -25,8 +25,8 @@ func Auth(jwtService service.JWTService) gin.HandlerFunc {
 		// 移除 Bearer 前缀，无前缀时保持原值
 		token = strings.TrimPrefix(token, bearerTokenPrefix)
 
-		// 验证访问令牌
-		claims, err := jwtService.ValidateAccessToken(token)
+		// 校验访问令牌
+		identity, err := tokenService.ValidateAccessToken(token)
 		if err != nil {
 			response.Unauthorized(c, "无效的认证令牌")
 			c.Abort()
@@ -34,15 +34,15 @@ func Auth(jwtService service.JWTService) gin.HandlerFunc {
 		}
 
 		// 设置用户信息到上下文
-		c.Set("userID", claims.UserID)
-		// username已从 JWT 中移除，如需使用请从数据库查询
+		c.Set("userID", identity.UserID)
+		// username 已从令牌中移除，如需使用请从数据库查询
 
 		c.Next()
 	}
 }
 
 // OptionalAuth 可选认证中间件
-func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc {
+func OptionalAuth(tokenService service.TokenServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 
@@ -50,10 +50,10 @@ func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc {
 			// 移除 Bearer 前缀，无前缀时保持原值
 			token = strings.TrimPrefix(token, bearerTokenPrefix)
 
-			// 验证访问令牌
-			if claims, err := jwtService.ValidateAccessToken(token); err == nil {
-				c.Set("userID", claims.UserID)
-				// username已从 JWT 中移除
+			// 校验访问令牌
+			if identity, err := tokenService.ValidateAccessToken(token); err == nil {
+				c.Set("userID", identity.UserID)
+				// username 已从令牌中移除，如需使用请从数据库查询
 				c.Set("authenticated", true)
 			}
 		}

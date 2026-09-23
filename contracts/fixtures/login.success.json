@@ -2,10 +2,10 @@
   "code": 200,
   "message": "登录成功",
   "data": {
-    "accessToken": "payload-only-access-token",
+    "accessToken": "3f2a9c1e4b7d8056a1c3e5f70b2d4689",
     "expiresIn": 1800,
     "permissions": ["article:read", "comment:create", "comment:read", "comment:update"],
-    "refreshToken": "payload-only-refresh-token",
+    "refreshToken": "8b1d4e7a2c9f0356b8e1a4d7c0f32695",
     "user": {
       "id": 1,
       "username": "admin",

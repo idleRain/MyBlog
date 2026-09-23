@@ -10,24 +10,24 @@ import (
 
 // DictRoutes 字典路由模块
 type DictRoutes struct {
-	dictHandler handler.DictHandlerInterface
-	jwtService  service.JWTService
-	identity    middleware.IdentityProvider
-	rbacService service.RBACService
+	dictHandler  handler.DictHandlerInterface
+	tokenService service.TokenServiceInterface
+	identity     middleware.IdentityProvider
+	rbacService  service.RBACService
 }
 
 // NewDictRoutes 创建字典路由模块
 func NewDictRoutes(
 	dictHandler handler.DictHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *DictRoutes {
 	return &DictRoutes{
-		dictHandler: dictHandler,
-		jwtService:  jwtService,
-		identity:    identity,
-		rbacService: rbacService,
+		dictHandler:  dictHandler,
+		tokenService: tokenService,
+		identity:     identity,
+		rbacService:  rbacService,
 	}
 }
 

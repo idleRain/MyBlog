@@ -68,8 +68,8 @@ func TestLoginSuccessMatchesFixture(t *testing.T) {
 
 	handler := NewUserHandler(&fakeLoginUserService{loginResp: &service.LoginResponse{
 		User:         newFixtureUser(),
-		AccessToken:  "payload-only-access-token",
-		RefreshToken: "payload-only-refresh-token",
+		AccessToken:  "3f2a9c1e4b7d8056a1c3e5f70b2d4689",
+		RefreshToken: "8b1d4e7a2c9f0356b8e1a4d7c0f32695",
 		ExpiresIn:    1800,
 		Permissions:  []string{"article:read", "comment:create", "comment:read", "comment:update"},
 	}})

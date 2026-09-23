@@ -18,12 +18,12 @@ const (
 	BcryptCost = 12
 )
 
-// LoginResponse 登录响应
+// LoginResponse 登录响应，字段名即对外 API 契约。
 type LoginResponse struct {
 	User         *domain.User `json:"user"`
-	AccessToken  string       `json:"access_token"`
-	RefreshToken string       `json:"refresh_token"`
-	ExpiresIn    int64        `json:"expires_in"`
+	AccessToken  string       `json:"accessToken"`
+	RefreshToken string       `json:"refreshToken"`
+	ExpiresIn    int64        `json:"expiresIn"`
 	Permissions  []string     `json:"permissions"` // 当前角色权限列表，由后端下发的唯一权威
 }
 
@@ -97,17 +97,17 @@ func WithLoginLockoutPolicy(policy LoginLockoutPolicy) UserServiceOption {
 // userService 用户服务实现
 type userService struct {
 	userRepo      repository.UserRepository
-	jwtService    JWTService
+	tokenService  TokenServiceInterface
 	rbacService   RBACService
 	lockoutPolicy LoginLockoutPolicy
 }
 
 // NewUserService 创建用户服务实例，依赖由组合根注入，禁止内部私自实例化。
-func NewUserService(userRepo repository.UserRepository, jwtService JWTService, rbacService RBACService,
+func NewUserService(userRepo repository.UserRepository, tokenService TokenServiceInterface, rbacService RBACService,
 	opts ...UserServiceOption) UserService {
 	svc := &userService{
 		userRepo:      userRepo,
-		jwtService:    jwtService,
+		tokenService:  tokenService,
 		rbacService:   rbacService,
 		lockoutPolicy: defaultLoginLockoutPolicy(),
 	}
@@ -350,7 +350,7 @@ func (s *userService) ChangePassword(userID uint, req *ChangePasswordRequest) er
 	}
 
 	// 撤销动作在密码已更新后执行，失败不回滚改密结果，内存实现当前无失败路径。
-	_ = s.jwtService.RevokeUserTokens(userID)
+	_ = s.tokenService.RevokeUserTokens(userID)
 	return nil
 }
 
@@ -438,7 +438,7 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 	s.resetLoginFailure(user)
 
 	// 生成JWT令牌对
-	tokenPair, err := s.jwtService.GenerateTokenPair(user)
+	tokenPair, err := s.tokenService.GenerateTokenPair(user)
 	if err != nil {
 		return nil, fmt.Errorf("生成token失败: %w", err)
 	}
@@ -490,35 +490,36 @@ func (s *userService) resetLoginFailure(user *domain.User) {
 // 刷新为低频路径，查库成本可接受；access 链路信任短有效期不逐请求查库，
 // 需要访问令牌实时失效时由 R4 会话方案承接。
 func (s *userService) RefreshToken(refreshToken string) (*TokenPair, error) {
-	claims, err := s.jwtService.ValidateRefreshToken(refreshToken)
+	identity, err := s.tokenService.ValidateRefreshToken(refreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := s.userRepo.GetByID(claims.UserID)
+	user, err := s.userRepo.GetByID(identity.UserID)
 	if err != nil {
-		return nil, fmt.Errorf("用户不存在: %w", err)
+		// 不透出仓储层原始错误，避免数据库细节经响应体泄漏。
+		return nil, fmt.Errorf("用户不存在或已失效")
 	}
 
 	if user.Status != model.UserStatusActive {
 		return nil, fmt.Errorf("用户已被禁用")
 	}
 
-	return s.jwtService.RefreshAccessToken(refreshToken)
+	return s.tokenService.RefreshAccessToken(refreshToken)
 }
 
 // Logout 用户登出，撤销访问令牌与刷新令牌构成的对。
 // 刷新令牌由客户端在登出请求体中提交，缺省时仅撤销访问令牌。
 func (s *userService) Logout(accessToken, refreshToken string) error {
 	if accessToken != "" {
-		if err := s.jwtService.RevokeToken(accessToken); err != nil {
+		if err := s.tokenService.RevokeToken(accessToken); err != nil {
 			return err
 		}
 	}
 	if refreshToken == "" {
 		return nil
 	}
-	return s.jwtService.RevokeToken(refreshToken)
+	return s.tokenService.RevokeToken(refreshToken)
 }
 
 // CanUserManageRole 检查用户是否可以管理指定角色

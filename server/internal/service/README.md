@@ -37,7 +37,7 @@ type UserService interface {
 
 ```go
 // 组合根内构造（第三参起为可选选项，缺省时启用默认锁定策略）
-userService := service.NewUserService(userRepo, jwtService, rbacService,
+userService := service.NewUserService(userRepo, tokenService, rbacService,
     service.WithLoginLockoutPolicy(service.LoginLockoutPolicy{
         Enabled:         true,
         MaxFailedLogins: 5,

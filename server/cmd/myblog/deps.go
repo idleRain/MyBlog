@@ -34,7 +34,7 @@ func newDependencies(cfg *config.Config, db *gorm.DB) *router.Dependencies {
 		NotificationHandler: handlers.notification,
 		UserFollowHandler:   handlers.userFollow,
 		DictHandler:         handlers.dict,
-		JWTService:          services.jwt,
+		TokenService:        services.tokenService,
 		IdentityProvider:    services.identity,
 		RBACService:         services.rbac,
 		DBHealthCheck:       database.HealthCheck,
@@ -77,7 +77,7 @@ func newRepositories(db *gorm.DB) *appRepositories {
 
 // appServices 集中持有全部服务实例。
 type appServices struct {
-	jwt          service.JWTService
+	tokenService service.TokenServiceInterface
 	identity     middleware.IdentityProvider
 	rbac         service.RBACService
 	user         service.UserService
@@ -99,17 +99,17 @@ func newServices(cfg *config.Config, repos *appRepositories) *appServices {
 	// 从配置加载 RBAC 权限表，作为运行期唯一权威。
 	service.LoadRBACConfig(cfg.RBAC.RoleHierarchy, cfg.RBAC.RolePermissions)
 
-	jwtService := service.NewJWTService(cfg)
+	tokenService := service.NewTokenService(cfg)
 	rbacService := service.NewRBACService()
 
 	// 语言协商策略来自 i18n 配置节，作为内容多语言读写的唯一权威。
 	languagePolicy := middleware.LanguagePolicyFromConfig(cfg.I18N)
 
 	return &appServices{
-		jwt:      jwtService,
-		identity: middleware.NewIdentityProvider(jwtService, repos.user),
-		rbac:     rbacService,
-		user: service.NewUserService(repos.user, jwtService, rbacService,
+		tokenService: tokenService,
+		identity:     middleware.NewIdentityProvider(tokenService, repos.user),
+		rbac:         rbacService,
+		user: service.NewUserService(repos.user, tokenService, rbacService,
 			service.WithLoginLockoutPolicy(loginLockoutPolicyFromConfig(cfg))),
 		article:      service.NewArticleService(repos.article, repos.user, rbacService, repos.stats, repos.notification, service.WithArticleLanguagePolicy(languagePolicy)),
 		category:     service.NewCategoryService(repos.category, service.WithCategoryLanguagePolicy(languagePolicy)),

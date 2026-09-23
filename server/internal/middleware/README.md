@@ -7,7 +7,7 @@
 ```
 middleware/
 ├── README.md          # 本文档
-├── auth.go           # JWT 认证中间件
+├── auth.go           # 令牌认证中间件
 ├── rbac.go           # RBAC权限控制中间件（新增）
 ├── cors.go           # 跨域资源共享中间件
 ├── logger.go         # 请求日志和请求ID中间件
@@ -19,19 +19,19 @@ middleware/
 
 ### 1. 认证中间件 (`auth.go`)
 
-**功能**：JWT 令牌验证和用户身份认证
+**功能**：令牌验证和用户身份认证
 
 ```go
 // 基础认证中间件
-func Auth(jwtService service.JWTService) gin.HandlerFunc
+func Auth(tokenService service.TokenServiceInterface) gin.HandlerFunc
 
 // 可选认证中间件（不强制要求认证）
-func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc
+func OptionalAuth(tokenService service.TokenServiceInterface) gin.HandlerFunc
 ```
 
 **特性**：
 - ✅ 支持 `Authorization: Bearer <token>` 头认证
-- ✅ JWT 令牌解析和验证
+- ✅ 令牌解析和验证
 - ✅ 用户信息注入到 Context
 - ✅ 令牌过期和无效检测
 - ✅ 可选认证模式支持
@@ -45,11 +45,11 @@ func OptionalAuth(jwtService service.JWTService) gin.HandlerFunc
 ```go
 // 必须认证的路由
 authenticatedGroup := api.Group("/users")
-authenticatedGroup.Use(middleware.Auth(jwtService))
+authenticatedGroup.Use(middleware.Auth(tokenService))
 
 // 可选认证的路由
 publicGroup := api.Group("/public")
-publicGroup.Use(middleware.OptionalAuth(jwtService))
+publicGroup.Use(middleware.OptionalAuth(tokenService))
 ```
 
 ### 2. CORS 中间件 (`cors.go`)
@@ -255,7 +255,7 @@ userGroup := api.Group("/users")
 
     // 认证路由
     authGroup := userGroup.Group("")
-    authGroup.Use(middleware.Auth(jwtService))
+    authGroup.Use(middleware.Auth(tokenService))
     {
         authGroup.POST("/get", userHandler.GetUserByID)
         
@@ -415,7 +415,7 @@ engine.Use(middleware.SecurityMiddleware(middleware.DefaultSecurityConfig()))
 
 ## 📚 相关文档
 
-- [JWT认证服务文档](../service/README.md#JWT服务)
+- [令牌服务文档](../service/README.md#JWT服务)
 - [配置管理文档](../config/README.md)
 - [API接口文档](../../docs/api/)
 - [安全最佳实践](../../docs/security.md)
@@ -436,7 +436,7 @@ A: 检查 `getDefaultBlockedPatterns()` 中的正则表达式，根据需要调�
 
 A: 确认 `cors.go` 中的 `AllowOrigins` 包含你的前端域名。
 
-**Q: JWT认证失败？**
+**Q: 令牌认证失败？**
 
 A: 检查令牌格式、过期时间、签名密钥配置。
 
@@ -491,7 +491,7 @@ func CanManageUserRole(identity IdentityProvider, rbacService, getTargetRole) gi
 
 ```go
 // 组合根创建身份解析器
-identity := middleware.NewIdentityProvider(jwtService, userRepo)
+identity := middleware.NewIdentityProvider(tokenService, userRepo)
 
 // 用户管理路由
 userGroup := api.Group("/users")

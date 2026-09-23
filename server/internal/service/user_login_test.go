@@ -38,14 +38,14 @@ func (f *loginUserRepo) Update(*domain.User) error {
 	return nil
 }
 
-// loginJWTService 登录场景的 JWT 服务替身，仅覆盖令牌对生成方法。
-type loginJWTService struct {
-	JWTService
+// loginTokenService 登录场景的 JWT 服务替身，仅覆盖令牌对生成方法。
+type loginTokenService struct {
+	tokenService
 	tokenPair *TokenPair
 	err       error
 }
 
-func (f *loginJWTService) GenerateTokenPair(user *domain.User) (*TokenPair, error) {
+func (f *loginTokenService) GenerateTokenPair(user *domain.User) (*TokenPair, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -63,7 +63,7 @@ func (f *loginRBACService) GetUserPermissions(userRole string) []Permission {
 }
 
 // newLoginUserService 创建注入登录替身的用户服务实例。
-func newLoginUserService(repo *loginUserRepo, jwt *loginJWTService, rbac *loginRBACService) *userService {
+func newLoginUserService(repo *loginUserRepo, jwt *loginTokenService, rbac *loginRBACService) *userService {
 	return NewUserService(repo, jwt, rbac).(*userService)
 }
 
@@ -84,7 +84,7 @@ func TestLoginSuccess(t *testing.T) {
 		Password: hashPassword(t, "correct-pass1"), Role: "superadmin", Status: 1,
 	}
 	repo := &loginUserRepo{user: user}
-	jwt := &loginJWTService{tokenPair: &TokenPair{AccessToken: "access-token", RefreshToken: "refresh-token", ExpiresIn: 1800}}
+	jwt := &loginTokenService{tokenPair: &TokenPair{AccessToken: "access-token", RefreshToken: "refresh-token", ExpiresIn: 1800}}
 	rbac := &loginRBACService{permissions: []Permission{PermissionArticleRead}}
 	svc := newLoginUserService(repo, jwt, rbac)
 
@@ -110,7 +110,7 @@ func TestLoginSuccess(t *testing.T) {
 // TestLoginUserNotFound 验证用户名与邮箱均查不到用户时返回用户不存在。
 func TestLoginUserNotFound(t *testing.T) {
 	repo := &loginUserRepo{usernameErr: errors.New("用户不存在"), emailErr: errors.New("用户不存在")}
-	svc := newLoginUserService(repo, &loginJWTService{}, &loginRBACService{})
+	svc := newLoginUserService(repo, &loginTokenService{}, &loginRBACService{})
 
 	_, err := svc.Login("ghost", "whatever1")
 	if err == nil || !strings.Contains(err.Error(), "用户不存在") {
@@ -124,7 +124,7 @@ func TestLoginWrongPassword(t *testing.T) {
 		ID: 1, Username: "admin", Password: hashPassword(t, "correct-pass1"), Role: "user", Status: 1,
 	}
 	repo := &loginUserRepo{user: user}
-	svc := newLoginUserService(repo, &loginJWTService{}, &loginRBACService{})
+	svc := newLoginUserService(repo, &loginTokenService{}, &loginRBACService{})
 
 	_, err := svc.Login("admin", "wrong-pass1")
 	if err == nil || !strings.Contains(err.Error(), "密码错误") {
@@ -138,7 +138,7 @@ func TestLoginDisabledUser(t *testing.T) {
 		ID: 1, Username: "admin", Password: hashPassword(t, "correct-pass1"), Role: "user", Status: 0,
 	}
 	repo := &loginUserRepo{user: user}
-	svc := newLoginUserService(repo, &loginJWTService{}, &loginRBACService{})
+	svc := newLoginUserService(repo, &loginTokenService{}, &loginRBACService{})
 
 	_, err := svc.Login("admin", "correct-pass1")
 	if err == nil || !strings.Contains(err.Error(), "禁用") {
@@ -153,7 +153,7 @@ func TestLoginFallsBackToEmail(t *testing.T) {
 		Password: hashPassword(t, "correct-pass1"), Role: "user", Status: 1,
 	}
 	repo := &loginUserRepo{user: user, usernameErr: errors.New("用户不存在")}
-	jwt := &loginJWTService{tokenPair: &TokenPair{AccessToken: "a", RefreshToken: "r", ExpiresIn: 1}}
+	jwt := &loginTokenService{tokenPair: &TokenPair{AccessToken: "a", RefreshToken: "r", ExpiresIn: 1}}
 	svc := newLoginUserService(repo, jwt, &loginRBACService{})
 
 	response, err := svc.Login("admin@myblog.local", "correct-pass1")
@@ -171,7 +171,7 @@ func TestLoginTokenGenerationFailure(t *testing.T) {
 		ID: 1, Username: "admin", Password: hashPassword(t, "correct-pass1"), Role: "user", Status: 1,
 	}
 	repo := &loginUserRepo{user: user}
-	jwt := &loginJWTService{err: errors.New("signing failed")}
+	jwt := &loginTokenService{err: errors.New("signing failed")}
 	svc := newLoginUserService(repo, jwt, &loginRBACService{})
 
 	_, err := svc.Login("admin", "correct-pass1")

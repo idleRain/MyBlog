@@ -8,24 +8,24 @@ import (
 	"MyBlog/internal/domain"
 )
 
-// recordedJWTService 记录撤销调用的 JWT 服务替身，供登出与改密撤销链路断言。
-type recordedJWTService struct {
-	JWTService
+// recordedTokenService 记录撤销调用的 JWT 服务替身，供登出与改密撤销链路断言。
+type recordedTokenService struct {
+	tokenService
 	revokedTokens  []string
 	revokedUserIDs []uint
 }
 
-func (f *recordedJWTService) GenerateTokenPair(*domain.User) (*TokenPair, error) {
+func (f *recordedTokenService) GenerateTokenPair(*domain.User) (*TokenPair, error) {
 	// 成功登录路径需要真实令牌对，替身返回固定值避免依赖内嵌空接口。
 	return &TokenPair{AccessToken: "access-token", RefreshToken: "refresh-token", ExpiresIn: 900}, nil
 }
 
-func (f *recordedJWTService) RevokeToken(tokenString string) error {
+func (f *recordedTokenService) RevokeToken(tokenString string) error {
 	f.revokedTokens = append(f.revokedTokens, tokenString)
 	return nil
 }
 
-func (f *recordedJWTService) RevokeUserTokens(userID uint) error {
+func (f *recordedTokenService) RevokeUserTokens(userID uint) error {
 	f.revokedUserIDs = append(f.revokedUserIDs, userID)
 	return nil
 }
@@ -33,7 +33,7 @@ func (f *recordedJWTService) RevokeUserTokens(userID uint) error {
 // TestLogoutRevokesTokenPair 登出必须同时撤销访问令牌与刷新令牌，
 // 仅撤销 access 会让 refresh 在有效期内继续可刷。
 func TestLogoutRevokesTokenPair(t *testing.T) {
-	jwtFake := &recordedJWTService{}
+	jwtFake := &recordedTokenService{}
 	svc := NewUserService(&fakeUserRepo{user: &domain.User{ID: 1}}, jwtFake, NewRBACService())
 
 	if err := svc.Logout("access-token", "refresh-token"); err != nil {
@@ -50,7 +50,7 @@ func TestLogoutRevokesTokenPair(t *testing.T) {
 
 // TestLogoutSkipsEmptyRefreshToken 刷新令牌缺省时仅撤销访问令牌，跳过空撤销。
 func TestLogoutSkipsEmptyRefreshToken(t *testing.T) {
-	jwtFake := &recordedJWTService{}
+	jwtFake := &recordedTokenService{}
 	svc := NewUserService(&fakeUserRepo{user: &domain.User{ID: 1}}, jwtFake, NewRBACService())
 
 	if err := svc.Logout("access-token", ""); err != nil {
@@ -67,7 +67,7 @@ func TestLogoutSkipsEmptyRefreshToken(t *testing.T) {
 func TestChangePasswordRevokesAllUserTokens(t *testing.T) {
 	oldHash, _ := bcrypt.GenerateFromPassword([]byte("old12345678"), BcryptCost)
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 3, Username: "user3", Password: string(oldHash), Role: "user", Status: 1}}
-	jwtFake := &recordedJWTService{}
+	jwtFake := &recordedTokenService{}
 	svc := NewUserService(userRepo, jwtFake, NewRBACService())
 
 	if err := svc.ChangePassword(3, &ChangePasswordRequest{OldPassword: "old12345678", NewPassword: "new12345678"}); err != nil {
@@ -83,7 +83,7 @@ func TestChangePasswordRevokesAllUserTokens(t *testing.T) {
 func TestChangePasswordKeepsTokensOnWrongOldPassword(t *testing.T) {
 	oldHash, _ := bcrypt.GenerateFromPassword([]byte("old12345678"), BcryptCost)
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 4, Username: "user4", Password: string(oldHash), Role: "user", Status: 1}}
-	jwtFake := &recordedJWTService{}
+	jwtFake := &recordedTokenService{}
 	svc := NewUserService(userRepo, jwtFake, NewRBACService())
 
 	err := svc.ChangePassword(4, &ChangePasswordRequest{OldPassword: "wrong-pass1", NewPassword: "new12345678"})
@@ -99,7 +99,7 @@ func TestChangePasswordKeepsTokensOnWrongOldPassword(t *testing.T) {
 // TestRevokeUserTokensInvalidatesIssuedTokens 按 userID 撤销后，
 // 该用户已签发的访问与刷新令牌必须全部失效。
 func TestRevokeUserTokensInvalidatesIssuedTokens(t *testing.T) {
-	svc := newTestJWTService(t)
+	svc := newTestTokenService(t)
 	user := &domain.User{ID: 21}
 
 	pair, err := svc.GenerateTokenPair(user)
@@ -121,7 +121,7 @@ func TestRevokeUserTokensInvalidatesIssuedTokens(t *testing.T) {
 
 // TestRevokeUserTokensOnlyAffectsTargetUser 按 userID 撤销不得波及其他用户的令牌。
 func TestRevokeUserTokensOnlyAffectsTargetUser(t *testing.T) {
-	svc := newTestJWTService(t)
+	svc := newTestTokenService(t)
 	target := &domain.User{ID: 22}
 	bystander := &domain.User{ID: 23}
 

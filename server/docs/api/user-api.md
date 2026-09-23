@@ -62,12 +62,12 @@ curl -X POST http://localhost:3000/api/users/login \
 | data.user.status | integer | 是 | 用户状态，1启用0禁用 |
 | data.user.createdAt | string | 是 | 创建时间 |
 | data.user.updatedAt | string | 是 | 更新时间 |
-| data.accessToken | string | 是 | 访问令牌（payload-only，见下方注记） |
-| data.refreshToken | string | 是 | 刷新令牌（payload-only） |
+| data.accessToken | string | 是 | 访问令牌（不透明令牌，见下方注记） |
+| data.refreshToken | string | 是 | 刷新令牌（不透明令牌） |
 | data.expiresIn | integer | 是 | 访问令牌有效期，单位秒 |
 | data.permissions | string[] | 是 | 当前角色权限列表（后端唯一权威） |
 
-> **线格式注记**：令牌为 **payload-only JWT**（无点号 Base64 payload，非标准三段式）。完整协议见 `contracts/auth-protocol.md`。
+> **线格式注记**：令牌为**不透明随机串**（32 位十六进制，服务端令牌表是身份唯一权威，不携带可解码信息）。完整协议见 `contracts/auth-protocol.md`。
 
 #### 响应示例
 
@@ -88,8 +88,8 @@ curl -X POST http://localhost:3000/api/users/login \
       "createdAt": "2024-01-01 10:00:00",
       "updatedAt": "2024-01-01 10:00:00"
     },
-    "accessToken": "<payload-only access token>",
-    "refreshToken": "<payload-only refresh token>",
+    "accessToken": "<opaque access token>",
+    "refreshToken": "<opaque refresh token>",
     "expiresIn": 3600,
     "permissions": ["article:read", "comment:create", "comment:read", "comment:update"]
   }
@@ -121,7 +121,7 @@ curl -X POST http://localhost:3000/api/users/login \
 ```bash
 curl -X POST http://localhost:3000/api/users/get \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 1
   }'
@@ -182,7 +182,7 @@ curl -X POST http://localhost:3000/api/users/get \
 ```bash
 curl -X POST http://localhost:3000/api/users/create \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "username": "newuser",
     "email": "newuser@example.com",
@@ -246,7 +246,7 @@ curl -X POST http://localhost:3000/api/users/create \
 ```bash
 curl -X POST http://localhost:3000/api/users/update \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 2,
     "username": "newuser",
@@ -302,7 +302,7 @@ curl -X POST http://localhost:3000/api/users/update \
 ```bash
 curl -X POST http://localhost:3000/api/users/delete \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "id": 2
   }'
@@ -345,7 +345,7 @@ curl -X POST http://localhost:3000/api/users/delete \
 ```bash
 curl -X POST http://localhost:3000/api/users/list \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
   -d '{
     "page": 1,
     "pageSize": 10
@@ -411,7 +411,7 @@ curl -X POST http://localhost:3000/api/users/list \
 
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
-| refreshToken | string | 是 | 刷新令牌 | payload-only 线格式（见登录接口注记） |
+| refreshToken | string | 是 | 刷新令牌 | 不透明令牌线格式（见登录接口注记） |
 
 #### 请求示例
 
@@ -455,15 +455,15 @@ curl -X POST http://localhost:3000/api/auth/refresh \
 
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
-| refreshToken | string | 否 | 刷新令牌，提交后与访问令牌一并撤销 | 最大512字符，payload-only 线格式 |
+| refreshToken | string | 否 | 刷新令牌，提交后与访问令牌一并撤销 | 最大512字符，不透明令牌线格式 |
 
 #### 请求示例
 
 ```bash
 curl -X POST http://localhost:3000/api/auth/logout \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -d '{"refreshToken": "<payload-only refresh token>"}'
+  -H "Authorization: Bearer 3f2a9c1e4b7d8056a1c3e5f70b2d4689" \
+  -d '{"refreshToken": "<opaque refresh token>"}'
 ```
 
 请求体可省略，此时仅撤销访问令牌。

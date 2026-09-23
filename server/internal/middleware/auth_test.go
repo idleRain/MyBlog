@@ -17,7 +17,7 @@ func TestAuth(t *testing.T) {
 	testCases := []struct {
 		name         string
 		header       string
-		jwtErr       error
+		tokenErr     error
 		expectCalled bool
 		expectCode   int
 	}{
@@ -30,7 +30,7 @@ func TestAuth(t *testing.T) {
 		{
 			name:         "令牌无效时返回 401",
 			header:       "Bearer invalid-token",
-			jwtErr:       errors.New("token invalid"),
+			tokenErr:     errors.New("token invalid"),
 			expectCalled: false,
 			expectCode:   response.CodeAuth,
 		},
@@ -43,8 +43,8 @@ func TestAuth(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			jwtService := &fakeJWTService{claims: &service.JWTClaims{UserID: 7}, err: tc.jwtErr}
-			router, handlerCalled := newAuthRouter(Auth(jwtService), func(c *gin.Context) {
+			tokenService := &fakeTokenService{claims: &service.TokenIdentity{UserID: 7}, err: tc.tokenErr}
+			router, handlerCalled := newAuthRouter(Auth(tokenService), func(c *gin.Context) {
 				if got, exists := c.Get("userID"); tc.expectCalled {
 					if !exists || got != uint(7) {
 						t.Errorf("上下文 userID = %v，期望 7", got)
@@ -72,7 +72,7 @@ func TestOptionalAuth(t *testing.T) {
 	testCases := []struct {
 		name                string
 		header              string
-		jwtErr              error
+		tokenErr            error
 		expectAuthenticated bool
 	}{
 		{
@@ -83,7 +83,7 @@ func TestOptionalAuth(t *testing.T) {
 		{
 			name:                "无效令牌时放行且不标记认证",
 			header:              "Bearer bad",
-			jwtErr:              errors.New("token invalid"),
+			tokenErr:            errors.New("token invalid"),
 			expectAuthenticated: false,
 		},
 		{
@@ -95,8 +95,8 @@ func TestOptionalAuth(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			jwtService := &fakeJWTService{claims: &service.JWTClaims{UserID: 3}, err: tc.jwtErr}
-			router, handlerCalled := newAuthRouter(OptionalAuth(jwtService), func(c *gin.Context) {
+			tokenService := &fakeTokenService{claims: &service.TokenIdentity{UserID: 3}, err: tc.tokenErr}
+			router, handlerCalled := newAuthRouter(OptionalAuth(tokenService), func(c *gin.Context) {
 				_, exists := c.Get("authenticated")
 				if exists != tc.expectAuthenticated {
 					t.Errorf("上下文 authenticated 存在状态 = %v，期望 %v", exists, tc.expectAuthenticated)

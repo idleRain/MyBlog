@@ -21,22 +21,22 @@ type IdentityProvider interface {
 	Resolve(c *gin.Context) (*domain.User, error)
 }
 
-// jwtIdentityProvider 基于 JWT 与用户仓储的身份解析实现。
-type jwtIdentityProvider struct {
-	jwtService service.JWTService
-	userRepo   repository.UserRepository
+// tokenIdentityProvider 基于令牌表与用户仓储的身份解析实现。
+type tokenIdentityProvider struct {
+	tokenService service.TokenServiceInterface
+	userRepo     repository.UserRepository
 }
 
-// NewIdentityProvider 创建 JWT 身份解析器，依赖由组合根注入。
-func NewIdentityProvider(jwtService service.JWTService, userRepo repository.UserRepository) IdentityProvider {
-	return &jwtIdentityProvider{
-		jwtService: jwtService,
-		userRepo:   userRepo,
+// NewIdentityProvider 创建身份解析器，依赖由组合根注入。
+func NewIdentityProvider(tokenService service.TokenServiceInterface, userRepo repository.UserRepository) IdentityProvider {
+	return &tokenIdentityProvider{
+		tokenService: tokenService,
+		userRepo:     userRepo,
 	}
 }
 
 // Resolve 解析访问令牌并加载完整用户，逐项校验令牌、状态与角色有效性。
-func (p *jwtIdentityProvider) Resolve(c *gin.Context) (*domain.User, error) {
+func (p *tokenIdentityProvider) Resolve(c *gin.Context) (*domain.User, error) {
 	token := c.GetHeader("Authorization")
 
 	if token == "" {
@@ -48,8 +48,8 @@ func (p *jwtIdentityProvider) Resolve(c *gin.Context) (*domain.User, error) {
 	// 移除 Bearer 前缀，无前缀时保持原值。
 	token = strings.TrimPrefix(token, bearerTokenPrefix)
 
-	// 验证访问令牌。
-	claims, err := p.jwtService.ValidateAccessToken(token)
+	// 校验访问令牌，服务端令牌表是身份的唯一权威。
+	identity, err := p.tokenService.ValidateAccessToken(token)
 	if err != nil {
 		response.Unauthorized(c, "无效的认证令牌")
 		c.Abort()
@@ -57,7 +57,7 @@ func (p *jwtIdentityProvider) Resolve(c *gin.Context) (*domain.User, error) {
 	}
 
 	// 从数据库查询用户信息。
-	user, err := p.userRepo.GetByID(claims.UserID)
+	user, err := p.userRepo.GetByID(identity.UserID)
 	if err != nil {
 		response.Unauthorized(c, "用户不存在")
 		c.Abort()

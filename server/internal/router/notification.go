@@ -11,17 +11,17 @@ import (
 // NotificationRoutes 通知路由模块
 type NotificationRoutes struct {
 	notificationHandler handler.NotificationHandlerInterface
-	jwtService          service.JWTService
+	tokenService        service.TokenServiceInterface
 }
 
 // NewNotificationRoutes 创建通知路由模块
 func NewNotificationRoutes(
 	notificationHandler handler.NotificationHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 ) *NotificationRoutes {
 	return &NotificationRoutes{
 		notificationHandler: notificationHandler,
-		jwtService:          jwtService,
+		tokenService:        tokenService,
 	}
 }
 
@@ -29,7 +29,7 @@ func NewNotificationRoutes(
 func (nr *NotificationRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	// 通知接口需要登录，且仅能操作本人通知。
 	notifications := api.Group("/notifications")
-	notifications.Use(middleware.Auth(nr.jwtService))
+	notifications.Use(middleware.Auth(nr.tokenService))
 	{
 		notifications.POST("/list", nr.notificationHandler.ListNotifications)            // 通知列表
 		notifications.POST("/unread-count", nr.notificationHandler.GetUnreadCount)       // 未读数

@@ -11,7 +11,7 @@ import (
 // SettingRoutes 设置路由模块
 type SettingRoutes struct {
 	settingHandler handler.SettingHandlerInterface
-	jwtService     service.JWTService
+	tokenService   service.TokenServiceInterface
 	identity       middleware.IdentityProvider
 	rbacService    service.RBACService
 }
@@ -19,13 +19,13 @@ type SettingRoutes struct {
 // NewSettingRoutes 创建设置路由模块
 func NewSettingRoutes(
 	settingHandler handler.SettingHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *SettingRoutes {
 	return &SettingRoutes{
 		settingHandler: settingHandler,
-		jwtService:     jwtService,
+		tokenService:   tokenService,
 		identity:       identity,
 		rbacService:    rbacService,
 	}

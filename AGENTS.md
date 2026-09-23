@@ -159,10 +159,10 @@ pnpm run migrate [create|up|down|version|help]
 - **规范化与索引**：遵循第三范式，多对多关系使用独立关联表，树形结构使用 `parent_id`、`root_id`、`level` 字段；唯一性字段加唯一索引，外键与高频查询字段加普通索引，禁止无索引的大表查询。
 - **数据一致性**：显式声明 GORM 关联关系与外键删除策略，如 `OnDelete:CASCADE` 与 `OnDelete:SET NULL`；状态类字段使用命名常量枚举，时间字段统一为 `datetime(3)` 精度。多步骤写库操作必须用事务包裹（`CreateArticle`/`UpdateArticle`/`ViewArticle` 均已按事务化模式清偿，新增多段写库沿用 repository 的 `xxxTx` 事务方法先例）。
 - **密码**：bcrypt（成本常量 `BcryptCost = 12`），密码强度校验在 `service/user.go`（待迁移公共工具）。
-- **命名**：Go 结构体字段与 JSON tag 使用小驼峰；接口与实现同包定义，命名统一为 `XxxInterface` 后缀，如 `ArticleHandlerInterface`、`ArticleServiceInterface`、`ArticleRepositoryInterface`。存量不一致：user 模块的 `UserService`、`JWTService`、`RBACService`、`UserRepository` 未带后缀（触碰时统一，不强制专项重构）。各层只依赖接口而非具体实现。
+- **命名**：Go 结构体字段与 JSON tag 使用小驼峰；接口与实现同包定义，命名统一为 `XxxInterface` 后缀，如 `ArticleHandlerInterface`、`ArticleServiceInterface`、`ArticleRepositoryInterface`。存量不一致：user 模块的 `UserService`、`RBACService`、`UserRepository` 未带后缀（触碰时统一，不强制专项重构）。各层只依赖接口而非具体实现。
 - **接口定义位置**：接口统一声明在各层实现所在包，即 `handler`、`service`、`repository` 内；`router` 只引用各层接口完成依赖注入，**不得在 `router` 包重复定义接口**（存量违例：router 包重复定义 11 个 handler 接口 + `Dependencies` 字段为 `interface{}` 运行时断言，见 D3，禁止扩大）。
 - **配置**：`internal/config` 包通过 Viper 读取 `configs/config.yaml`，所有配置项均以 YAML 为唯一来源。
-- **中间件**：`middleware` 包含 logger、request ID、CORS、汇总安全、auth、rbac、ratelimit。权限与认证中间件只依赖 `IdentityProvider` 抽象（`middleware/identity.go`），唯一实现 `jwtIdentityProvider` 经组合根注入 jwtService 与 userRepo。
+- **中间件**：`middleware` 包含 logger、request ID、CORS、汇总安全、auth、rbac、ratelimit。权限与认证中间件只依赖 `IdentityProvider` 抽象（`middleware/identity.go`），唯一实现 `tokenIdentityProvider` 经组合根注入 tokenService 与 userRepo。
 
 ## 6. 前端约定（apps/ + packages/）
 
@@ -205,7 +205,7 @@ pnpm run migrate [create|up|down|version|help]
 | D8 | admin 12 个页面胖组件 + onMount 取数（users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码（**已清偿**） | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |
-| D11 | JWT 撤销内存 map（**已加锁**；撤销键已归一化并随令牌过期惰性清理，撤销检查真实生效；deprecated `ValidateToken` 已删） | 单实例部署前提；持久化前保持锁 |
+| D11 | 令牌表为内存 map（**已加锁**；过期记录随签发惰性清理；令牌为不透明随机串，身份唯一权威在服务端令牌表） | 单实例部署前提；持久化前保持锁；服务重启即全部会话失效 |
 | D12 | 文章响应泄漏作者审计字段（**已清偿**：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
 | D13 | `user_follow` 前端零消费（**已收口**：作者页 FollowButton 消费 follow/isFollowing 接口） | 关注数据仅经 service 域端点读写 |
 | D14 | admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（**已清偿**：7 页回归 `$ui`） | 禁止仿效；新分页一律 `$ui` |
@@ -218,12 +218,12 @@ pnpm run migrate [create|up|down|version|help]
 
 已完成：
 - 基础设施：Monorepo 架构、环境与工具链、Git hooks、智能开发脚本与监控、pnpm catalog 版本治理。
-- 后端：11 个业务模块（用户/认证/JWT 双 token/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数约 90，详见 `server/docs/api/`）。
+- 后端：11 个业务模块（用户/认证/不透明双令牌/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数约 90，详见 `server/docs/api/`）。
 - 后端数据管道：通知生产链路（评论回复/点赞/关注）、浏览明细与日统计、搜索日志、评论设置开关消费均已打通。
 - 前端 admin：14 个页面（仪表盘、文章管理、分类、标签、评论、媒体、用户、设置、友链、统计、通知、登录）+ markdown 编辑器组件。
 - 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题。
 - 2026-09-16：通知铃铛移动端入口、博客目录检索框、个人资料页、友链申请表单、三展位页、订阅暂未开放反馈、隐私政策页、设置未生效标注、ErrUserNotFound 映射收敛、主题按钮定位参数化、Header/Footer/错误页多语言、UpdateArticle 事务化。
-- 认证止损真实化：JWT 撤销键归一化、登出/改密撤销、CORS 白名单、登录锁定、Server 超时、ViewArticle 事务化、WAF 模式锚定等。
+- 认证止损真实化：令牌表撤销、登出/改密撤销、CORS 白名单、登录锁定、Server 超时、ViewArticle 事务化、WAF 模式锚定等。
 - 内容多语言（i18n）：文章/分类/标签翻译表（`*_translations`，主列恒为缺省中文）；后端按 `Accept-Language` 输出本地化字段并附 `Content-Language`，`*` 供管理端读全量翻译包，`i18n` 补丁随创建/更新写入，搜索合并翻译表匹配；语言白名单权威在 `config.yaml` 的 `i18n` 节，契约见 `contracts/i18n-protocol.md`；web 注入 paraglide 语言回调并随切换刷新，admin 注入全量包标识并提供英文翻译编辑（界面本身不做多语言）。
 
 待办：

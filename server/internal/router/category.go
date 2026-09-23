@@ -11,7 +11,7 @@ import (
 // CategoryRoutes 分类路由模块
 type CategoryRoutes struct {
 	categoryHandler handler.CategoryHandlerInterface
-	jwtService      service.JWTService
+	tokenService    service.TokenServiceInterface
 	identity        middleware.IdentityProvider
 	rbacService     service.RBACService
 }
@@ -19,13 +19,13 @@ type CategoryRoutes struct {
 // NewCategoryRoutes 创建分类路由模块
 func NewCategoryRoutes(
 	categoryHandler handler.CategoryHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *CategoryRoutes {
 	return &CategoryRoutes{
 		categoryHandler: categoryHandler,
-		jwtService:      jwtService,
+		tokenService:    tokenService,
 		identity:        identity,
 		rbacService:     rbacService,
 	}

@@ -10,24 +10,24 @@ import (
 
 // FriendlyLinkRoutes 友情链接路由模块
 type FriendlyLinkRoutes struct {
-	linkHandler handler.FriendlyLinkHandlerInterface
-	jwtService  service.JWTService
-	identity    middleware.IdentityProvider
-	rbacService service.RBACService
+	linkHandler  handler.FriendlyLinkHandlerInterface
+	tokenService service.TokenServiceInterface
+	identity     middleware.IdentityProvider
+	rbacService  service.RBACService
 }
 
 // NewFriendlyLinkRoutes 创建友情链接路由模块
 func NewFriendlyLinkRoutes(
 	linkHandler handler.FriendlyLinkHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *FriendlyLinkRoutes {
 	return &FriendlyLinkRoutes{
-		linkHandler: linkHandler,
-		jwtService:  jwtService,
-		identity:    identity,
-		rbacService: rbacService,
+		linkHandler:  linkHandler,
+		tokenService: tokenService,
+		identity:     identity,
+		rbacService:  rbacService,
 	}
 }
 

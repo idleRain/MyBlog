@@ -38,7 +38,7 @@ func newLockoutTestService(user *domain.User, policy LoginLockoutPolicy) (*userS
 		})
 		return nil
 	}
-	svc := NewUserService(repo, &recordedJWTService{}, NewRBACService(),
+	svc := NewUserService(repo, &recordedTokenService{}, NewRBACService(),
 		WithLoginLockoutPolicy(policy)).(*userService)
 	return svc, snapshots
 }

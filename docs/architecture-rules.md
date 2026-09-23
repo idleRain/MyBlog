@@ -206,9 +206,9 @@ git grep -n "NewRBACService()" -- server
 改动以下任何一项均属最高风险契约变更，须先更新本节再写代码：
 
 - token pair 形状：`{accessToken, refreshToken, expiresIn}`。
-- 线格式：**payload-only JWT**（前端存储与传输的是无点号 Base64 payload，后端 `ReconstructFullToken` 重构完整签名后验证；claims 为 `{u, jti, exp}`，`jti` 为实例唯一标识）。
+- 线格式：**不透明令牌**（服务端签发 32 位十六进制随机串，身份与生命周期登记在服务端令牌表；令牌自身不携带任何可解码信息，校验以令牌表为唯一权威，不重构也不重新签名）。
 - 刷新：`POST /api/auth/refresh`，body `{refreshToken}`；刷新即旋转（旧 refresh token 撤销），旋转前查库校验用户存在且状态正常。
-- 撤销：内存 map（单实例前提，债务 D11）；撤销键为 payload 段归一化形式，记录随令牌过期惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
+- 撤销：令牌表为内存 map（单实例前提，债务 D11）；撤销即从表中移除记录，过期记录随签发惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
 - access 链路取舍：信任短有效期，不逐请求查库；被禁用用户的存量 access 至多存活 `jwt.access_expire` 分钟，实时失效诉求由 R4 会话方案承接。
 - 前端 401 识别：以响应体业务码 `code === 401` 判定（D10 已清偿，`TOKEN_ERROR_MESSAGES` 文案匹配已移除，禁止回退）。
 

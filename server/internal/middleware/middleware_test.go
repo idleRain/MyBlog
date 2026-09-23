@@ -55,14 +55,14 @@ func (f *fakeRBACService) CanManageUser(managerRole, targetRole string) bool {
 	return f.canManage
 }
 
-// fakeJWTService 可配置的 JWTService 测试替身，仅覆盖令牌校验方法。
-type fakeJWTService struct {
-	service.JWTService
-	claims *service.JWTClaims
+// fakeTokenService 可配置的 tokenService 测试替身，仅覆盖令牌校验方法。
+type fakeTokenService struct {
+	service.TokenServiceInterface
+	claims *service.TokenIdentity
 	err    error
 }
 
-func (f *fakeJWTService) ValidateAccessToken(tokenString string) (*service.JWTClaims, error) {
+func (f *fakeTokenService) ValidateAccessToken(tokenString string) (*service.TokenIdentity, error) {
 	if f.err != nil {
 		return nil, f.err
 	}

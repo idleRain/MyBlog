@@ -11,7 +11,7 @@ import (
 // ArticleRoutes 文章路由
 type ArticleRoutes struct {
 	articleHandler handler.ArticleHandlerInterface
-	jwtService     service.JWTService
+	tokenService   service.TokenServiceInterface
 	identity       middleware.IdentityProvider
 	rbacService    service.RBACService
 }
@@ -19,13 +19,13 @@ type ArticleRoutes struct {
 // NewArticleRoutes 创建文章路由实例
 func NewArticleRoutes(
 	articleHandler handler.ArticleHandlerInterface,
-	jwtService service.JWTService,
+	tokenService service.TokenServiceInterface,
 	identity middleware.IdentityProvider,
 	rbacService service.RBACService,
 ) *ArticleRoutes {
 	return &ArticleRoutes{
 		articleHandler: articleHandler,
-		jwtService:     jwtService,
+		tokenService:   tokenService,
 		identity:       identity,
 		rbacService:    rbacService,
 	}
@@ -35,7 +35,7 @@ func NewArticleRoutes(
 func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, _ *gin.RouterGroup) {
 	// 公开访问的文章路由，携带有效令牌时注入用户身份用于角色化可见性判断。
 	publicArticles := rg.Group("/articles")
-	publicArticles.Use(middleware.OptionalAuth(ar.jwtService))
+	publicArticles.Use(middleware.OptionalAuth(ar.tokenService))
 	{
 		// 文章查看接口，无需登录。
 		publicArticles.POST("/get", ar.articleHandler.GetArticle)                   // 根据ID获取文章
@@ -56,7 +56,7 @@ func (ar *ArticleRoutes) RegisterRoutes(rg *gin.RouterGroup, _ *gin.RouterGroup)
 
 	// 需要登录的文章操作
 	authArticles := rg.Group("/articles")
-	authArticles.Use(middleware.Auth(ar.jwtService))
+	authArticles.Use(middleware.Auth(ar.tokenService))
 	{
 		// 文章互动操作接口，需要登录。
 		authArticles.POST("/like", ar.articleHandler.LikeArticle)             // 点赞文章
