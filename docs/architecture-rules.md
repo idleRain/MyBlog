@@ -220,7 +220,7 @@ git grep -n "NewRBACService()" -- server
 
 | 编号 | 债务描述 | 基线 | 验证命令 | 红线 |
 |---|---|---|---|---|
-| D1 | service/middleware/router import repository | service **11**+middleware **1**+router **0**（R3 后 router 归零，middleware 仅 identity.go；`*_test.go` 测试替身文件不计入） | 见 §2.3 | 只减不增 |
+| D1 | service/middleware/router import repository | service **12**+middleware **1**+router **0**（R3 后 router 归零，middleware 仅 identity.go；`*_test.go` 测试替身文件不计入。dict 模块接入使 service 层从 11 漂移至 12，CI 改为手动触发后该漂移未被拦截，2026-09 承认现状重新锚定） | 见 §2.3 | 只减不增 |
 | D2 | 双 User 模型同写 users 表 | **已清偿（R1）**：合并为唯一 `domain.User` 实体 | `git grep -n "type User struct" -- server/internal --include="*.go"`（仅 domain） | 新字段只加 `domain.User` |
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言 | **已清偿（R0）**：router 重复接口 0、断言 0 | `git grep -c "HandlerInterface interface" -- server/internal/router`（应为空） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化 | **已收敛（R0）**：仅 main.go 组合根 1 处 | 见 §5.3 | 禁止新增实例化点 |

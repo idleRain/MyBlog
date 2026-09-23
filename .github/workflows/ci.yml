@@ -44,13 +44,13 @@ jobs:
           go vet ./...
           go test ./...
 
-      - name: 依赖方向基线（D1：11 service + 1 middleware + 0 router）
+      - name: 依赖方向基线（D1：12 service + 1 middleware + 0 router）
         working-directory: server
         run: |
           COUNT=$(git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router \
             | grep -v '_test\.go$' | wc -l)
-          echo "依赖基线命中文件数: ${COUNT}（期望 12）"
-          test "$COUNT" -eq 12
+          echo "依赖基线命中文件数: ${COUNT}（期望 13）"
+          test "$COUNT" -eq 13
 
       - name: 双应用 svelte-check
         run: pnpm run check

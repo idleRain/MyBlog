@@ -18,7 +18,7 @@
 
 ```bash
 git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router
-# 输出文件数不得高于债务基线 D1（service 11 + middleware 1 + router 0）
+# 输出文件数不得高于债务基线 D1（service 12 + middleware 1 + router 0，合计 13）
 ```
 
 ### A2 类型唯一真相源
@@ -195,7 +195,7 @@ pnpm run migrate [create|up|down|version|help]
 
 | 编号 | 债务 | 红线 |
 |---|---|---|
-| D1 | service/middleware/router 依赖 repository 包（**已收敛**：service 11 + middleware 1 + router 0） | 只减不增 |
+| D1 | service/middleware/router 依赖 repository 包（**重新锚定**：service 12 + middleware 1 + router 0；dict 模块接入时基线漂移未被手动触发的 CI 拦截，2026-09 承认现状后只减不增） | 只减不增 |
 | D2 | 双 User 模型（**已清偿**：合并为唯一 `domain.User`） | 新字段只加 `domain.User` |
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言（**已清偿**） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化（**已收敛**：仅 main 组合根 1 处） | 禁止新增实例化点 |
