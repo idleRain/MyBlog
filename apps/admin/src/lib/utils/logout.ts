@@ -61,8 +61,3 @@ export async function performLogout(
     }
   }
 }
-
-/**
- * 强制退出登录（仅清除本地状态）
- * 用于 401 错误等无法调用后端接口的场景
- */
