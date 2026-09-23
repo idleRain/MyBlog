@@ -166,11 +166,11 @@ export function createHttpClient(options: CreateHttpClientOptions) {
       beforeRequest: [requestInterceptor],
       afterResponse: [responseInterceptor]
     },
-    retry: {
-      limit: 2,
-      methods: ['get', 'put', 'head', 'delete', 'options', 'trace'],
-      statusCodes: [408, 413, 429, 500, 502, 503, 504]
-    }
+    // 重试显式关闭：后端业务接口一律使用 POST 且多数为非幂等写。
+    // 创建类请求重复提交会产生重复数据，点赞收藏关注为切换语义，重复提交会翻转状态。
+    // 自动重试在服务端已处理但响应丢失的场景下必然重放请求体，因此不允许在传输层自动重试。
+    // 认证失效后的重放由响应拦截器携带新令牌显式重发承担，与传输层重试无关。
+    retry: { limit: 0 }
   })
 
   return client

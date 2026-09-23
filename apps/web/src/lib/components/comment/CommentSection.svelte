@@ -60,11 +60,8 @@ let authorName = $state('')
 let authorEmail = $state('')
 let submitting = $state(false)
 
-// 订阅认证状态，登录用户隐藏游客字段。
-let isAuthenticated = $state(false)
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
-})
+// 登录用户隐藏游客字段；认证状态经 store 自动订阅读取，组件卸载时由 Svelte 自动退订。
+const isAuthenticated = $derived($authStore.isAuthenticated)
 
 // 是否存在更多评论页，决定加载更多按钮的展示。
 const hasMore = $derived(currentPage * pageSize < total)

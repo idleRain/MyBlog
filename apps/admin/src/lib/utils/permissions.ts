@@ -1,7 +1,7 @@
 // 权限管理工具函数
 
+import type { User, UserRole, RoleInfo } from '@myblog/api/modules/user/types'
 import { ROLE_PERMISSIONS, ROLE_CONFIG } from '$lib/constants/auth'
-import type { User, UserRole, RoleInfo } from '$lib/types'
 import { authStore } from '$lib/stores/auth'
 
 /**

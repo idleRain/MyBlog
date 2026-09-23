@@ -18,11 +18,11 @@ import {
   ListTree,
   type LucideIcon
 } from '@lucide/svelte'
+import type { User, UserRole } from '@myblog/api/modules/user/types'
 import { Avatar, Badge, Button, Separator, Sidebar } from '$ui'
 import { goto, toAdminPath } from '$lib/utils/navigation'
 import { getRoleInfo } from '$lib/utils/permissions'
 import { performLogout } from '$lib/utils/logout'
-import type { User, UserRole } from '$lib/types'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import { NotificationAPI } from '$lib/api'

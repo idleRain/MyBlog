@@ -21,10 +21,8 @@ let currentPage = $state(1)
 let loading = $state(true)
 
 // 收藏数据依赖登录令牌，未登录时引导前往登录页。
-let isAuthenticated = $state(false)
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
-})
+// 认证状态经 store 自动订阅读取，组件卸载时由 Svelte 自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
 
 // 分页由 URL 查询参数驱动，分页链接变更时自动重新加载。
 const queryPage = $derived(

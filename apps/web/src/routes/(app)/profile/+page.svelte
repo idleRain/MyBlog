@@ -35,10 +35,8 @@ let profileLoading = $state(true)
 let loadedProfile: ProfileUser | undefined = $state()
 
 // 收藏列表同款登录闸门：令牌存于 localStorage，SSR load 拿不到身份，按客户端补拉实现。
-let isAuthenticated = $state(false)
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
-})
+// 认证状态经 store 自动订阅读取，组件卸载时由 Svelte 自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
 
 // 登录态变化时拉取一次资料，登出时重置页面状态。
 $effect(() => {

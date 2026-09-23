@@ -173,7 +173,7 @@ pnpm run migrate [create|up|down|version|help]
 - **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用薄封装各持一份）；admin 认证域工具 D6 已收敛（`utils/jwt.ts`、`utils/auth.ts` 已删，刷新/登出单轨）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
 - **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`（i18n 演示沙盒）；后台使用 `(admin)`、`(auth)`（登录页归属后台）。数据加载纪律见 A6：web 用 load，admin 新页面优先 load。
 - **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。接入现状与文案取词纪律见债务 D18（Header/Footer/错误页已接入，其余页面待页面大变动后分批）。
-- **类型**：接口类型唯一来源 `@myblog/api`（铁律 A2）。D7 已清偿：`types/api.d.ts` 影子层已删并加 eslint 守门，禁止回潮。
+- **类型**：接口类型唯一来源 `@myblog/api`（铁律 A2）。D7 已清偿：`types/api.d.ts` 与 admin `lib/types` 影子层共 4 文件 535 行已删，两应用 eslint 守门改为 patterns 拦截 `$lib/types` 全部引入形态，禁止回潮。
 - 前端代码改动需运行对应应用 `cd apps/web && pnpm run check` 或 `cd apps/admin && pnpm run check`（svelte-check + svelte-kit sync）。
 
 ## 7. 注释与代码规范硬约束
@@ -201,7 +201,7 @@ pnpm run migrate [create|up|down|version|help]
 | D4 | `RBACService` 生产实例化（**已收敛**：仅 main 组合根 1 处） | 禁止新增实例化点 |
 | D5 | 两 app 基础设施逐字重复（auth store 已下沉 `@myblog/auth`，service/theme/layout 仍重复） | 修改任一必须同步另一份 |
 | D6 | admin 认证工具三轨并行（**已收敛**：`jwt.ts`/`auth.ts` 已删，刷新/登出单轨） | 禁止新增认证工具文件 |
-| D7 | 影子类型 `types/api.d.ts`（**已清偿**，eslint 守门已加） | 禁止回潮；类型一律来自 `@myblog/api` |
+| D7 | 应用层影子类型（**已清偿**：`types/api.d.ts` 与 admin `lib/types` 4 文件 535 行一并删除，两应用守门实测拦截） | 禁止回潮；类型一律来自 `@myblog/api` |
 | D8 | admin 12 个页面胖组件 + onMount 取数（users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码（**已清偿**） | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |

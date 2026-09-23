@@ -19,10 +19,11 @@ let isFollowing = $state(false)
 let busy = $state(false)
 let loaded = $state(false)
 
-let isAuthenticated = $state(false)
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
-  // 登录态就绪后补拉关注状态，登出时重置为未关注。
+// 认证状态经 store 自动订阅读取，Svelte 在组件卸载时自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
+
+// 登录态就绪后补拉关注状态，登出时重置为未关注。
+$effect(() => {
   if (isAuthenticated && !loaded) {
     void refreshFollowing()
   }

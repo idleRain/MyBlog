@@ -75,12 +75,14 @@ onMount(async () => {
   await requireGuest()
 })
 
-// 监听认证状态变化
-authStore.subscribe(state => {
-  if (state.isAuthenticated && state.user) {
-    goto('/')
-  }
-})
+// 监听认证状态变化，订阅在 onMount 中建立，其返回的退订函数由组件卸载时调用。
+onMount(() =>
+  authStore.subscribe(state => {
+    if (state.isAuthenticated && state.user) {
+      goto('/')
+    }
+  })
+)
 
 function togglePasswordVisibility() {
   showPassword = !showPassword

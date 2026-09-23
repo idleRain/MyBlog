@@ -16,10 +16,14 @@ const RECENT_LIMIT = 5
 let unreadCount = $state(0)
 let recent = $state<Notification[]>([])
 
-let isAuthenticated = $state(false)
+// 认证状态经 store 自动订阅读取，Svelte 在组件卸载时自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
+
+// 上一次的登录态，用于识别由未登录转为已登录的边沿。
 let wasAuthenticated = false
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
+
+// 登录边沿补拉未读数，登出时清空面板数据；副作用集中在 $effect 中，组件卸载即停止。
+$effect(() => {
   if (isAuthenticated && !wasAuthenticated) {
     void refreshUnread()
   }

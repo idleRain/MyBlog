@@ -24,14 +24,11 @@ let isMobileMenuOpen = $state(false)
 let isAuthorDialogOpen = $state(false)
 let isFriendlyLinkDialogOpen = $state(false)
 
-// 订阅认证状态
-let isAuthenticated = $state(false)
-let currentUser = $state<UserType>()
+// 认证状态经 store 自动订阅读取，Svelte 在组件卸载时自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
 
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
-  currentUser = state.user!
-})
+// 当前用户未登录时为 null，模板统一以可选链取值，不再使用非空断言掩盖空值。
+const currentUser = $derived<UserType | null>($authStore.user)
 
 // 登出功能
 function handleLogout() {

@@ -226,7 +226,7 @@ git grep -n "NewRBACService()" -- server
 | D4 | `RBACService` 生产实例化 | **已收敛（R0）**：仅 main.go 组合根 1 处 | 见 §5.3 | 禁止新增实例化点 |
 | D5 | 两 app 基础设施逐字重复 | **大幅清偿（R1）**：auth store 下沉 `@myblog/auth`（202 行×2 → 16 行×2）；service/index.ts、theme-toggle、layout、error 仍重复 | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应近零差异） | 修改任一必须同步另一份 |
 | D6 | admin 认证工具三轨并行 | **已收敛（R3）**：`utils/jwt.ts`、`utils/auth.ts` 已删（约 488 行）；`performLogout` 单轨（utils/logout）、刷新单轨（service/index.ts） | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken\|getAuthStatus" -- apps/admin/src/lib` | 禁止新增认证工具文件；禁止回潮双轨 |
-| D7 | 影子类型层 | **已清偿（R1）**：`types/api.d.ts` 已删，eslint 守门已加 | `git grep -n "interface BaseApiResponse" -- apps`（应为空） | 禁止回潮；类型一律来自 `@myblog/api` |
+| D7 | 影子类型层 | **已清偿（R1，2026-09 扩面收尾）**：`types/api.d.ts` 与 admin `lib/types`（admin/common/auth/index 共 535 行）已删，两应用 eslint 守门由 paths 改 patterns，拦截 `$lib/types` 全部引入形态 | `git grep -n "interface BaseApiResponse" -- apps`（应为空） | 禁止回潮；类型一律来自 `@myblog/api` |
 | D8 | admin 胖组件 + onMount 取数 | **users 跨页补偿已清偿（R3）**：users/list 增加 keyword 参数；12 个胖组件存量保留（新页面禁用） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码 | **已清偿（R0）**：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配 | **已清偿（R0）**：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |

@@ -14,9 +14,12 @@ let password = $state('')
 let showPassword = $state(false)
 let submitting = $state(false)
 
+// 认证状态经 store 自动订阅读取，组件卸载时由 Svelte 自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
+
 // 已登录用户访问登录页时自动回首页，避免重复登录。
-authStore.subscribe(state => {
-  if (browser && state.isAuthenticated) {
+$effect(() => {
+  if (browser && isAuthenticated) {
     void goto('/')
   }
 })

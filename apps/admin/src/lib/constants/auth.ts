@@ -1,5 +1,13 @@
 import type { UserRole } from '@myblog/api/modules/user/types'
-import type { RoleConfig } from '$lib/types'
+
+// 管理端角色展示配置，承载角色名称、层级与徽章样式，权限判定仍以后端登录下发的权限列表为准。
+export interface RoleConfig {
+  role: UserRole
+  name: string
+  level: number
+  color: 'default' | 'destructive' | 'outline' | 'secondary'
+  permissions: string[]
+}
 
 // 权限常量
 export const PERMISSIONS = {

@@ -49,10 +49,11 @@ export default ts.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [
+          patterns: [
             {
-              name: '$lib/types/api',
-              message: '影子类型层已删除，接口类型一律来自 @myblog/api（铁律 A2），禁止重新引入。'
+              group: ['$lib/types', '$lib/types/*', '$lib/types/**'],
+              message:
+                '应用层影子类型目录已删除，接口类型一律来自 @myblog/api/modules/*/types，依据铁律 A2 禁止重新引入。'
             }
           ]
         }

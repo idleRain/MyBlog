@@ -17,10 +17,8 @@ let isLiked = $state(false)
 let isBookmarked = $state(false)
 let busy = $state(false)
 
-let isAuthenticated = $state(false)
-authStore.subscribe(state => {
-  isAuthenticated = state.isAuthenticated
-})
+// 认证状态经 store 自动订阅读取，组件卸载时由 Svelte 自动退订，避免重挂载累积订阅。
+const isAuthenticated = $derived($authStore.isAuthenticated)
 
 // 登录状态下拉取互动状态，游客不发起状态请求。
 $effect(() => {
