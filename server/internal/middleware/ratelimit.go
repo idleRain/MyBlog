@@ -42,18 +42,15 @@ type clientInfo struct {
 	lastReset time.Time
 }
 
-// NewRateLimiter 创建新的速率限制器
+// NewRateLimiter 创建新的速率限制器。
+// 过期客户端随新客户端加入惰性清扫，不启动独立清扫协程，
+// 避免无停止通道的常驻 goroutine 在测试反复构造限流器时累积泄漏。
 func NewRateLimiter(maxRequests int, window time.Duration) *RateLimiter {
-	limiter := &RateLimiter{
+	return &RateLimiter{
 		maxRequests: maxRequests,
 		window:      window,
 		clients:     make(map[string]*clientInfo),
 	}
-
-	// 启动清理协程
-	go limiter.cleanup()
-
-	return limiter
 }
 
 // Allow 检查是否允许请求
@@ -65,6 +62,8 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	client, exists := rl.clients[clientID]
 
 	if !exists {
+		// 表只在新客户端加入时增长，清扫挂在增长点执行，频率与新客户端出现频率一致。
+		rl.pruneExpiredLocked(now)
 		rl.clients[clientID] = &clientInfo{
 			requests:  1,
 			lastReset: now,
@@ -88,22 +87,13 @@ func (rl *RateLimiter) Allow(clientID string) bool {
 	return true
 }
 
-// cleanup 清理过期的客户端信息
-func (rl *RateLimiter) cleanup() {
-	ticker := time.NewTicker(rl.window)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rl.mutex.Lock()
-		now := time.Now()
-
-		for clientID, client := range rl.clients {
-			if now.Sub(client.lastReset) >= rl.window*2 {
-				delete(rl.clients, clientID)
-			}
+// pruneExpiredLocked 移除超过两个窗口未活动的客户端记录，约束表规模。
+// 调用方必须已持有写锁，清扫仅由新客户端加入触发，无需独立协程。
+func (rl *RateLimiter) pruneExpiredLocked(now time.Time) {
+	for clientID, client := range rl.clients {
+		if now.Sub(client.lastReset) >= rl.window*2 {
+			delete(rl.clients, clientID)
 		}
-
-		rl.mutex.Unlock()
 	}
 }
 
