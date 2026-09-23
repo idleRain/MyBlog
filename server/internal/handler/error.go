@@ -32,7 +32,9 @@ func HandleServiceError(c *gin.Context, err error) {
 		errors.Is(err, domain.ErrDictTypeNotFound),
 		errors.Is(err, domain.ErrDictItemNotFound):
 		response.NotFound(c, err.Error())
-	case errors.Is(err, service.ErrInvalidRequest):
+	case errors.Is(err, service.ErrInvalidRequest),
+		errors.Is(err, service.ErrUsernameTaken),
+		errors.Is(err, service.ErrEmailTaken):
 		response.BadRequest(c, err.Error())
 	default:
 		response.InternalError(c, err.Error())

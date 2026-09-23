@@ -121,7 +121,7 @@ func NewUserService(userRepo repository.UserRepository, tokenService TokenServic
 func (s *userService) CreateUser(req *domain.CreateUserRequest) (*domain.User, error) {
 	// 检查用户名是否已存在
 	if existUser, _ := s.userRepo.GetByUsername(req.Username); existUser != nil {
-		return nil, fmt.Errorf("用户名已存在")
+		return nil, ErrUsernameTaken
 	}
 
 	// 检查邮箱是否已存在
@@ -189,7 +189,7 @@ func (s *userService) UpdateUser(req *domain.UpdateUserRequest) (*domain.User, e
 
 	// 检查邮箱是否被其他用户占用
 	if userByEmail, _ := s.userRepo.GetByEmail(req.Email); userByEmail != nil && userByEmail.ID != req.ID {
-		return nil, fmt.Errorf("邮箱已被其他用户使用")
+		return nil, ErrEmailTaken
 	}
 
 	// 更新基本信息

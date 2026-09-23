@@ -58,7 +58,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	// 调用服务层创建用户
 	user, err := h.userService.CreateUser(&req)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -225,7 +225,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	if err := h.userService.DeleteUser(req.ID); err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -306,7 +306,7 @@ func (h *UserHandler) Logout(c *gin.Context) {
 	}
 
 	if err := h.userService.Logout(token, req.RefreshToken); err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -368,7 +368,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	}
 
 	if err := h.userService.ChangePassword(userID, &req); err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

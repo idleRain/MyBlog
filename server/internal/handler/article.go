@@ -96,7 +96,7 @@ func (h *ArticleHandler) GetArticle(c *gin.Context) {
 	// 获取文章
 	article, err := h.articleService.GetArticle(req.ID, userID)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -122,7 +122,7 @@ func (h *ArticleHandler) GetArticleBySlug(c *gin.Context) {
 	// 获取文章
 	article, err := h.articleService.GetArticleBySlug(req.Slug, userID)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

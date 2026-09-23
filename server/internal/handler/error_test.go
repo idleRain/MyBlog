@@ -28,6 +28,8 @@ func TestHandleServiceError(t *testing.T) {
 		"设置项不存在":  domain.ErrSettingNotFound,
 		"用户不存在":   domain.ErrUserNotFound,
 		"关注关系不存在": domain.ErrFollowNotFound,
+		"字典类型不存在": domain.ErrDictTypeNotFound,
+		"字典项不存在":  domain.ErrDictItemNotFound,
 	}
 
 	for name, sentinel := range notFoundErrors {
@@ -39,6 +41,22 @@ func TestHandleServiceError(t *testing.T) {
 			assertResponseCode(t, recorder, 404)
 		})
 	}
+
+	t.Run("业务校验失败返回400", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		HandleServiceError(ctx, service.ErrInvalidRequest)
+
+		assertResponseCode(t, recorder, 400)
+	})
+
+	t.Run("用户名占用返回400", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		HandleServiceError(ctx, service.ErrUsernameTaken)
+
+		assertResponseCode(t, recorder, 400)
+	})
 
 	t.Run("权限不足返回403", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
