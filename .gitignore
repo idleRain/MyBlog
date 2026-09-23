@@ -88,3 +88,5 @@ node_modules
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# 编辑器与工具的临时目录残留
+*.tmpdir

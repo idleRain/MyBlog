@@ -20,9 +20,7 @@ const config = {
     alias: {
       $ui: '../../packages/ui/src',
       '$ui/*': '../../packages/ui/src/*',
-      '~/*': './*',
-      '#/*': './src/types/*',
-      '@/*': './src/*'
+
     }
   }
 }
