@@ -437,7 +437,7 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 	// 登录成功后清零失败计数并解除历史锁定标记。
 	s.resetLoginFailure(user)
 
-	// 生成JWT令牌对
+	// 生成令牌对
 	tokenPair, err := s.tokenService.GenerateTokenPair(user)
 	if err != nil {
 		return nil, fmt.Errorf("生成token失败: %w", err)

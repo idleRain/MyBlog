@@ -81,7 +81,7 @@ MyBlog/
 
 | 模块 | handler | service | repository | 说明 |
 |------|---------|---------|------------|------|
-| 用户管理 | `handler/user.go` | `service/user.go` | `repository/user.go` | 登录、CRUD、JWT 双 token |
+| 用户管理 | `handler/user.go` | `service/user.go` | `repository/user.go` | 登录、CRUD、不透明双令牌 |
 | 文章管理 | `handler/article.go` | `service/article.go` | `repository/article.go` | 文章 CRUD、发布归档、互动 |
 | 分类管理 | `handler/category.go` | `service/category.go` | `repository/category.go` | 分类树形管理 |
 | 标签管理 | `handler/tag.go` | `service/tag.go` | `repository/tag.go` | 标签与热门标签 |
@@ -100,9 +100,9 @@ MyBlog/
 ```go
 // 在 main.go 中（组合根）
 userRepo := repository.NewUserRepository(db)
-jwtService := service.NewJWTService(cfg)
+tokenService := service.NewTokenService(cfg)
 rbacService := service.NewRBACService()
-userSvc := service.NewUserService(userRepo, jwtService, rbacService,
+userSvc := service.NewUserService(userRepo, tokenService, rbacService,
     service.WithLoginLockoutPolicy(loginLockoutPolicyFromConfig(cfg)))
 userHandler := handler.NewUserHandler(userSvc)
 ```
@@ -560,7 +560,7 @@ pnpm run build:web     # 构建前端静态文件
 - **WAF 阻止模式**: 新增或修改 `getDefaultBlockedPatterns()` 模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，模式经词首边界或取值上下文锚定，禁止回退宽匹配（债务 D16）
 - **限流键格式**: 用户级限流键统一 `user:<十进制ID>`（经 `getUserKey` 构造），禁止 rune 转换或字符串直拼产生非法键
 - **认证协议变更**: token 形状、刷新、撤销语义变更属最高风险契约变更，须先更新 `contracts/auth-protocol.md` 再动代码（流程见 `architecture-rules.md` §6.3）
-- **敏感信息**: 不在代码中硬编码密钥；JWT 双密钥经 `MYBLOG_*` 环境变量注入，缺失即启动失败
+- **敏感信息**: 不在代码中硬编码密钥；数据库口令经 `MYBLOG_DATABASE_PASSWORD` 环境变量注入。令牌为服务端签发的不透明随机串，不存在签名密钥配置项
 - **隐私告知同步**: 后端新增或启用的数据收集场景（如评论 IP/UA 写入、新增埋点）必须先同步更新 web 端 `/privacy` 隐私政策页告知再上线（PM-22 承诺口径，隐私页已写明"新增收集场景前先更新本页"）
 - **设置键有效登记**: 后端业务新消费某个设置键时，必须同步补录 admin `lib/constants/setting.ts` 的 `EFFECTIVE_SETTING_KEYS`（未登记项在设置中心显示"未生效"角标）；安全分组的真实生效渠道为 `config.yaml` 与安全中间件（PM-11 口径）
 

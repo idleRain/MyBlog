@@ -12,7 +12,7 @@ func TestEnvVariableName(t *testing.T) {
 		key      string
 		expected string
 	}{
-		{key: "jwt.access_secret", expected: "MYBLOG_JWT_ACCESS_SECRET"},
+		{key: "jwt.access_expire", expected: "MYBLOG_JWT_ACCESS_EXPIRE"},
 		{key: "database.password", expected: "MYBLOG_DATABASE_PASSWORD"},
 		{key: "server.port", expected: "MYBLOG_SERVER_PORT"},
 	}
@@ -27,19 +27,19 @@ func TestEnvVariableName(t *testing.T) {
 // TestApplyEnvOverridesScalar 验证标量配置项可被环境变量覆盖。
 func TestApplyEnvOverridesScalar(t *testing.T) {
 	t.Setenv("MYBLOG_JWT_ACCESS_EXPIRE", "30")
-	t.Setenv("MYBLOG_JWT_ISSUER", "env-issuer")
+	t.Setenv("MYBLOG_SERVER_PORT", "8080")
 
 	v := viper.New()
 	v.SetDefault("jwt.access_expire", 15)
-	v.SetDefault("jwt.issuer", "myblog")
+	v.SetDefault("server.port", 3000)
 
 	applyEnvOverrides(v)
 
 	if actual := v.GetInt("jwt.access_expire"); actual != 30 {
 		t.Errorf("access_expire = %d, 期望环境变量覆盖值 30", actual)
 	}
-	if actual := v.GetString("jwt.issuer"); actual != "env-issuer" {
-		t.Errorf("issuer = %q, 期望环境变量覆盖值 env-issuer", actual)
+	if actual := v.GetInt("server.port"); actual != 8080 {
+		t.Errorf("server.port = %d, 期望环境变量覆盖值 8080", actual)
 	}
 }
 
@@ -81,8 +81,6 @@ func validTestConfig() *Config {
 		Server:   ServerConfig{Port: 3000},
 		Database: DatabaseConfig{Host: "localhost", Username: "root", DBName: "blog"},
 		JWT: JWTConfig{
-			AccessSecret:  "unit-test-access-secret",
-			RefreshSecret: "unit-test-refresh-secret",
 			AccessExpire:  15,
 			RefreshExpire: 168,
 		},
@@ -114,47 +112,6 @@ func TestValidateConfigAcceptsValidConfig(t *testing.T) {
 	}
 }
 
-// TestValidateConfigRejectsEmptySecrets 验证 JWT 密钥缺失即启动失败。
-func TestValidateConfigRejectsEmptySecrets(t *testing.T) {
-	cfg := validTestConfig()
-	cfg.JWT.AccessSecret = ""
-	if err := validateConfig(cfg); err == nil {
-		t.Error("访问令牌密钥为空应返回错误")
-	}
-
-	cfg = validTestConfig()
-	cfg.JWT.RefreshSecret = ""
-	if err := validateConfig(cfg); err == nil {
-		t.Error("刷新令牌密钥为空应返回错误")
-	}
-}
-
-// TestValidateConfigRejectsWeakSecrets 验证已公开的弱默认密钥被拒绝。
-func TestValidateConfigRejectsWeakSecrets(t *testing.T) {
-	for _, weak := range knownWeakSecrets {
-		cfg := validTestConfig()
-		cfg.JWT.AccessSecret = weak
-		if err := validateConfig(cfg); err == nil {
-			t.Errorf("访问令牌密钥使用弱默认值 %q 应返回错误", weak)
-		}
-
-		cfg = validTestConfig()
-		cfg.JWT.RefreshSecret = weak
-		if err := validateConfig(cfg); err == nil {
-			t.Errorf("刷新令牌密钥使用弱默认值 %q 应返回错误", weak)
-		}
-	}
-}
-
-// TestValidateConfigRejectsIdenticalSecrets 验证访问与刷新密钥互异校验。
-func TestValidateConfigRejectsIdenticalSecrets(t *testing.T) {
-	cfg := validTestConfig()
-	cfg.JWT.RefreshSecret = cfg.JWT.AccessSecret
-	if err := validateConfig(cfg); err == nil {
-		t.Error("访问与刷新密钥相同应返回错误")
-	}
-}
-
 // TestValidateConfigRejectsEmptyI18NSupportedLanguages 验证 i18n 白名单为空即拒绝启动。
 func TestValidateConfigRejectsEmptyI18NSupportedLanguages(t *testing.T) {
 	cfg := validTestConfig()
@@ -183,22 +140,12 @@ func TestValidateConfigRejectsI18NDefaultOutsideWhitelist(t *testing.T) {
 }
 
 // TestLoadParsesConfigSections 验证 config.yaml 的 rbac 与 i18n 节可被正确解析并通过校验。
-// YAML 中的 JWT 密钥为空值，经环境变量注入后应通过环境覆盖链路生效。
 func TestLoadParsesConfigSections(t *testing.T) {
-	t.Setenv("MYBLOG_JWT_ACCESS_SECRET", "config-test-access-secret")
-	t.Setenv("MYBLOG_JWT_REFRESH_SECRET", "config-test-refresh-secret")
-
 	cfg, err := Load("../../configs/config.yaml")
 	if err != nil {
 		t.Fatalf("加载配置失败: %v", err)
 	}
 
-	if cfg.JWT.AccessSecret != "config-test-access-secret" {
-		t.Errorf("AccessSecret = %q, 期望经环境变量覆盖为 config-test-access-secret", cfg.JWT.AccessSecret)
-	}
-	if cfg.JWT.RefreshSecret != "config-test-refresh-secret" {
-		t.Errorf("RefreshSecret = %q, 期望经环境变量覆盖为 config-test-refresh-secret", cfg.JWT.RefreshSecret)
-	}
 	if cfg.RBAC.RoleHierarchy["superadmin"] != 4 {
 		t.Error("superadmin 层级应为 4")
 	}

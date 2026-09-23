@@ -42,12 +42,12 @@
 - `version`: API版本
 - `timeout`: 请求超时时间（秒）
 
-### JWT配置 (JWTConfig)
+### 令牌配置 (JWTConfig)
 
-- `access_secret` / `refresh_secret`: 双令牌签名密钥，**无代码默认值**，缺失或使用已公开弱密钥时启动直接失败，生产经 `MYBLOG_JWT_ACCESS_SECRET` / `MYBLOG_JWT_REFRESH_SECRET` 环境变量注入，双密钥必须互异
 - `access_expire`: 访问令牌有效期（分钟）
 - `refresh_expire`: 刷新令牌有效期（小时）
-- `issuer`: 签发者标识
+
+令牌为服务端签发的不透明随机串，身份与生命周期登记在服务端令牌表，因此不存在签名密钥与签发者配置项。
 
 ### 安全配置 (SecurityConfig)
 
@@ -113,5 +113,5 @@ func main() {
 1. 必须先调用 `Load()` 方法初始化配置
 2. 配置采用单例模式，整个应用生命周期内只加载一次
 3. 配置文件路径相对于项目根目录
-4. 配置项均有代码默认值，**JWT 双密钥除外**：密钥不设默认值，缺失即启动失败（OPS-08 定案）
-5. 标量配置项可经 `MYBLOG_<SECTION>_<FIELD>` 环境变量覆盖（如 `MYBLOG_JWT_ACCESS_SECRET`），列表与映射保持 YAML 原值
+4. 配置项均有代码默认值；令牌为不透明随机串，不需要任何密钥配置（OPS-08 的密钥约束随令牌方案变更一并解除）
+5. 标量配置项可经 `MYBLOG_<SECTION>_<FIELD>` 环境变量覆盖（如 `MYBLOG_SERVER_PORT`），列表与映射保持 YAML 原值

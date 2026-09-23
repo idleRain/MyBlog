@@ -25,15 +25,14 @@ services:
       dockerfile: deploy/Dockerfile.server
     restart: unless-stopped
     environment:
-      # 生产模式走 golang-migrate 迁移，数据库口令与 JWT 双密钥经环境注入
+      # 生产模式走 golang-migrate 迁移，数据库口令经环境注入
       MYBLOG_SERVER_MODE: release
       MYBLOG_DATABASE_HOST: mysql
       MYBLOG_DATABASE_PORT: '3306'
       MYBLOG_DATABASE_USERNAME: root
       MYBLOG_DATABASE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYBLOG_DATABASE_DBNAME: ${MYSQL_DATABASE:-myblog}
-      MYBLOG_JWT_ACCESS_SECRET: ${MYBLOG_JWT_ACCESS_SECRET:?请先在 .env 中设置 MYBLOG_JWT_ACCESS_SECRET}
-      MYBLOG_JWT_REFRESH_SECRET: ${MYBLOG_JWT_REFRESH_SECRET:?请先在 .env 中设置 MYBLOG_JWT_REFRESH_SECRET}
+
     volumes:
       - uploads:/app/uploads
     depends_on:

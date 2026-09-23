@@ -71,7 +71,7 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 			ur.userHandler.ChangePassword)
 	}
 
-	// JWT相关路由
+	// 令牌相关路由
 	authGroup := api.Group("/auth")
 	{
 		// 刷新令牌接口，无需认证。

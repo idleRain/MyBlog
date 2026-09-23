@@ -8,7 +8,7 @@ import (
 	"MyBlog/internal/domain"
 )
 
-// recordedTokenService 记录撤销调用的 JWT 服务替身，供登出与改密撤销链路断言。
+// recordedTokenService 记录撤销调用的 令牌服务替身，供登出与改密撤销链路断言。
 type recordedTokenService struct {
 	tokenService
 	revokedTokens  []string

@@ -30,15 +30,10 @@ api:
   version: "v1"
   timeout: 30  # 秒
 
-# JWT配置
+# 令牌配置：令牌为服务端签发的不透明随机串，仅需配置有效期
 jwt:
-  # 双密钥禁止入库为真实值，生产与本地均经环境变量注入：
-  # MYBLOG_JWT_ACCESS_SECRET 与 MYBLOG_JWT_REFRESH_SECRET，缺失任一即启动失败。
-  access_secret: ""
-  refresh_secret: ""
   access_expire: 15  # 分钟
   refresh_expire: 168  # 小时（7天）
-  issuer: "myblog"
 
 # API安全配置
 security:

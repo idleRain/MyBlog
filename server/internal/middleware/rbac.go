@@ -12,7 +12,7 @@ import (
 // RequirePermission 权限验证中间件
 func RequirePermission(identity IdentityProvider, rbacService service.RBACService, permissions ...service.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -42,7 +42,7 @@ func RequirePermission(identity IdentityProvider, rbacService service.RBACServic
 // RequireAllPermissions 要求拥有所有权限的中间件
 func RequireAllPermissions(identity IdentityProvider, rbacService service.RBACService, permissions ...service.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -64,7 +64,7 @@ func RequireAllPermissions(identity IdentityProvider, rbacService service.RBACSe
 // RequireRoleLevel 要求最低角色级别的中间件
 func RequireRoleLevel(identity IdentityProvider, rbacService service.RBACService, minRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -86,7 +86,7 @@ func RequireRoleLevel(identity IdentityProvider, rbacService service.RBACService
 // RequireSuperAdmin 要求超级管理员权限的中间件
 func RequireSuperAdmin(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -108,7 +108,7 @@ func RequireSuperAdmin(identity IdentityProvider) gin.HandlerFunc {
 // RequireAdminOrAbove 要求管理员或更高权限的中间件
 func RequireAdminOrAbove(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -130,7 +130,7 @@ func RequireAdminOrAbove(identity IdentityProvider) gin.HandlerFunc {
 // RequireEditorOrAbove 要求编辑者或更高权限的中间件
 func RequireEditorOrAbove(identity IdentityProvider) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -153,7 +153,7 @@ func RequireEditorOrAbove(identity IdentityProvider) gin.HandlerFunc {
 // 用于检查用户是否可以操作特定资源，支持资源所有者或管理员权限。
 func RequireOwnershipOrAdmin(identity IdentityProvider, getResourceOwnerID func(*gin.Context) (uint, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理
@@ -189,7 +189,7 @@ func RequireOwnershipOrAdmin(identity IdentityProvider, getResourceOwnerID func(
 // CanManageUserRole 检查是否可以管理指定角色用户的中间件
 func CanManageUserRole(identity IdentityProvider, rbacService service.RBACService, getTargetRole func(*gin.Context) (string, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 验证JWT令牌
+		// 校验令牌
 		user, err := identity.Resolve(c)
 		if err != nil {
 			return // 错误已在validateUserFromToken中处理

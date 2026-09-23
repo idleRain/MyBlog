@@ -86,13 +86,10 @@ type APIConfig struct {
 	Timeout int    `mapstructure:"timeout"`
 }
 
-// JWTConfig JWT配置
+// JWTConfig 令牌配置，仅承载有效期。令牌为不透明随机串，服务端不需要任何签名密钥。
 type JWTConfig struct {
-	AccessSecret  string `mapstructure:"access_secret"`
-	RefreshSecret string `mapstructure:"refresh_secret"`
-	AccessExpire  int    `mapstructure:"access_expire"`  // 分钟
-	RefreshExpire int    `mapstructure:"refresh_expire"` // 小时
-	Issuer        string `mapstructure:"issuer"`
+	AccessExpire  int `mapstructure:"access_expire"`  // 分钟
+	RefreshExpire int `mapstructure:"refresh_expire"` // 小时
 }
 
 // SecurityConfig 安全配置
@@ -152,13 +149,6 @@ var (
 
 // envKeyPrefix 环境变量统一前缀，完整变量名由该前缀与配置键转换拼接得到。
 const envKeyPrefix = "MYBLOG"
-
-// knownWeakSecrets 历史版本公开泄漏过的弱密钥集合，任一 JWT 密钥命中都必须拒绝启动。
-// 这些值已随公开仓库扩散，继续使用等同于放弃令牌签名防护。
-var knownWeakSecrets = []string{
-	"myblog_access_secret_key_2025",
-	"myblog_refresh_secret_key_2025",
-}
 
 // Load 加载配置文件
 func Load(configPath string) (*Config, error) {
@@ -243,10 +233,8 @@ func setDefaults() {
 	viper.SetDefault("api.version", "v1")
 	viper.SetDefault("api.timeout", 30)
 
-	// JWT 密钥不设代码默认值，缺失时由 validateConfig 拒绝启动，避免弱默认值随代码分发。
 	viper.SetDefault("jwt.access_expire", 15)
 	viper.SetDefault("jwt.refresh_expire", 168)
-	viper.SetDefault("jwt.issuer", "myblog")
 
 	// 安全配置默认值
 	viper.SetDefault("security.rate_limit.enabled", true)
@@ -292,7 +280,7 @@ func setDefaults() {
 }
 
 // applyEnvOverrides 使用环境变量覆盖标量配置项，环境变量优先级高于 YAML 与代码默认值。
-// 映射规则为 MYBLOG_ 前缀加配置键的大写下划线形式，例如 jwt.access_secret 对应 MYBLOG_JWT_ACCESS_SECRET。
+// 映射规则为 MYBLOG_ 前缀加配置键的大写下划线形式，例如 server.port 对应 MYBLOG_SERVER_PORT。
 // 列表与映射结构无法经单个环境变量无损表达，此类配置项保持 YAML 原值。
 func applyEnvOverrides(v *viper.Viper) {
 	for _, key := range v.AllKeys() {
@@ -321,16 +309,6 @@ func isScalarConfigValue(value any) bool {
 	}
 }
 
-// isKnownWeakSecret 判断给定密钥是否命中已公开的弱密钥集合。
-func isKnownWeakSecret(secret string) bool {
-	for _, weak := range knownWeakSecrets {
-		if secret == weak {
-			return true
-		}
-	}
-	return false
-}
-
 // validateConfig 验证配置的有效性
 func validateConfig(cfg *Config) error {
 	if cfg.Server.Port <= 0 || cfg.Server.Port > 65535 {
@@ -349,34 +327,12 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("数据库名不能为空")
 	}
 
-	if cfg.JWT.AccessSecret == "" {
-		return fmt.Errorf("JWT访问令牌密钥不能为空")
-	}
-
-	if cfg.JWT.RefreshSecret == "" {
-		return fmt.Errorf("JWT刷新令牌密钥不能为空")
-	}
-
 	if cfg.JWT.AccessExpire <= 0 {
-		return fmt.Errorf("JWT访问令牌过期时间必须大于0")
+		return fmt.Errorf("访问令牌过期时间必须大于0")
 	}
 
 	if cfg.JWT.RefreshExpire <= 0 {
-		return fmt.Errorf("JWT刷新令牌过期时间必须大于0")
-	}
-
-	// 密钥为已公开的弱默认值时直接拒绝启动，强制部署方轮换为随机强密钥。
-	if isKnownWeakSecret(cfg.JWT.AccessSecret) {
-		return fmt.Errorf("JWT访问令牌密钥使用了已公开的弱默认值，必须更换为随机强密钥")
-	}
-
-	if isKnownWeakSecret(cfg.JWT.RefreshSecret) {
-		return fmt.Errorf("JWT刷新令牌密钥使用了已公开的弱默认值，必须更换为随机强密钥")
-	}
-
-	// 双密钥互异校验，防止单一密钥泄漏同时波及访问令牌与刷新令牌两条签名链路。
-	if cfg.JWT.AccessSecret == cfg.JWT.RefreshSecret {
-		return fmt.Errorf("JWT访问令牌密钥与刷新令牌密钥不能相同")
+		return fmt.Errorf("刷新令牌过期时间必须大于0")
 	}
 
 	// RBAC 配置校验：四类角色必须全部登记层级与权限。

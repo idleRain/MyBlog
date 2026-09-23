@@ -24,11 +24,10 @@
 ## 部署步骤
 
 ```bash
-# 1) 创建环境变量文件并填写强口令与 JWT 双密钥
+# 1) 创建环境变量文件并填写数据库强口令
 cp deploy/.env.example .env
 
-# 2) 编辑 .env：MYSQL_ROOT_PASSWORD、MYBLOG_JWT_ACCESS_SECRET、
-#    MYBLOG_JWT_REFRESH_SECRET 必须替换为随机强值且双密钥互异
+# 2) 编辑 .env：MYSQL_ROOT_PASSWORD 必须替换为随机强值
 
 # 3) 构建并启动
 docker compose up -d --build
@@ -51,5 +50,5 @@ curl -I http://localhost/admin/            # 后台 SPA 入口
 ## 已知边界
 
 - 本机未安装 Docker，`docker compose config` 与镜像构建未在本机执行，配置经静态审查。
-- 镜像内 config.yaml 使用环境变量覆盖数据库口令与 JWT 密钥，其余配置项沿用仓库默认。
+- 镜像内 config.yaml 使用环境变量覆盖数据库口令，其余配置项沿用仓库默认。
 - TLS 终止未包含在本编排内，对外暴露建议置于前置反代或负载均衡之后。

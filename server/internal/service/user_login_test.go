@@ -38,7 +38,7 @@ func (f *loginUserRepo) Update(*domain.User) error {
 	return nil
 }
 
-// loginTokenService 登录场景的 JWT 服务替身，仅覆盖令牌对生成方法。
+// loginTokenService 登录场景的 令牌服务替身，仅覆盖令牌对生成方法。
 type loginTokenService struct {
 	tokenService
 	tokenPair *TokenPair

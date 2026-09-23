@@ -11,7 +11,7 @@ import (
 // errInvalidRefreshTokenForTest 模拟刷新令牌校验失败的替身错误。
 var errInvalidRefreshTokenForTest = errors.New("刷新令牌无效")
 
-// refreshTokenService 刷新链路的 JWT 服务替身，返回可配置的 claims 与令牌对，
+// refreshTokenService 刷新链路的 令牌服务替身，返回可配置的 claims 与令牌对，
 // 并记录 RefreshAccessToken 是否被调用，用于断言状态校验先于旋转发生。
 type refreshTokenService struct {
 	tokenService

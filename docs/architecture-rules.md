@@ -230,13 +230,13 @@ git grep -n "NewRBACService()" -- server
 | D8 | admin 胖组件 + onMount 取数 | **users 跨页补偿已清偿（R3）**：users/list 增加 keyword 参数；12 个胖组件存量保留（新页面禁用） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码 | **已清偿（R0）**：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配 | **已清偿（R0）**：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |
-| D11 | JWT 撤销无锁内存 map | **已加锁（R0）+ 键归一化与过期清理**：`sync.RWMutex` 保护；撤销键统一为 payload 段，记录随令牌过期惰性清理；deprecated `ValidateToken` 已删 | `git grep -n "revokedTokens" -- server` | 单实例部署前提；持久化前保持锁 |
+| D11 | 令牌表为内存 map | **已加锁（R0）+ 过期惰性清理**：`sync.RWMutex` 保护；令牌为不透明随机串，身份唯一权威在服务端令牌表，过期记录随签发清理 | `git grep -n "tokensByUser" -- server` | 单实例部署前提；持久化前保持锁；服务重启即全部会话失效 |
 | D12 | 文章响应泄漏作者审计字段 | **已清偿（R2）**：`lastLoginIP` 等审计字段改为 `json:"-"` | 读 `domain/user.go` json tag | 新增审计字段默认 `json:"-"` |
 | D13 | follow 模块仅后端 | **API 模块已补齐（R3）**：`@myblog/api/modules/follow` + 两应用注册；页面消费待 web 业务接入 | `git grep -ln "createFollowAPI" -- packages/api/src`（非空即已补齐） | 页面消费前视为功能未完成 |
 | D14 | admin 重写 `$ui` 已有组件 | **已清偿（R3）**：本地 `pagination.svelte` 已删，7 页回归 `$ui` | 目录比对 | 禁止仿效；新分页一律 `$ui` |
 | D15 | 公开端点直出实体泄漏个人信息 | **评论域与作者域已窄化（2026-09 体检）**：`model.Comment` 游客邮箱/IP/UserAgent 改 `json:"-"`，评论 `user` 与文章 `author` 经 `domain.AuthorPublic` 窄化视图输出，管理端审计走 `AdminCommentView`；`/users/get` 对任意登录用户返回 email 的问题待单独收口 | 读 `model/comment.go`、`model/article.go` json tag 与 `domain/author.go`；service 层测试断言公开响应无审计字段 | 公开端点输出个人信息前必须经窄化 DTO 或字段白名单；实体新增隐私/审计字段默认 `json:"-"` |
 | D16 | WAF 内容级黑名单的固有误伤面 | **误伤回归已锚定（BE-07）**：默认模式全部经词首边界或取值上下文锚定，攻击拦截与误伤回归两组用例在位；残余风险为讲解 SQL/XSS 的技术文章正文命中关键词模式仍会被拦，根治需内容感知解析或按路由豁免 | `go test ./internal/middleware/ -run "TestDefaultBlockedPatterns\|TestSecurityMiddleware" -count=1` | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
-| D17 | 测试替身内嵌空接口的运行时脆性 | **既有约定（三处实证）**：service 层 fake 以内嵌接口继承全部方法，接口新增方法被既有测试路径调用时以 nil panic 暴露而非编译错误（`recordedJWTService.GenerateTokenPair`、`loginUserRepo.Update`、`lockoutUserRepo.GetByUsername` 三例） | `go test ./internal/... -count=1` | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写；禁止依赖内嵌空接口的静默兼容 |
+| D17 | 测试替身内嵌空接口的运行时脆性 | **既有约定（三处实证）**：service 层 fake 以内嵌接口继承全部方法，接口新增方法被既有测试路径调用时以 nil panic 暴露而非编译错误（`recordedTokenService.GenerateTokenPair`、`loginUserRepo.Update`、`lockoutUserRepo.GetByUsername` 三例） | `go test ./internal/... -count=1` | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写；禁止依赖内嵌空接口的静默兼容 |
 | D18 | web 界面多语言局部接入 | **UI-27 拍板半程态（2026-09-16）**：语言切换对 Header/Footer/错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败） | `git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、+error） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进 |
 
 ---
@@ -248,7 +248,7 @@ git grep -n "NewRBACService()" -- server
 
 | 阶段 | 内容 | 清偿债务 | 验收口径 |
 |---|---|---|---|
-| R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；JWT 撤销表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已清偿；D11 已加锁；D4 已收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
+| R0 止血 | 删 router 重复接口与幽灵代码；错误分档（哨兵错误→404/403/400）；令牌表加锁；web 死 load 清理；`contracts/` 目录 | **D3、D9 已清偿；D11 已加锁；D4 已收敛；D10 已清偿**；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
 | R1 类型归位 | 建 `internal/domain`，合并双 User，service/middleware/router 签名切 domain 类型；前端 auth 下沉共享包、影子类型清剿 | **D2、D7 已清偿；D5 大幅清偿（auth store 下沉）；D1 service 12→11** | ✅ D1 下降；auth store diff 为零 |
 | R2 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | **D10、D12 已清偿；三把锁已落地**（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
 | R3 深水区 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | **D4 已收敛；D8 users 补偿已清偿；D14 已清偿；RBAC 迁 config.yaml 完成；permissions 下发完成；D13 API 模块已补齐；IdentityProvider 中间件坍缩完成（D1 router 归零、middleware 1 处）；D6 认证工具已收敛** | 权限定义全栈唯一；认证工具单轨 ✅ |

@@ -370,7 +370,7 @@ limiter := middleware.NewRateLimiter(100, time.Minute)
 
 ### 1. 配置安全
 
-- **密钥管理**：JWT密钥配置于 `server/configs/config.yaml` 的 `jwt` 段，请勿在代码中硬编码
+- **密钥管理**：令牌为服务端登记的不透明随机串，不需要签名密钥；数据库口令等敏感值经环境变量注入，禁止在代码中硬编码
 - **HTTPS强制**：生产环境必须启用HTTPS
 - **头部验证**：不要信任客户端提供的IP头（X-Forwarded-For等）
 
@@ -415,7 +415,7 @@ engine.Use(middleware.SecurityMiddleware(middleware.DefaultSecurityConfig()))
 
 ## 📚 相关文档
 
-- [令牌服务文档](../service/README.md#JWT服务)
+- [服务层文档](../service/README.md)
 - [配置管理文档](../config/README.md)
 - [API接口文档](../../docs/api/)
 - [安全最佳实践](../../docs/security.md)

@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// newIdentityProvider 构造带可配置替身的 JWT 身份解析器。
+// newIdentityProvider 构造带可配置替身的 身份解析器。
 func newIdentityProvider(jwt *fakeTokenService, repo *fakeUserRepository) *tokenIdentityProvider {
 	return &tokenIdentityProvider{tokenService: jwt, userRepo: repo}
 }

@@ -186,7 +186,7 @@ pnpm run migrate [create|up|down|version|help]
 
 ## 8. 环境配置
 
-- 后端：`server/configs/config.yaml`（数据库、服务器、日志、API、JWT、安全配置）。默认 MySQL `blog` 库，`root/123456`，含校验与沙箱占位。
+- 后端：`server/configs/config.yaml`（数据库、服务器、日志、API、令牌、安全配置）。默认 MySQL `blog` 库，`root/123456`，含校验与沙箱占位。
 - 前端：`apps/web/.env`（`VITE_SERVER_PORT=8899`）与 `apps/admin/.env`（`VITE_SERVER_PORT=9988`），均含 `VITE_PROXY_URL=http://localhost:3000`、`VITE_BASE_URL=/api`、`VITE_REQUEST_TIMEOUT=15000`。
 
 ## 9. 已知架构债务登记（棘轮：只减不增）
