@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/config"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -109,5 +110,76 @@ func TestSecurityMiddlewareBlocksXSSBody(t *testing.T) {
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("XSS 载荷应被拦截，实际状态码 %d", recorder.Code)
+	}
+}
+
+// TestSecurityMiddlewareRejectsOversizedChunkedBody 验证分块传输编码下的超大请求体仍被拒绝。
+// 分块编码不携带 Content-Length，仅凭该头部无法拦截，体积上限必须由读取层的 MaxBytesReader 生效。
+func TestSecurityMiddlewareRejectsOversizedChunkedBody(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	securityConfig := DefaultSecurityConfig()
+	securityConfig.InputValidation.MaxRequestSize = 1024
+
+	router := gin.New()
+	router.Use(SecurityMiddleware(securityConfig))
+	router.POST("/api/articles/create", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	// 构造超过上限的请求体，并把 ContentLength 置为 -1 模拟分块传输编码。
+	oversizedBody := strings.Repeat("a", 4096)
+	request := httptest.NewRequest(http.MethodPost, "/api/articles/create", strings.NewReader(oversizedBody))
+	request.Header.Set("Content-Type", "application/json")
+	request.ContentLength = -1
+
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("超大请求体应返回 413，实际状态码 %d", recorder.Code)
+	}
+}
+
+// TestSecurityMiddlewarePanicsOnInvalidPattern 验证阻止模式无法编译时在启动期直接失败，
+// 而不是静默跳过该模式使 WAF 在无告警的情况下失效。
+func TestSecurityMiddlewarePanicsOnInvalidPattern(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	securityConfig := DefaultSecurityConfig()
+	securityConfig.InputValidation.BlockedPatterns = []string{"("}
+
+	defer func() {
+		if recover() == nil {
+			t.Error("非法阻止模式应触发 panic，实际未发生")
+		}
+	}()
+
+	SecurityMiddleware(securityConfig)
+}
+
+// TestAdminSecurityDisabledDoesNotTighten 验证管理员安全开关关闭时不叠加任何额外限制。
+// 原实现在开关关闭时回退到硬编码的更严格配置，与开关语义相反。
+func TestAdminSecurityDisabledDoesNotTighten(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{}
+	cfg.Security.AdminSecurity.Enabled = false
+
+	router := gin.New()
+	router.Use(AdminSecurityMiddlewareFromConfig(cfg))
+	router.POST("/api/admin/users/list", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	// 开关关闭后不再叠加 WAF 等内容级检查，含攻击特征的请求也应放行。
+	request := httptest.NewRequest(http.MethodPost, "/api/admin/users/list",
+		strings.NewReader(`{"keyword":"<script>alert(1)</script>"}`))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("开关关闭时请求应放行，实际状态码 %d", recorder.Code)
 	}
 }

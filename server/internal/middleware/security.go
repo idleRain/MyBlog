@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"MyBlog/internal/config"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -103,9 +104,13 @@ func SecurityMiddleware(config *SecurityConfig) gin.HandlerFunc {
 	// 编译正则表达式
 	var blockedPatterns []*regexp.Regexp
 	for _, pattern := range config.InputValidation.BlockedPatterns {
-		if re, err := regexp.Compile(pattern); err == nil {
-			blockedPatterns = append(blockedPatterns, re)
+		re, err := regexp.Compile(pattern)
+		if err != nil {
+			// 阻止模式无法编译时静默跳过，会让 WAF 在没有任何告警的情况下失效。
+			// 模式集是代码常量，编译失败意味着程序缺陷，必须在启动期暴露。
+			panic(fmt.Sprintf("WAF 阻止模式 %q 无法编译: %v", pattern, err))
 		}
+		blockedPatterns = append(blockedPatterns, re)
 	}
 
 	// 创建速率限制器
@@ -165,15 +170,11 @@ func SecurityMiddleware(config *SecurityConfig) gin.HandlerFunc {
 
 		// 3. 输入验证
 		if config.InputValidation.Enabled {
-			// 检查请求大小
-			if c.Request.ContentLength > config.InputValidation.MaxRequestSize {
-				c.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"code":    413,
-					"message": "请求体过大",
-					"data":    nil,
-				})
-				c.Abort()
-				return
+			// 请求体体积在读取层强制约束。
+			// Content-Length 在分块传输编码下为 -1，仅凭该头部无法拦截超大请求体，
+			// 而后续的恶意内容扫描会把请求体整体读入内存，因此必须由 MaxBytesReader 兜住上限。
+			if config.InputValidation.MaxRequestSize > 0 {
+				c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, config.InputValidation.MaxRequestSize)
 			}
 
 			// 检查 User-Agent
@@ -213,8 +214,18 @@ func SecurityMiddleware(config *SecurityConfig) gin.HandlerFunc {
 				}
 			}
 
-			// 检查请求参数中的恶意模式
+			// 检查请求参数中的恶意模式，请求体超限单独映射为 413。
 			if err := validateRequest(c, blockedPatterns); err != nil {
+				if errors.Is(err, errRequestTooLarge) {
+					c.JSON(http.StatusRequestEntityTooLarge, gin.H{
+						"code":    413,
+						"message": "请求体过大",
+						"data":    nil,
+					})
+					c.Abort()
+					return
+				}
+
 				c.JSON(http.StatusBadRequest, gin.H{
 					"code":    400,
 					"message": "请求包含非法内容",
@@ -228,6 +239,9 @@ func SecurityMiddleware(config *SecurityConfig) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// errRequestTooLarge 请求体超过配置上限的哨兵错误，供调用方映射为 413。
+var errRequestTooLarge = errors.New("请求体超过大小上限")
 
 // validateRequest 验证请求内容
 func validateRequest(c *gin.Context, patterns []*regexp.Regexp) error {
@@ -244,9 +258,12 @@ func validateRequest(c *gin.Context, patterns []*regexp.Regexp) error {
 	if c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH" {
 		contentType := c.GetHeader("Content-Type")
 		if strings.Contains(contentType, "application/json") {
-			// 读取请求体
+			// 读取请求体，超限错误向上传递以便映射为 413。
 			body, err := c.GetRawData()
-			if err == nil && len(body) > 0 {
+			if err != nil {
+				return errRequestTooLarge
+			}
+			if len(body) > 0 {
 				bodyStr := string(body)
 				if containsMaliciousContent(bodyStr, patterns) {
 					return fmt.Errorf("malicious content in JSON body")
@@ -378,21 +395,14 @@ func SecurityMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc {
 	return SecurityMiddleware(securityConfig)
 }
 
-// AdminSecurityMiddleware 管理员接口安全中间件
-func AdminSecurityMiddleware() gin.HandlerFunc {
-	// 更严格的配置
-	config := DefaultSecurityConfig()
-	config.RateLimit.MaxRequests = 30                       // 更严格的IP限制
-	config.RateLimit.UserMaxRequest = 50                    // 更严格的用户限制
-	config.InputValidation.MaxRequestSize = 5 * 1024 * 1024 // 5MB
-
-	return SecurityMiddleware(config)
-}
-
 // AdminSecurityMiddlewareFromConfig 从配置文件创建管理员安全中间件
 func AdminSecurityMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc {
+	// 显式关闭管理员接口加固时直接放行，不叠加任何额外限制。
+	// 原实现在此处回退到硬编码的更严格配置，与开关语义相反。
 	if !cfg.Security.AdminSecurity.Enabled {
-		return AdminSecurityMiddleware()
+		return func(c *gin.Context) {
+			c.Next()
+		}
 	}
 
 	securityConfig := &SecurityConfig{

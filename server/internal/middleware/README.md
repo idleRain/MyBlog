@@ -103,8 +103,7 @@ func DefaultSecurityConfig() *SecurityConfig
 // 从配置文件创建
 func SecurityMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc
 
-// 管理员专用安全中间件
-func AdminSecurityMiddleware() gin.HandlerFunc
+// 管理员专用安全中间件，加固参数取自 config.yaml 的 security.admin_security 节
 func AdminSecurityMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc
 
 // IP白名单中间件
@@ -261,7 +260,7 @@ userGroup := api.Group("/users")
         
         // 管理员路由（更严格的安全策略）
         adminGroup := authGroup.Group("")
-        adminGroup.Use(middleware.AdminSecurityMiddleware())
+        adminGroup.Use(middleware.AdminSecurityMiddlewareFromConfig(cfg))
         {
             adminGroup.POST("/delete", userHandler.DeleteUser)
             adminGroup.POST("/list", userHandler.GetUserList)
