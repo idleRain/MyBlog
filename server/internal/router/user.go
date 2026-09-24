@@ -34,9 +34,11 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 		// 认证相关路由，无需令牌验证。
 		userGroup.POST("/login", ur.userHandler.Login)
 
-		// 用户查看接口，需要基础认证。
+		// 用户查看接口，需要用户列表权限。
+		// 该端点返回 email 与生日等个人信息，仅限管理端消费，
+		// 普通用户查看他人资料走窄化的 publicProfile 端点。
 		userGroup.POST("/get",
-			middleware.Auth(ur.tokenService),
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserList),
 			ur.userHandler.GetUserByID)
 
 		// 用户创建接口，需要用户创建权限。

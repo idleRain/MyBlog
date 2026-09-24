@@ -32,6 +32,7 @@ HTTP请求处理层（Handler Layer），负责处理HTTP请求和响应。
 
 - **路由**: `POST /api/users/get`
 - **功能**: 根据ID获取用户信息
+- **权限**: `user:list`（管理员及以上），返回 email 等个人信息，仅限管理端消费
 - **请求体**:
 
 ```json

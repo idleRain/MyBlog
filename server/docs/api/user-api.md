@@ -106,7 +106,7 @@ curl -X POST http://localhost:3000/api/users/login \
 
 - **接口地址**: `/api/users/get`
 - **请求方式**: `POST`
-- **权限要求**: 需要登录
+- **权限要求**: `user:list` 权限（管理员及以上），普通用户查看他人资料走 `/api/users/publicProfile`
 - **Content-Type**: `application/json`
 - **Authorization**: `Bearer {accessToken}`
 
