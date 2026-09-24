@@ -19,7 +19,7 @@ import (
 func newDependencies(cfg *config.Config, db *gorm.DB) *router.Dependencies {
 	repos := newRepositories(db)
 	services := newServices(cfg, repos)
-	handlers := newHandlers(services)
+	handlers := newHandlers(services, cfg)
 
 	return &router.Dependencies{
 		UserHandler:         handlers.user,
@@ -150,10 +150,23 @@ type appHandlers struct {
 	dict         handler.DictHandlerInterface
 }
 
+// sessionCookieConfigFromConfig 将令牌有效期配置换算为会话 Cookie 的存活秒数。
+// 配置中的访问令牌以分钟计、刷新令牌以小时计，Cookie 与令牌表的生命周期必须一致。
+func sessionCookieConfigFromConfig(cfg *config.Config) handler.SessionCookieConfig {
+	const secondsPerMinute = 60
+	const secondsPerHour = 3600
+
+	return handler.SessionCookieConfig{
+		AccessMaxAge:  cfg.Token.AccessExpire * secondsPerMinute,
+		RefreshMaxAge: cfg.Token.RefreshExpire * secondsPerHour,
+		Secure:        cfg.Token.CookieSecure,
+	}
+}
+
 // newHandlers 构造全部处理器实例。
-func newHandlers(services *appServices) *appHandlers {
+func newHandlers(services *appServices, cfg *config.Config) *appHandlers {
 	return &appHandlers{
-		user:         handler.NewUserHandler(services.user),
+		user:         handler.NewUserHandler(services.user, sessionCookieConfigFromConfig(cfg)),
 		article:      handler.NewArticleHandler(services.article),
 		category:     handler.NewCategoryHandler(services.category),
 		tag:          handler.NewTagHandler(services.tag),

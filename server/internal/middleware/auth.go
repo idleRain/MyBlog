@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 	"strings"
@@ -11,19 +12,31 @@ import (
 // bearerTokenPrefix 认证令牌的 Bearer 前缀，用于从请求头解析令牌
 const bearerTokenPrefix = "Bearer "
 
+// resolveAccessToken 依序从 Authorization 头与会话 Cookie 读取访问令牌。
+// 双轨过渡期两个通道并存，Header 优先兼容存量客户端，Cookie 是浏览器的默认通道。
+func resolveAccessToken(c *gin.Context) string {
+	headerToken := strings.TrimPrefix(c.GetHeader("Authorization"), bearerTokenPrefix)
+	if headerToken != "" {
+		return headerToken
+	}
+
+	cookieToken, err := c.Cookie(domain.SessionAccessTokenCookie)
+	if err != nil {
+		return ""
+	}
+	return cookieToken
+}
+
 // Auth 认证中间件
 func Auth(tokenService service.TokenServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := c.GetHeader("Authorization")
+		token := resolveAccessToken(c)
 
 		if token == "" {
 			response.Unauthorized(c, "未提供认证令牌")
 			c.Abort()
 			return
 		}
-
-		// 移除 Bearer 前缀，无前缀时保持原值
-		token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 		// 校验访问令牌
 		identity, err := tokenService.ValidateAccessToken(token)
@@ -44,12 +57,9 @@ func Auth(tokenService service.TokenServiceInterface) gin.HandlerFunc {
 // OptionalAuth 可选认证中间件
 func OptionalAuth(tokenService service.TokenServiceInterface) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		token := c.GetHeader("Authorization")
+		token := resolveAccessToken(c)
 
 		if token != "" {
-			// 移除 Bearer 前缀，无前缀时保持原值
-			token = strings.TrimPrefix(token, bearerTokenPrefix)
-
 			// 校验访问令牌
 			if identity, err := tokenService.ValidateAccessToken(token); err == nil {
 				c.Set("userID", identity.UserID)

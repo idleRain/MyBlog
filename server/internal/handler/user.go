@@ -4,6 +4,7 @@ package handler
 import (
 	"errors"
 	"io"
+	"strings"
 
 	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// bearerTokenPrefix 认证令牌的 Bearer 前缀，用于从请求头解析令牌。
+const bearerTokenPrefix = "Bearer "
 
 // LogoutRequest 登出请求体，刷新令牌可选提交。
 // 上限 512 字符为保护性约束，不透明令牌实际长度为 32 个字符。
@@ -26,8 +30,9 @@ type UserHandlerInterface interface {
 	GetUserList(c *gin.Context)    // POST /api/users/list - JSON格式，用于复杂参数查询
 	DeleteUser(c *gin.Context)     // POST /api/users/delete - JSON格式
 	Login(c *gin.Context)          // POST /api/users/login - JSON格式
-	RefreshToken(c *gin.Context)   // POST /api/auth/refresh - JSON格式
-	Logout(c *gin.Context)         // POST /api/auth/logout - Header中的Token
+	CreateSession(c *gin.Context)  // POST /api/auth/session - 建立并续期会话 Cookie
+	RefreshToken(c *gin.Context)   // POST /api/auth/refresh - JSON格式，Header 通道过渡保留
+	Logout(c *gin.Context)         // POST /api/auth/logout - Header 或会话 Cookie
 	GetProfile(c *gin.Context)     // POST /api/users/profile - 当前用户资料
 	UpdateProfile(c *gin.Context)  // POST /api/users/profile/update - JSON格式
 	ChangePassword(c *gin.Context) // POST /api/users/changePassword - JSON格式
@@ -35,13 +40,15 @@ type UserHandlerInterface interface {
 
 // UserHandler 用户处理器
 type UserHandler struct {
-	userService service.UserService
+	userService   service.UserService
+	sessionCookie SessionCookieConfig
 }
 
-// NewUserHandler 创建用户处理器实例
-func NewUserHandler(userService service.UserService) UserHandlerInterface {
+// NewUserHandler 创建用户处理器实例，会话 Cookie 属性由组合根从令牌配置换算注入。
+func NewUserHandler(userService service.UserService, sessionCookie SessionCookieConfig) UserHandlerInterface {
 	return &UserHandler{
-		userService: userService,
+		userService:   userService,
+		sessionCookie: sessionCookie,
 	}
 }
 
@@ -285,31 +292,39 @@ func (h *UserHandler) RefreshToken(c *gin.Context) {
 }
 
 // Logout 用户登出 POST /api/auth/logout
-// 访问令牌经 Authorization 头提交，刷新令牌经请求体可选提交，两者一并撤销。
+// 双轨撤销：Authorization 头令牌与会话 Cookie 任一存在即处理，过渡期两者可并存。
+// 刷新令牌经请求体可选提交，Cookie 会话存在时随 Cookie 一并撤销并指示浏览器清除。
 func (h *UserHandler) Logout(c *gin.Context) {
-	token := c.GetHeader("Authorization")
-	if token == "" {
+	headerToken := strings.TrimPrefix(c.GetHeader("Authorization"), bearerTokenPrefix)
+
+	cookieAccess, cookieRefresh := sessionCookiesToken(c)
+	if headerToken == "" && cookieAccess == "" {
 		response.BadRequest(c, "未提供认证令牌")
 		return
 	}
 
-	// 移除 Bearer 前缀
-	if len(token) > 7 && token[:7] == "Bearer " {
-		token = token[7:]
-	}
-
-	// 请求体可省略，客户端未提交请求体时跳过绑定错误，仅撤销访问令牌。
+	// 请求体可省略，客户端未提交请求体时跳过绑定错误，仅撤销已提交的令牌。
 	var req LogoutRequest
 	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
 		response.BadRequest(c, "请求参数错误: "+err.Error())
 		return
 	}
 
-	if err := h.userService.Logout(token, req.RefreshToken); err != nil {
-		HandleServiceError(c, err)
-		return
+	// Header 通道按原语义撤销，Cookie 通道将访问与刷新令牌一并撤销。
+	if headerToken != "" {
+		if err := h.userService.Logout(headerToken, req.RefreshToken); err != nil {
+			HandleServiceError(c, err)
+			return
+		}
+	}
+	if cookieAccess != "" {
+		if err := h.userService.Logout(cookieAccess, cookieRefresh); err != nil {
+			HandleServiceError(c, err)
+			return
+		}
 	}
 
+	h.clearSessionCookies(c)
 	response.SuccessWithMessage(c, "登出成功", nil)
 }
 

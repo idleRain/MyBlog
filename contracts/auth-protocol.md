@@ -1,7 +1,7 @@
 # 认证协议契约（C3）
 
 > 本文档是前后端认证协议的**唯一权威描述**。任何实现变更必须先改本文档，再双端同步切换。
-> 生效范围：`server/internal/service/token.go`、`packages/http/src/client.ts`、两应用 `src/lib/service/index.ts`。
+> 生效范围：`server/internal/service/token.go`、`server/internal/handler/session.go`、`packages/http/src/client.ts`、两应用 `src/lib/service/index.ts`。
 > 相关债务登记见 `docs/architecture-rules.md` §6.3 与 D10/D11。
 
 ## 1. 令牌对形状
@@ -27,35 +27,52 @@
 - 令牌不可由调用方构造：任何未经服务端签发的串都会因查表失败被拒绝，不存在依据请求内容现算凭证的路径。
 - 服务重启会清空令牌表，所有用户需重新登录。这是有状态方案的固有代价，多实例部署前必须将令牌表迁至共享存储，见 D11。
 
-## 3. 刷新协议
+## 3. 刷新协议与 Cookie 会话（R4 起）
+
+### 3.1 会话 Cookie
+
+- 登录后客户端凭刷新令牌调用 `POST /api/auth/session` 建立会话，服务端旋转签发新令牌对并以 `Set-Cookie` 写入两个 HttpOnly Cookie：
+  - `mb_access_token`：承载访问令牌，`Max-Age` 与 `token.access_expire` 一致；
+  - `mb_refresh_token`：承载刷新令牌，`Max-Age` 与 `token.refresh_expire` 一致。
+- 两个 Cookie 的公共属性：`Path=/api`、`HttpOnly`、`SameSite=Lax`、`Secure` 由 `token.cookie_secure` 配置控制（生产环境必须开启）。
+- Cookie 为纯传输通道，令牌仍为服务端签发的不透明随机串，身份与生命周期由服务端令牌表唯一权威维护。
+- 同站策略采用 Lax 在缓解跨站伪造的同时保留外部链接跳转后的会话识别；业务接口全部为 POST 且同源部署，跨站 POST 不会携带 Cookie。
+- `POST /api/auth/session` 同时承担续期：请求体省略时服务端从 Cookie 读取刷新令牌完成旋转并重写 Cookie。
+- 刷新即旋转语义下，旋转结果写入共享的浏览器 Cookie 存储，天然规避多标签页并发旋转的令牌竞争。
+
+### 3.2 双轨过渡
+
+- 服务端令牌解析双轨：`Authorization: Bearer` 头优先，其次读取 `mb_access_token` Cookie；RBAC 链路经 `IdentityProvider` 统一获得双轨能力。
+- `POST /api/auth/refresh`（第 4 节语义）为 Header 通道的存量客户端过渡保留，新前端不再调用。
+- `POST /api/auth/logout` 双轨撤销：Header 令牌与会话 Cookie 任一存在即处理；Cookie 会话存在时随 Cookie 一并撤销并以 `Max-Age=-1` 指示浏览器清除。
+- 前端不再持久化任何令牌（localStorage 令牌退役），仅持久化用户信息与权限列表用于界面渲染。
+
+### 3.3 刷新协议（Header 通道，过渡保留）
 
 - 端点：`POST /api/auth/refresh`，请求体 `{ "refreshToken": "<refresh token>" }`。
 - 刷新即旋转：成功后旧 refresh token 被撤销，响应返回全新令牌对。
 - 旋转前服务端查库校验令牌归属用户存在且状态正常，被禁用或已删除用户的刷新请求返回业务码 401。
-- 前端 `service/index.ts` 的 `refreshAccessToken` 以**裸 ky 直连**该端点（豁免 A1 页面直连 ky 规则，避免循环依赖）。
 
 ## 4. 401 语义
 
 - 后端认证失败统一返回 **HTTP 200 + 业务码 `code: 401`**（`pkg/response` 信封），不以 HTTP 状态码标识。
-- 前端 `packages/http/src/client.ts` 以响应体 `code === 401` 判定认证失效并尝试刷新（D10 已收敛，禁止回退文案匹配）。
-- 收到 401 后前端**必须实际执行一次刷新**再决定是否重放。应用层的 `refreshToken` 回调只在服务端已拒绝访问令牌时被调用，因此不得以本地有效期判断短路成"返回旧令牌"。
-- 重放**以显式标记判定是否已重放过**，标记随请求上下文（`options.context`）传递。禁止以比对令牌代际的方式判定：刷新结果与原令牌相同时会被误判为已重放，从而跳过刷新直接登出。
-- 重放最多一次：刷新成功且该请求尚未重放过时，携带新令牌重放原请求；重放后仍返回 401 则触发 `onAuthFailure`。
-- 刷新失败或刷新请求自身 401，触发 `onAuthFailure` 回调（应用层清除状态并跳转登录页）。
+- 前端 `packages/http/src/client.ts` 以响应体 `code === 401` 判定认证失效并尝试会话续期（D10 已收敛，禁止回退文案匹配）。
+- 收到 401 后前端**必须实际执行一次续期**（调用 `refreshSession` 回调）再决定是否重放；不得以本地状态判断短路跳过。
+- 重放**以显式标记判定是否已重放过**，标记随请求上下文（`options.context`）传递。续期成功后重放同一请求，会话 Cookie 由浏览器自动携带最新值。
+- 重放最多一次：续期成功且该请求尚未重放过时重放原请求；重放后仍返回 401 则触发 `onAuthFailure`。
+- 续期失败或续期请求自身 401，触发 `onAuthFailure` 回调（应用层清除状态并跳转登录页）。
 
-## 5. 跨标签页令牌一致性
+## 5. 跨标签页状态一致性
 
-同源标签页共享 `localStorage`，但各自持有独立的内存认证状态。刷新即旋转语义下，同一枚刷新令牌只能被兑换一次，因此：
-
-- `packages/auth` 的 `createAuthStore` 注册 `storage` 事件监听，其他标签页写入认证键时重新加载本页状态。`storage` 事件只在写入方之外的标签页触发，不会形成回环。
-- 执行刷新前必须先调用 `syncFromStorage()` 对齐持久化状态：其他标签页刚完成旋转时，本页直接复用其新令牌而不发起刷新请求，避免携带已被撤销的旧刷新令牌导致认证失效。
-- 未做上述对齐时的失败形态：两个标签页在访问令牌临近过期时并发刷新，先到者旋转成功，后到者携带旧刷新令牌请求，服务端查表失败返回 401。
+- 会话 Cookie 由同源标签页共享，令牌旋转不产生跨标签页竞争；localStorage 仅持久化用户信息与权限列表。
+- `packages/auth` 的 `createAuthStore` 注册 `storage` 事件监听，其他标签页登出或更新用户信息时重新加载本页状态。`storage` 事件只在写入方之外的标签页触发，不会形成回环。
 
 ## 6. 登出语义
 
-- 端点：`POST /api/auth/logout`，请求头 `Authorization: Bearer <access token>`。
-- 请求体可选提交 `{ "refreshToken": "<refresh token>" }`，提交后访问与刷新令牌一并撤销；请求体可省略，此时仅撤销访问令牌。
-- 修改密码成功后服务端撤销该用户当前全部既有令牌，客户端须清除本地会话并引导重新登录。
+- 端点：`POST /api/auth/logout`，Authorization 头与会话 Cookie 双轨。
+- Header 通道：请求头 `Authorization: Bearer <access token>`，请求体可选提交 `{ "refreshToken": "<refresh token>" }`，提交后访问与刷新令牌一并撤销。
+- Cookie 通道：会话 Cookie 存在时访问与刷新令牌一并撤销，响应以 `Max-Age=-1` 指示浏览器清除两个会话 Cookie。
+- 修改密码成功后服务端撤销该用户当前全部既有令牌，客户端须清除本地状态并引导重新登录。
 - 撤销即从服务端令牌表移除记录，过期记录随签发惰性清理（内存实现，仅单实例生效，见 D11）。
 
 ## 7. 已知限制（登记）

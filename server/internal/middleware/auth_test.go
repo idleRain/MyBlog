@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -201,6 +202,56 @@ func TestRequireRole(t *testing.T) {
 
 			if handlerCalled != tc.expectCalled {
 				t.Errorf("业务 handler 执行状态 = %v，期望 %v", handlerCalled, tc.expectCalled)
+			}
+			if tc.expectCode != 0 {
+				if code := responseCode(t, recorder); code != tc.expectCode {
+					t.Errorf("响应业务码 = %d，期望 %d", code, tc.expectCode)
+				}
+			}
+		})
+	}
+}
+
+// TestAuthCookieFallback 表驱动验证会话 Cookie 双轨：Header 优先，Cookie 为浏览器默认通道。
+func TestAuthCookieFallback(t *testing.T) {
+	testCases := []struct {
+		name         string
+		header       string
+		cookieToken  string
+		expectCalled bool
+		expectCode   int
+	}{
+		{
+			name:         "仅携带会话 Cookie 时放行",
+			cookieToken:  "cookie-access-token",
+			expectCalled: true,
+		},
+		{
+			name:         "Header 与 Cookie 并存时优先 Header",
+			header:       "Bearer header-token",
+			cookieToken:  "cookie-access-token",
+			expectCalled: true,
+		},
+		{
+			name:         "两通道均无令牌时返回 401",
+			expectCalled: false,
+			expectCode:   response.CodeAuth,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tokenService := &fakeTokenService{identity: &service.TokenIdentity{UserID: 7}}
+			router, handlerCalled := newAuthRouter(Auth(tokenService), nil)
+
+			request := buildRequestWithHeader(tc.header)
+			if tc.cookieToken != "" {
+				request.AddCookie(&http.Cookie{Name: domain.SessionAccessTokenCookie, Value: tc.cookieToken})
+			}
+			recorder := serve(router, request)
+
+			if *handlerCalled != tc.expectCalled {
+				t.Errorf("业务 handler 执行状态 = %v，期望 %v", *handlerCalled, tc.expectCalled)
 			}
 			if tc.expectCode != 0 {
 				if code := responseCode(t, recorder); code != tc.expectCode {

@@ -48,6 +48,8 @@ func (h *recordingUserHandler) DeleteUser(c *gin.Context) {}
 
 func (h *recordingUserHandler) Login(c *gin.Context) {}
 
+func (h *recordingUserHandler) CreateSession(c *gin.Context) {}
+
 func (h *recordingUserHandler) RefreshToken(c *gin.Context) {}
 
 func (h *recordingUserHandler) Logout(c *gin.Context) {}

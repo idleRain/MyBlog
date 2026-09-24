@@ -62,6 +62,16 @@ func newFixtureUser() *domain.User {
 	}
 }
 
+// testSessionCookieConfig 测试用会话 Cookie 配置。
+// 有效期取值与生产配置同数量级，仅承载写入断言，不参与业务断言。
+func testSessionCookieConfig() SessionCookieConfig {
+	return SessionCookieConfig{
+		AccessMaxAge:  15 * 60,
+		RefreshMaxAge: 168 * 3600,
+		Secure:        false,
+	}
+}
+
 // TestLoginSuccessMatchesFixture 验证登录成功响应与契约金样本一致，构成契约锁 ①。
 func TestLoginSuccessMatchesFixture(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -72,7 +82,7 @@ func TestLoginSuccessMatchesFixture(t *testing.T) {
 		RefreshToken: "8b1d4e7a2c9f0356b8e1a4d7c0f32695",
 		ExpiresIn:    1800,
 		Permissions:  []string{"article:read", "comment:create", "comment:read", "comment:update"},
-	}})
+	}}, testSessionCookieConfig())
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)
@@ -89,7 +99,8 @@ func TestLoginSuccessMatchesFixture(t *testing.T) {
 func TestUserListMatchesFixture(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	handler := NewUserHandler(&fakeUserListService{users: []*domain.User{newFixtureUser()}, total: 1})
+	handler := NewUserHandler(&fakeUserListService{users: []*domain.User{newFixtureUser()}, total: 1},
+		testSessionCookieConfig())
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)

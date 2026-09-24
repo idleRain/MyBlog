@@ -1,43 +1,137 @@
-// 认证 store 的单飞刷新行为与跨标签页同步单元测试。
-import { AUTH_TOKEN_KEY, UNRELATED_KEY, installFakeBrowserEnv } from './test-fixtures'
+// 认证 store 的登录持久化、单飞续期调度与跨标签页同步单元测试。
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createAuthStore } from './auth-store'
+import { get } from 'svelte/store'
+import type { User } from '@myblog/api/modules/user/types'
+import { createAuthStore, type AuthStoreDeps } from './auth-store'
+import { installFakeBrowserEnv, AUTH_USER_KEY, UNRELATED_KEY } from './test-fixtures'
 
-// 构造依赖注入的最小替身，浏览器判定恒为 false 以隔离 localStorage。
-function createTestStore() {
-  return createAuthStore({
+// 构造注入依赖的最小替身，浏览器判定恒为 false 以隔离 localStorage。
+function createTestStore(overrides?: Partial<AuthStoreDeps>) {
+  const logoutApi = vi.fn(async () => {})
+  const deps: AuthStoreDeps = {
     isBrowser: () => false,
-    logoutApi: async (_refreshToken?: string) => {}
-  })
+    logoutApi,
+    ...overrides
+  }
+  return { store: createAuthStore(deps), logoutApi }
 }
 
-// 构造接入浏览器环境替身的 store，用于跨标签页同步相关用例。
+// 构造接入浏览器环境替身的 store，用于持久化与跨标签页同步相关用例。
 function createBrowserStore() {
-  return createAuthStore({
+  const env = installFakeBrowserEnv()
+  const logoutApi = vi.fn(async () => {})
+  const store = createAuthStore({
     isBrowser: () => true,
-    logoutApi: async (_refreshToken?: string) => {}
+    logoutApi
   })
+  return { store, env, logoutApi }
 }
 
-// 一份可用的测试会话，剩余有效期远大于提前刷新窗口。
-const ACTIVE_SESSION = {
-  accessToken: 'tab-a-access',
-  refreshToken: 'tab-a-refresh',
-  userId: 1,
-  expiresInMs: 10 * 60 * 1000
+// 一份可用的测试会话，字段集与后端 UserResponse 形状一致。
+const TEST_USER: User = {
+  id: 7,
+  username: 'tester',
+  email: 'tester@example.com',
+  nickname: 'tester',
+  avatar: '',
+  birthday: null,
+  role: 'user',
+  status: 1,
+  createdAt: '2026-01-01T00:00:00Z',
+  updatedAt: '2026-01-01T00:00:00Z'
 }
+const TEST_PERMISSIONS = ['article:read', 'comment:create']
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('refreshSingleFlight 单飞刷新', () => {
-  it('并发触发刷新时共享同一次请求', async () => {
-    const store = createTestStore()
+describe('登录与持久化', () => {
+  it('登录后记录用户与权限并持久化用户信息', () => {
+    const { store } = createBrowserStore()
+
+    store.login(TEST_USER, TEST_PERMISSIONS)
+
+    const state = get(store)
+    expect(state.isAuthenticated).toBe(true)
+    expect(state.user?.id).toBe(7)
+    expect(state.permissions).toEqual(TEST_PERMISSIONS)
+
+    const persisted = JSON.parse(window.localStorage.getItem(AUTH_USER_KEY) ?? '{}')
+    expect(persisted.username).toBe('tester')
+  })
+
+  it('浏览器环境下凭已落盘的用户信息恢复登录态', () => {
+    const env = installFakeBrowserEnv()
+    env.seedSession({ userId: 3, username: 'user3', permissions: ['article:read'] })
+
+    const store = createAuthStore({
+      isBrowser: () => true,
+      logoutApi: async () => {}
+    })
+
+    const state = get(store)
+    expect(state.isAuthenticated).toBe(true)
+    expect(state.user?.id).toBe(3)
+    expect(state.permissions).toEqual(['article:read'])
+  })
+
+  it('updateUser 更新状态并同步本地缓存', () => {
+    const { store } = createBrowserStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
+
+    store.updateUser({ ...TEST_USER, username: 'renamed' })
+
+    const state = get(store)
+    expect(state.user?.username).toBe('renamed')
+    const persisted = JSON.parse(window.localStorage.getItem(AUTH_USER_KEY) ?? '{}')
+    expect(persisted.username).toBe('renamed')
+  })
+})
+
+describe('登出语义', () => {
+  it('登出先调用服务端撤销接口再清除本地状态', async () => {
+    const { store, logoutApi, env } = createBrowserStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
+
+    await store.logout()
+
+    expect(logoutApi).toHaveBeenCalledTimes(1)
+    const state = get(store)
+    expect(state.isAuthenticated).toBe(false)
+    expect(state.user).toBeNull()
+    expect(window.localStorage.getItem(AUTH_USER_KEY)).toBeNull()
+    expect(env).toBeDefined()
+  })
+
+  it('skipApiCall 为真时跳过服务端撤销仅清除本地状态', async () => {
+    const { store, logoutApi } = createTestStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
+
+    await store.logout(true)
+
+    expect(logoutApi).not.toHaveBeenCalled()
+    expect(get(store).isAuthenticated).toBe(false)
+  })
+
+  it('clearLocalState 清除状态但不触发服务端调用', async () => {
+    const { store, logoutApi } = createTestStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
+
+    store.clearLocalState()
+
+    expect(logoutApi).not.toHaveBeenCalled()
+    expect(get(store).isAuthenticated).toBe(false)
+  })
+})
+
+describe('单飞续期调度', () => {
+  it('并发触发续期时共享同一次请求', async () => {
+    const { store } = createTestStore()
     const refreshFn = vi.fn(async () => {
-      // 引入异步间隙，模拟真实的网络刷新耗时窗口。
+      // 引入异步间隙，模拟真实的网络续期耗时窗口。
       await new Promise(resolve => setTimeout(resolve, 10))
-      return 'new-access-token'
+      return 'refreshed'
     })
 
     const [first, second] = await Promise.all([
@@ -46,107 +140,62 @@ describe('refreshSingleFlight 单飞刷新', () => {
     ])
 
     expect(refreshFn).toHaveBeenCalledTimes(1)
-    expect(first).toBe('new-access-token')
-    expect(second).toBe('new-access-token')
+    expect(first).toBe('refreshed')
+    expect(second).toBe('refreshed')
   })
 
-  it('刷新完成后允许发起下一次刷新', async () => {
-    const store = createTestStore()
-    const refreshFn = vi.fn(async () => 'new-access-token')
+  it('前一次续期完成后再次触发会发起新请求', async () => {
+    const { store } = createTestStore()
+    const refreshFn = vi.fn(async () => 'refreshed')
 
     await store.refreshSingleFlight(refreshFn)
     await store.refreshSingleFlight(refreshFn)
 
-    expect(refreshFn).toHaveBeenCalledTimes(2)
-  })
-
-  it('失败的刷新同样共享结果，结束后恢复可刷新状态', async () => {
-    const store = createTestStore()
-    const refreshFn = vi.fn(async () => null)
-
-    const [first, second] = await Promise.all([
-      store.refreshSingleFlight(refreshFn),
-      store.refreshSingleFlight(refreshFn)
-    ])
-
-    expect(refreshFn).toHaveBeenCalledTimes(1)
-    expect(first).toBeNull()
-    expect(second).toBeNull()
-
-    const third = await store.refreshSingleFlight(refreshFn)
-    expect(third).toBeNull()
     expect(refreshFn).toHaveBeenCalledTimes(2)
   })
 })
 
-describe('跨标签页令牌同步', () => {
-  it('syncFromStorage 读到其他标签页写入的新令牌后更新内存状态', () => {
-    const env = installFakeBrowserEnv()
-    env.seedSession(ACTIVE_SESSION)
-    const store = createBrowserStore()
+describe('跨标签页同步', () => {
+  it('跨标签页写入用户信息后同步对齐状态', () => {
+    const { store, env } = createBrowserStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
 
-    // 其他标签页完成旋转并把新令牌写入共享存储。
-    env.seedSession({
-      ...ACTIVE_SESSION,
-      accessToken: 'tab-a-rotated',
-      refreshToken: 'tab-a-rotated-r'
-    })
+    env.seedSession({ userId: 9, username: 'other-tab' })
+    env.dispatchStorage(AUTH_USER_KEY)
 
-    expect(store.getAccessToken()).toBe('tab-a-access')
-    store.syncFromStorage()
-    expect(store.getAccessToken()).toBe('tab-a-rotated')
-    expect(store.getRefreshToken()).toBe('tab-a-rotated-r')
+    const state = get(store)
+    expect(state.user?.id).toBe(9)
   })
 
-  it('存储未发生变化时 syncFromStorage 不写入状态', () => {
-    const env = installFakeBrowserEnv()
-    env.seedSession(ACTIVE_SESSION)
-    const store = createBrowserStore()
+  it('与认证无关的存储变更不触发状态重载', () => {
+    const { store, env } = createBrowserStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
+    const before = get(store)
 
-    const listener = vi.fn()
-    store.subscribe(listener)
-    // 订阅本身会立即触发一次，此处重置计数以只统计后续写入。
-    listener.mockClear()
-
-    store.syncFromStorage()
-
-    expect(listener).not.toHaveBeenCalled()
-  })
-
-  it('storage 事件携带认证键时触发同步', () => {
-    const env = installFakeBrowserEnv()
-    env.seedSession(ACTIVE_SESSION)
-    const store = createBrowserStore()
-
-    env.seedSession({ ...ACTIVE_SESSION, accessToken: 'tab-a-rotated' })
-    env.dispatchStorage(AUTH_TOKEN_KEY)
-
-    expect(store.getAccessToken()).toBe('tab-a-rotated')
-  })
-
-  it('storage 事件携带与认证无关的键时不触发同步', () => {
-    const env = installFakeBrowserEnv()
-    env.seedSession(ACTIVE_SESSION)
-    const store = createBrowserStore()
-
-    env.seedSession({ ...ACTIVE_SESSION, accessToken: 'tab-a-rotated' })
-    env.seedRaw(UNRELATED_KEY, 'dark')
+    env.seedRaw(UNRELATED_KEY, 'whatever')
     env.dispatchStorage(UNRELATED_KEY)
 
-    expect(store.getAccessToken()).toBe('tab-a-access')
+    expect(get(store)).toEqual(before)
   })
 
-  it('其他标签页登出后本页登录态一并失效', () => {
-    const env = installFakeBrowserEnv()
-    env.seedSession(ACTIVE_SESSION)
-    const store = createBrowserStore()
-    expect(store.getCurrentState().isAuthenticated).toBe(true)
+  it('其他标签页登出后本页跟随清除登录态', () => {
+    const { store, env } = createBrowserStore()
+    store.login(TEST_USER, TEST_PERMISSIONS)
 
-    // 直接操作底层存储模拟其他标签页登出，本页内存状态不受影响。
     env.clearSession()
     env.dispatchStorage(null)
 
-    expect(store.getCurrentState().isAuthenticated).toBe(false)
-    expect(store.getAccessToken()).toBeNull()
+    expect(get(store).isAuthenticated).toBe(false)
+  })
+})
+
+describe('权限查询', () => {
+  it('按后端下发的权限列表判断', () => {
+    const { store } = createTestStore()
+    store.login(TEST_USER, ['article:read'])
+
+    expect(store.hasPermission('article:read')).toBe(true)
+    expect(store.hasPermission('article:delete')).toBe(false)
+    expect(store.getPermissions()).toEqual(['article:read'])
   })
 })

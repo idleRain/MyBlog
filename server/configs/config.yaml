@@ -34,6 +34,7 @@ api:
 token:
   access_expire: 15  # 分钟
   refresh_expire: 168  # 小时（7天）
+  cookie_secure: false  # 会话 Cookie 是否仅经 HTTPS 传输，生产环境必须置为 true
 
 # API安全配置
 security:

@@ -137,6 +137,17 @@ export interface RefreshTokenData {
   expiresIn: number
 }
 
+// 会话建立请求参数，刷新令牌可选提交；
+// 登录后首次建立时携带登录响应中的刷新令牌，续期场景省略参数由会话 Cookie 自动携带。
+export interface SessionRequest {
+  refreshToken?: string
+}
+
+// 会话建立响应数据，令牌对经 Set-Cookie 下发，响应体仅回传访问令牌有效期。
+export interface SessionData {
+  expiresIn: number
+}
+
 // 创建用户请求参数
 export interface CreateUserRequest {
   username: string
@@ -181,6 +192,7 @@ export type CreateUserResponse = ApiResponse<User>
 export type UpdateUserResponse = ApiResponse<User>
 export type DeleteUserResponse = ApiResponse<null>
 export type RefreshTokenResponse = ApiResponse<RefreshTokenData>
+export type SessionResponse = ApiResponse<SessionData>
 export type LogoutResponse = ApiResponse<null>
 
 // 登出请求参数，刷新令牌可选提交，后端将访问与刷新令牌一并撤销

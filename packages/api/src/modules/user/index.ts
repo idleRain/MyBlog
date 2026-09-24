@@ -13,6 +13,8 @@ import type {
   UserResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  SessionRequest,
+  SessionResponse,
   LogoutRequest,
   LogoutResponse,
   UpdateUserRequest,
@@ -79,6 +81,11 @@ export function createUserAPI(request: KyInstance) {
       return request.post('auth/refresh', { json: params }).json()
     },
 
+    // 建立并续期会话，服务端写入 HttpOnly Cookie；登录后首次建立时携带刷新令牌，续期时省略参数由 Cookie 自动携带
+    createSession(params: SessionRequest = {}): Promise<SessionResponse> {
+      return request.post('auth/session', { json: params }).json()
+    },
+
     // 用户登出，携带刷新令牌时后端一并撤销令牌对
     logout(params: LogoutRequest = {}): Promise<LogoutResponse> {
       return request.post('auth/logout', { json: params }).json()
@@ -107,6 +114,8 @@ export type {
   UserResponse,
   RefreshTokenRequest,
   RefreshTokenResponse,
+  SessionRequest,
+  SessionResponse,
   LogoutRequest,
   LogoutResponse,
   UpdateUserRequest,

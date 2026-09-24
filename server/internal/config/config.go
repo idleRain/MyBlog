@@ -86,10 +86,12 @@ type APIConfig struct {
 	Timeout int    `mapstructure:"timeout"`
 }
 
-// TokenConfig 令牌配置，仅承载有效期。令牌为不透明随机串，服务端不需要任何签名密钥。
+// TokenConfig 令牌配置，仅承载有效期与会话 Cookie 传输开关。
+// 令牌为不透明随机串，服务端不需要任何签名密钥。
 type TokenConfig struct {
-	AccessExpire  int `mapstructure:"access_expire"`  // 分钟
-	RefreshExpire int `mapstructure:"refresh_expire"` // 小时
+	AccessExpire  int  `mapstructure:"access_expire"`  // 分钟
+	RefreshExpire int  `mapstructure:"refresh_expire"` // 小时
+	CookieSecure  bool `mapstructure:"cookie_secure"`  // 会话 Cookie 是否仅经 HTTPS 传输，生产环境必须开启
 }
 
 // SecurityConfig 安全配置

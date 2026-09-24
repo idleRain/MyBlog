@@ -57,7 +57,8 @@ func assertResponseMatchesFixture(t *testing.T, recorder *httptest.ResponseRecor
 func TestLoginWrongPasswordMatchesFixture(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	handler := NewUserHandler(&fakeLoginUserService{loginErr: errors.New("密码错误")})
+	handler := NewUserHandler(&fakeLoginUserService{loginErr: errors.New("密码错误")},
+		testSessionCookieConfig())
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)

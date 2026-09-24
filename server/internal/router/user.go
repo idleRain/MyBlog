@@ -76,7 +76,11 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 	// 令牌相关路由
 	authGroup := api.Group("/auth")
 	{
-		// 刷新令牌接口，无需认证。
+		// 会话建立与续期，凭刷新令牌完成，无需访问令牌。
+		// 登录后首次建立时刷新令牌经请求体提交，续期场景由浏览器自动携带会话 Cookie。
+		authGroup.POST("/session", ur.userHandler.CreateSession)
+
+		// 刷新令牌接口，无需认证，供 Header 通道的存量客户端过渡使用。
 		authGroup.POST("/refresh", ur.userHandler.RefreshToken)
 
 		// 登出接口，需要认证。

@@ -1,33 +1,29 @@
 // 认证域测试共享的浏览器环境替身。
-// 认证 store 与令牌刷新编排都依赖 window.localStorage 与 storage 事件，
+// 认证 store 依赖 window.localStorage 与 storage 事件，
 // 测试必须在创建 store 之前完成安装，否则跨标签页同步逻辑不会注册。
 
 import { vi } from 'vitest'
 
 // 持久化键名与 auth-store.ts 保持一致。
 // 测试需要绕过 store 直接读写底层存储以模拟其他标签页的落盘结果，因此在此显式列出。
-export const AUTH_TOKEN_KEY = 'auth_access_token'
-export const AUTH_REFRESH_KEY = 'auth_refresh_token'
 export const AUTH_USER_KEY = 'auth_user'
-export const AUTH_EXPIRES_KEY = 'auth_expires_at'
+export const AUTH_PERMISSIONS_KEY = 'auth_permissions'
 
 // 与认证无关的存储键，用于验证同步逻辑按需触发而非每次存储变更都重载。
 export const UNRELATED_KEY = 'unrelated_preference'
 
 /** 一次认证会话的最小描述，用于写入底层存储。 */
 export interface SeededSession {
-  accessToken: string
-  refreshToken: string
   userId: number
-  // 相对当前时刻的剩余有效期，单位毫秒。
-  expiresInMs: number
+  username: string
+  permissions?: string[]
 }
 
 type StorageListener = (event: { key: string | null }) => void
 
 /** 浏览器环境替身的操作句柄。 */
 export interface FakeBrowserEnv {
-  /** 写入一份完整认证会话，模拟任一标签页的落盘结果。 */
+  /** 写入一份认证会话的用户信息，模拟任一标签页的落盘结果。 */
   seedSession: (session: SeededSession) => void
   /** 写入任意键值，模拟与认证无关的存储变更。 */
   seedRaw: (key: string, value: string) => void
@@ -64,14 +60,12 @@ export function installFakeBrowserEnv(): FakeBrowserEnv {
 
   return {
     seedSession(session) {
-      // 令牌以裸字符串落盘，其余字段按 JSON 序列化，与 @myblog/shared 的 local 封装行为一致。
-      entries.set(AUTH_TOKEN_KEY, session.accessToken)
-      entries.set(AUTH_REFRESH_KEY, session.refreshToken)
+      // 全部字段按 JSON 序列化落盘，与 @myblog/shared 的 local 封装行为一致。
       entries.set(
         AUTH_USER_KEY,
-        JSON.stringify({ id: session.userId, username: `user${session.userId}` })
+        JSON.stringify({ id: session.userId, username: session.username })
       )
-      entries.set(AUTH_EXPIRES_KEY, JSON.stringify(Date.now() + session.expiresInMs))
+      entries.set(AUTH_PERMISSIONS_KEY, JSON.stringify(session.permissions ?? []))
     },
 
     seedRaw(key, value) {
@@ -79,7 +73,7 @@ export function installFakeBrowserEnv(): FakeBrowserEnv {
     },
 
     clearSession() {
-      for (const key of [AUTH_TOKEN_KEY, AUTH_REFRESH_KEY, AUTH_USER_KEY, AUTH_EXPIRES_KEY]) {
+      for (const key of [AUTH_USER_KEY, AUTH_PERMISSIONS_KEY]) {
         entries.delete(key)
       }
     },

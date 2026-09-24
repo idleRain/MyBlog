@@ -1,5 +1,5 @@
-// HTTP 请求器认证刷新与重放行为的单元测试。
-// 覆盖 401 之后"刷新一次、重放一次、再失败即判定认证失效"的完整语义。
+// HTTP 请求器会话续期与重放行为的单元测试。
+// 覆盖 401 之后"续期一次、重放一次、再失败即判定认证失效"的完整语义。
 import { createHttpClient, type HttpClientAuthHooks } from './client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AfterResponseHook } from 'ky'
@@ -61,18 +61,18 @@ function getResponseHook(): TestableResponseHook {
 // 带调用记录的认证回调集合。
 interface AuthSpies {
   hooks: HttpClientAuthHooks
-  refreshToken: ReturnType<typeof vi.fn>
+  refreshSession: ReturnType<typeof vi.fn>
   onAuthFailure: ReturnType<typeof vi.fn>
 }
 
-// 构造认证回调替身，刷新结果可配置。
-function createAuthSpies(refreshResult: string | null = 'fresh-token'): AuthSpies {
-  const refreshToken = vi.fn(async () => refreshResult)
+// 构造认证回调替身，续期结果可配置。
+function createAuthSpies(refreshResult: boolean = true): AuthSpies {
+  const refreshSession = vi.fn(async () => refreshResult)
   const onAuthFailure = vi.fn(async (_message?: string) => {})
 
   return {
-    hooks: { getAccessToken: () => 'stale-token', refreshToken, onAuthFailure },
-    refreshToken,
+    hooks: { refreshSession, onAuthFailure },
+    refreshSession,
     onAuthFailure
   }
 }
@@ -85,8 +85,7 @@ async function triggerAuthFailure(
   createHttpClient({ prefixUrl: 'http://localhost/api', auth })
 
   const request = new Request(init.url ?? 'http://localhost/api/articles/list', {
-    method: 'POST',
-    headers: { Authorization: 'Bearer stale-token' }
+    method: 'POST'
   })
   const options = { context: {} } as unknown as ResponseHookOptions
   const result = await getResponseHook()(
@@ -103,44 +102,35 @@ beforeEach(() => {
   kyMock.state.replayCalls.length = 0
 })
 
-describe('401 刷新与重放', () => {
-  it('刷新返回新令牌时携带新令牌重放原请求', async () => {
-    const auth = createAuthSpies('fresh-token')
+describe('401 续期与重放', () => {
+  it('续期成功时重放原请求且不注入认证头', async () => {
+    const auth = createAuthSpies(true)
 
     const { request, result } = await triggerAuthFailure(auth.hooks)
 
-    expect(auth.refreshToken).toHaveBeenCalledTimes(1)
+    expect(auth.refreshSession).toHaveBeenCalledTimes(1)
     expect(kyMock.state.replayCalls).toHaveLength(1)
-    expect(request.headers.get('Authorization')).toBe('Bearer fresh-token')
+    // 会话 Cookie 由浏览器随重放请求自动携带，请求头不应出现手工注入的令牌。
+    expect(request.headers.get('Authorization')).toBeNull()
     expect(result).toBeInstanceOf(Response)
     expect(auth.onAuthFailure).not.toHaveBeenCalled()
   })
 
-  it('刷新回调返回与原令牌相同的令牌时仍然重放一次', async () => {
-    // 刷新回调在本地认为令牌仍有效时会返回原令牌，重放守卫不得据此判定为已重放过。
-    const auth = createAuthSpies('stale-token')
-
-    await triggerAuthFailure(auth.hooks)
-
-    expect(kyMock.state.replayCalls).toHaveLength(1)
-    expect(auth.onAuthFailure).not.toHaveBeenCalled()
-  })
-
   it('重放后仍返回 401 时不再重放并触发认证失效', async () => {
-    const auth = createAuthSpies('fresh-token')
+    const auth = createAuthSpies(true)
 
     const { request } = await triggerAuthFailure(auth.hooks)
     const replayedOptions = kyMock.state.replayCalls[0]?.[1] as unknown as ResponseHookOptions
 
     await getResponseHook()(request, replayedOptions, envelopeResponse({ code: 401 }))
 
-    expect(auth.refreshToken).toHaveBeenCalledTimes(1)
+    expect(auth.refreshSession).toHaveBeenCalledTimes(1)
     expect(kyMock.state.replayCalls).toHaveLength(1)
     expect(auth.onAuthFailure).toHaveBeenCalledTimes(1)
   })
 
-  it('刷新失败时不重放并触发认证失效', async () => {
-    const auth = createAuthSpies(null)
+  it('续期失败时不重放并触发认证失效', async () => {
+    const auth = createAuthSpies(false)
 
     await triggerAuthFailure(auth.hooks)
 
@@ -150,26 +140,26 @@ describe('401 刷新与重放', () => {
 })
 
 describe('401 语义边界', () => {
-  it('登录请求返回 401 时不刷新也不触发认证失效', async () => {
+  it('登录请求返回 401 时不续期也不触发认证失效', async () => {
     const auth = createAuthSpies()
 
     await triggerAuthFailure(auth.hooks, { url: 'http://localhost/api/users/login' })
 
-    expect(auth.refreshToken).not.toHaveBeenCalled()
+    expect(auth.refreshSession).not.toHaveBeenCalled()
     expect(auth.onAuthFailure).not.toHaveBeenCalled()
   })
 
-  it('刷新请求自身返回 401 时不重放并触发认证失效', async () => {
+  it('会话续期请求自身返回 401 时不重放并触发认证失效', async () => {
     const auth = createAuthSpies()
 
-    await triggerAuthFailure(auth.hooks, { url: 'http://localhost/api/auth/refresh' })
+    await triggerAuthFailure(auth.hooks, { url: 'http://localhost/api/auth/session' })
 
-    expect(auth.refreshToken).not.toHaveBeenCalled()
+    expect(auth.refreshSession).not.toHaveBeenCalled()
     expect(kyMock.state.replayCalls).toHaveLength(0)
     expect(auth.onAuthFailure).toHaveBeenCalledTimes(1)
   })
 
-  it('HTTP 层失败不触发刷新并提示错误', async () => {
+  it('HTTP 层失败不触发续期并提示错误', async () => {
     const auth = createAuthSpies()
     const onError = vi.fn()
 
@@ -183,7 +173,7 @@ describe('401 语义边界', () => {
       new Response(JSON.stringify({ code: 500, message: '服务器内部错误' }), { status: 500 })
     )
 
-    expect(auth.refreshToken).not.toHaveBeenCalled()
+    expect(auth.refreshSession).not.toHaveBeenCalled()
     expect(auth.onAuthFailure).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledWith('服务器内部错误')
   })

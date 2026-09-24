@@ -3,7 +3,6 @@ package middleware
 
 import (
 	"fmt"
-	"strings"
 
 	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
@@ -37,16 +36,14 @@ func NewIdentityProvider(tokenService service.TokenServiceInterface, userRepo re
 
 // Resolve 解析访问令牌并加载完整用户，逐项校验令牌、状态与角色有效性。
 func (p *tokenIdentityProvider) Resolve(c *gin.Context) (*domain.User, error) {
-	token := c.GetHeader("Authorization")
+	// 令牌读取经双轨解析，Header 优先，Cookie 为浏览器默认通道。
+	token := resolveAccessToken(c)
 
 	if token == "" {
 		response.Unauthorized(c, "未提供认证令牌")
 		c.Abort()
 		return nil, fmt.Errorf("no token")
 	}
-
-	// 移除 Bearer 前缀，无前缀时保持原值。
-	token = strings.TrimPrefix(token, bearerTokenPrefix)
 
 	// 校验访问令牌，服务端令牌表是身份的唯一权威。
 	identity, err := p.tokenService.ValidateAccessToken(token)

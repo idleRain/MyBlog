@@ -1,15 +1,18 @@
 // 认证守卫工具
 
+import type { User } from '@myblog/api/modules/user/types'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
 
 /**
- * 检查用户是否已认证
+ * 检查用户是否已认证。
+ * 本地状态仅承载用户信息，会话 Cookie 是否有效由首次请求的服务端裁决，
+ * 认证失效时由请求器的 onAuthFailure 统一引导重新登录。
  */
 export function isAuthenticated(): boolean {
   const state = authStore.getCurrentState()
-  return state.isAuthenticated && !!state.user && authStore.isTokenValid()
+  return state.isAuthenticated && !!state.user
 }
 
 /**
@@ -36,7 +39,7 @@ export async function requireGuest(redirectTo: string = '/'): Promise<boolean> {
   if (!browser) return true // SSR 时不检查
 
   if (isAuthenticated()) {
-    console.log('用户已认证，跳转到首页')
+    console.log('用户已登录，跳转到首页')
     await goto(redirectTo)
     return false
   }
@@ -50,7 +53,7 @@ export async function requireGuest(redirectTo: string = '/'): Promise<boolean> {
  */
 export async function checkAuthOnLoad(): Promise<{
   isAuthenticated: boolean
-  user: any
+  user: User | null
   needsRedirect: boolean
   redirectTo?: string
 }> {
@@ -62,41 +65,12 @@ export async function checkAuthOnLoad(): Promise<{
     }
   }
 
-  const state = authStore.getCurrentState()
-  const authenticated = state.isAuthenticated && !!state.user
-
-  // 检查 token 是否有效
-  if (authenticated && !authStore.isTokenValid()) {
-    // Token 无效，尝试刷新
-    try {
-      const { refreshAccessToken } = await import('$lib/service')
-      const newToken = await refreshAccessToken()
-
-      if (!newToken) {
-        // 刷新失败，清除本地状态，需要重新登录
-        authStore.clearLocalState()
-        return {
-          isAuthenticated: false,
-          user: null,
-          needsRedirect: true,
-          redirectTo: '/login'
-        }
-      }
-    } catch (error) {
-      console.error('Token 刷新失败:', error)
-      authStore.clearLocalState()
-      return {
-        isAuthenticated: false,
-        user: null,
-        needsRedirect: true,
-        redirectTo: '/login'
-      }
-    }
-  }
+  const authenticated = isAuthenticated()
 
   return {
     isAuthenticated: authenticated,
-    user: state.user,
-    needsRedirect: false
+    user: authStore.getCurrentState().user,
+    needsRedirect: !authenticated,
+    redirectTo: '/login'
   }
 }

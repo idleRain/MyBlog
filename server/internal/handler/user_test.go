@@ -56,7 +56,7 @@ func TestGetUserByIDErrorMapping(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			userHandler := NewUserHandler(&fakeUserQueryService{getByIDErr: tc.err})
+			userHandler := NewUserHandler(&fakeUserQueryService{getByIDErr: tc.err}, testSessionCookieConfig())
 			router := gin.New()
 			router.POST("/users/get", userHandler.GetUserByID)
 

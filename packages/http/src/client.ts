@@ -9,18 +9,15 @@ import ky, { type AfterResponseHook, type BeforeRequestHook, type Options } from
 
 /**
  * HTTP 客户端认证相关回调集合。
- * 应用层负责实现令牌读取、刷新与失效处理，避免请求器依赖框架或 store。
+ * 会话令牌经 HttpOnly Cookie 由浏览器自动携带，应用层仅负责会话续期与失效处理，
+ * 避免请求器依赖框架或 store。
  */
 export interface HttpClientAuthHooks {
   /**
-   * 获取当前访问令牌，无令牌时返回 null。
+   * 发起一次会话续期请求，服务端旋转令牌对并重新写入 Cookie，成功返回 true。
+   * 会话 Cookie 由浏览器自动携带，无需在回调中注入任何令牌。
    */
-  getAccessToken: () => string | null | Promise<string | null>
-
-  /**
-   * 刷新访问令牌，成功返回新令牌，失败返回 null。
-   */
-  refreshToken: () => Promise<string | null>
+  refreshSession: () => Promise<boolean>
 
   /**
    * 认证失效处理回调，例如跳转登录页并提示用户。
@@ -59,16 +56,13 @@ export interface CreateHttpClientOptions {
   onError?: (message: string) => void
 }
 
-// 令牌刷新与登录请求的路径标识，用于排除不应触发自动刷新的请求。
-const REFRESH_PATH = '/auth/refresh'
+// 会话续期与登录请求的路径标识，用于排除不应触发自动续期的请求。
+const SESSION_PATH = '/auth/session'
 const LOGIN_PATH = '/users/login'
 
-// Authorization 请求头名称。
-const AUTHORIZATION_HEADER = 'Authorization'
-
-// 请求上下文标记键，记录该请求已携带刷新后的令牌重放过一次。
-// 以显式标记判定远比比对令牌代际可靠：刷新回调在本地认为令牌仍有效时会返回原令牌，
-// 比对代际会把这种情况误判为"已重放过"，从而跳过刷新直接登出。
+// 请求上下文标记键，记录该请求已携带续期后的会话重放过一次。
+// 以显式标记判定远比比对令牌代际可靠：续期成功前后的请求在传输层完全一致，
+// 比对任何请求特征都会把正常重放误判为已重放过，从而跳过续期直接登出。
 const REPLAYED_CONTEXT_KEY = 'myblogReplayed'
 
 // 内容语言协商请求头名称，遵循 HTTP 标准 Accept-Language 语义。
@@ -92,12 +86,12 @@ async function parseResponseBody(
 }
 
 /**
- * 创建带认证刷新、超时与错误提示的 HTTP 客户端。
+ * 创建带会话续期、超时与错误提示的 HTTP 客户端。
  */
 export function createHttpClient(options: CreateHttpClientOptions) {
   const { prefixUrl, timeout = 30000, auth, getLanguage, onError } = options
 
-  // 请求拦截器：为请求附加访问令牌与内容语言标识。
+  // 请求拦截器：为请求附加内容语言标识；会话 Cookie 由浏览器随同源请求自动携带。
   const requestInterceptor: BeforeRequestHook = async request => {
     if (getLanguage) {
       const language = await getLanguage()
@@ -105,28 +99,22 @@ export function createHttpClient(options: CreateHttpClientOptions) {
         request.headers.set(ACCEPT_LANGUAGE_HEADER, language)
       }
     }
-    if (!auth) return
-    const token = await auth.getAccessToken()
-    if (token) {
-      request.headers.set('Authorization', `Bearer ${token}`)
-    }
   }
 
-  // 响应拦截器：以响应体业务码识别认证失效，处理令牌刷新、请求重放与通用错误提示。
+  // 响应拦截器：以响应体业务码识别认证失效，处理会话续期、请求重放与通用错误提示。
   const responseInterceptor: AfterResponseHook = async (request, options, response) => {
     const { code, message } = await parseResponseBody(response)
     const isAuthFailure = code === 401
-    const isRefreshRequest = request.url.includes(REFRESH_PATH)
+    const isSessionRequest = request.url.includes(SESSION_PATH)
     const isLoginRequest = request.url.includes(LOGIN_PATH)
     // ky 确保 context 恒为对象，可直接按键读取。
     const hasReplayed = options.context[REPLAYED_CONTEXT_KEY] === true
 
     if (isAuthFailure && auth && !isLoginRequest) {
       try {
-        if (!isRefreshRequest && !hasReplayed) {
-          const newToken = await auth.refreshToken()
-          if (newToken) {
-            request.headers.set(AUTHORIZATION_HEADER, `Bearer ${newToken}`)
+        if (!isSessionRequest && !hasReplayed) {
+          const refreshed = await auth.refreshSession()
+          if (refreshed) {
             // ky 钩子收到的归一化选项已剥离 hooks，重放需显式回传请求与响应拦截器；
             // 内建重试关闭，嵌套调用自身的 401 由其响应拦截器处理。
             // 归一化选项与 Options 在 exactOptionalPropertyTypes 下可选属性类型存在差异，运行时结构一致，此处收窄为 Options。
@@ -139,11 +127,12 @@ export function createHttpClient(options: CreateHttpClientOptions) {
                 afterResponse: [responseInterceptor]
               }
             } as Options
+            // 续期响应已写入新 Cookie，重放同一请求时浏览器自动携带最新会话。
             return ky(request, replayOptions)
           }
         }
 
-        // 刷新失败、刷新请求自身 401，或重放过一次后仍被拒绝时触发认证失效处理。
+        // 续期失败、续期请求自身 401，或重放过一次后仍被拒绝时触发认证失效处理。
         await auth.onAuthFailure?.(message || '登录已过期，请重新登录')
       } catch {
         await auth.onAuthFailure?.('认证失败，请重新登录')
@@ -174,7 +163,7 @@ export function createHttpClient(options: CreateHttpClientOptions) {
     // 重试显式关闭：后端业务接口一律使用 POST 且多数为非幂等写。
     // 创建类请求重复提交会产生重复数据，点赞收藏关注为切换语义，重复提交会翻转状态。
     // 自动重试在服务端已处理但响应丢失的场景下必然重放请求体，因此不允许在传输层自动重试。
-    // 认证失效后的重放由响应拦截器携带新令牌显式重发承担，与传输层重试无关。
+    // 认证失效后的重放由响应拦截器显式重发承担，与传输层重试无关。
     retry: { limit: 0 }
   })
 

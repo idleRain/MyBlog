@@ -46,13 +46,14 @@ async function handleLogin(event: SubmitEvent) {
       return
     }
 
-    authStore.login(
-      response.data.user,
-      response.data.accessToken,
-      response.data.refreshToken,
-      response.data.expiresIn,
-      response.data.permissions
-    )
+    // 凭登录响应中的刷新令牌建立会话，服务端将令牌对写入 HttpOnly Cookie。
+    const session = await UserAPI.createSession({ refreshToken: response.data.refreshToken })
+    if (session.code !== RESPONSE_CODE_SUCCESS) {
+      toast.error(session.message || '会话建立失败，请重试')
+      return
+    }
+
+    authStore.login(response.data.user, response.data.permissions)
     toast.success('登录成功')
     await goto('/')
   } catch {

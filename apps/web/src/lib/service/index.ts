@@ -1,8 +1,6 @@
 // HTTP 客户端实例：基于 @myblog/http 工厂创建，认证逻辑在此注入。
 // 此文件是应用层与请求器之间的适配层，负责接入认证 store 与界面提示。
 
-import type { RefreshTokenData } from '@myblog/api/modules/user/types'
-import { createTokenRefresher } from '@myblog/auth'
 import { getLocale } from '$lib/paraglide/runtime'
 import { createHttpClient } from '@myblog/http'
 import { authStore } from '$lib/stores/auth'
@@ -15,36 +13,31 @@ const prefixUrl = import.meta.env.SSR
   ? import.meta.env.VITE_PROXY_URL + import.meta.env.VITE_BASE_URL
   : import.meta.env.VITE_BASE_URL
 
-// 刷新请求超时上限，超时按刷新失败处理并交由 onAuthFailure 引导重新登录。
-const REFRESH_TIMEOUT_MS = 10000
+// 会话续期请求超时上限，超时按续期失败处理并交由 onAuthFailure 引导重新登录。
+const SESSION_TIMEOUT_MS = 10000
 
 /**
- * 向认证端点发起一次真实的令牌刷新请求，失败返回 null。
+ * 发起一次会话续期请求，服务端旋转令牌对并重新写入 Cookie，成功返回 true。
  * 此处以裸 ky 直连该端点，豁免 A1 禁止页面直连 ky 的规则，避免请求器与认证流程互相依赖形成循环。
+ * 会话 Cookie 由浏览器自动携带，请求体省略时服务端从 Cookie 读取刷新令牌完成旋转；
+ * 旋转结果写入共享的浏览器 Cookie 存储，天然规避多标签页并发旋转的令牌竞争。
  */
-async function requestTokenPair(refreshToken: string): Promise<RefreshTokenData | null> {
+async function refreshSession(): Promise<boolean> {
   try {
     const response = await ky
-      .post(prefixUrl + '/auth/refresh', {
-        json: { refreshToken },
-        timeout: REFRESH_TIMEOUT_MS,
+      .post(prefixUrl + '/auth/session', {
+        json: {},
+        timeout: SESSION_TIMEOUT_MS,
         retry: 0
       })
-      .json<{ code: number; message: string; data: RefreshTokenData }>()
+      .json<{ code: number; message: string }>()
 
-    if (response.code !== 200) {
-      throw new Error(response.message || '刷新令牌失败')
-    }
-
-    return response.data
+    return response.code === 200
   } catch (error) {
-    console.error('令牌刷新失败:', error)
-    return null
+    console.error('会话续期失败:', error)
+    return false
   }
 }
-
-// 刷新编排由 @myblog/auth 统一提供，覆盖其他标签页已完成旋转与并发失败后重新对齐两种情形。
-const refreshAccessToken = createTokenRefresher({ store: authStore, requestTokenPair })
 
 const request = createHttpClient({
   prefixUrl,
@@ -53,15 +46,9 @@ const request = createHttpClient({
   // SSR 场景经 paraglide 请求上下文解析，浏览器场景读取语言 cookie。
   getLanguage: () => getLocale(),
   auth: {
-    // 从认证 store 读取当前访问令牌。
-    getAccessToken: () => {
-      const state = authStore.getCurrentState()
-      return state.isAuthenticated ? state.accessToken : null
-    },
-
-    // 本回调只在服务端已拒绝访问令牌时被调用，因此必须真正执行刷新。
-    // 若以本地有效期判断短路成返回旧令牌，请求会带着同一枚失效令牌重放并直接登出。
-    refreshToken: refreshAccessToken,
+    // 本回调只在服务端拒绝当前会话时被调用，因此必须真正执行续期；
+    // 并发 401 经单飞调度共享同一次续期请求。
+    refreshSession: () => authStore.refreshSingleFlight(refreshSession),
 
     // 认证失效时清除状态并跳转登录页。
     onAuthFailure: async message => {
@@ -80,6 +67,3 @@ const request = createHttpClient({
 })
 
 export default request
-
-// 兼容旧导出：供 request 工具与守卫使用。
-export { refreshAccessToken }
