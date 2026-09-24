@@ -16,8 +16,8 @@ import (
 )
 
 // newIdentityProvider 构造带可配置替身的 身份解析器。
-func newIdentityProvider(jwt *fakeTokenService, repo *fakeUserRepository) *tokenIdentityProvider {
-	return &tokenIdentityProvider{tokenService: jwt, userRepo: repo}
+func newIdentityProvider(tokenSvc *fakeTokenService, repo *fakeUserRepository) *tokenIdentityProvider {
+	return &tokenIdentityProvider{tokenService: tokenSvc, userRepo: repo}
 }
 
 // resolveViaRequest 以指定认证头执行身份解析，返回解析结果、响应业务码与是否中断。
@@ -80,7 +80,7 @@ func TestResolveInvalidToken(t *testing.T) {
 // TestResolveUserNotFound 验证用户不存在时返回业务码 401。
 func TestResolveUserNotFound(t *testing.T) {
 	provider := newIdentityProvider(
-		&fakeTokenService{claims: &service.TokenIdentity{UserID: 1}},
+		&fakeTokenService{identity: &service.TokenIdentity{UserID: 1}},
 		&fakeUserRepository{err: errors.New("user not found")},
 	)
 
@@ -97,7 +97,7 @@ func TestResolveUserNotFound(t *testing.T) {
 // TestResolveDisabledUser 验证用户被禁用时返回业务码 403。
 func TestResolveDisabledUser(t *testing.T) {
 	provider := newIdentityProvider(
-		&fakeTokenService{claims: &service.TokenIdentity{UserID: 1}},
+		&fakeTokenService{identity: &service.TokenIdentity{UserID: 1}},
 		&fakeUserRepository{user: newTestUser("user", 0)},
 	)
 
@@ -114,7 +114,7 @@ func TestResolveDisabledUser(t *testing.T) {
 // TestResolveInvalidRole 验证用户角色无效时返回业务码 403。
 func TestResolveInvalidRole(t *testing.T) {
 	provider := newIdentityProvider(
-		&fakeTokenService{claims: &service.TokenIdentity{UserID: 1}},
+		&fakeTokenService{identity: &service.TokenIdentity{UserID: 1}},
 		&fakeUserRepository{user: newTestUser("hacker", 1)},
 	)
 
@@ -132,7 +132,7 @@ func TestResolveInvalidRole(t *testing.T) {
 func TestResolveSuccess(t *testing.T) {
 	activeUser := newTestUser("admin", 1)
 	provider := newIdentityProvider(
-		&fakeTokenService{claims: &service.TokenIdentity{UserID: 1}},
+		&fakeTokenService{identity: &service.TokenIdentity{UserID: 1}},
 		&fakeUserRepository{user: activeUser},
 	)
 
@@ -156,7 +156,7 @@ func TestResolveSuccess(t *testing.T) {
 func TestResolveTrimsBearerPrefix(t *testing.T) {
 	activeUser := newTestUser("user", 1)
 	provider := newIdentityProvider(
-		&fakeTokenService{claims: &service.TokenIdentity{UserID: 1}},
+		&fakeTokenService{identity: &service.TokenIdentity{UserID: 1}},
 		&fakeUserRepository{user: activeUser},
 	)
 

@@ -63,8 +63,8 @@ func (f *loginRBACService) GetUserPermissions(userRole string) []Permission {
 }
 
 // newLoginUserService 创建注入登录替身的用户服务实例。
-func newLoginUserService(repo *loginUserRepo, jwt *loginTokenService, rbac *loginRBACService) *userService {
-	return NewUserService(repo, jwt, rbac).(*userService)
+func newLoginUserService(repo *loginUserRepo, tokenSvc *loginTokenService, rbac *loginRBACService) *userService {
+	return NewUserService(repo, tokenSvc, rbac).(*userService)
 }
 
 // hashPassword 以最低成本生成测试密码哈希，避免默认成本拖慢测试。
@@ -84,9 +84,9 @@ func TestLoginSuccess(t *testing.T) {
 		Password: hashPassword(t, "correct-pass1"), Role: "superadmin", Status: 1,
 	}
 	repo := &loginUserRepo{user: user}
-	jwt := &loginTokenService{tokenPair: &TokenPair{AccessToken: "access-token", RefreshToken: "refresh-token", ExpiresIn: 1800}}
+	tokenSvc := &loginTokenService{tokenPair: &TokenPair{AccessToken: "access-token", RefreshToken: "refresh-token", ExpiresIn: 1800}}
 	rbac := &loginRBACService{permissions: []Permission{PermissionArticleRead}}
-	svc := newLoginUserService(repo, jwt, rbac)
+	svc := newLoginUserService(repo, tokenSvc, rbac)
 
 	response, err := svc.Login("admin", "correct-pass1")
 	if err != nil {
@@ -153,8 +153,8 @@ func TestLoginFallsBackToEmail(t *testing.T) {
 		Password: hashPassword(t, "correct-pass1"), Role: "user", Status: 1,
 	}
 	repo := &loginUserRepo{user: user, usernameErr: errors.New("用户不存在")}
-	jwt := &loginTokenService{tokenPair: &TokenPair{AccessToken: "a", RefreshToken: "r", ExpiresIn: 1}}
-	svc := newLoginUserService(repo, jwt, &loginRBACService{})
+	tokenSvc := &loginTokenService{tokenPair: &TokenPair{AccessToken: "a", RefreshToken: "r", ExpiresIn: 1}}
+	svc := newLoginUserService(repo, tokenSvc, &loginRBACService{})
 
 	response, err := svc.Login("admin@myblog.local", "correct-pass1")
 	if err != nil {
@@ -171,8 +171,9 @@ func TestLoginTokenGenerationFailure(t *testing.T) {
 		ID: 1, Username: "admin", Password: hashPassword(t, "correct-pass1"), Role: "user", Status: 1,
 	}
 	repo := &loginUserRepo{user: user}
-	jwt := &loginTokenService{err: errors.New("signing failed")}
-	svc := newLoginUserService(repo, jwt, &loginRBACService{})
+	// 替身返回签发阶段的失败，令牌串未生成时登录必须整体失败。
+	tokenSvc := &loginTokenService{err: errors.New("令牌签发失败")}
+	svc := newLoginUserService(repo, tokenSvc, &loginRBACService{})
 
 	_, err := svc.Login("admin", "correct-pass1")
 	if err == nil {

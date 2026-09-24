@@ -118,7 +118,8 @@ pnpm run build:server # 仅构建 Go 后端二进制
 pnpm run build:web    # 仅构建前端静态文件
 pnpm run build:clean  # 清理构建产物后构建
 pnpm run build:fast   # 跳过测试与 lint 的快速构建
-pnpm run test         # test:server（go test）+ typecheck:web（前后台 svelte-check 类型检查）
+pnpm run test         # test:server（go test）+ test:packages（packages 单测）+ typecheck:web（前后台 svelte-check 类型检查）
+pnpm run test:packages # 仅 packages 单测：@myblog/api + @myblog/auth + @myblog/http
 pnpm run lint         # lint:web + lint:server（go vet + golangci-lint）
 pnpm run format       # format:web + format:server
 pnpm run quality      # format + lint + test
@@ -137,11 +138,13 @@ pnpm run migrate [create|up|down|version|help]
 ## 4. 代码质量与格式化约定
 
 - 根 `prettier.config.js`：`semi: false`、`singleQuote: true`、`arrowParens: 'avoid'`、`printWidth: 100`、`tabWidth: 2`、`trailingComma: 'none'`。
+- **导入排序规范**：根与两个 app 的 prettier 配置均挂载 `prettier-plugin-sort-imports`，该插件的排序依据是**单条 import 语句的字符长度**，语句越长排得越靠前，既不看模块名字母序，也不区分外部依赖与相对路径。这是既定规范，导入块看似错乱时不要手工“修正”，手工调整会被下一次格式化还原。
+- **格式化覆盖范围**：lint-staged 仅对 `apps/**/src/**` 运行 prettier，`packages/**` 不在任何 format 门禁覆盖内，因此 packages 下存在未按上述规范格式化的存量文件。新增或改动 packages 文件时必须手动执行 `npx prettier --write <file>` 对齐规范。
 - 根 `eslint.config.js` 导出 `baseConfig` 供子项目继承；`apps/*/eslint.config.js` 在其上叠加 Svelte/TS 规则。
 - Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
 - 更改文件后应运行 `pnpm run lint` 与 `pnpm run format` 保持静态零告警。
 - 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，若单次提交跨度较大需补充 message 描述正文，type 枚举以 `commitlint.config.js` 为准。
-- **测试现状**：后端已有单测（`service`/`repository`/`handler` 层 `*_test.go`）；前端尚无测试。新增后端关键逻辑必须配套 `*_test.go`（与被测文件同目录）；新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）时应配套 `*.test.ts`。注意 `pnpm run typecheck:web` 当前仅为类型检查，不是单元测试。
+- **测试现状**：后端已有单测（`service`/`repository`/`handler` 层 `*_test.go`）；`packages/api`、`packages/auth`、`packages/http` 已有 vitest 单测并经 `pnpm run test:packages` 纳入门禁，其中前两者的 `typecheck` 脚本同时被该命令串联执行；两个 app 尚无测试。新增后端关键逻辑必须配套 `*_test.go`（与被测文件同目录）；新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）时必须配套 `*.test.ts`，并为所在 package 补 `typecheck` 与 `test` 脚本、登记进根 `test:packages`。注意 `pnpm run typecheck:web` 仅为类型检查，不是单元测试。
 
 ## 5. 后端约定（server/）
 

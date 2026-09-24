@@ -46,8 +46,31 @@ const AUTH_USER_KEY = 'auth_user'
 const AUTH_EXPIRES_KEY = 'auth_expires_at'
 const AUTH_PERMISSIONS_KEY = 'auth_permissions'
 
+// 认证状态占用的全部存储键，跨标签页同步据此过滤与认证无关的存储变更。
+const AUTH_STORAGE_KEYS = new Set([
+  AUTH_TOKEN_KEY,
+  AUTH_REFRESH_KEY,
+  AUTH_USER_KEY,
+  AUTH_EXPIRES_KEY,
+  AUTH_PERMISSIONS_KEY
+])
+
 // 令牌过期前提前刷新的窗口，单位毫秒
 const REFRESH_LEAD_TIME_MS = 5 * 60 * 1000
+
+/**
+ * 判断两份认证状态是否等价，避免跨标签页同步触发无意义的状态写入与重渲染。
+ * 权限与用户信息随令牌一同写入，令牌与身份一致时视为等价。
+ */
+function isSameAuthState(left: AuthState, right: AuthState): boolean {
+  return (
+    left.isAuthenticated === right.isAuthenticated &&
+    left.accessToken === right.accessToken &&
+    left.refreshToken === right.refreshToken &&
+    left.expiresAt === right.expiresAt &&
+    left.user?.id === right.user?.id
+  )
+}
 
 /**
  * 创建认证 store 实例，供各应用各持有一份，避免全局单例造成状态串扰。
@@ -101,6 +124,30 @@ export function createAuthStore(deps: AuthStoreDeps) {
     local.rm(AUTH_USER_KEY)
     local.rm(AUTH_EXPIRES_KEY)
     local.rm(AUTH_PERMISSIONS_KEY)
+  }
+
+  /**
+   * 从持久化存储重新加载认证状态，用于跨标签页对齐。
+   * 同源标签页共享 localStorage 但各自持有独立的内存状态，
+   * 任一标签页登出或旋转令牌后，其余标签页必须跟随，否则会继续使用已被撤销的旧令牌。
+   */
+  function syncFromStorage() {
+    if (!deps.isBrowser()) return
+
+    const nextState = loadInitialState()
+    if (isSameAuthState(currentState, nextState)) return
+
+    set(nextState)
+  }
+
+  // 注册跨标签页同步监听。storage 事件仅在写入方之外的同源标签页触发，因此不会形成回环。
+  if (deps.isBrowser()) {
+    window.addEventListener('storage', event => {
+      // 整库清空时 event.key 为 null，此时无法按键过滤，同样需要重新加载。
+      if (event.key === null || AUTH_STORAGE_KEYS.has(event.key)) {
+        syncFromStorage()
+      }
+    })
   }
 
   return {
@@ -162,6 +209,9 @@ export function createAuthStore(deps: AuthStoreDeps) {
       set(initialState)
     },
 
+    // 从持久化存储对齐认证状态，供刷新前读取其他标签页可能已写入的最新令牌。
+    syncFromStorage,
+
     // 更新用户信息并同步本地缓存。
     updateUser(user: User) {
       update(state => {
@@ -217,15 +267,6 @@ export function createAuthStore(deps: AuthStoreDeps) {
       return Date.now() < currentState.expiresAt - REFRESH_LEAD_TIME_MS
     },
 
-    // 检查令牌是否进入需要刷新的窗口。
-    shouldRefreshToken(): boolean {
-      if (!currentState.isAuthenticated || !currentState.accessToken || !currentState.expiresAt) {
-        return false
-      }
-
-      return Date.now() >= currentState.expiresAt - REFRESH_LEAD_TIME_MS
-    },
-
     // 获取访问令牌
     getAccessToken(): string | null {
       return currentState.accessToken
@@ -252,3 +293,8 @@ export function createAuthStore(deps: AuthStoreDeps) {
     }
   }
 }
+
+/**
+ * 认证 store 实例类型，供令牌刷新编排等消费方声明注入依赖。
+ */
+export type AuthStore = ReturnType<typeof createAuthStore>

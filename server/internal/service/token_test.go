@@ -13,7 +13,7 @@ import (
 func newTestTokenService(t *testing.T) TokenServiceInterface {
 	t.Helper()
 	cfg := &config.Config{
-		JWT: config.JWTConfig{
+		Token: config.TokenConfig{
 			AccessExpire:  30,
 			RefreshExpire: 24,
 		},

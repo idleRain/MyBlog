@@ -58,15 +58,15 @@ func (f *fakeRBACService) CanManageUser(managerRole, targetRole string) bool {
 // fakeTokenService 可配置的 tokenService 测试替身，仅覆盖令牌校验方法。
 type fakeTokenService struct {
 	service.TokenServiceInterface
-	claims *service.TokenIdentity
-	err    error
+	identity *service.TokenIdentity
+	err      error
 }
 
 func (f *fakeTokenService) ValidateAccessToken(tokenString string) (*service.TokenIdentity, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
-	return f.claims, nil
+	return f.identity, nil
 }
 
 // fakeUserRepository 可配置的 UserRepository 测试替身，仅覆盖身份解析消费的查询方法。

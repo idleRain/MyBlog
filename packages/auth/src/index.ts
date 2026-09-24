@@ -1,3 +1,5 @@
 // 认证域公共包入口
 export { createAuthStore } from './auth-store'
-export type { AuthState, AuthStoreDeps } from './auth-store'
+export type { AuthState, AuthStore, AuthStoreDeps } from './auth-store'
+export { createTokenRefresher } from './token-refresh'
+export type { TokenRefreshDeps } from './token-refresh'

@@ -63,8 +63,13 @@ export interface CreateHttpClientOptions {
 const REFRESH_PATH = '/auth/refresh'
 const LOGIN_PATH = '/users/login'
 
-// Authorization 请求头名称，重放守卫依赖比对请求携带的令牌代际。
+// Authorization 请求头名称。
 const AUTHORIZATION_HEADER = 'Authorization'
+
+// 请求上下文标记键，记录该请求已携带刷新后的令牌重放过一次。
+// 以显式标记判定远比比对令牌代际可靠：刷新回调在本地认为令牌仍有效时会返回原令牌，
+// 比对代际会把这种情况误判为"已重放过"，从而跳过刷新直接登出。
+const REPLAYED_CONTEXT_KEY = 'myblogReplayed'
 
 // 内容语言协商请求头名称，遵循 HTTP 标准 Accept-Language 语义。
 const ACCEPT_LANGUAGE_HEADER = 'Accept-Language'
@@ -113,32 +118,32 @@ export function createHttpClient(options: CreateHttpClientOptions) {
     const isAuthFailure = code === 401
     const isRefreshRequest = request.url.includes(REFRESH_PATH)
     const isLoginRequest = request.url.includes(LOGIN_PATH)
+    // ky 确保 context 恒为对象，可直接按键读取。
+    const hasReplayed = options.context[REPLAYED_CONTEXT_KEY] === true
 
     if (isAuthFailure && auth && !isLoginRequest) {
       try {
-        if (!isRefreshRequest) {
+        if (!isRefreshRequest && !hasReplayed) {
           const newToken = await auth.refreshToken()
           if (newToken) {
-            // 仅当请求携带的仍是刷新前旧令牌时才重放，令牌代际比对确保同一请求最多重放一次，防止 401 循环。
-            if (request.headers.get(AUTHORIZATION_HEADER) !== `Bearer ${newToken}`) {
-              request.headers.set(AUTHORIZATION_HEADER, `Bearer ${newToken}`)
-              // ky 钩子收到的归一化选项已剥离 hooks，重放需显式回传请求与响应拦截器；
-              // 内建重试关闭，嵌套调用自身的 401 由其响应拦截器处理。
-              // 归一化选项与 Options 在 exactOptionalPropertyTypes 下可选属性类型存在差异，运行时结构一致，此处收窄为 Options。
-              const replayOptions = {
-                ...options,
-                retry: 0,
-                hooks: {
-                  beforeRequest: [requestInterceptor],
-                  afterResponse: [responseInterceptor]
-                }
-              } as Options
-              return ky(request, replayOptions)
-            }
+            request.headers.set(AUTHORIZATION_HEADER, `Bearer ${newToken}`)
+            // ky 钩子收到的归一化选项已剥离 hooks，重放需显式回传请求与响应拦截器；
+            // 内建重试关闭，嵌套调用自身的 401 由其响应拦截器处理。
+            // 归一化选项与 Options 在 exactOptionalPropertyTypes 下可选属性类型存在差异，运行时结构一致，此处收窄为 Options。
+            const replayOptions = {
+              ...options,
+              retry: 0,
+              context: { ...options.context, [REPLAYED_CONTEXT_KEY]: true },
+              hooks: {
+                beforeRequest: [requestInterceptor],
+                afterResponse: [responseInterceptor]
+              }
+            } as Options
+            return ky(request, replayOptions)
           }
         }
 
-        // 刷新失败、刷新请求自身 401，或最新令牌仍被拒绝时触发认证失效处理。
+        // 刷新失败、刷新请求自身 401，或重放过一次后仍被拒绝时触发认证失效处理。
         await auth.onAuthFailure?.(message || '登录已过期，请重新登录')
       } catch {
         await auth.onAuthFailure?.('认证失败，请重新登录')

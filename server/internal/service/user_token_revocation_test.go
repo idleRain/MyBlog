@@ -33,32 +33,32 @@ func (f *recordedTokenService) RevokeUserTokens(userID uint) error {
 // TestLogoutRevokesTokenPair 登出必须同时撤销访问令牌与刷新令牌，
 // 仅撤销 access 会让 refresh 在有效期内继续可刷。
 func TestLogoutRevokesTokenPair(t *testing.T) {
-	jwtFake := &recordedTokenService{}
-	svc := NewUserService(&fakeUserRepo{user: &domain.User{ID: 1}}, jwtFake, NewRBACService())
+	tokenFake := &recordedTokenService{}
+	svc := NewUserService(&fakeUserRepo{user: &domain.User{ID: 1}}, tokenFake, NewRBACService())
 
 	if err := svc.Logout("access-token", "refresh-token"); err != nil {
 		t.Fatalf("登出失败: %v", err)
 	}
 
-	if len(jwtFake.revokedTokens) != 2 {
-		t.Fatalf("应撤销 2 个令牌，实际撤销 %d 个", len(jwtFake.revokedTokens))
+	if len(tokenFake.revokedTokens) != 2 {
+		t.Fatalf("应撤销 2 个令牌，实际撤销 %d 个", len(tokenFake.revokedTokens))
 	}
-	if jwtFake.revokedTokens[0] != "access-token" || jwtFake.revokedTokens[1] != "refresh-token" {
-		t.Errorf("撤销顺序 = %v, 期望先 access 后 refresh", jwtFake.revokedTokens)
+	if tokenFake.revokedTokens[0] != "access-token" || tokenFake.revokedTokens[1] != "refresh-token" {
+		t.Errorf("撤销顺序 = %v, 期望先 access 后 refresh", tokenFake.revokedTokens)
 	}
 }
 
 // TestLogoutSkipsEmptyRefreshToken 刷新令牌缺省时仅撤销访问令牌，跳过空撤销。
 func TestLogoutSkipsEmptyRefreshToken(t *testing.T) {
-	jwtFake := &recordedTokenService{}
-	svc := NewUserService(&fakeUserRepo{user: &domain.User{ID: 1}}, jwtFake, NewRBACService())
+	tokenFake := &recordedTokenService{}
+	svc := NewUserService(&fakeUserRepo{user: &domain.User{ID: 1}}, tokenFake, NewRBACService())
 
 	if err := svc.Logout("access-token", ""); err != nil {
 		t.Fatalf("登出失败: %v", err)
 	}
 
-	if len(jwtFake.revokedTokens) != 1 || jwtFake.revokedTokens[0] != "access-token" {
-		t.Errorf("应仅撤销访问令牌，实际撤销 %v", jwtFake.revokedTokens)
+	if len(tokenFake.revokedTokens) != 1 || tokenFake.revokedTokens[0] != "access-token" {
+		t.Errorf("应仅撤销访问令牌，实际撤销 %v", tokenFake.revokedTokens)
 	}
 }
 
@@ -67,15 +67,15 @@ func TestLogoutSkipsEmptyRefreshToken(t *testing.T) {
 func TestChangePasswordRevokesAllUserTokens(t *testing.T) {
 	oldHash, _ := bcrypt.GenerateFromPassword([]byte("old12345678"), BcryptCost)
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 3, Username: "user3", Password: string(oldHash), Role: "user", Status: 1}}
-	jwtFake := &recordedTokenService{}
-	svc := NewUserService(userRepo, jwtFake, NewRBACService())
+	tokenFake := &recordedTokenService{}
+	svc := NewUserService(userRepo, tokenFake, NewRBACService())
 
 	if err := svc.ChangePassword(3, &ChangePasswordRequest{OldPassword: "old12345678", NewPassword: "new12345678"}); err != nil {
 		t.Fatalf("修改密码失败: %v", err)
 	}
 
-	if len(jwtFake.revokedUserIDs) != 1 || jwtFake.revokedUserIDs[0] != 3 {
-		t.Errorf("应撤销用户 3 的全部令牌，实际撤销 %v", jwtFake.revokedUserIDs)
+	if len(tokenFake.revokedUserIDs) != 1 || tokenFake.revokedUserIDs[0] != 3 {
+		t.Errorf("应撤销用户 3 的全部令牌，实际撤销 %v", tokenFake.revokedUserIDs)
 	}
 }
 
@@ -83,16 +83,16 @@ func TestChangePasswordRevokesAllUserTokens(t *testing.T) {
 func TestChangePasswordKeepsTokensOnWrongOldPassword(t *testing.T) {
 	oldHash, _ := bcrypt.GenerateFromPassword([]byte("old12345678"), BcryptCost)
 	userRepo := &fakeUserRepo{user: &domain.User{ID: 4, Username: "user4", Password: string(oldHash), Role: "user", Status: 1}}
-	jwtFake := &recordedTokenService{}
-	svc := NewUserService(userRepo, jwtFake, NewRBACService())
+	tokenFake := &recordedTokenService{}
+	svc := NewUserService(userRepo, tokenFake, NewRBACService())
 
 	err := svc.ChangePassword(4, &ChangePasswordRequest{OldPassword: "wrong-pass1", NewPassword: "new12345678"})
 	if err == nil {
 		t.Fatal("旧密码错误应被拒绝")
 	}
 
-	if len(jwtFake.revokedUserIDs) != 0 {
-		t.Errorf("改密失败不应触发撤销，实际撤销 %v", jwtFake.revokedUserIDs)
+	if len(tokenFake.revokedUserIDs) != 0 {
+		t.Errorf("改密失败不应触发撤销，实际撤销 %v", tokenFake.revokedUserIDs)
 	}
 }
 

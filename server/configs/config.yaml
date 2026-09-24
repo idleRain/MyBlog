@@ -31,7 +31,7 @@ api:
   timeout: 30  # 秒
 
 # 令牌配置：令牌为服务端签发的不透明随机串，仅需配置有效期
-jwt:
+token:
   access_expire: 15  # 分钟
   refresh_expire: 168  # 小时（7天）
 

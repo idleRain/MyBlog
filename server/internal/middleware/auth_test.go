@@ -43,7 +43,7 @@ func TestAuth(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tokenService := &fakeTokenService{claims: &service.TokenIdentity{UserID: 7}, err: tc.tokenErr}
+			tokenService := &fakeTokenService{identity: &service.TokenIdentity{UserID: 7}, err: tc.tokenErr}
 			router, handlerCalled := newAuthRouter(Auth(tokenService), func(c *gin.Context) {
 				if got, exists := c.Get("userID"); tc.expectCalled {
 					if !exists || got != uint(7) {
@@ -95,7 +95,7 @@ func TestOptionalAuth(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tokenService := &fakeTokenService{claims: &service.TokenIdentity{UserID: 3}, err: tc.tokenErr}
+			tokenService := &fakeTokenService{identity: &service.TokenIdentity{UserID: 3}, err: tc.tokenErr}
 			router, handlerCalled := newAuthRouter(OptionalAuth(tokenService), func(c *gin.Context) {
 				_, exists := c.Get("authenticated")
 				if exists != tc.expectAuthenticated {

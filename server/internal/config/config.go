@@ -16,7 +16,7 @@ type Config struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	Logger   LoggerConfig   `mapstructure:"logger"`
 	API      APIConfig      `mapstructure:"api"`
-	JWT      JWTConfig      `mapstructure:"jwt"`
+	Token    TokenConfig    `mapstructure:"token"`
 	Security SecurityConfig `mapstructure:"security"`
 	CORS     CORSConfig     `mapstructure:"cors"`
 	Media    MediaConfig    `mapstructure:"media"`
@@ -86,8 +86,8 @@ type APIConfig struct {
 	Timeout int    `mapstructure:"timeout"`
 }
 
-// JWTConfig 令牌配置，仅承载有效期。令牌为不透明随机串，服务端不需要任何签名密钥。
-type JWTConfig struct {
+// TokenConfig 令牌配置，仅承载有效期。令牌为不透明随机串，服务端不需要任何签名密钥。
+type TokenConfig struct {
 	AccessExpire  int `mapstructure:"access_expire"`  // 分钟
 	RefreshExpire int `mapstructure:"refresh_expire"` // 小时
 }
@@ -233,8 +233,8 @@ func setDefaults() {
 	viper.SetDefault("api.version", "v1")
 	viper.SetDefault("api.timeout", 30)
 
-	viper.SetDefault("jwt.access_expire", 15)
-	viper.SetDefault("jwt.refresh_expire", 168)
+	viper.SetDefault("token.access_expire", 15)
+	viper.SetDefault("token.refresh_expire", 168)
 
 	// 安全配置默认值
 	viper.SetDefault("security.rate_limit.enabled", true)
@@ -327,11 +327,11 @@ func validateConfig(cfg *Config) error {
 		return fmt.Errorf("数据库名不能为空")
 	}
 
-	if cfg.JWT.AccessExpire <= 0 {
+	if cfg.Token.AccessExpire <= 0 {
 		return fmt.Errorf("访问令牌过期时间必须大于0")
 	}
 
-	if cfg.JWT.RefreshExpire <= 0 {
+	if cfg.Token.RefreshExpire <= 0 {
 		return fmt.Errorf("刷新令牌过期时间必须大于0")
 	}
 

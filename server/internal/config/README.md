@@ -42,7 +42,7 @@
 - `version`: API版本
 - `timeout`: 请求超时时间（秒）
 
-### 令牌配置 (JWTConfig)
+### 令牌配置 (TokenConfig)
 
 - `access_expire`: 访问令牌有效期（分钟）
 - `refresh_expire`: 刷新令牌有效期（小时）

@@ -1,6 +1,8 @@
 // HTTP 客户端实例：基于 @myblog/http 工厂创建，认证逻辑在此注入。
 // 此文件是应用层与请求器之间的适配层，负责接入认证 store 与界面提示。
 
+import type { RefreshTokenData } from '@myblog/api/modules/user/types'
+import { createTokenRefresher } from '@myblog/auth'
 import { getLocale } from '$lib/paraglide/runtime'
 import { createHttpClient } from '@myblog/http'
 import { authStore } from '$lib/stores/auth'
@@ -13,52 +15,36 @@ const prefixUrl = import.meta.env.SSR
   ? import.meta.env.VITE_PROXY_URL + import.meta.env.VITE_BASE_URL
   : import.meta.env.VITE_BASE_URL
 
-/**
- * 以单飞模式刷新令牌，并发触发时共享同一次刷新请求，避免刷新即旋转下旧令牌被并发使用。
- */
-function refreshAccessToken(): Promise<string | null> {
-  return authStore.refreshSingleFlight(doRefreshAccessToken)
-}
+// 刷新请求超时上限，超时按刷新失败处理并交由 onAuthFailure 引导重新登录。
+const REFRESH_TIMEOUT_MS = 10000
 
 /**
- * 执行实际的令牌刷新请求，仅由单飞调度器调用。
+ * 向认证端点发起一次真实的令牌刷新请求，失败返回 null。
+ * 此处以裸 ky 直连该端点，豁免 A1 禁止页面直连 ky 的规则，避免请求器与认证流程互相依赖形成循环。
  */
-async function doRefreshAccessToken(): Promise<string | null> {
-  const refreshToken = authStore.getRefreshToken()
-  if (!refreshToken) {
-    console.warn('没有刷新令牌，无法自动刷新')
-    return null
-  }
-
+async function requestTokenPair(refreshToken: string): Promise<RefreshTokenData | null> {
   try {
     const response = await ky
       .post(prefixUrl + '/auth/refresh', {
         json: { refreshToken },
-        timeout: 10000,
+        timeout: REFRESH_TIMEOUT_MS,
         retry: 0
       })
-      .json<{
-        code: number
-        message: string
-        data: {
-          accessToken: string
-          refreshToken: string
-          expiresIn: number
-        }
-      }>()
+      .json<{ code: number; message: string; data: RefreshTokenData }>()
 
-    if (response.code === 200) {
-      const { accessToken, refreshToken: newRefreshToken, expiresIn } = response.data
-      authStore.updateTokens(accessToken, newRefreshToken, expiresIn)
-      return accessToken
+    if (response.code !== 200) {
+      throw new Error(response.message || '刷新令牌失败')
     }
 
-    throw new Error(response.message || '刷新令牌失败')
+    return response.data
   } catch (error) {
     console.error('令牌刷新失败:', error)
     return null
   }
 }
+
+// 刷新编排由 @myblog/auth 统一提供，覆盖其他标签页已完成旋转与并发失败后重新对齐两种情形。
+const refreshAccessToken = createTokenRefresher({ store: authStore, requestTokenPair })
 
 const request = createHttpClient({
   prefixUrl,
@@ -73,16 +59,9 @@ const request = createHttpClient({
       return state.isAuthenticated ? state.accessToken : null
     },
 
-    // 令牌有效时直接返回，接近过期时执行刷新。
-    refreshToken: async () => {
-      const currentState = authStore.getCurrentState()
-      if (!currentState.isAuthenticated) return null
-      if (authStore.isTokenValid()) return currentState.accessToken
-      if (authStore.shouldRefreshToken()) {
-        return await refreshAccessToken()
-      }
-      return currentState.accessToken
-    },
+    // 本回调只在服务端已拒绝访问令牌时被调用，因此必须真正执行刷新。
+    // 若以本地有效期判断短路成返回旧令牌，请求会带着同一枚失效令牌重放并直接登出。
+    refreshToken: refreshAccessToken,
 
     // 认证失效时清除状态并跳转登录页。
     onAuthFailure: async message => {

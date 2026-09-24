@@ -87,13 +87,13 @@ func (s *tokenService) GenerateTokenPair(user *domain.User) (*TokenPair, error) 
 	now := time.Now()
 
 	accessToken, err := s.issueToken(user.ID, AccessToken, now,
-		time.Duration(s.config.JWT.AccessExpire)*time.Minute)
+		time.Duration(s.config.Token.AccessExpire)*time.Minute)
 	if err != nil {
 		return nil, fmt.Errorf("生成访问令牌失败: %w", err)
 	}
 
 	refreshToken, err := s.issueToken(user.ID, RefreshToken, now,
-		time.Duration(s.config.JWT.RefreshExpire)*time.Hour)
+		time.Duration(s.config.Token.RefreshExpire)*time.Hour)
 	if err != nil {
 		return nil, fmt.Errorf("生成刷新令牌失败: %w", err)
 	}
@@ -101,7 +101,7 @@ func (s *tokenService) GenerateTokenPair(user *domain.User) (*TokenPair, error) 
 	return &TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresIn:    int64(s.config.JWT.AccessExpire) * secondsPerMinute,
+		ExpiresIn:    int64(s.config.Token.AccessExpire) * secondsPerMinute,
 	}, nil
 }
 

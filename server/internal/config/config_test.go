@@ -12,7 +12,7 @@ func TestEnvVariableName(t *testing.T) {
 		key      string
 		expected string
 	}{
-		{key: "jwt.access_expire", expected: "MYBLOG_JWT_ACCESS_EXPIRE"},
+		{key: "token.access_expire", expected: "MYBLOG_TOKEN_ACCESS_EXPIRE"},
 		{key: "database.password", expected: "MYBLOG_DATABASE_PASSWORD"},
 		{key: "server.port", expected: "MYBLOG_SERVER_PORT"},
 	}
@@ -26,16 +26,16 @@ func TestEnvVariableName(t *testing.T) {
 
 // TestApplyEnvOverridesScalar 验证标量配置项可被环境变量覆盖。
 func TestApplyEnvOverridesScalar(t *testing.T) {
-	t.Setenv("MYBLOG_JWT_ACCESS_EXPIRE", "30")
+	t.Setenv("MYBLOG_TOKEN_ACCESS_EXPIRE", "30")
 	t.Setenv("MYBLOG_SERVER_PORT", "8080")
 
 	v := viper.New()
-	v.SetDefault("jwt.access_expire", 15)
+	v.SetDefault("token.access_expire", 15)
 	v.SetDefault("server.port", 3000)
 
 	applyEnvOverrides(v)
 
-	if actual := v.GetInt("jwt.access_expire"); actual != 30 {
+	if actual := v.GetInt("token.access_expire"); actual != 30 {
 		t.Errorf("access_expire = %d, 期望环境变量覆盖值 30", actual)
 	}
 	if actual := v.GetInt("server.port"); actual != 8080 {
@@ -80,7 +80,7 @@ func validTestConfig() *Config {
 	return &Config{
 		Server:   ServerConfig{Port: 3000},
 		Database: DatabaseConfig{Host: "localhost", Username: "root", DBName: "blog"},
-		JWT: JWTConfig{
+		Token: TokenConfig{
 			AccessExpire:  15,
 			RefreshExpire: 168,
 		},
@@ -139,7 +139,7 @@ func TestValidateConfigRejectsI18NDefaultOutsideWhitelist(t *testing.T) {
 	}
 }
 
-// TestLoadParsesConfigSections 验证 config.yaml 的 rbac 与 i18n 节可被正确解析并通过校验。
+// TestLoadParsesConfigSections 验证 config.yaml 的 rbac、i18n 与 token 节可被正确解析并通过校验。
 func TestLoadParsesConfigSections(t *testing.T) {
 	cfg, err := Load("../../configs/config.yaml")
 	if err != nil {
@@ -160,5 +160,13 @@ func TestLoadParsesConfigSections(t *testing.T) {
 	}
 	if len(cfg.I18N.SupportedLanguages) == 0 {
 		t.Error("受支持语言列表应解析出成员")
+	}
+	// 令牌有效期带有默认值，键名写错不会报错而是静默回退到默认值，
+	// 因此必须直接断言 YAML 声明的是 token 节而非历史遗留的 jwt 节。
+	if !viper.InConfig("token.access_expire") || !viper.InConfig("token.refresh_expire") {
+		t.Error("config.yaml 应声明 token.access_expire 与 token.refresh_expire")
+	}
+	if viper.InConfig("jwt.access_expire") || viper.InConfig("jwt.refresh_expire") {
+		t.Error("config.yaml 不应再出现 jwt 节")
 	}
 }
