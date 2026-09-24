@@ -119,7 +119,7 @@ function handleNotificationClick(notification: Notification) {
         </button>
       {/snippet}
     </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="end" class="w-80">
+    <DropdownMenu.Content align="end" class="w-80 max-w-[calc(100vw-2rem)]">
       <div class="flex items-center justify-between px-3 py-2">
         <span class="text-sm font-bold">{m['ui:header.notifications']()}</span>
         <button

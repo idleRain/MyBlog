@@ -25,7 +25,7 @@ console.log('Available messages:', Object.keys(m))
   <!-- 方式1：使用t函数 -->
   <section>
     <h2 class="text-xl font-semibold">方式1：t函数（类型安全）</h2>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <h3 class="font-medium">Common</h3>
         <p>{m['common:greeting']()}</p>
@@ -45,7 +45,7 @@ console.log('Available messages:', Object.keys(m))
   <!-- 方式2：使用i18n命名空间对象 -->
   <section>
     <h2 class="text-xl font-semibold">方式2：命名空间对象</h2>
-    <div class="grid grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
       <div>
         <h3 class="font-medium">UI Buttons</h3>
         <p>{m['ui:button.save']()}</p>

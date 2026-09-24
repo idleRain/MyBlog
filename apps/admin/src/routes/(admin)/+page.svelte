@@ -119,7 +119,7 @@ onMount(loadDashboard)
     </div>
   {:else}
     {#if overview}
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="文章总数" value={overview?.articleCount ?? 0} icon={FileText} />
         <StatCard label="已发布文章" value={overview?.publishedCount ?? 0} icon={Send} />
         <StatCard label="总浏览量" value={overview?.totalViews ?? 0} icon={Eye} />

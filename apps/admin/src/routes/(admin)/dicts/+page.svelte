@@ -216,7 +216,7 @@ async function handleDelete() {
       <Card.Content class="p-0">
         {#if !dictPageState.selectedType}
           <div class="flex h-64 items-center justify-center">
-            <p class="text-sm text-muted-foreground">请先选择左侧的字典类型</p>
+            <p class="text-sm text-muted-foreground">请先选择字典类型</p>
           </div>
         {:else if dictPageState.isLoadingItems}
           <div class="flex h-64 items-center justify-center">
@@ -244,7 +244,7 @@ async function handleDelete() {
               <Table.Row>
                 <Table.Head>值</Table.Head>
                 <Table.Head>显示名</Table.Head>
-                <Table.Head>描述</Table.Head>
+                <Table.Head class="hidden md:table-cell">描述</Table.Head>
                 <Table.Head>排序</Table.Head>
                 <Table.Head>状态</Table.Head>
                 <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
@@ -263,7 +263,7 @@ async function handleDelete() {
                   <Table.Cell>
                     <span class="font-medium">{item.label}</span>
                   </Table.Cell>
-                  <Table.Cell>
+                  <Table.Cell class="hidden md:table-cell">
                     <span class="text-sm text-muted-foreground">{item.description || '—'}</span>
                   </Table.Cell>
                   <Table.Cell>

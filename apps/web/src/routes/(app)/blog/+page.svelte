@@ -20,8 +20,8 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
 
 <section class="texture-grid min-h-screen pt-16">
   <div class="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
-    <!-- 版面标题栏：栏目标注、刊头标题与总量标注，与首页板块标题同构。 -->
-    <div class="mb-8 flex items-end justify-between gap-4 border-b border-line pb-4">
+    <!-- 版面标题栏：栏目标注、刊头标题与总量标注，与首页板块标题同构；小屏允许统计换行避免长检索词溢出。 -->
+    <div class="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
       <div>
         <p
           class="mb-3 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"

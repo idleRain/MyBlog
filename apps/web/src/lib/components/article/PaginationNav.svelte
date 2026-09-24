@@ -19,18 +19,24 @@ function pageHref(page: number): string {
   class="mt-12 flex items-center justify-between border-t border-border pt-6 font-mono text-sm text-muted-foreground"
 >
   {#if currentPage > 1}
-    <a href={pageHref(currentPage - 1)} class="transition-colors duration-200 hover:text-signal">
+    <a
+      href={pageHref(currentPage - 1)}
+      class="py-2 transition-colors duration-200 hover:text-signal"
+    >
       ← 上一页
     </a>
   {:else}
-    <span aria-hidden="true">← 上一页</span>
+    <span aria-hidden="true" class="py-2">← 上一页</span>
   {/if}
   <span>第 {currentPage} / {totalPages} 页</span>
   {#if currentPage < totalPages}
-    <a href={pageHref(currentPage + 1)} class="transition-colors duration-200 hover:text-signal">
+    <a
+      href={pageHref(currentPage + 1)}
+      class="py-2 transition-colors duration-200 hover:text-signal"
+    >
       下一页 →
     </a>
   {:else}
-    <span aria-hidden="true">下一页 →</span>
+    <span aria-hidden="true" class="py-2">下一页 →</span>
   {/if}
 </nav>

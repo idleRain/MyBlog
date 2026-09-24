@@ -314,10 +314,10 @@ onMount(() => {
           <Table.Header>
             <Table.Row>
               <Table.Head>标签</Table.Head>
-              <Table.Head>URL 标识</Table.Head>
+              <Table.Head class="hidden md:table-cell">URL 标识</Table.Head>
               <Table.Head>使用次数</Table.Head>
               <Table.Head>状态</Table.Head>
-              <Table.Head>创建时间</Table.Head>
+              <Table.Head class="hidden md:table-cell">创建时间</Table.Head>
               <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
             </Table.Row>
           </Table.Header>
@@ -348,7 +348,7 @@ onMount(() => {
                     {/if}
                   </div>
                 </Table.Cell>
-                <Table.Cell>
+                <Table.Cell class="hidden md:table-cell">
                   <code
                     class="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
                   >
@@ -369,7 +369,7 @@ onMount(() => {
                     {resolveStatusLabel(tag.status)}
                   </Badge>
                 </Table.Cell>
-                <Table.Cell>
+                <Table.Cell class="hidden md:table-cell">
                   <span class="text-sm text-muted-foreground tabular-nums">
                     {new Date(tag.createdAt).toLocaleDateString('zh-CN')}
                   </span>

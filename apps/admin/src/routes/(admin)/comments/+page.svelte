@@ -231,7 +231,7 @@ onMount(loadComments)
               <Table.Head>评论者</Table.Head>
               <Table.Head>所属文章</Table.Head>
               <Table.Head>状态</Table.Head>
-              <Table.Head>评论时间</Table.Head>
+              <Table.Head class="hidden md:table-cell">评论时间</Table.Head>
               <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
             </Table.Row>
           </Table.Header>
@@ -254,9 +254,9 @@ onMount(loadComments)
                     {COMMENT_STATUS_CONFIG[comment.status].label}
                   </Badge>
                 </Table.Cell>
-                <Table.Cell>
+                <Table.Cell class="hidden md:table-cell">
                   <span class="text-sm text-muted-foreground tabular-nums">
-                    {new Date(comment.createdAt).toLocaleString('zh-CN')}
+                    {new Date(comment.createdAt).toLocaleDateString('zh-CN')}
                   </span>
                 </Table.Cell>
                 <Table.Cell>

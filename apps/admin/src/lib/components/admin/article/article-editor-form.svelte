@@ -358,18 +358,22 @@ async function handleSave(targetStatus: 'draft' | 'published') {
     </Card.Content>
   </Card.Root>
 
-  <!-- 操作栏 -->
-  <div class="flex items-center justify-between gap-2 border-t pt-4">
+  <!-- 操作栏：小屏允许按钮组换行，发布按钮在剩余空间内拉伸，避免三按钮合计宽度溢出视口 -->
+  <div class="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
     <Button variant="ghost" onclick={() => goto('/posts')} disabled={isSubmitting}>
       <ArrowLeft data-icon="inline-start" />
       返回列表
     </Button>
-    <div class="flex gap-2">
+    <div class="flex flex-1 justify-end gap-2 sm:flex-none">
       <Button variant="outline" onclick={() => handleSave('draft')} disabled={isSubmitting}>
         <Save data-icon="inline-start" />
         保存草稿
       </Button>
-      <Button onclick={() => handleSave('published')} disabled={isSubmitting}>
+      <Button
+        class="flex-1 sm:flex-none"
+        onclick={() => handleSave('published')}
+        disabled={isSubmitting}
+      >
         <Send data-icon="inline-start" />
         {isEditMode ? '更新并发布' : '创建并发布'}
       </Button>

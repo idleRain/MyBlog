@@ -233,15 +233,18 @@ onMount(loadCategories)
           {#each filteredRows as row (row.category.id)}
             {@const statusConfig = CATEGORY_STATUS_CONFIG[row.category.status]!}
             <div
-              class="flex items-center gap-4 px-4 py-3"
+              class="flex flex-wrap items-center gap-4 px-4 py-3"
               style="padding-left: {1 + row.depth * 1.5}rem"
             >
               <div class="flex min-w-0 flex-1 items-center gap-3">
                 {#if row.depth > 0}
                   <span class="text-muted-foreground">└</span>
                 {/if}
-                <span class="font-medium">{row.category.name}</span>
-                <span class="font-mono text-xs text-muted-foreground">/{row.category.slug}</span>
+                <!-- 名称允许截断收缩，slug 在窄屏隐藏，避免行内内容撑出可视区 -->
+                <span class="min-w-0 truncate font-medium">{row.category.name}</span>
+                <span class="hidden font-mono text-xs text-muted-foreground md:inline"
+                  >/{row.category.slug}</span
+                >
                 <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
                 {#if row.category.isFeatured}
                   <Badge variant="outline">精选</Badge>

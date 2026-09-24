@@ -177,12 +177,14 @@ $effect(() => {
   margin: 0.4em 0;
 }
 
+/* 内联代码允许在任意字符处换行，长 URL 与长标识符不再撑破窄屏版心。 */
 .article-body :global(code) {
   border: 1px solid var(--border);
   background-color: var(--secondary);
   padding: 0.1em 0.4em;
   font-size: 0.875em;
   font-family: var(--font-mono);
+  overflow-wrap: anywhere;
 }
 
 /* 代码块 pre 的边距、边框与底色由管线输出的 .code-block 外壳承担，这里只负责内边距与横向滚动。 */
@@ -208,10 +210,13 @@ $effect(() => {
   border-top: 1px solid var(--border);
 }
 
+/* 表格转为块级并自带横向滚动，宽表在小屏不再撑破版心，与 GitHub 正文表格同模式。 */
 .article-body :global(table) {
+  display: block;
   margin: 1.6em 0;
   border-collapse: collapse;
   width: 100%;
+  overflow-x: auto;
   font-size: 0.9375rem;
 }
 

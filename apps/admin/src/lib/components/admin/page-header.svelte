@@ -15,7 +15,9 @@ let { title, description, crumb, actions, children }: Props = $props()
 </script>
 
 <!-- 后台列表页统一头部：面包屑 + 标题 + 右侧操作区；sticky 吸顶避免长列表滚动时失去面包屑与侧栏开关入口 -->
-<header class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-6">
+<header
+  class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 sm:px-6"
+>
   <Sidebar.Trigger />
   <Breadcrumb.Root>
     <Breadcrumb.List>
@@ -31,10 +33,10 @@ let { title, description, crumb, actions, children }: Props = $props()
   <ThemeToggle variant="ghost" class="ml-auto" />
 </header>
 
-<main class="flex-1 space-y-6 p-6">
+<main class="flex-1 space-y-6 p-4 sm:p-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
     <div class="space-y-1">
-      <h1 class="text-3xl font-bold tracking-tight">{title}</h1>
+      <h1 class="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
       {#if description}
         <p class="text-muted-foreground">{description}</p>
       {/if}

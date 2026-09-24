@@ -230,7 +230,7 @@ pnpm run migrate [create|up|down|version|help]
 - 内容多语言（i18n）：文章/分类/标签翻译表（`*_translations`，主列恒为缺省中文）；后端按 `Accept-Language` 输出本地化字段并附 `Content-Language`，`*` 供管理端读全量翻译包，`i18n` 补丁随创建/更新写入，搜索合并翻译表匹配；语言白名单权威在 `config.yaml` 的 `i18n` 节，契约见 `contracts/i18n-protocol.md`；web 注入 paraglide 语言回调并随切换刷新，admin 注入全量包标识并提供英文翻译编辑（界面本身不做多语言）。
 
 待办：
-- 响应式完善（当前无边界定义，建议拆为页面级清单后推进）。
+- 响应式完善（**已完成**：双端小屏体验修复，含弹窗高度约束、表格列优先级降级与触控热区补齐；遗留为 admin 字典页类型列表窄屏交互优化与列表页工具栏布局打磨，待触碰相关页面时顺带推进）。
 - 后续候选：R4 cookie 会话（**已拍板**：方案 A + 双轨过渡 + `POST /auth/session`）；多语言其余页面接入（D18，待页面大变动后分批）。
 - 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配。
 

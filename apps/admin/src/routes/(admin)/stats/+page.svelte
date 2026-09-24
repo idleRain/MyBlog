@@ -73,7 +73,7 @@ onMount(loadStats)
       ></span>
     </div>
   {:else}
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {#each OVERVIEW_CARDS as card (card.key)}
         {@const IconComponent = card.icon}
         <Card.Root>

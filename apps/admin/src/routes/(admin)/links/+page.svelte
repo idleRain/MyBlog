@@ -282,7 +282,7 @@ onMount(loadLinks)
                         href={link.url}
                         target="_blank"
                         rel="noreferrer"
-                        class="truncate text-xs text-muted-foreground hover:underline"
+                        class="hidden truncate text-xs text-muted-foreground hover:underline md:inline"
                       >
                         {link.url}
                       </a>

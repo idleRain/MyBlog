@@ -53,7 +53,7 @@ const collectionItems = [
     </p>
 
     <!-- 刊头标题：衬线黑体大字，延续 Display 层级规格。 -->
-    <h1 class="font-display text-5xl leading-[1.08] font-black tracking-tight sm:text-6xl">
+    <h1 class="font-display text-4xl leading-[1.08] font-black tracking-tight sm:text-6xl">
       隐私政策
     </h1>
 

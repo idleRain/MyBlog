@@ -281,7 +281,10 @@ function openAdminConsole() {
               <Menu class="h-5 w-5" />
             </Button>
           </Sheet.Trigger>
-          <Sheet.Content side="right" class="w-80 bg-popover/95 p-6 backdrop-blur-md">
+          <Sheet.Content
+            side="right"
+            class="w-80 max-w-[calc(100vw-2rem)] bg-popover/95 p-6 backdrop-blur-md"
+          >
             <Sheet.Header class="mb-6 text-left">
               <Sheet.Title class="text-xl font-bold">{m['ui:header.menu']()}</Sheet.Title>
             </Sheet.Header>

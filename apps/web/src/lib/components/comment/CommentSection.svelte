@@ -197,8 +197,8 @@ async function handleSubmit(event: SubmitEvent) {
         class="w-full resize-y border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
       ></textarea>
     </label>
-    <div class="mt-4 flex items-center justify-between gap-4">
-      <p class="font-mono text-xs text-muted-foreground">评论提交后需经审核才会展示</p>
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+      <p class="min-w-0 font-mono text-xs text-muted-foreground">评论提交后需经审核才会展示</p>
       <button
         type="submit"
         disabled={submitting}
@@ -255,7 +255,7 @@ async function handleSubmit(event: SubmitEvent) {
       <button
         type="button"
         onclick={loadMore}
-        class="mt-8 text-sm font-bold text-signal underline-offset-4 hover:underline"
+        class="mt-8 py-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
       >
         查看更多评论
       </button>

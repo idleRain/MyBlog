@@ -42,7 +42,7 @@ let {
       <Table.Head>邮箱</Table.Head>
       <Table.Head>角色</Table.Head>
       <Table.Head>状态</Table.Head>
-      <Table.Head>创建时间</Table.Head>
+      <Table.Head class="hidden md:table-cell">创建时间</Table.Head>
       <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
     </Table.Row>
   </Table.Header>
@@ -68,10 +68,12 @@ let {
             <div>
               <p class="font-medium">{user.nickname || user.username}</p>
               <p class="text-sm text-muted-foreground">@{user.username}</p>
+              <!-- 邮箱在窄屏并入用户列副行，md 及以上保持独立列展示完整信息 -->
+              <p class="truncate text-sm text-muted-foreground md:hidden">{user.email}</p>
             </div>
           </div>
         </Table.Cell>
-        <Table.Cell>
+        <Table.Cell class="hidden md:table-cell">
           <span class="flex items-center gap-2 text-sm">
             <Mail class="size-4 shrink-0 text-muted-foreground" />
             <span class="truncate">{user.email}</span>
@@ -83,7 +85,7 @@ let {
         <Table.Cell>
           <UserStatusBadge status={user.status} />
         </Table.Cell>
-        <Table.Cell>
+        <Table.Cell class="hidden md:table-cell">
           <span class="text-sm text-muted-foreground tabular-nums">
             {new Date(user.createdAt).toLocaleDateString('zh-CN')}
           </span>

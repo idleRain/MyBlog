@@ -112,7 +112,7 @@ async function handleLogin(event: SubmitEvent) {
             <button
               type="button"
               onclick={() => (showPassword = !showPassword)}
-              class="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground transition-colors duration-150 hover:text-foreground"
+              class="absolute top-1/2 right-0.5 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors duration-150 hover:text-foreground"
               aria-label={showPassword ? '隐藏密码' : '显示密码'}
             >
               {#if showPassword}

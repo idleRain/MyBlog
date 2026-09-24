@@ -94,7 +94,7 @@ function togglePasswordVisibility() {
 </svelte:head>
 
 <div
-  class="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+  class="relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
 >
   <!-- 背景装饰 -->
   <div class="absolute inset-0">
@@ -159,7 +159,7 @@ function togglePasswordVisibility() {
                   <button
                     type="button"
                     onclick={togglePasswordVisibility}
-                    class="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    class="absolute top-1/2 right-0.5 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                     disabled={isSubmitting}
                   >
                     {#if showPassword}

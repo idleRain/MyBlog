@@ -40,7 +40,7 @@ async function confirmDelete() {
  */
 function formatDate(value: string | null): string {
   if (!value) return '—'
-  return new Date(value).toLocaleString('zh-CN', {
+  return new Date(value).toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -57,8 +57,8 @@ function formatDate(value: string | null): string {
       <Table.Head>作者</Table.Head>
       <Table.Head>分类</Table.Head>
       <Table.Head>状态</Table.Head>
-      <Table.Head>统计</Table.Head>
-      <Table.Head>发布时间</Table.Head>
+      <Table.Head class="hidden md:table-cell">统计</Table.Head>
+      <Table.Head class="hidden md:table-cell">发布时间</Table.Head>
       <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
     </Table.Row>
   </Table.Header>
@@ -96,7 +96,7 @@ function formatDate(value: string | null): string {
         <Table.Cell>
           <ArticleStatusBadge status={article.status} />
         </Table.Cell>
-        <Table.Cell>
+        <Table.Cell class="hidden md:table-cell">
           <div class="flex items-center gap-3 text-sm text-muted-foreground tabular-nums">
             <span class="inline-flex items-center gap-1">
               <Eye class="size-3.5" />{article.viewCount}
@@ -106,7 +106,7 @@ function formatDate(value: string | null): string {
             </span>
           </div>
         </Table.Cell>
-        <Table.Cell>
+        <Table.Cell class="hidden md:table-cell">
           <span class="text-sm text-muted-foreground tabular-nums">
             {formatDate(article.publishedAt)}
           </span>

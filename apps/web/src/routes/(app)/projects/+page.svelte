@@ -27,7 +27,7 @@ const techStack = [
     </p>
 
     <!-- 刊头标题：衬线黑体大字，延续 Display 层级规格。 -->
-    <h1 class="font-display text-5xl leading-[1.08] font-black tracking-tight sm:text-6xl">
+    <h1 class="font-display text-4xl leading-[1.08] font-black tracking-tight sm:text-6xl">
       项目档案
     </h1>
 

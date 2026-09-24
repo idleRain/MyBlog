@@ -243,7 +243,7 @@ onMount(loadMedia)
           {/if}
         </div>
       {:else}
-        <div class="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 p-4 lg:grid-cols-3 xl:grid-cols-4">
           {#each media as file (file.id)}
             <div class="overflow-hidden rounded-lg border bg-card">
               <div class="flex h-36 items-center justify-center border-b bg-muted/40">

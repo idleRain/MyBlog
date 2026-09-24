@@ -203,7 +203,7 @@ onMount(loadNotifications)
                   <p class="text-sm text-muted-foreground">{notification.content}</p>
                 {/if}
                 <p class="text-xs text-muted-foreground tabular-nums">
-                  {new Date(notification.createdAt).toLocaleString('zh-CN')}
+                  {new Date(notification.createdAt).toLocaleDateString('zh-CN')}
                 </p>
               </div>
             </button>
