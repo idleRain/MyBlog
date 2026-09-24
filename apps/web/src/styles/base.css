@@ -1,0 +1,52 @@
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background font-sans text-foreground;
+  }
+
+  /* 标题统一使用衬线字体，依靠字号、字重与字距营造刊物层级。 */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    font-family: var(--font-display);
+  }
+
+  /* 平滑滚动，并始终为滚动条保留空槽，模态类组件锁定滚动时布局保持零位移 */
+  html {
+    scroll-behavior: smooth;
+    /* bits-ui 锁定滚动时仅在无 stable 空槽的情况下补偿 body 内边距，fixed 定位元素不在补偿范围内 */
+    scrollbar-gutter: stable;
+  }
+
+  /* 自定义滚动条 */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 0;
+    background: #cfc2a8;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #bfb094;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #3d3327;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #4d4132;
+  }
+}

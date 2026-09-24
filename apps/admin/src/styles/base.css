@@ -1,0 +1,69 @@
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family:
+      'Manrope',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      'PingFang SC',
+      'Hiragino Sans GB',
+      'Microsoft YaHei',
+      sans-serif;
+  }
+
+  /* 标题字体 */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    font-family:
+      'Inter',
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      'PingFang SC',
+      'Hiragino Sans GB',
+      'Microsoft YaHei',
+      sans-serif;
+  }
+
+  /* 滑顺滚动，并始终为滚动条保留空槽，模态类组件锁定滚动时布局保持零位移 */
+  html {
+    scroll-behavior: smooth;
+    /* bits-ui 锁定滚动时仅在无 stable 空槽的情况下补偿 body 内边距，fixed 定位元素不在补偿范围内 */
+    scrollbar-gutter: stable;
+  }
+
+  /* 自定义滚动条 */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: oklch(0.7 0.04 256.788);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.6 0.04 256.788);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.4 0.04 256.788);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.5 0.04 256.788);
+  }
+}

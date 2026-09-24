@@ -1,0 +1,21 @@
+/*
+ * 杂志纸面的细网格底纹，模拟印刷网格的肌理。
+ * 使用前景色低透明度叠加，明暗主题下均自动适配。
+ */
+.texture-grid {
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 0,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 1px,
+      transparent 1px,
+      transparent 48px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 0,
+      color-mix(in oklab, var(--foreground) 3.5%, transparent) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+}
