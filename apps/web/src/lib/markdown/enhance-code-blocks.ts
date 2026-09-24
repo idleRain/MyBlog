@@ -19,33 +19,14 @@ const COPIED_LABEL = '已复制'
 const COPY_FAILED_LABEL = '复制失败'
 
 /**
- * 将代码文本写入剪贴板，优先使用异步剪贴板 API，
- * 非安全上下文降级为隐藏文本域触发 execCommand 命令，两条路径都失败时向上抛错。
+ * 将代码文本写入剪贴板，依赖异步剪贴板 API，
+ * 非安全上下文或授权被拒等不支持场景向上抛错，由调用方切换到失败反馈。
  */
 async function writeClipboard(text: string): Promise<void> {
-  if (navigator.clipboard && window.isSecureContext) {
-    await navigator.clipboard.writeText(text)
-    return
+  if (!navigator.clipboard) {
+    throw new Error('当前环境不支持异步剪贴板 API')
   }
-  if (!copyViaHiddenTextarea(text)) {
-    throw new Error('剪贴板降级写入失败')
-  }
-}
-
-/** 降级复制：挂载临时只读文本域并触发 execCommand 命令，返回命令是否执行成功。 */
-function copyViaHiddenTextarea(text: string): boolean {
-  const textarea = document.createElement('textarea')
-  textarea.value = text
-  textarea.setAttribute('readonly', '')
-  textarea.style.position = 'fixed'
-  textarea.style.opacity = '0'
-  document.body.appendChild(textarea)
-  textarea.select()
-  try {
-    return document.execCommand('copy')
-  } finally {
-    textarea.remove()
-  }
+  await navigator.clipboard.writeText(text)
 }
 
 /**
