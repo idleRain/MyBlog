@@ -66,7 +66,7 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 		userGroup.POST("/profile/update",
 			middleware.Auth(ur.tokenService),
 			ur.userHandler.UpdateProfile)
-		userGroup.POST("/change-password",
+		userGroup.POST("/changePassword",
 			middleware.Auth(ur.tokenService),
 			ur.userHandler.ChangePassword)
 	}

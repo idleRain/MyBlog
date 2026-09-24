@@ -14,7 +14,8 @@ const config = {
     alias: {
       $ui: '../../packages/ui/src',
       '$ui/*': '../../packages/ui/src/*',
-      $i18n: './src/lib/paraglide/messages'
+      $i18n: './src/lib/paraglide/messages',
+      '@': './src'
     }
   }
 }

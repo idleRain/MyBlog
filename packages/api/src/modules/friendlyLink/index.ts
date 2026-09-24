@@ -11,9 +11,9 @@ import type {
 
 // 友链状态流转接口路径后缀。
 const ADMIN_LINK_ACTION_PATHS = {
-  approve: 'admin/friendly-links/approve',
-  hide: 'admin/friendly-links/hide',
-  reject: 'admin/friendly-links/reject'
+  approve: 'admin/friendlyLinks/approve',
+  hide: 'admin/friendlyLinks/hide',
+  reject: 'admin/friendlyLinks/reject'
 } as const
 
 /**
@@ -23,32 +23,32 @@ export function createFriendlyLinkAPI(request: KyInstance) {
   return {
     // 展示中的友链列表，无需登录。
     list(): Promise<FriendlyLinkListResponse> {
-      return request.post('friendly-links/list', { json: {} }).json()
+      return request.post('friendlyLinks/list', { json: {} }).json()
     },
 
     // 访客提交友链申请，进入待审核状态，无需登录。
     apply(params: ApplyFriendlyLinkRequest): Promise<FriendlyLinkResponse> {
-      return request.post('friendly-links/apply', { json: params }).json()
+      return request.post('friendlyLinks/apply', { json: params }).json()
     },
 
     // 管理端：分页查询友链列表
     adminList(params: ListFriendlyLinksRequest): Promise<FriendlyLinkListResponse> {
-      return request.post('admin/friendly-links/list', { json: params }).json()
+      return request.post('admin/friendlyLinks/list', { json: params }).json()
     },
 
     // 管理端：创建友链，新链接默认待审核。
     create(params: CreateFriendlyLinkRequest): Promise<FriendlyLinkResponse> {
-      return request.post('admin/friendly-links/create', { json: params }).json()
+      return request.post('admin/friendlyLinks/create', { json: params }).json()
     },
 
     // 管理端：更新友链
     update(params: UpdateFriendlyLinkRequest): Promise<FriendlyLinkResponse> {
-      return request.post('admin/friendly-links/update', { json: params }).json()
+      return request.post('admin/friendlyLinks/update', { json: params }).json()
     },
 
     // 管理端：删除友链
     delete(id: number): Promise<FriendlyLinkActionResponse> {
-      return request.post('admin/friendly-links/delete', { json: { id } }).json()
+      return request.post('admin/friendlyLinks/delete', { json: { id } }).json()
     },
 
     // 管理端：审核通过，进入展示状态。

@@ -19,7 +19,7 @@ export function createNotificationAPI(request: KyInstance) {
 
     // 获取当前用户未读通知数量。
     getUnreadCount(): Promise<UnreadCountResponse> {
-      return request.post('notifications/unread-count', { json: {} }).json()
+      return request.post('notifications/unreadCount', { json: {} }).json()
     },
 
     // 标记单条通知为已读。
@@ -29,7 +29,7 @@ export function createNotificationAPI(request: KyInstance) {
 
     // 标记全部通知为已读。
     markAllRead(): Promise<NotificationActionResponse> {
-      return request.post('notifications/read-all', { json: {} }).json()
+      return request.post('notifications/readAll', { json: {} }).json()
     }
   }
 }

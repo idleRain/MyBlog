@@ -61,7 +61,7 @@ export function createUserAPI(request: KyInstance) {
 
     // 修改当前登录用户密码，需登录。
     changePassword(params: ChangePasswordRequest): Promise<ChangePasswordResponse> {
-      return request.post('users/change-password', { json: params }).json()
+      return request.post('users/changePassword', { json: params }).json()
     },
 
     // 更新用户（仅管理员）

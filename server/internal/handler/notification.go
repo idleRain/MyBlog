@@ -54,7 +54,7 @@ func (h *NotificationHandler) ListNotifications(c *gin.Context) {
 	response.Success(c, result)
 }
 
-// GetUnreadCount 获取未读通知数 POST /api/notifications/unread-count
+// GetUnreadCount 获取未读通知数 POST /api/notifications/unreadCount
 func (h *NotificationHandler) GetUnreadCount(c *gin.Context) {
 	userID, ok := getOperatorID(c)
 	if !ok {
@@ -101,7 +101,7 @@ func (h *NotificationHandler) MarkNotificationRead(c *gin.Context) {
 	response.SuccessWithMessage(c, "通知已标记为已读", nil)
 }
 
-// MarkAllNotificationsRead 标记全部通知已读 POST /api/notifications/read-all
+// MarkAllNotificationsRead 标记全部通知已读 POST /api/notifications/readAll
 func (h *NotificationHandler) MarkAllNotificationsRead(c *gin.Context) {
 	userID, ok := getOperatorID(c)
 	if !ok {

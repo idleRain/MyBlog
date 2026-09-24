@@ -70,7 +70,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 ### 用户管理 (需要权限)
 - `POST /api/users/profile` - 获取当前用户资料（登录）
 - `POST /api/users/profile/update` - 更新当前用户资料（登录）
-- `POST /api/users/change-password` - 修改密码（登录）
+- `POST /api/users/changePassword` - 修改密码（登录）
 - `POST /api/users/create` - 创建用户
 - `POST /api/users/get` - 获取用户信息
 - `POST /api/users/update` - 更新用户信息
@@ -87,9 +87,9 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 ### 通知 (需要登录)
 - `POST /api/notifications/list` - 通知列表
-- `POST /api/notifications/unread-count` - 未读数
+- `POST /api/notifications/unreadCount` - 未读数
 - `POST /api/notifications/read` - 标记单条已读
-- `POST /api/notifications/read-all` - 标记全部已读
+- `POST /api/notifications/readAll` - 标记全部已读
 
 ### 文章管理
 #### 公开接口（可选认证，登录则按角色决定可见范围）
@@ -166,15 +166,15 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/admin/settings/update` - 批量更新设置
 
 ### 友情链接
-- `POST /api/friendly-links/list` - 展示中的链接（公开）
-- `POST /api/friendly-links/apply` - 提交友链申请（公开）
-- `POST /api/admin/friendly-links/create` - 创建链接
-- `POST /api/admin/friendly-links/update` - 更新链接
-- `POST /api/admin/friendly-links/delete` - 删除链接
-- `POST /api/admin/friendly-links/approve` - 审核通过
-- `POST /api/admin/friendly-links/hide` - 下架
-- `POST /api/admin/friendly-links/reject` - 拒绝
-- `POST /api/admin/friendly-links/list` - 链接列表
+- `POST /api/friendlyLinks/list` - 展示中的链接（公开）
+- `POST /api/friendlyLinks/apply` - 提交友链申请（公开）
+- `POST /api/admin/friendlyLinks/create` - 创建链接
+- `POST /api/admin/friendlyLinks/update` - 更新链接
+- `POST /api/admin/friendlyLinks/delete` - 删除链接
+- `POST /api/admin/friendlyLinks/approve` - 审核通过
+- `POST /api/admin/friendlyLinks/hide` - 下架
+- `POST /api/admin/friendlyLinks/reject` - 拒绝
+- `POST /api/admin/friendlyLinks/list` - 链接列表
 
 ### 站点统计 (需要权限)
 - `POST /api/admin/stats/overview` - 站点概览
@@ -252,18 +252,19 @@ curl http://localhost:3000/api/health/ready
 ### v1.4.0 (当前版本)
 - ✅ 认证止损真实化：令牌改为服务端登记的不透明随机串，登出后访问令牌立即失效，旧刷新令牌旋转后不可再刷
 - ✅ 登出撤销令牌对：`/api/auth/logout` 请求体可选提交 `refreshToken`，与访问令牌一并撤销
-- ✅ 改密全局失效：`/api/users/change-password` 成功后撤销该用户全部既有令牌，客户端需重新登录
+- ✅ 改密全局失效：`/api/users/changePassword` 成功后撤销该用户全部既有令牌，客户端需重新登录
 - ✅ 刷新链路状态校验：`/api/auth/refresh` 旋转前查库校验用户存在且状态正常，被禁用用户令牌无法续期
 - ✅ 登录失败锁定：连续密码失败达到 `security.login_lockout` 阈值后锁定账户，到期自动解除
 - ✅ 文章列表可见性放宽：非管理登录角色可见范围为已发布文章加本人全部状态文章，editor 草稿不再从列表消失；状态筛选叠加在本人可见边界上，越权拉取他人草稿仍被拦截
 - ✅ 浏览上报事务化：计数、访客明细与日统计合并单事务，中断不再产生统计漂移
 - ✅ CORS 白名单化：仅白名单内 Origin 回显 CORS 头，方法表收敛 POST/OPTIONS（`config.yaml` cors 节）
 - ✅ WAF 模式锚定：XSS/SQL 注入正则加词首边界与取值上下文，`content =`、`for i = 1` 等正常正文不再被误拦
+- ♻️ 路由路径命名归一：`users/change-password`、`notifications/unread-count`、`notifications/read-all`、`friendly-links/*` 统一改为小驼峰，与 `getBySlug`、`isLiked`、`publicProfile` 等既有路径风格对齐，旧路径不再保留
 
 ### v1.3.0
 - ✅ 文章搜索升级为 MySQL ngram 全文索引，中文按双字切分检索，替代 LIKE 模糊匹配
-- ✅ 新增 `friendly-links/apply`：访客提交友链申请，闭合友链申请与审核流程
-- ✅ 用户自助资料端点：`users/profile`、`users/profile/update` 与 `users/change-password`，登录用户可自助维护资料与密码
+- ✅ 新增 `friendlyLinks/apply`：访客提交友链申请，闭合友链申请与审核流程
+- ✅ 用户自助资料端点：`users/profile`、`users/profile/update` 与 `users/changePassword`，登录用户可自助维护资料与密码
 - ✅ 关注契约补全：粉丝与关注列表内嵌用户摘要，新增 `users/isFollowing` 状态查询
 - ✅ 新增 `users/publicProfile`：用户公开资料与公开统计，供作者页与关于页使用
 - ✅ 新增互动状态查询：`articles/isLiked`、`articles/isBookmarked` 与 `articles/bookmarks` 我的收藏列表

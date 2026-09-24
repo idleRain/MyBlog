@@ -109,7 +109,7 @@ curl -X POST http://localhost:3000/api/notifications/list \
 
 #### 请求信息
 
-- **接口地址**: `/api/notifications/unread-count`
+- **接口地址**: `/api/notifications/unreadCount`
 - **请求方式**: `POST`
 - **权限要求**: 登录（user及以上）
 - **Content-Type**: `application/json`
@@ -121,7 +121,7 @@ curl -X POST http://localhost:3000/api/notifications/list \
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/notifications/unread-count \
+curl -X POST http://localhost:3000/api/notifications/unreadCount \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {accessToken}" \
   -d '{}'
@@ -188,7 +188,7 @@ curl -X POST http://localhost:3000/api/notifications/read \
 
 #### 请求信息
 
-- **接口地址**: `/api/notifications/read-all`
+- **接口地址**: `/api/notifications/readAll`
 - **请求方式**: `POST`
 - **权限要求**: 登录（user及以上）
 - **Content-Type**: `application/json`
@@ -200,7 +200,7 @@ curl -X POST http://localhost:3000/api/notifications/read \
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/notifications/read-all \
+curl -X POST http://localhost:3000/api/notifications/readAll \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {accessToken}" \
   -d '{}'

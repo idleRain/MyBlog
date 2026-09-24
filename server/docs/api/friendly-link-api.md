@@ -29,7 +29,7 @@
 
 #### 请求信息
 
-- **接口地址**: `/api/friendly-links/list`
+- **接口地址**: `/api/friendlyLinks/list`
 - **请求方式**: `POST`
 - **权限要求**: 无需认证
 - **Content-Type**: `application/json`
@@ -41,7 +41,7 @@
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/friendly-links/list \
+curl -X POST http://localhost:3000/api/friendlyLinks/list \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
@@ -88,7 +88,7 @@ curl -X POST http://localhost:3000/api/friendly-links/list \
 
 #### 请求信息
 
-- **接口地址**: `/api/admin/friendly-links/create`
+- **接口地址**: `/api/admin/friendlyLinks/create`
 - **请求方式**: `POST`
 - **权限要求**: `system:config`（admin及以上）
 - **Content-Type**: `application/json`
@@ -108,7 +108,7 @@ curl -X POST http://localhost:3000/api/friendly-links/list \
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/admin/friendly-links/create \
+curl -X POST http://localhost:3000/api/admin/friendlyLinks/create \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {accessToken}" \
   -d '{
@@ -144,7 +144,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/create \
 
 #### 请求信息
 
-- **接口地址**: `/api/admin/friendly-links/update`
+- **接口地址**: `/api/admin/friendlyLinks/update`
 - **请求方式**: `POST`
 - **权限要求**: `system:config`（admin及以上）
 - **Content-Type**: `application/json`
@@ -168,7 +168,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/create \
 
 #### 请求信息
 
-- **接口地址**: `/api/admin/friendly-links/delete`
+- **接口地址**: `/api/admin/friendlyLinks/delete`
 - **请求方式**: `POST`
 - **权限要求**: `system:config`（admin及以上）
 - **Content-Type**: `application/json`
@@ -182,7 +182,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/create \
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/admin/friendly-links/delete \
+curl -X POST http://localhost:3000/api/admin/friendlyLinks/delete \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {accessToken}" \
   -d '{
@@ -205,9 +205,9 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/delete \
 
 | 接口地址 | 说明 |
 |----------|------|
-| `/api/admin/friendly-links/approve` | 审核通过，状态置为 active |
-| `/api/admin/friendly-links/hide` | 下架，状态置为 hidden |
-| `/api/admin/friendly-links/reject` | 拒绝，状态置为 rejected |
+| `/api/admin/friendlyLinks/approve` | 审核通过，状态置为 active |
+| `/api/admin/friendlyLinks/hide` | 下架，状态置为 hidden |
+| `/api/admin/friendlyLinks/reject` | 拒绝，状态置为 rejected |
 
 #### 请求参数（通用）
 
@@ -218,7 +218,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/delete \
 #### 请求示例（审核通过）
 
 ```bash
-curl -X POST http://localhost:3000/api/admin/friendly-links/approve \
+curl -X POST http://localhost:3000/api/admin/friendlyLinks/approve \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {accessToken}" \
   -d '{
@@ -239,7 +239,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/approve \
 
 #### 请求信息
 
-- **接口地址**: `/api/admin/friendly-links/list`
+- **接口地址**: `/api/admin/friendlyLinks/list`
 - **请求方式**: `POST`
 - **权限要求**: `system:config`（admin及以上）
 - **Content-Type**: `application/json`
@@ -255,7 +255,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/approve \
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/admin/friendly-links/list \
+curl -X POST http://localhost:3000/api/admin/friendlyLinks/list \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer {accessToken}" \
   -d '{
@@ -282,7 +282,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/list \
 
 #### 请求信息
 
-- **接口地址**: `/api/friendly-links/apply`
+- **接口地址**: `/api/friendlyLinks/apply`
 - **请求方式**: `POST`
 - **权限要求**: 无需认证
 - **Content-Type**: `application/json`
@@ -299,7 +299,7 @@ curl -X POST http://localhost:3000/api/admin/friendly-links/list \
 #### 请求示例
 
 ```bash
-curl -X POST http://localhost:3000/api/friendly-links/apply \
+curl -X POST http://localhost:3000/api/friendlyLinks/apply \
   -H "Content-Type: application/json" \
   -d '{
     "name": "朋友的博客",

@@ -34,11 +34,11 @@ func NewFriendlyLinkRoutes(
 // RegisterRoutes 注册友情链接相关路由
 func (fr *FriendlyLinkRoutes) RegisterRoutes(api *gin.RouterGroup, adminAPI *gin.RouterGroup) {
 	// 公开友情链接接口，无需登录。
-	api.POST("/friendly-links/list", fr.linkHandler.ListVisibleLinks)
-	api.POST("/friendly-links/apply", fr.linkHandler.ApplyLink)
+	api.POST("/friendlyLinks/list", fr.linkHandler.ListVisibleLinks)
+	api.POST("/friendlyLinks/apply", fr.linkHandler.ApplyLink)
 
 	// 友情链接管理接口，需要系统配置权限。
-	adminLinks := adminAPI.Group("/friendly-links")
+	adminLinks := adminAPI.Group("/friendlyLinks")
 	adminLinks.Use(middleware.RequirePermission(fr.identity, fr.rbacService, service.PermissionSystemConfig))
 	{
 		adminLinks.POST("/create", fr.linkHandler.CreateLink)   // 创建友情链接

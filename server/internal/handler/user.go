@@ -30,7 +30,7 @@ type UserHandlerInterface interface {
 	Logout(c *gin.Context)         // POST /api/auth/logout - Header中的Token
 	GetProfile(c *gin.Context)     // POST /api/users/profile - 当前用户资料
 	UpdateProfile(c *gin.Context)  // POST /api/users/profile/update - JSON格式
-	ChangePassword(c *gin.Context) // POST /api/users/change-password - JSON格式
+	ChangePassword(c *gin.Context) // POST /api/users/changePassword - JSON格式
 }
 
 // UserHandler 用户处理器
@@ -353,7 +353,7 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	response.Success(c, user)
 }
 
-// ChangePassword 修改当前登录用户密码 POST /api/users/change-password
+// ChangePassword 修改当前登录用户密码 POST /api/users/changePassword
 func (h *UserHandler) ChangePassword(c *gin.Context) {
 	var req service.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -36,7 +36,7 @@ func NewFriendlyLinkHandler(linkService service.FriendlyLinkServiceInterface) Fr
 	}
 }
 
-// CreateLink 创建友情链接 POST /api/admin/friendly-links/create
+// CreateLink 创建友情链接 POST /api/admin/friendlyLinks/create
 func (h *FriendlyLinkHandler) CreateLink(c *gin.Context) {
 	var req service.CreateFriendlyLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -53,7 +53,7 @@ func (h *FriendlyLinkHandler) CreateLink(c *gin.Context) {
 	response.SuccessWithMessage(c, "友情链接创建成功", link)
 }
 
-// UpdateLink 更新友情链接 POST /api/admin/friendly-links/update
+// UpdateLink 更新友情链接 POST /api/admin/friendlyLinks/update
 func (h *FriendlyLinkHandler) UpdateLink(c *gin.Context) {
 	var req service.UpdateFriendlyLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -74,7 +74,7 @@ func (h *FriendlyLinkHandler) UpdateLink(c *gin.Context) {
 	response.SuccessWithMessage(c, "友情链接更新成功", link)
 }
 
-// DeleteLink 删除友情链接 POST /api/admin/friendly-links/delete
+// DeleteLink 删除友情链接 POST /api/admin/friendlyLinks/delete
 func (h *FriendlyLinkHandler) DeleteLink(c *gin.Context) {
 	type DeleteLinkRequest struct {
 		ID uint `json:"id" binding:"required"`
@@ -104,22 +104,22 @@ func (h *FriendlyLinkHandler) DeleteLink(c *gin.Context) {
 	response.SuccessWithMessage(c, "友情链接删除成功", nil)
 }
 
-// ApproveLink 审核通过友情链接 POST /api/admin/friendly-links/approve
+// ApproveLink 审核通过友情链接 POST /api/admin/friendlyLinks/approve
 func (h *FriendlyLinkHandler) ApproveLink(c *gin.Context) {
 	h.transition(c, h.linkService.ApproveLink, "审核通过")
 }
 
-// HideLink 下架友情链接 POST /api/admin/friendly-links/hide
+// HideLink 下架友情链接 POST /api/admin/friendlyLinks/hide
 func (h *FriendlyLinkHandler) HideLink(c *gin.Context) {
 	h.transition(c, h.linkService.HideLink, "下架成功")
 }
 
-// RejectLink 拒绝友情链接 POST /api/admin/friendly-links/reject
+// RejectLink 拒绝友情链接 POST /api/admin/friendlyLinks/reject
 func (h *FriendlyLinkHandler) RejectLink(c *gin.Context) {
 	h.transition(c, h.linkService.RejectLink, "已拒绝")
 }
 
-// ListLinks 分页查询友情链接列表 POST /api/admin/friendly-links/list
+// ListLinks 分页查询友情链接列表 POST /api/admin/friendlyLinks/list
 func (h *FriendlyLinkHandler) ListLinks(c *gin.Context) {
 	var req service.ListFriendlyLinksRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -136,7 +136,7 @@ func (h *FriendlyLinkHandler) ListLinks(c *gin.Context) {
 	response.Success(c, result)
 }
 
-// ListVisibleLinks 获取对外展示的友情链接 POST /api/friendly-links/list
+// ListVisibleLinks 获取对外展示的友情链接 POST /api/friendlyLinks/list
 func (h *FriendlyLinkHandler) ListVisibleLinks(c *gin.Context) {
 	links, err := h.linkService.ListVisibleLinks()
 	if err != nil {
@@ -147,7 +147,7 @@ func (h *FriendlyLinkHandler) ListVisibleLinks(c *gin.Context) {
 	response.Success(c, gin.H{"links": links})
 }
 
-// ApplyLink 访客提交友链申请 POST /api/friendly-links/apply
+// ApplyLink 访客提交友链申请 POST /api/friendlyLinks/apply
 func (h *FriendlyLinkHandler) ApplyLink(c *gin.Context) {
 	var req service.ApplyFriendlyLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

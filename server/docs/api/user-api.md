@@ -592,7 +592,7 @@ curl -X POST http://localhost:3000/api/users/profile/update \
 
 #### 请求信息
 
-- **接口地址**: `/api/users/change-password`
+- **接口地址**: `/api/users/changePassword`
 - **请求方式**: `POST`
 - **权限要求**: 需要登录
 - **Content-Type**: `application/json`
