@@ -247,3 +247,103 @@ html.dark .shiki span {
 html.dark .shiki {
   background-color: var(--shiki-dark-bg);
 }
+
+/*
+ * 代码块外壳：前台渲染管线为每个代码块 pre 生成的 figure.code-block 容器，
+ * 头部左侧展示语言标识，右侧提供复制按钮，复制交互由 enhance-code-blocks 动作模块接管。
+ */
+.code-block {
+  margin: 1.6em 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.code-block-head {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--muted);
+  padding: 0.4rem 0.75rem 0.4rem 1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  font-family: var(--font-mono);
+}
+
+.code-block-lang {
+  color: var(--muted-foreground);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* 外壳内的 pre 由外壳统一控制间距与边框，普通无语言块的底色跟随次级纸面。 */
+.code-block pre {
+  margin: 0;
+  border: none;
+  background-color: var(--secondary);
+  overflow-x: auto;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+
+/* 常驻滚动条打破纸面整洁，悬停代码块时以细条浮现，颜色取前景色低透明度随主题联动。 */
+.code-block:hover pre {
+  scrollbar-color: color-mix(in oklab, var(--foreground) 24%, transparent) transparent;
+}
+
+.code-block pre::-webkit-scrollbar {
+  height: 6px;
+}
+
+.code-block pre::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.code-block:hover pre::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--foreground) 24%, transparent);
+}
+
+.code-block-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition:
+    color 0.15s var(--ease-out-strong),
+    background-color 0.15s var(--ease-out-strong);
+  cursor: pointer;
+  margin-left: auto;
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  padding: 0.3rem 0.55rem;
+  color: var(--muted-foreground);
+  font: inherit;
+}
+
+.code-block-copy:hover {
+  background-color: color-mix(in oklab, var(--foreground) 8%, transparent);
+  color: var(--foreground);
+}
+
+.code-block-copy:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.code-block-copy svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* 复制成功态以 signal 色强调，图标随 data-copied 状态在复制与对勾之间切换。 */
+.code-block-copy[data-copied='true'] {
+  color: var(--signal);
+}
+
+.code-block-copy:not([data-copied='true']) .code-block-icon-check {
+  display: none;
+}
+
+.code-block-copy[data-copied='true'] .code-block-icon-copy {
+  display: none;
+}

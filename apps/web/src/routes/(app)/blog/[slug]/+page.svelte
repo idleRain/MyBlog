@@ -1,4 +1,5 @@
 <script lang="ts">
+import { enhanceCodeBlocks } from '$lib/markdown/enhance-code-blocks'
 import { CommentSection } from '$lib/components/comment'
 import { ArticleActions } from '$lib/components/article'
 import { formatDate } from '$lib/utils/format-date'
@@ -65,7 +66,8 @@ $effect(() => {
       {/if}
 
       <!-- 正文：服务端渲染的 HTML，由前台管线接入 Shiki 双主题高亮，排版由 .article-body 作用域控制。 -->
-      <div class="article-body mt-12">
+      <!-- 交互动作 enhanceCodeBlocks 为管线输出的代码块外壳提供复制按钮行为。 -->
+      <div class="article-body mt-12" use:enhanceCodeBlocks>
         <!-- 原始 HTML 在渲染管线中统一丢弃，输出可安全挂载。 -->
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html data.contentHtml}
@@ -183,10 +185,8 @@ $effect(() => {
   font-family: var(--font-mono);
 }
 
+/* 代码块 pre 的边距、边框与底色由管线输出的 .code-block 外壳承担，这里只负责内边距与横向滚动。 */
 .article-body :global(pre) {
-  margin: 1.6em 0;
-  border: 1px solid var(--border);
-  background-color: var(--secondary);
   padding: 1.1rem 1.25rem;
   overflow-x: auto;
 }
