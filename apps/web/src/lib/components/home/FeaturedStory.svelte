@@ -60,15 +60,28 @@ $effect(() => {
 
 <section bind:this={root} id="featured" class="mx-auto max-w-6xl px-4 pb-16 sm:px-6">
   <article class="grid overflow-hidden border border-line bg-secondary md:grid-cols-2">
-    <!-- 封面版面：深色渐变底 + 大号刊号，作为版面的视觉锚点 -->
+    <!--
+      封面版面：有封面时全幅展示文章封面并叠加品牌渐变，维持暖纸墨色调与刊号文字对比度，
+      无封面时回退为渐变色块，刊号与栏目始终置于最上层
+    -->
     <div
-      class="featured-cover flex min-h-64 flex-col justify-end bg-gradient-to-br from-[#3a2f26] via-[#6b4f3a] to-[#c83e1d] p-8 text-primary-foreground"
+      class="featured-cover relative flex min-h-64 flex-col justify-end p-8 text-primary-foreground"
       aria-hidden="true"
     >
-      <p class="featured-issue-no font-display text-6xl font-black tracking-tight">
+      {#if article.coverImage}
+        <img src={article.coverImage} alt="" class="absolute inset-0 size-full object-cover" />
+        <div
+          class="absolute inset-0 bg-gradient-to-br from-[#3a2f26]/75 via-[#6b4f3a]/50 to-[#c83e1d]/35"
+        ></div>
+      {:else}
+        <div
+          class="absolute inset-0 bg-gradient-to-br from-[#3a2f26] via-[#6b4f3a] to-[#c83e1d]"
+        ></div>
+      {/if}
+      <p class="featured-issue-no relative font-display text-6xl font-black tracking-tight">
         {issueNo}
       </p>
-      <p class="mt-auto font-display text-lg">{categoryLabel}</p>
+      <p class="relative mt-auto font-display text-lg">{categoryLabel}</p>
     </div>
 
     <!-- 文章信息区：元信息、标题、摘要与全文入口，进入视口后错峰浮现 -->
