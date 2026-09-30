@@ -1,4 +1,3 @@
-import type { KyInstance } from 'ky'
 import type {
   ApplyFriendlyLinkRequest,
   CreateFriendlyLinkRequest,
@@ -8,13 +7,7 @@ import type {
   ListFriendlyLinksRequest,
   UpdateFriendlyLinkRequest
 } from './types.ts'
-
-// 友链状态流转接口路径后缀。
-const ADMIN_LINK_ACTION_PATHS = {
-  approve: 'admin/friendlyLinks/approve',
-  hide: 'admin/friendlyLinks/hide',
-  reject: 'admin/friendlyLinks/reject'
-} as const
+import type { KyInstance } from 'ky'
 
 /**
  * 创建友情链接接口模块，依赖注入的 http 客户端由调用方提供。
@@ -53,17 +46,17 @@ export function createFriendlyLinkAPI(request: KyInstance) {
 
     // 管理端：审核通过，进入展示状态。
     approve(id: number): Promise<FriendlyLinkActionResponse> {
-      return request.post(ADMIN_LINK_ACTION_PATHS.approve, { json: { id } }).json()
+      return request.post('admin/friendlyLinks/approve', { json: { id } }).json()
     },
 
     // 管理端：下架友链但保留数据。
     hide(id: number): Promise<FriendlyLinkActionResponse> {
-      return request.post(ADMIN_LINK_ACTION_PATHS.hide, { json: { id } }).json()
+      return request.post('admin/friendlyLinks/hide', { json: { id } }).json()
     },
 
     // 管理端：拒绝该互链申请。
     reject(id: number): Promise<FriendlyLinkActionResponse> {
-      return request.post(ADMIN_LINK_ACTION_PATHS.reject, { json: { id } }).json()
+      return request.post('admin/friendlyLinks/reject', { json: { id } }).json()
     }
   }
 }

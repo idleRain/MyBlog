@@ -1,4 +1,3 @@
-import type { KyInstance } from 'ky'
 import type {
   ArticleActionResponse,
   ArticleArchiveResponse,
@@ -11,14 +10,7 @@ import type {
   GetArticleListRequest,
   UpdateArticleRequest
 } from './types.ts'
-
-// 文章状态流转接口路径后缀，全部挂在 /api/articles 下，由后端按角色授权。
-const ARTICLE_ACTION_PATHS = {
-  publish: 'articles/publish',
-  unpublish: 'articles/unpublish',
-  archive: 'articles/archive',
-  private: 'articles/private'
-} as const
+import type { KyInstance } from 'ky'
 
 /**
  * 创建文章接口模块，依赖注入的 http 客户端由调用方提供。
@@ -123,22 +115,22 @@ export function createArticleAPI(request: KyInstance) {
 
     // 发布文章。
     publish(id: number): Promise<ArticleActionResponse> {
-      return request.post(ARTICLE_ACTION_PATHS.publish, { json: { id } }).json()
+      return request.post('articles/publish', { json: { id } }).json()
     },
 
     // 取消发布文章。
     unpublish(id: number): Promise<ArticleActionResponse> {
-      return request.post(ARTICLE_ACTION_PATHS.unpublish, { json: { id } }).json()
+      return request.post('articles/unpublish', { json: { id } }).json()
     },
 
     // 归档文章。
     archive(id: number): Promise<ArticleActionResponse> {
-      return request.post(ARTICLE_ACTION_PATHS.archive, { json: { id } }).json()
+      return request.post('articles/archive', { json: { id } }).json()
     },
 
     // 设置文章为私有。
     private(id: number): Promise<ArticleActionResponse> {
-      return request.post(ARTICLE_ACTION_PATHS.private, { json: { id } }).json()
+      return request.post('articles/private', { json: { id } }).json()
     }
   }
 }

@@ -39,7 +39,7 @@ export const baseConfig = [
 export default [
   ...baseConfig,
   {
-    files: ['scripts/**/*.js', '*.config.js'],
+    files: ['scripts/**/*.ts', '*.config.js', 'packages/**/.ts'],
     languageOptions: {
       globals: { ...globals.node }
     }
