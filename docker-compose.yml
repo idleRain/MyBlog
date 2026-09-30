@@ -1,8 +1,13 @@
-# MyBlog 生产编排：MySQL + 后端 + 前台 + nginx 网关。
+# MyBlog 生产编排：MySQL + 后端 + 前台 + nginx 网关 + 备份任务。
 # 使用前先在仓库根创建 .env，内容参照 deploy/.env.example，缺失必填变量时 compose 会拒绝启动。
 
 name: myblog
 
+# 资源限制统一采用 deploy.resources.limits 写法。
+# 本编排以 docker compose up 运行，属 Compose V2 的非 swarm 模式，该写法会被正常应用；
+# deploy 块中仅供 swarm 使用的 mode、placement、update_config、endpoint_mode 未在此使用。
+# 各服务的数值为经验初值，无压测数据支撑，需在真实负载下观测后调整。
+# 全部服务的内存上限之和应低于宿主机可用内存，为内核与其他进程保留余量。
 services:
   mysql:
     image: mysql:8.0
@@ -18,6 +23,14 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          # 数据库内存上限取 1 GiB，依据 InnoDB 缓冲池默认值与个人博客的数据规模估算。
+          # 数值为经验初值，无压测数据支撑，调整前应先观测容器的实际工作集。
+          memory: 1g
+          # CPU 上限取 2 核，允许导入备份与执行迁移时短暂使用多核，同时避免挤占其他服务。
+          cpus: '2.0'
 
   server:
     build:
@@ -27,6 +40,8 @@ services:
     environment:
       # 生产模式走 golang-migrate 迁移，数据库口令经环境注入
       MYBLOG_SERVER_MODE: release
+      # 监听地址必须绑定全部网卡，绑定回环地址时同网络的 nginx 与 web 无法访问后端服务。
+      MYBLOG_SERVER_HOST: 0.0.0.0
       MYBLOG_DATABASE_HOST: mysql
       MYBLOG_DATABASE_PORT: '3306'
       MYBLOG_DATABASE_USERNAME: root
@@ -46,6 +61,14 @@ services:
       start_period: 30s
     expose:
       - '3000'
+    deploy:
+      resources:
+        limits:
+          # 后端内存上限取 512 MiB，Go 服务常驻内存较低，该值可容纳常规并发与迁移过程。
+          # 数值为经验初值，无压测数据支撑。
+          memory: 512m
+          # CPU 上限取 1 核，个人博客的请求量下单核足够，避免与数据库争抢。
+          cpus: '1.0'
 
   web:
     build:
@@ -57,6 +80,24 @@ services:
         condition: service_healthy
     expose:
       - '3000'
+    healthcheck:
+      # node:22-alpine 基于 Alpine，其 busybox 提供 wget，故无需额外安装探测工具。
+      # 探针请求前台首页，能同时验证 SSR 进程存活与页面可渲染。
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost:3000/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # 前台首次启动需加载路由与依赖，给予较长的启动宽限期以避免误判为不健康。
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          # 前台内存上限取 768 MiB，SSR 渲染与 markdown 渲染链路的内存占用高于纯 API 服务。
+          # Node 进程的堆上限另需经 --max-old-space-size 约束，容器内存上限不会自动传导。
+          # 数值为经验初值，无压测数据支撑。
+          memory: 768m
+          # CPU 上限取 1 核，SSR 渲染为短时任务，1 核可满足个人博客的首屏渲染需求。
+          cpus: '1.0'
 
   nginx:
     build:
@@ -70,6 +111,63 @@ services:
         condition: service_healthy
       web:
         condition: service_started
+    healthcheck:
+      # nginx:1.27-alpine 基于 Alpine，其 busybox 提供 wget，故无需额外安装探测工具。
+      # 探针请求网关根路径，覆盖静态托管与反向代理链路。
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://localhost/']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          # 网关内存上限取 128 MiB，nginx 作为纯转发与静态托管进程，常驻内存很低。
+          # 数值为经验初值，无压测数据支撑。
+          memory: 128m
+          # CPU 上限取 1 核，网关的 CPU 开销主要来自 gzip 压缩与连接转发。
+          cpus: '1.0'
+
+  # 备份任务：一次性 job，由宿主机 cron 或外部调度器显式触发，不随 up 常驻。
+  # Compose 无内置定时调度能力，故将调度交回外部并按需创建容器，详见 docs/operations/backup-restore.md。
+  backup:
+    # 复用与 mysql 服务端完全同源的镜像，避免 mysqldump 客户端与服务端版本偏差。
+    image: mysql:8.0
+    profiles:
+      # 归属 backup profile，使 docker compose up -d 默认不启动本服务。
+      - backup
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # 备份目录位于绑定挂载的宿主机目录内，与命名卷的挂载点区分开。
+      BACKUP_DIR: /backups
+      RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      DB_HOST: mysql
+      DB_PORT: '3306'
+      DB_USER: root
+      DB_NAME: ${MYSQL_DATABASE:-myblog}
+      # 上传目录指向 uploads 命名卷的挂载点，与服务内 media.upload_dir 的相对路径一致。
+      UPLOAD_DIR: /app/uploads
+      # 口令经环境变量传递，避免出现在进程参数列表中。
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      # 备份产物必须落到宿主机可见目录，否则无法复制到异地存储。
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+      # 只读挂载上传目录，备份过程不应修改媒体文件。
+      - uploads:/app/uploads:ro
+      # 脚本以只读方式挂入，确保容器内执行的是仓库中受版本管理的脚本。
+      - ./scripts/backup:/opt/myblog/scripts/backup:ro
+    # 容器启动即执行备份脚本；退出码由 docker compose run 透传，非零即为备份失败。
+    command: ['bash', '/opt/myblog/scripts/backup/backup.sh']
+    deploy:
+      resources:
+        limits:
+          # 备份内存上限取 512 MiB，覆盖 mysqldump 缓冲、gzip 压缩与 tar 打包的开销。
+          # 该上限可防止导出大库时耗尽宿主机内存，数值为经验初值且无压测数据支撑。
+          memory: 512m
+          # CPU 上限取 1 核，备份为低优先级批处理任务，不应与在线服务争抢 CPU。
+          cpus: '1.0'
 
 volumes:
   mysql_data:
