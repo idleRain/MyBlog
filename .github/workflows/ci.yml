@@ -1,11 +1,15 @@
 # 最小 CI：质量防线四件套 + lint（体检项 QA-11 / OPS-06）。
-# 触发方式为手动执行，恢复 push/PR 自动门禁时改回对应触发条件。
+# 触发方式为 push 到 master/main 以及所有 pull request，均为自动执行。
 # 本工作流只做质量检查，不含任何自动部署步骤。
 
 name: CI
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -16,7 +20,7 @@ permissions:
 
 jobs:
   quality:
-    name: 质量防线（go 三连 / 依赖基线 / svelte-check / 契约锁 / lint）
+    name: 质量防线（go 三连 / 依赖基线 / svelte-check / 契约锁 / 前端构建 / 格式 / lint）
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -42,21 +46,33 @@ jobs:
         run: |
           go build ./...
           go vet ./...
-          go test ./...
+          go test -count=1 ./...
 
       - name: 依赖方向基线（D1：12 service + 1 middleware + 0 router）
         working-directory: server
         run: |
-          COUNT=$(git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router \
-            | grep -v '_test\.go$' | wc -l)
-          echo "依赖基线命中文件数: ${COUNT}（期望 13）"
-          test "$COUNT" -eq 13
+          HITS=$(git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router \
+            | grep -v '_test\.go$' || true)
+          COUNT=$(printf '%s' "$HITS" | grep -c . || true)
+          echo "依赖基线命中文件数: ${COUNT}"
+          echo "依赖基线命中文件清单:"
+          printf '%s\n' "$HITS"
+          test "$COUNT" -le 13
+
+      - name: 公共包单测与类型检查
+        run: pnpm run test:packages
 
       - name: 双应用 svelte-check
         run: pnpm run check
 
       - name: 契约三把锁
         run: pnpm run contract:check
+
+      - name: 前端生产构建（前台与后台）
+        run: pnpm run build:apps
+
+      - name: 格式检查（只读）
+        run: pnpm run format:check
 
       - name: 前端与后端 lint
         run: pnpm run lint

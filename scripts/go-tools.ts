@@ -63,7 +63,8 @@ async function buildProject(): Promise<void> {
 // 运行测试
 async function runTests(): Promise<void> {
   console.log('🧪 运行测试...')
-  await runCommand('go', ['test', '-v', './...'], { cwd: serverDir })
+  // 禁用 Go 测试结果缓存，确保每次运行都反映当前实现，避免命中陈旧缓存返回假绿。
+  await runCommand('go', ['test', '-v', '-count=1', './...'], { cwd: serverDir })
   console.log('✅ 测试完成')
 }
 
