@@ -1,0 +1,197 @@
+# MyBlog 应用配置模板
+#
+# 该文件入库并作为镜像内配置的唯一来源，键结构与本地开发使用的 config.yaml 完全一致。
+# 所有敏感项一律使用明显的占位值，真实值必须经环境变量注入：
+# 环境变量名为 MYBLOG_ 前缀加配置键的大写下划线形式，例如 server.host 对应 MYBLOG_SERVER_HOST。
+# 环境变量优先级高于本文件，列表与映射类型无法经单个环境变量表达，仍需在本文件内维护。
+
+# 服务器配置
+server:
+  host: "0.0.0.0"      # 容器内必须绑定全部网卡，否则同网络的 nginx 与 web 无法访问
+  port: 3000
+  mode: "release"      # debug, release, test
+
+# 数据库配置：口令与库名经 MYBLOG_DATABASE_* 环境变量注入，此处仅为占位值
+database:
+  host: "mysql"
+  port: 3306
+  username: "root"
+  password: "CHANGE_ME_VIA_MYBLOG_DATABASE_PASSWORD"
+  dbname: "myblog"
+  charset: "utf8mb4"
+  parse_time: true
+  loc: "Local"
+  max_idle_conns: 10
+  max_open_conns: 100
+
+# 日志配置
+logger:
+  level: "info"        # debug, info, warn, error
+  output: "stdout"     # stdout, file
+  file_path: "logs/app.log"
+
+# API配置
+api:
+  version: "v1"
+  timeout: 30  # 秒
+
+# 令牌配置：令牌为服务端签发的不透明随机串，仅需配置有效期
+token:
+  access_expire: 15  # 分钟
+  refresh_expire: 168  # 小时（7天）
+  cookie_secure: true  # 会话 Cookie 是否仅经 HTTPS 传输，生产环境必须置为 true
+
+# API安全配置
+security:
+  # 频率限制配置
+  rate_limit:
+    enabled: true
+    max_requests: 100          # IP级别最大请求数/分钟
+    window_minutes: 1          # 时间窗口（分钟）
+    user_max_requests: 300     # 用户级别最大请求数/分钟
+    user_window_minutes: 1     # 用户时间窗口（分钟）
+
+  # 安全HTTP头配置
+  security_headers:
+    enabled: true
+    content_security_policy: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' https:"
+    x_frame_options: "SAMEORIGIN"
+    x_content_type_options: "nosniff"
+    referrer_policy: "strict-origin-when-cross-origin"
+    strict_transport_security: "max-age=31536000; includeSubDomains"
+
+  # 输入验证配置
+  input_validation:
+    enabled: true
+    max_request_size_mb: 10    # 最大请求体大小（MB）
+    blocked_user_agents:       # 阻止的User-Agent，子串匹配语义，禁止收录 bot/crawler/spider 等泛化词
+      - "curl"
+      - "wget"
+      - "python-requests"
+
+  # 管理员接口安全配置
+  admin_security:
+    enabled: true
+    max_requests: 30           # 管理员接口IP级别限制
+    user_max_requests: 50      # 管理员接口用户级别限制
+    ip_whitelist: []           # IP白名单（空表示不启用）
+
+  # 登录锁定配置：连续密码失败达到阈值后锁定账户，到期自动解除
+  login_lockout:
+    enabled: true
+    max_failed_attempts: 5     # 连续失败阈值
+    lock_minutes: 15           # 锁定时长（分钟）
+
+# CORS 跨域配置：仅对白名单内 Origin 回显 CORS 头，白名单外请求浏览器侧直接拒绝。
+# 部署形态为 nginx 同源网关时白名单保持为空即可，浏览器同源请求不受影响；
+# 需要跨域访问时补充精确 Origin（如 "https://blog.example.com"），禁止使用通配符。
+cors:
+  allowed_origins: []          # 允许跨域的 Origin 白名单，精确匹配，空列表拒绝所有跨域
+  allow_credentials: true      # 是否允许跨域携带凭证，与全放行互斥
+  allowed_methods:             # POST-Only 规范下仅放行 POST 与预检 OPTIONS
+    - "POST"
+    - "OPTIONS"
+  allowed_headers:             # 允许跨域携带的请求头
+    - "Content-Type"
+    - "Authorization"
+    - "X-Requested-With"
+
+# 媒体文件存储配置
+media:
+  upload_dir: "uploads"        # 本地存储目录，相对服务运行目录
+  base_url: "/uploads"         # 文件访问URL前缀
+  max_size_mb: 10              # 单文件大小上限（MB）
+  allowed_types:               # 允许的MIME类型，按内容嗅探结果校验，空表示不限制（不建议）
+    - "image/jpeg"
+    - "image/png"
+    - "image/gif"
+    - "image/webp"
+    - "application/pdf"
+
+# 多语言配置：内容语言协商的白名单唯一权威，语言标识使用 ISO 639-1 主子标签
+i18n:
+  default_language: "zh"       # 缺省语言，请求未携带或白名单外回退到该语言
+  supported_languages:         # 受支持语言列表，与前台 paraglide locales 保持一致
+    - "zh"
+    - "en"
+
+# RBAC权限配置：生产环境角色权限的唯一权威，修改后重启生效，无需重新编译
+rbac:
+  role_hierarchy:
+    superadmin: 4
+    admin: 3
+    editor: 2
+    user: 1
+  role_permissions:
+    superadmin:
+      - "system:config"
+      - "system:logs"
+      - "system:stats"
+      - "dict:manage"
+      - "user:create"
+      - "user:read"
+      - "user:update"
+      - "user:delete"
+      - "user:list"
+      - "article:create"
+      - "article:read"
+      - "article:update"
+      - "article:delete"
+      - "article:list"
+      - "article:publish"
+      - "article:manage"
+      - "category:manage"
+      - "tag:manage"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"
+      - "comment:delete"
+      - "comment:moderate"
+      - "file:upload"
+      - "file:read"
+      - "file:delete"
+    admin:
+      - "system:logs"
+      - "system:stats"
+      - "dict:manage"
+      - "user:create"
+      - "user:read"
+      - "user:update"
+      - "user:delete"
+      - "user:list"
+      - "article:create"
+      - "article:read"
+      - "article:update"
+      - "article:delete"
+      - "article:list"
+      - "article:publish"
+      - "article:manage"
+      - "category:manage"
+      - "tag:manage"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"
+      - "comment:delete"
+      - "comment:moderate"
+      - "file:upload"
+      - "file:read"
+      - "file:delete"
+    editor:
+      - "user:read"
+      - "article:create"
+      - "article:read"
+      - "article:update"
+      - "article:delete"
+      - "article:list"
+      - "article:publish"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"
+      - "comment:delete"
+      - "file:upload"
+      - "file:read"
+    user:
+      - "article:read"
+      - "comment:create"
+      - "comment:read"
+      - "comment:update"

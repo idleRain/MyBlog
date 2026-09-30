@@ -17,8 +17,9 @@
 ## 前置条件
 
 1. 安装 Docker 与 Docker Compose 插件。
-2. `server/configs/config.yaml` 必须存在于工作区。该文件已脱离 git 追踪（OPS-08），
-   新克隆需按 OPS-08 人工操作清单重建或从部署机同步。
+2. 无需人工补齐任何配置文件。镜像构建改用入库的无密钥模板
+   `server/configs/config.example.yaml`，真实配置一律经环境变量在运行时注入。
+   本地开发仍使用 `server/configs/config.yaml`，该文件已脱离 git 追踪（OPS-08）。
 3. 本地镜像构建会执行前端生产构建与 Go 编译，耗时约 5 至 10 分钟。
 
 ## 部署步骤
@@ -50,5 +51,9 @@ curl -I http://localhost/admin/            # 后台 SPA 入口
 ## 已知边界
 
 - 本机未安装 Docker，`docker compose config` 与镜像构建未在本机执行，配置经静态审查。
-- 镜像内 config.yaml 使用环境变量覆盖数据库口令，其余配置项沿用仓库默认。
+- 后端镜像内烧录的是无密钥模板 `config.example.yaml`，其中口令与库名均为占位值，
+  真实值经 `MYBLOG_DATABASE_*` 环境变量在运行时注入，镜像层中不含真实口令。
+- 前端运行阶段依赖经 `prod-deps` 阶段以扁平布局安装后随镜像分发。
+  该布局已在无 Docker 环境下以 Node 直接运行 `build` 完成验证，
+  镜像构建本身仍待部署环境确认。
 - TLS 终止未包含在本编排内，对外暴露建议置于前置反代或负载均衡之后。

@@ -17,7 +17,8 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
 COPY --from=builder /out/myblog /app/myblog
-COPY server/configs/config.yaml /app/configs/config.yaml
+# 镜像内只烧录无密钥模板，真实配置一律经环境变量在运行时注入，避免口令残留在镜像层。
+COPY server/configs/config.example.yaml /app/configs/config.yaml
 COPY server/migrations /app/migrations
 EXPOSE 3000
 CMD ["/app/myblog"]
