@@ -1,3 +1,74 @@
 #!/usr/bin/env sh
+#
+# pre-commit 门禁钩子。
+# 职责是在提交前调度测试门禁，具体编排逻辑位于 scripts/pre-commit-guard.ts。
+#
+# 本脚本不写死任何本机绝对路径：Node 的解析完全依赖 PATH 与可移植的 nvm 目录约定。
+
+set -e
+
+# 门禁要求的最低 Node 主版本号，低于此版本无法运行 tsx 与 vitest。
+REQUIRED_NODE_MAJOR=22
+
+# 取出版本号中的主版本数字，入参形如 v24.20.0。
+node_major_of() {
+  printf '%s' "$1" | sed 's/^v//' | cut -d. -f1
+}
+
+# 判断当前 PATH 中的 node 是否满足最低主版本要求。
+node_version_satisfies() {
+  command -v node >/dev/null 2>&1 || return 1
+  major=$(node_major_of "$(node -v 2>/dev/null)")
+  [ -n "$major" ] && [ "$major" -ge "$REQUIRED_NODE_MAJOR" ] 2>/dev/null
+}
+
+# 将 Windows 风格路径转换为当前 shell 可识别的形式。
+# 缺少转换时盘符中的冒号会被 PATH 解析为分隔符，导致条目失效。
+to_shell_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -u "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
+
+# 尝试通过 nvm 目录约定提升 PATH，目录来源为 NVM_HOME 与 LOCALAPPDATA，均为可移植变量。
+# 选取其中主版本最高的一个目录，避免依赖目录名的字面量比较。
+prepend_highest_nvm_node() {
+  for nvm_root in "$NVM_HOME" "$LOCALAPPDATA/nvm" "$HOME/.nvm/versions/node"; do
+    [ -d "$nvm_root" ] || continue
+    best_dir=""
+    best_major=0
+    for candidate in "$nvm_root"/v*; do
+      [ -x "$candidate/node" ] || [ -x "$candidate/node.exe" ] || continue
+      major=$(node_major_of "$(basename "$candidate")")
+      [ -n "$major" ] || continue
+      if [ "$major" -gt "$best_major" ] 2>/dev/null; then
+        best_major="$major"
+        best_dir="$candidate"
+      fi
+    done
+    if [ -n "$best_dir" ]; then
+      PATH="$(to_shell_path "$best_dir"):$PATH"
+      export PATH
+      return 0
+    fi
+  done
+  return 1
+}
+
+# 先判断当前 PATH，不足时再尝试 nvm 目录约定。
+if ! node_version_satisfies; then
+  prepend_highest_nvm_node || true
+fi
+
+# 版本仍不满足时给出可行动的修复指引，不执行门禁以避免晦涩的语法错误。
+if ! node_version_satisfies; then
+  echo "husky - pre-commit 钩子需要 Node >= ${REQUIRED_NODE_MAJOR}，当前解析到: $(node -v 2>/dev/null || echo '未找到 node')" >&2
+  echo "husky - 请将 Node >= ${REQUIRED_NODE_MAJOR} 置于 PATH 前部后重新提交，例如执行 nvm use ${REQUIRED_NODE_MAJOR}" >&2
+  exit 1
+fi
+
 pnpm run prepare
 pnpm run lint-staged
+node --import tsx scripts/pre-commit-guard.ts
