@@ -62,6 +62,11 @@ jobs:
       - name: 公共包单测与类型检查
         run: pnpm run test:packages
 
+      # 前台 i18n 产物由 paraglide 编译生成且不入库，全新检出时目录为空。
+      # svelte-check 不会触发 vite 插件编译，故必须先显式生成，否则 $lib/paraglide 与 $i18n 全部解析失败。
+      - name: 生成前台 i18n 产物
+        run: pnpm --filter @myblog/web run generate:i18n
+
       - name: 双应用 svelte-check
         run: pnpm run check
 

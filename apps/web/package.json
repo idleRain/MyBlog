@@ -4,6 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "generate:i18n": "paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide",
     "dev": "vite dev --mode dev",
     "build": "vite build --mode prod",
     "preview": "vite preview --mode prod",
