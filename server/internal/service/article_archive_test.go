@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 )
@@ -181,4 +182,38 @@ func TestGetRelatedArticlesQueriesTagsOnce(t *testing.T) {
 // articleServiceForArchives 创建供归档与相关文章测试使用的最小服务装配。
 func articleServiceForArchives(repo *fakeArticleRepo) *ArticleService {
 	return NewArticleService(repo, &fakeUserRepo{}, NewRBACService(), nil, nil).(*ArticleService)
+}
+
+// TestGetArticleListUserLookupsIndependentOfSize 验证列表可见性判定不随文章长度查用户表。
+func TestGetArticleListUserLookupsIndependentOfSize(t *testing.T) {
+	userRepo := &fakeUserRepo{user: &domain.User{ID: 7, Role: "user"}}
+	articles := make([]*model.Article, 0, 5)
+	for _, id := range []uint{1, 2, 3, 4, 5} {
+		draft := draftArticleByAuthor(id, 7)
+		articles = append(articles, draft)
+	}
+	repo := &fakeArticleRepo{
+		list: func(params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+			return articles, int64(len(articles)), nil
+		},
+	}
+	svc := &ArticleService{articleRepo: repo, userRepo: userRepo, rbacService: NewRBACService()}
+
+	response, err := svc.GetArticleList(&GetArticleListRequest{Page: 1, PageSize: 5}, &[]uint{7}[0])
+	if err != nil {
+		t.Fatalf("文章列表查询失败: %v", err)
+	}
+
+	// 权限解析一次完成，查库次数与列表长度无关（作者本人两字段分支不查库）。
+	if userRepo.getByIDCalls != 1 {
+		t.Errorf("用户表查询应仅 1 次，实际 %d 次", userRepo.getByIDCalls)
+	}
+	if len(response.Articles) != 5 {
+		t.Errorf("可见文章数 = %d，期望 5", len(response.Articles))
+	}
+}
+
+// draftArticleByAuthor 构造指定作者的草稿文章，供可见性判定使用。
+func draftArticleByAuthor(id uint, authorID uint) *model.Article {
+	return &model.Article{ID: id, Title: "草稿", AuthorID: authorID, Status: model.ArticleStatusDraft}
 }

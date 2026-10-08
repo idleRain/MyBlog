@@ -182,8 +182,9 @@ func captureAuthorStatus(captured *model.ArticleStatus) *fakeArticleRepo {
 // fakeUserRepo 用户仓储的测试替身。
 type fakeUserRepo struct {
 	repository.UserRepository
-	user       *domain.User
-	updateFunc func(user *domain.User) error
+	user         *domain.User
+	updateFunc   func(user *domain.User) error
+	getByIDCalls int
 }
 
 func (f *fakeUserRepo) Update(user *domain.User) error {
@@ -194,6 +195,7 @@ func (f *fakeUserRepo) Update(user *domain.User) error {
 }
 
 func (f *fakeUserRepo) GetByID(id uint) (*domain.User, error) {
+	f.getByIDCalls++
 	if f.user == nil {
 		return nil, errors.New("用户不存在")
 	}

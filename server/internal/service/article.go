@@ -52,7 +52,6 @@ type ArticleServiceInterface interface {
 	SetArticlePrivate(id uint, userID uint) error
 
 	// 权限检查
-	CanView(article *model.Article, userID *uint) bool
 	CanEdit(article *model.Article, userID uint) bool
 	CanDelete(article *model.Article, userID uint) bool
 }
@@ -252,7 +251,7 @@ func (s *ArticleService) GetArticle(id uint, userID *uint) (*model.Article, erro
 	}
 
 	// 权限检查
-	if !s.CanView(article, userID) {
+	if !s.canViewArticle(article, userID, s.resolveViewerCanManage(userID)) {
 		return nil, fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
@@ -268,7 +267,7 @@ func (s *ArticleService) GetArticleBySlug(slug string, userID *uint) (*model.Art
 	}
 
 	// 权限检查
-	if !s.CanView(article, userID) {
+	if !s.canViewArticle(article, userID, s.resolveViewerCanManage(userID)) {
 		return nil, fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
@@ -437,7 +436,10 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 	// "已发布 + 本人全状态"，修复 editor 草稿在列表中不可见的问题；
 	// 匿名访问维持仅已发布语义。请求的状态筛选在可见边界上叠加，
 	// 借状态参数越权拉取他人草稿仍被边界拦截。
-	if !s.canFilterByStatus(userID) {
+	// 权限解析一次完成，既决定状态筛选边界也供给逐篇可见性判定，
+	// 列表内的 GetByID 调用次数与文章数量解耦。
+	viewerCanManage := s.resolveViewerCanManage(userID)
+	if !viewerCanManage {
 		if userID != nil {
 			params.VisibleAuthorID = *userID
 		} else {
@@ -453,7 +455,7 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 	// 过滤用户没有权限查看的文章
 	var filteredArticles []*model.Article
 	for _, article := range articles {
-		if s.CanView(article, userID) {
+		if s.canViewArticle(article, userID, viewerCanManage) {
 			filteredArticles = append(filteredArticles, article)
 		}
 	}
@@ -464,20 +466,6 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 		Page:     req.Page,
 		PageSize: req.PageSize,
 	}, nil
-}
-
-// canFilterByStatus 判断查看者是否允许按任意状态筛选文章，仅持有文章管理权限的管理员放行。
-func (s *ArticleService) canFilterByStatus(userID *uint) bool {
-	if userID == nil {
-		return false
-	}
-
-	user, err := s.userRepo.GetByID(*userID)
-	if err != nil {
-		return false
-	}
-
-	return s.rbacService.HasPermission(user.Role, PermissionArticleManage)
 }
 
 // GetArticlesByAuthor 获取指定作者的文章，可见性规则与 GetArticleList 保持一致。
@@ -493,7 +481,7 @@ func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListR
 
 	// 可见性判定：管理员全量；作者本人查看自己的作者页时放开全状态；
 	// 其余查看者强制已发布，防止公开接口借状态参数越权拉取非公开文章。
-	if !s.canFilterByStatus(userID) {
+	if !s.resolveViewerCanManage(userID) {
 		if userID != nil && *userID == authorID {
 			params.VisibleAuthorID = authorID
 		} else {
@@ -763,7 +751,7 @@ func (s *ArticleService) LikeArticle(articleID uint, userID uint) error {
 	}
 
 	// 校验当前用户有查看权限，防止对不可见文章点赞。
-	if !s.CanView(article, &userID) {
+	if !s.canViewArticle(article, &userID, s.resolveViewerCanManage(&userID)) {
 		return fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
@@ -853,7 +841,7 @@ func (s *ArticleService) BookmarkArticle(articleID uint, userID uint) error {
 	}
 
 	// 校验当前用户有查看权限，防止对不可见文章收藏。
-	if !s.CanView(article, &userID) {
+	if !s.canViewArticle(article, &userID, s.resolveViewerCanManage(&userID)) {
 		return fmt.Errorf("%w：查看此文章", ErrPermissionDenied)
 	}
 
@@ -925,7 +913,9 @@ func (s *ArticleService) SetArticlePrivate(id uint, userID uint) error {
 }
 
 // CanView 检查用户是否可以查看文章
-func (s *ArticleService) CanView(article *model.Article, userID *uint) bool {
+// 定位改为接收已解析的权限标记：可见性判定本身不需要知道操作者是谁，
+// 权限解析由调用方一次完成，列表场景避免逐篇查库。
+func (s *ArticleService) canViewArticle(article *model.Article, userID *uint, viewerCanManage bool) bool {
 	// 已发布的文章所有人都可以查看
 	if article.Status == model.ArticleStatusPublished {
 		return true
@@ -942,12 +932,21 @@ func (s *ArticleService) CanView(article *model.Article, userID *uint) bool {
 	}
 
 	// 管理员可以查看所有文章
-	user, err := s.userRepo.GetByID(*userID)
-	if err == nil && s.rbacService.HasPermission(user.Role, PermissionArticleManage) {
-		return true
+	return viewerCanManage
+}
+
+// resolveViewerCanManage 解析查看者是否持有文章管理权限，未登录或查询失败按未授权处理。
+func (s *ArticleService) resolveViewerCanManage(userID *uint) bool {
+	if userID == nil {
+		return false
 	}
 
-	return false
+	user, err := s.userRepo.GetByID(*userID)
+	if err != nil {
+		return false
+	}
+
+	return s.rbacService.HasPermission(user.Role, PermissionArticleManage)
 }
 
 // CanEdit 检查用户是否可以编辑文章
