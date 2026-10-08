@@ -2,9 +2,6 @@
 package handler
 
 import (
-	"errors"
-
-	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -50,7 +47,7 @@ func (h *CommentHandler) CreateComment(c *gin.Context) {
 
 	comment, err := h.commentService.CreateComment(&req, userID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -72,7 +69,7 @@ func (h *CommentHandler) GetCommentsByArticle(c *gin.Context) {
 
 	result, err := h.commentService.GetCommentsByArticle(req.ArticleID, &req.ListCommentsRequest)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -98,11 +95,7 @@ func (h *CommentHandler) LikeComment(c *gin.Context) {
 	}
 
 	if err := h.commentService.LikeComment(req.ID, userID); err != nil {
-		if errors.Is(err, domain.ErrCommentNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -128,7 +121,7 @@ func (h *CommentHandler) UnlikeComment(c *gin.Context) {
 	}
 
 	if err := h.commentService.UnlikeComment(req.ID, userID); err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -182,11 +175,7 @@ func (h *CommentHandler) DeleteComment(c *gin.Context) {
 	}
 
 	if err := h.commentService.DeleteComment(req.ID, operatorID); err != nil {
-		if errors.Is(err, domain.ErrCommentNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -203,7 +192,7 @@ func (h *CommentHandler) ListComments(c *gin.Context) {
 
 	result, err := h.commentService.ListComments(&req)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -229,11 +218,7 @@ func (h *CommentHandler) moderate(c *gin.Context, action func(id, operatorID uin
 	}
 
 	if err := action(req.ID, operatorID); err != nil {
-		if errors.Is(err, domain.ErrCommentNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

@@ -2,7 +2,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 
 	"MyBlog/internal/model"
@@ -125,12 +124,12 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 		return nil, err
 	}
 	if !article.CanComment() {
-		return nil, errors.New("该文章不允许评论")
+		return nil, fmt.Errorf("%w：该文章不允许评论", ErrInvalidRequest)
 	}
 
 	// 游客通道受站点开关控制，登录通道不受该开关限制。
 	if userID == nil && !s.settingEnabled(model.SettingAllowGuestComment, true) {
-		return nil, errors.New("站点已关闭游客评论，请登录后发言")
+		return nil, fmt.Errorf("%w：站点已关闭游客评论，请登录后发言", ErrPermissionDenied)
 	}
 
 	comment := &model.Comment{
@@ -157,19 +156,18 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 
 	// 游客提交时必须提供姓名。
 	if comment.UserID == nil && comment.AuthorName == "" {
-		return nil, errors.New("游客评论必须填写姓名")
+		return nil, fmt.Errorf("%w：游客评论必须填写姓名", ErrInvalidRequest)
 	}
 
 	// 处理回复关系，回复时继承父评论的文章归属。
 	var parent *model.Comment
 	if req.ParentID != nil {
-		var err error
 		parent, err = s.commentRepo.GetByID(*req.ParentID)
 		if err != nil {
-			return nil, errors.New("父评论不存在")
+			return nil, err
 		}
 		if parent.ArticleID != req.ArticleID {
-			return nil, errors.New("父评论不属于该文章")
+			return nil, fmt.Errorf("%w：父评论不属于该文章", ErrInvalidRequest)
 		}
 
 		comment.ParentID = req.ParentID

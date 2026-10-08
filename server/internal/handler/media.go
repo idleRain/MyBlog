@@ -2,9 +2,6 @@
 package handler
 
 import (
-	"errors"
-
-	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -91,12 +88,8 @@ func (h *MediaHandler) GetMedia(c *gin.Context) {
 
 	media, err := h.mediaService.GetMedia(req.ID, userID, adminFlag)
 	if err != nil {
-		// 无权访问按不存在同响应，防止经 ID 枚举探测他人文件。
-		if errors.Is(err, domain.ErrMediaNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		// 无权访问随哨兵按不存在同响应，防止经 ID 枚举探测他人文件。
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -124,7 +117,7 @@ func (h *MediaHandler) ListMedia(c *gin.Context) {
 
 	result, err := h.mediaService.ListMedia(&req, uploaderID, adminFlag)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -153,11 +146,7 @@ func (h *MediaHandler) DeleteMedia(c *gin.Context) {
 	adminFlag, _ := isAdmin.(bool)
 
 	if err := h.mediaService.DeleteMedia(req.ID, userID, adminFlag); err != nil {
-		if errors.Is(err, domain.ErrMediaNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.Forbidden(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

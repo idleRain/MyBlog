@@ -31,7 +31,7 @@ func NewSettingHandler(settingService service.SettingServiceInterface) SettingHa
 func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 	settings, err := h.settingService.GetPublicSettings()
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -42,7 +42,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 func (h *SettingHandler) ListSettings(c *gin.Context) {
 	settings, err := h.settingService.ListSettings()
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 
 	settings, err := h.settingService.UpdateSettings(req.Items, operatorID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

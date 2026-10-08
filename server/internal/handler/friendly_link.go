@@ -2,9 +2,6 @@
 package handler
 
 import (
-	"errors"
-
-	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -46,7 +43,7 @@ func (h *FriendlyLinkHandler) CreateLink(c *gin.Context) {
 
 	link, err := h.linkService.CreateLink(&req)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -63,11 +60,7 @@ func (h *FriendlyLinkHandler) UpdateLink(c *gin.Context) {
 
 	link, err := h.linkService.UpdateLink(&req)
 	if err != nil {
-		if errors.Is(err, domain.ErrFriendlyLinkNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -93,11 +86,7 @@ func (h *FriendlyLinkHandler) DeleteLink(c *gin.Context) {
 	}
 
 	if err := h.linkService.DeleteLink(req.ID, operatorID); err != nil {
-		if errors.Is(err, domain.ErrFriendlyLinkNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -129,7 +118,7 @@ func (h *FriendlyLinkHandler) ListLinks(c *gin.Context) {
 
 	result, err := h.linkService.ListLinks(&req)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -140,7 +129,7 @@ func (h *FriendlyLinkHandler) ListLinks(c *gin.Context) {
 func (h *FriendlyLinkHandler) ListVisibleLinks(c *gin.Context) {
 	links, err := h.linkService.ListVisibleLinks()
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -157,7 +146,7 @@ func (h *FriendlyLinkHandler) ApplyLink(c *gin.Context) {
 
 	link, err := h.linkService.ApplyLink(&req)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -183,11 +172,7 @@ func (h *FriendlyLinkHandler) transition(c *gin.Context, action func(id, operato
 	}
 
 	if err := action(req.ID, operatorID); err != nil {
-		if errors.Is(err, domain.ErrFriendlyLinkNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

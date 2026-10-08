@@ -2,9 +2,6 @@
 package handler
 
 import (
-	"errors"
-
-	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -47,7 +44,7 @@ func (h *NotificationHandler) ListNotifications(c *gin.Context) {
 
 	result, err := h.notificationService.ListNotifications(userID, &req)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -64,7 +61,7 @@ func (h *NotificationHandler) GetUnreadCount(c *gin.Context) {
 
 	count, err := h.notificationService.GetUnreadCount(userID)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -90,11 +87,7 @@ func (h *NotificationHandler) MarkNotificationRead(c *gin.Context) {
 	}
 
 	if err := h.notificationService.MarkNotificationRead(req.ID, userID); err != nil {
-		if errors.Is(err, domain.ErrNotificationNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -110,7 +103,7 @@ func (h *NotificationHandler) MarkAllNotificationsRead(c *gin.Context) {
 	}
 
 	if err := h.notificationService.MarkAllNotificationsRead(userID); err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

@@ -2,7 +2,7 @@
 package service
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"MyBlog/internal/model"
@@ -93,12 +93,12 @@ func NewUserFollowService(
 func (s *UserFollowService) Follow(followerID, followingID uint) error {
 	// 防止用户关注自己。
 	if followerID == followingID {
-		return errors.New("不能关注自己")
+		return fmt.Errorf("%w：不能关注自己", ErrInvalidRequest)
 	}
 
-	// 校验目标用户存在。
+	// 校验目标用户存在，不存在时沿用仓储哨兵映射为 404。
 	if _, err := s.userRepo.GetByID(followingID); err != nil {
-		return errors.New("目标用户不存在")
+		return err
 	}
 
 	if _, err := s.followRepo.Follow(followerID, followingID); err != nil {
@@ -180,7 +180,8 @@ func (s *UserFollowService) IsFollowing(followerID, followingID uint) (bool, err
 func (s *UserFollowService) GetPublicProfile(userID uint) (*PublicUserProfile, error) {
 	user, err := s.userRepo.GetByID(userID)
 	if err != nil {
-		return nil, errors.New("用户不存在")
+		// 用户不存在时沿用仓储哨兵映射为 404，不重复定义第二份不存在语义。
+		return nil, err
 	}
 
 	followerCount, err := s.followRepo.CountFollowers(userID)

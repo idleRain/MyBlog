@@ -59,7 +59,7 @@ func (s *SettingService) ListSettings() ([]*model.Setting, error) {
 // UpdateSettings 批量更新设置项，只读项禁止修改。
 func (s *SettingService) UpdateSettings(items []UpdateSettingItem, operatorID uint) ([]*model.Setting, error) {
 	if len(items) == 0 {
-		return nil, errors.New("更新项不能为空")
+		return nil, fmt.Errorf("%w：更新项不能为空", ErrInvalidRequest)
 	}
 
 	// 先行校验全部条目再单事务写回，拒绝路径不产生写入，写回路径不会留下半程状态。

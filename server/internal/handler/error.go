@@ -3,6 +3,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 
 	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
@@ -10,6 +11,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// unclassifiedErrorText 未分类错误的响应文案。
+// 原始错误可能携带表名、列名或 SQL 片段，仅入日志不进入响应体。
+const unclassifiedErrorText = "服务器内部错误"
 
 // HandleServiceError 将 service 层返回的错误按语义映射为对应的 HTTP 响应。
 // "资源不存在"哨兵错误统一映射为 404，权限不足哨兵错误映射为 403，
@@ -37,6 +42,8 @@ func HandleServiceError(c *gin.Context, err error) {
 		errors.Is(err, service.ErrEmailTaken):
 		response.BadRequest(c, err.Error())
 	default:
-		response.InternalError(c, err.Error())
+		// 非哨兵错误统一脱敏，原始信息落日志供排障，防止内部细节经响应体泄漏。
+		log.Printf("[ERROR] 未分类的服务错误：%v", err)
+		response.InternalError(c, unclassifiedErrorText)
 	}
 }

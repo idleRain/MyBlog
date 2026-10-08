@@ -2,9 +2,6 @@
 package handler
 
 import (
-	"errors"
-
-	"MyBlog/internal/domain"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -50,7 +47,7 @@ func (h *TagHandler) CreateTag(c *gin.Context) {
 
 	tag, err := h.tagService.CreateTag(&req, operatorID)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -73,11 +70,7 @@ func (h *TagHandler) UpdateTag(c *gin.Context) {
 
 	tag, err := h.tagService.UpdateTag(&req, operatorID)
 	if err != nil {
-		if errors.Is(err, domain.ErrTagNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -103,11 +96,7 @@ func (h *TagHandler) DeleteTag(c *gin.Context) {
 	}
 
 	if err := h.tagService.DeleteTag(req.ID, operatorID); err != nil {
-		if errors.Is(err, domain.ErrTagNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -128,11 +117,7 @@ func (h *TagHandler) GetTag(c *gin.Context) {
 
 	tag, err := h.tagService.GetTag(req.ID)
 	if err != nil {
-		if errors.Is(err, domain.ErrTagNotFound) {
-			response.NotFound(c, err.Error())
-			return
-		}
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -149,7 +134,7 @@ func (h *TagHandler) ListTags(c *gin.Context) {
 
 	result, err := h.tagService.ListTags(&req)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -170,7 +155,7 @@ func (h *TagHandler) GetPopularTags(c *gin.Context) {
 
 	tags, err := h.tagService.GetPopularTags(req.Limit)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -182,7 +167,7 @@ func (h *TagHandler) GetPopularTags(c *gin.Context) {
 func (h *TagHandler) ListAllTags(c *gin.Context) {
 	tags, err := h.tagService.ListAllTags()
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

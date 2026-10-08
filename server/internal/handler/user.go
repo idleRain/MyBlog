@@ -171,7 +171,7 @@ func (h *UserHandler) GetUserList(c *gin.Context) {
 
 	users, total, err := h.userService.GetUserList(req.Page, req.PageSize, req.Keyword)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

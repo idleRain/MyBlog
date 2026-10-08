@@ -30,7 +30,7 @@ func NewStatsHandler(statsService service.StatsServiceInterface) StatsHandlerInt
 func (h *StatsHandler) GetOverview(c *gin.Context) {
 	overview, err := h.statsService.GetOverview()
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *StatsHandler) GetArticleViewsTrend(c *gin.Context) {
 
 	trend, err := h.statsService.GetArticleViewsTrend(req.Days)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

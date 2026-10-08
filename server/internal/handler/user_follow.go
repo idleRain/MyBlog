@@ -49,7 +49,7 @@ func (h *UserFollowHandler) Follow(c *gin.Context) {
 	}
 
 	if err := h.followService.Follow(userID, req.FollowingID); err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -75,7 +75,7 @@ func (h *UserFollowHandler) Unfollow(c *gin.Context) {
 	}
 
 	if err := h.followService.Unfollow(userID, req.FollowingID); err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *UserFollowHandler) ListFollowers(c *gin.Context) {
 
 	result, err := h.followService.ListFollowers(req.UserID, &req.ListFollowsRequest)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *UserFollowHandler) IsFollowing(c *gin.Context) {
 
 	isFollowing, err := h.followService.IsFollowing(userID, req.UserID)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (h *UserFollowHandler) GetPublicProfile(c *gin.Context) {
 
 	profile, err := h.followService.GetPublicProfile(req.UserID)
 	if err != nil {
-		response.NotFound(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -167,7 +167,7 @@ func (h *UserFollowHandler) ListFollowing(c *gin.Context) {
 
 	result, err := h.followService.ListFollowing(req.UserID, &req.ListFollowsRequest)
 	if err != nil {
-		response.InternalError(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
