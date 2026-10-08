@@ -62,6 +62,8 @@ func (s *SettingService) UpdateSettings(items []UpdateSettingItem, operatorID ui
 		return nil, errors.New("更新项不能为空")
 	}
 
+	// 先行校验全部条目再单事务写回，拒绝路径不产生写入，写回路径不会留下半程状态。
+	updates := make([]*model.Setting, 0, len(items))
 	for _, item := range items {
 		// 读取现有设置项，不存在或只读时拒绝更新。
 		setting, err := s.settingRepo.GetByKey(item.KeyName)
@@ -78,9 +80,11 @@ func (s *SettingService) UpdateSettings(items []UpdateSettingItem, operatorID ui
 
 		setting.Value = item.Value
 		setting.UpdatedBy = &operatorID
-		if err := s.settingRepo.Upsert(setting); err != nil {
-			return nil, err
-		}
+		updates = append(updates, setting)
+	}
+
+	if err := s.settingRepo.UpsertBatch(updates); err != nil {
+		return nil, err
 	}
 
 	return s.ListSettings()

@@ -18,6 +18,7 @@ type SettingRepositoryInterface interface {
 	GetPublic() ([]*model.Setting, error)
 	List() ([]*model.Setting, error)
 	Upsert(setting *model.Setting) error
+	UpsertBatch(items []*model.Setting) error
 }
 
 // SettingRepository 设置仓储实现
@@ -64,7 +65,29 @@ func (r *SettingRepository) List() ([]*model.Setting, error) {
 
 // Upsert 按键名新增或更新设置项。
 func (r *SettingRepository) Upsert(setting *model.Setting) error {
-	if err := r.db.Where("key_name = ?", setting.KeyName).
+	if err := upsertSettingTx(r.db, setting); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpsertBatch 在单个事务内批量写回设置项。
+// 任意一项失败即整体回滚，循环中途失败不留下半程生效的设置。
+func (r *SettingRepository) UpsertBatch(items []*model.Setting) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		for _, setting := range items {
+			if err := upsertSettingTx(tx, setting); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// upsertSettingTx 独立实现与事务路径共用的按键名新增或更新逻辑。
+// 句柄由调用方传入，事务内所有操作走同一事务句柄。
+func upsertSettingTx(db *gorm.DB, setting *model.Setting) error {
+	if err := db.Where("key_name = ?", setting.KeyName).
 		Assign(setting).
 		FirstOrCreate(setting).Error; err != nil {
 		return fmt.Errorf("保存设置项失败: %w", err)
