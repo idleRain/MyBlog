@@ -22,6 +22,8 @@ type fakeCommentRepo struct {
 	updateStatus   func(id uint, status model.CommentStatus) error
 	incrementReply func(id uint) error
 	decrementReply func(id uint) error
+	// withCountsCalls 记录事务化写库路径的触达次数，验证评论计数维护已并入事务。
+	withCountsCalls int
 }
 
 func (f *fakeCommentRepo) GetByID(id uint) (*model.Comment, error) {
@@ -40,6 +42,24 @@ func (f *fakeCommentRepo) Create(comment *model.Comment) error {
 	comment.ID = uint(len(f.comments) + 1)
 	f.comments = append(f.comments, comment)
 	return nil
+}
+
+// CreateWithCounts 事务化创建的替身实现，记录事务路径被触达的次数。
+func (f *fakeCommentRepo) CreateWithCounts(comment *model.Comment) error {
+	f.withCountsCalls++
+	return f.Create(comment)
+}
+
+// DeleteWithCounts 事务化删除的替身实现，记录事务路径被触达的次数。
+func (f *fakeCommentRepo) DeleteWithCounts(comment *model.Comment) error {
+	f.withCountsCalls++
+	for i, existing := range f.comments {
+		if existing.ID == comment.ID {
+			f.comments = append(f.comments[:i], f.comments[i+1:]...)
+			return nil
+		}
+	}
+	return domain.ErrCommentNotFound
 }
 
 func (f *fakeCommentRepo) UpdateStatus(id uint, status model.CommentStatus) error {
@@ -272,6 +292,44 @@ func TestCreateCommentAutoApprove(t *testing.T) {
 	}
 	if comment.Status != model.CommentStatusApproved {
 		t.Errorf("Status = %s, 期望 approved", comment.Status)
+	}
+}
+
+// TestCreateCommentMaintainsCountInTransaction 验证评论创建与评论计数维护同批交付。
+func TestCreateCommentMaintainsCountInTransaction(t *testing.T) {
+	commentRepo := &fakeCommentRepo{}
+	svc := commentTestService(commentRepo, publishedCommentArticleRepo())
+
+	userID := uint(7)
+	if _, err := svc.CreateComment(&CreateCommentRequest{ArticleID: 1, Content: "计数评论"}, &userID); err != nil {
+		t.Fatalf("创建评论失败: %v", err)
+	}
+
+	// 计数维护必须并入创建事务路径，不再走独立的关联更新调用。
+	if commentRepo.withCountsCalls != 1 {
+		t.Errorf("创建评论应触达一次事务化路径，实际 %d 次", commentRepo.withCountsCalls)
+	}
+}
+
+// TestDeleteCommentMaintainsCountInTransaction 验证评论删除与关联计数回退同批交付。
+func TestDeleteCommentMaintainsCountInTransaction(t *testing.T) {
+	commentRepo := &fakeCommentRepo{
+		comments: []*model.Comment{
+			{ID: 1, ArticleID: 1, Content: "待删除评论", Status: model.CommentStatusApproved},
+		},
+	}
+	svc := commentTestService(commentRepo, &fakeArticleRepo{})
+
+	if err := svc.DeleteComment(1, 1); err != nil {
+		t.Fatalf("删除评论失败: %v", err)
+	}
+
+	// 删除时文章评论计数由同一事务重算。
+	if commentRepo.withCountsCalls != 1 {
+		t.Errorf("删除评论应触达一次事务化路径，实际 %d 次", commentRepo.withCountsCalls)
+	}
+	if len(commentRepo.comments) != 0 {
+		t.Error("删除后评论记录应被移除")
 	}
 }
 

@@ -439,11 +439,9 @@ func (r *ArticleRepository) RecordViewWithStats(view *model.ArticleView, content
 	})
 }
 
-// UpdateCommentCount 更新评论数
+// UpdateCommentCount 以关联评论数重算文章评论计数。
 func (r *ArticleRepository) UpdateCommentCount(id uint) error {
-	return r.db.Model(&model.Article{}).
-		Where("id = ?", id).
-		UpdateColumn("comment_count", gorm.Expr("(SELECT COUNT(*) FROM comments WHERE article_id = ? AND deleted_at IS NULL)", id)).Error
+	return updateArticleCommentCountTx(r.db, id)
 }
 
 // AddLike 添加点赞记录，依赖唯一索引防重复，返回是否新增并递增点赞计数。

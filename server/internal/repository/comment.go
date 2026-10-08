@@ -33,6 +33,10 @@ type CommentRepositoryInterface interface {
 	// 计数维护
 	IncrementReplyCount(id uint) error
 	DecrementReplyCount(id uint) error
+
+	// 事务化写库路径，创建与删除在单事务内完成关联计数维护
+	CreateWithCounts(comment *model.Comment) error
+	DeleteWithCounts(comment *model.Comment) error
 }
 
 // CommentListParams 评论列表查询参数
@@ -240,14 +244,80 @@ func (r *CommentRepository) RemoveLike(commentID, userID uint) (bool, error) {
 
 // IncrementReplyCount 递增评论回复数。
 func (r *CommentRepository) IncrementReplyCount(id uint) error {
-	return r.db.Model(&model.Comment{}).
-		Where("id = ?", id).
-		UpdateColumn("reply_count", gorm.Expr("reply_count + 1")).Error
+	return incrementReplyCountTx(r.db, id)
 }
 
 // DecrementReplyCount 递减评论回复数，回复数不小于零。
 func (r *CommentRepository) DecrementReplyCount(id uint) error {
-	return r.db.Model(&model.Comment{}).
+	return decrementReplyCountTx(r.db, id)
+}
+
+// CreateWithCounts 在单事务内创建评论并同步维护关联计数。
+// 文章评论数按关联评论重算，回复评论时父评论回复数递增；
+// 任一关联写库失败即整体回滚，通知等副产物由服务层在事务外处理。
+func (r *CommentRepository) CreateWithCounts(comment *model.Comment) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(comment).Error; err != nil {
+			return fmt.Errorf("创建评论失败: %w", err)
+		}
+		if comment.ParentID != nil {
+			if err := incrementReplyCountTx(tx, *comment.ParentID); err != nil {
+				return err
+			}
+		}
+		if err := updateArticleCommentCountTx(tx, comment.ArticleID); err != nil {
+			return fmt.Errorf("更新文章评论数失败: %w", err)
+		}
+		return nil
+	})
+}
+
+// DeleteWithCounts 在单事务内删除评论并同步回退关联计数。
+// 文章评论数按关联评论重算，删除回复时父评论回复数回退且回退不产生负值。
+func (r *CommentRepository) DeleteWithCounts(comment *model.Comment) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&model.Comment{}, comment.ID).Error; err != nil {
+			return fmt.Errorf("删除评论失败: %w", err)
+		}
+		if comment.ParentID != nil {
+			if err := decrementReplyCountTx(tx, *comment.ParentID); err != nil {
+				return err
+			}
+		}
+		if err := updateArticleCommentCountTx(tx, comment.ArticleID); err != nil {
+			return fmt.Errorf("更新文章评论数失败: %w", err)
+		}
+		return nil
+	})
+}
+
+// incrementReplyCountTx 在传入句柄上递增父评论回复数，独立与事务路径共用同一实现。
+func incrementReplyCountTx(db *gorm.DB, id uint) error {
+	if err := db.Model(&model.Comment{}).
 		Where("id = ?", id).
-		UpdateColumn("reply_count", gorm.Expr("CASE WHEN reply_count > 0 THEN reply_count - 1 ELSE 0 END")).Error
+		UpdateColumn("reply_count", gorm.Expr("reply_count + 1")).Error; err != nil {
+		return fmt.Errorf("递增回复数失败: %w", err)
+	}
+	return nil
+}
+
+// decrementReplyCountTx 在传入句柄上回退父评论回复数，CASE 条件保证不产生负值。
+func decrementReplyCountTx(db *gorm.DB, id uint) error {
+	if err := db.Model(&model.Comment{}).
+		Where("id = ?", id).
+		UpdateColumn("reply_count", gorm.Expr("CASE WHEN reply_count > 0 THEN reply_count - 1 ELSE 0 END")).Error; err != nil {
+		return fmt.Errorf("回退回复数失败: %w", err)
+	}
+	return nil
+}
+
+// updateArticleCommentCountTx 重算指定文章的评论计数，供文章与评论两域的事务共用。
+// 计数来自关联评论的实数统计，杜绝独立增减同步漂移。
+func updateArticleCommentCountTx(db *gorm.DB, articleID uint) error {
+	if err := db.Model(&model.Article{}).
+		Where("id = ?", articleID).
+		UpdateColumn("comment_count", gorm.Expr("(SELECT COUNT(*) FROM comments WHERE article_id = ? AND deleted_at IS NULL)", articleID)).Error; err != nil {
+		return fmt.Errorf("更新文章评论数失败: %w", err)
+	}
+	return nil
 }

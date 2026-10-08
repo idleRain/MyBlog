@@ -263,18 +263,6 @@ func (a *Article) IncrementViewCount() {
 	a.ViewCount++
 }
 
-// IncrementCommentCount 增加评论数
-func (a *Article) IncrementCommentCount() {
-	a.CommentCount++
-}
-
-// DecrementCommentCount 减少评论数
-func (a *Article) DecrementCommentCount() {
-	if a.CommentCount > 0 {
-		a.CommentCount--
-	}
-}
-
 // IncrementVersion 递增内容版本号，保存正文快照后调用。
 func (a *Article) IncrementVersion() {
 	a.Version++

@@ -183,15 +183,9 @@ func (s *CommentService) CreateComment(req *CreateCommentRequest, userID *uint) 
 		}
 	}
 
-	if err := s.commentRepo.Create(comment); err != nil {
+	// 创建与关联计数维护在同一事务内落库，半程写入由事务回滚保证不产生。
+	if err := s.commentRepo.CreateWithCounts(comment); err != nil {
 		return nil, fmt.Errorf("创建评论失败: %w", err)
-	}
-
-	// 回复评论时递增父评论的回复计数。
-	if comment.ParentID != nil {
-		if err := s.commentRepo.IncrementReplyCount(*comment.ParentID); err != nil {
-			return nil, err
-		}
 	}
 
 	s.notifyParentAuthor(parent, comment, article.Slug, userID)
@@ -325,15 +319,9 @@ func (s *CommentService) DeleteComment(id uint, operatorID uint) error {
 	if err != nil {
 		return err
 	}
-	if err := s.commentRepo.Delete(id); err != nil {
-		return err
-	}
 
-	// 删除回复评论时回退父评论的回复计数。
-	if comment.ParentID != nil {
-		return s.commentRepo.DecrementReplyCount(*comment.ParentID)
-	}
-	return nil
+	// 删除与回复计数回退、文章计数重算在同一事务内完成。
+	return s.commentRepo.DeleteWithCounts(comment)
 }
 
 // ListComments 管理端分页查询评论，经专用视图恢复审计字段。
