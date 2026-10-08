@@ -649,18 +649,15 @@ func (s *ArticleService) GetRelatedArticles(articleID uint, limit int) ([]*model
 		}
 	}
 
-	// 如果还不够，获取同标签的文章
+	// 如果还不够，获取同标签的文章，一条 IN 查询替代逐标签循环。
 	if len(relatedArticles) < limit && len(article.Tags) > 0 {
+		tagIDs := make([]uint, 0, len(article.Tags))
 		for _, tag := range article.Tags {
-			if len(relatedArticles) >= limit {
-				break
-			}
+			tagIDs = append(tagIDs, tag.ID)
+		}
 
-			articles, _, err := s.articleRepo.GetByTag(tag.ID, params)
-			if err != nil {
-				continue
-			}
-
+		articles, _, err := s.articleRepo.GetByTags(tagIDs, params)
+		if err == nil {
 			for _, a := range articles {
 				if a.ID != articleID && !containsArticle(relatedArticles, a.ID) && len(relatedArticles) < limit {
 					relatedArticles = append(relatedArticles, a)
@@ -673,49 +670,65 @@ func (s *ArticleService) GetRelatedArticles(articleID uint, limit int) ([]*model
 }
 
 // GetArticleArchives 获取按年月分组的公开文章归档。
+// 分组计数由 SQL 聚合产生，文章行按最小列集查询，避免该接口随文章量线性放大实体与关联加载。
 func (s *ArticleService) GetArticleArchives() ([]ArticleArchiveYear, error) {
-	articles, err := s.articleRepo.ListArchives()
+	groups, err := s.articleRepo.ListArchiveGroups()
 	if err != nil {
 		return nil, err
 	}
 
-	return groupArticlesByYearMonth(articles), nil
-}
-
-// groupArticlesByYearMonth 将按发布时间倒序的文章按年与月两级分组，缺失发布时间的记录跳过。
-func groupArticlesByYearMonth(articles []*model.Article) []ArticleArchiveYear {
-	groups := make([]ArticleArchiveYear, 0)
-	yearIndex := make(map[int]int)
-	monthIndex := make(map[int]map[int]int)
-
-	for _, article := range articles {
-		if article.PublishedAt == nil {
-			continue
-		}
-
-		year := article.PublishedAt.Year()
-		month := int(article.PublishedAt.Month())
-
-		yearPos, exists := yearIndex[year]
-		if !exists {
-			yearPos = len(groups)
-			yearIndex[year] = yearPos
-			monthIndex[year] = make(map[int]int)
-			groups = append(groups, ArticleArchiveYear{Year: year})
-		}
-
-		monthPos, exists := monthIndex[year][month]
-		if !exists {
-			monthPos = len(groups[yearPos].Months)
-			monthIndex[year][month] = monthPos
-			groups[yearPos].Months = append(groups[yearPos].Months, ArticleArchiveMonth{Month: month})
-		}
-
-		groups[yearPos].Months[monthPos].Articles = append(groups[yearPos].Months[monthPos].Articles, article)
-		groups[yearPos].Total++
+	rows, err := s.articleRepo.ListArchiveRows()
+	if err != nil {
+		return nil, err
 	}
 
-	return groups
+	return buildArticleArchives(groups, rows), nil
+}
+
+// buildArticleArchives 以聚合分组计数与最小列集文章行装配归档分组。
+// 行数据已在仓储层按发布时间倒序，月内文章顺序由行序自然带上；未发布或无发布时间的行不进入归档。
+func buildArticleArchives(groups []repository.ArticleArchiveGroup, rows []*model.Article) []ArticleArchiveYear {
+	archives := make([]ArticleArchiveYear, 0, len(groups))
+	yearIndex := make(map[int]int)
+	monthIndex := make(map[int]map[int]int)
+	// rowsByYearMonth 以年月为索引归集文章行，保证聚合计数与装配结果一一对应。
+	rowsByYearMonth := make(map[string][]*model.Article)
+
+	for _, row := range rows {
+		if row.PublishedAt == nil {
+			continue
+		}
+		key := archiveYearMonthKey(row.PublishedAt.Year(), int(row.PublishedAt.Month()))
+		rowsByYearMonth[key] = append(rowsByYearMonth[key], row)
+	}
+
+	for _, group := range groups {
+		yearPos, exists := yearIndex[group.Year]
+		if !exists {
+			yearPos = len(archives)
+			yearIndex[group.Year] = yearPos
+			monthIndex[group.Year] = make(map[int]int)
+			archives = append(archives, ArticleArchiveYear{Year: group.Year})
+		}
+
+		monthPos, exists := monthIndex[group.Year][group.Month]
+		if !exists {
+			monthPos = len(archives[yearPos].Months)
+			monthIndex[group.Year][group.Month] = monthPos
+			archives[yearPos].Months = append(archives[yearPos].Months, ArticleArchiveMonth{Month: group.Month})
+		}
+
+		key := archiveYearMonthKey(group.Year, group.Month)
+		archives[yearPos].Months[monthPos].Articles = rowsByYearMonth[key]
+		archives[yearPos].Total += int(group.Total)
+	}
+
+	return archives
+}
+
+// archiveYearMonthKey 生成「年-月」的受控键值格式，保证分组装配的索引一致。
+func archiveYearMonthKey(year, month int) string {
+	return fmt.Sprintf("%d-%d", year, month)
 }
 
 // ViewArticle 记录文章浏览：计数递增、访客明细与日统计在同一事务内完成，

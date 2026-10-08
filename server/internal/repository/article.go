@@ -29,12 +29,16 @@ type ArticleRepositoryInterface interface {
 	GetByAuthor(authorID uint, params *ArticleListParams) ([]*model.Article, int64, error)
 	GetByCategory(categoryID uint, params *ArticleListParams) ([]*model.Article, int64, error)
 	GetByTag(tagID uint, params *ArticleListParams) ([]*model.Article, int64, error)
+	GetByTags(tagIDs []uint, params *ArticleListParams) ([]*model.Article, int64, error)
 	Search(keyword string, params *ArticleListParams) ([]*model.Article, int64, error)
 
 	// 统计操作
 	GetPopular(limit int) ([]*model.Article, error)
 	GetRecent(limit int) ([]*model.Article, error)
-	ListArchives() ([]*model.Article, error)
+	// ListArchiveGroups 以 SQL 侧聚合返回已发布文章的年月分组计数。
+	ListArchiveGroups() ([]ArticleArchiveGroup, error)
+	// ListArchiveRows 查询归档所需的最小列集文章行，避免全列与多重关联加载。
+	ListArchiveRows() ([]*model.Article, error)
 	RecordArticleView(view *model.ArticleView) error
 	IncrementViewCount(id uint) error
 	// RecordViewWithStats 在单事务内完成浏览计数递增、访客明细与内容日统计三段写入。
@@ -313,6 +317,40 @@ func (r *ArticleRepository) GetByTag(tagID uint, params *ArticleListParams) ([]*
 	return articles, total, nil
 }
 
+// GetByTags 单次查询按标签集合取候选文章，以一条 IN 子句替代逐标签循环。
+// 同一文章挂多个目标标签时经 DISTINCT 去重，分页与排序与其余列表共用同一装配。
+func (r *ArticleRepository) GetByTags(tagIDs []uint, params *ArticleListParams) ([]*model.Article, int64, error) {
+	if len(tagIDs) == 0 {
+		return nil, 0, nil
+	}
+
+	query := withTranslationPreloads(r.db.Model(&model.Article{}).
+		Preload("Author").
+		Preload("Category").
+		Preload("Tags")).
+		Distinct().
+		Joins("JOIN article_tags ON article_tags.article_id = articles.id").
+		Where("article_tags.tag_id IN ?", tagIDs)
+
+	// 应用其他筛选条件
+	query = r.applyFilters(query, params)
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	query = r.applyPagination(query, params)
+	query = r.applySorting(query, params)
+
+	var articles []*model.Article
+	if err := query.Find(&articles).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return articles, total, nil
+}
+
 // Search 全文搜索文章，基于 ngram 全文索引匹配标题、内容与摘要。
 func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([]*model.Article, int64, error) {
 	if keyword == "" {
@@ -345,19 +383,42 @@ func (r *ArticleRepository) Search(keyword string, params *ArticleListParams) ([
 	return articles, total, nil
 }
 
+// ArticleArchiveGroup 归档聚合行，year 与 month 为 SQL 分组结果，total 为该年月计数。
+// 字段别名对齐 Select 表达式，Scan 直收。
+type ArticleArchiveGroup struct {
+	Year  int   `json:"year"`
+	Month int   `json:"month"`
+	Total int64 `json:"total"`
+}
+
 // ListArchives 查询全部已发布文章用于归档分组，按发布时间倒序。
-func (r *ArticleRepository) ListArchives() ([]*model.Article, error) {
-	var articles []*model.Article
-	err := withTranslationPreloads(r.db.Model(&model.Article{}).
-		Preload("Author").
-		Preload("Category").
-		Preload("Categories").
-		Preload("Tags")).
+func (r *ArticleRepository) ListArchiveGroups() ([]ArticleArchiveGroup, error) {
+	var groups []ArticleArchiveGroup
+	err := r.db.Model(&model.Article{}).
+		Select("YEAR(published_at) AS year, MONTH(published_at) AS month, COUNT(*) AS total").
 		Where("status = ?", model.ArticleStatusPublished).
+		Where("published_at IS NOT NULL").
+		Group("year, month").
+		Order("year DESC, month DESC").
+		Scan(&groups).Error
+	if err != nil {
+		return nil, fmt.Errorf("聚合文章归档分组失败: %w", err)
+	}
+	return groups, nil
+}
+
+// ListArchiveRows 查询归档所需的最小列集文章行，按发布时间倒序。
+// 归档页仅消费六列文本与时间信息，原实现的四重关联 Preload 与全列传输均不必要。
+func (r *ArticleRepository) ListArchiveRows() ([]*model.Article, error) {
+	var articles []*model.Article
+	err := r.db.Model(&model.Article{}).
+		Select("articles.id", "articles.title", "articles.slug", "articles.summary", "articles.published_at", "articles.created_at").
+		Where("status = ?", model.ArticleStatusPublished).
+		Where("published_at IS NOT NULL").
 		Order("published_at DESC").
 		Find(&articles).Error
 	if err != nil {
-		return nil, fmt.Errorf("查询文章归档失败: %w", err)
+		return nil, fmt.Errorf("查询文章归档行失败: %w", err)
 	}
 	return articles, nil
 }

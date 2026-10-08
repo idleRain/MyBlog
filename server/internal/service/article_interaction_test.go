@@ -16,6 +16,9 @@ type fakeArticleRepo struct {
 	getByID             func(id uint) (*model.Article, error)
 	list                func(params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	getByAuthor         func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	getByCategory       func(categoryID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	getByTags           func(tagIDs []uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	getByTagsCalls      int
 	search              func(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	incrementView       func(id uint) error
 	recordView          func(view *model.ArticleView) error
@@ -27,6 +30,37 @@ type fakeArticleRepo struct {
 	existsLike          func(articleID, userID uint) (bool, error)
 	existsBookmark      func(articleID, userID uint) (bool, error)
 	listBookmarks       func(userID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	// archiveGroups 与 archiveRows 注入归档聚合行与文章行，替换旧的全量实体查询。
+	archiveGroups []repository.ArticleArchiveGroup
+	archiveRows   []*model.Article
+}
+
+func (f *fakeArticleRepo) GetByCategory(categoryID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	if f.getByCategory != nil {
+		return f.getByCategory(categoryID, params)
+	}
+	return nil, 0, errors.New("未实现的测试替身方法")
+}
+
+func (f *fakeArticleRepo) GetByTag(tagID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	return nil, 0, errors.New("未实现的测试替身方法")
+}
+
+// GetByTags 标签集合查询的替身实现，记录触达次数供「单次查询」断言使用。
+func (f *fakeArticleRepo) GetByTags(tagIDs []uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	f.getByTagsCalls++
+	if f.getByTags != nil {
+		return f.getByTags(tagIDs, params)
+	}
+	return nil, 0, errors.New("未实现的测试替身方法")
+}
+
+func (f *fakeArticleRepo) ListArchiveGroups() ([]repository.ArticleArchiveGroup, error) {
+	return f.archiveGroups, nil
+}
+
+func (f *fakeArticleRepo) ListArchiveRows() ([]*model.Article, error) {
+	return f.archiveRows, nil
 }
 
 func (f *fakeArticleRepo) List(params *repository.ArticleListParams) ([]*model.Article, int64, error) {
