@@ -1,6 +1,6 @@
-import type { ApiResponse } from '@myblog/shared'
 import type { AuthorPublic } from '@myblog/api/modules/user/types'
 import type { Article } from '@myblog/api/modules/article/types'
+import type { ApiResponse } from '@myblog/shared'
 
 // 评论审核状态枚举，与后端 model.CommentStatus 一致。
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'spam' | 'trash'

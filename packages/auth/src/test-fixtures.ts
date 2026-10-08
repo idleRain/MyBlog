@@ -61,10 +61,7 @@ export function installFakeBrowserEnv(): FakeBrowserEnv {
   return {
     seedSession(session) {
       // 全部字段按 JSON 序列化落盘，与 @myblog/shared 的 local 封装行为一致。
-      entries.set(
-        AUTH_USER_KEY,
-        JSON.stringify({ id: session.userId, username: session.username })
-      )
+      entries.set(AUTH_USER_KEY, JSON.stringify({ id: session.userId, username: session.username }))
       entries.set(AUTH_PERMISSIONS_KEY, JSON.stringify(session.permissions ?? []))
     },
 

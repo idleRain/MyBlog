@@ -1,4 +1,3 @@
-import type { KyInstance } from 'ky'
 import type {
   CategoryListResponse,
   CategoryResponse,
@@ -8,6 +7,7 @@ import type {
   ListCategoriesRequest,
   UpdateCategoryRequest
 } from './types.ts'
+import type { KyInstance } from 'ky'
 
 /**
  * 创建分类接口模块，依赖注入的 http 客户端由调用方提供。

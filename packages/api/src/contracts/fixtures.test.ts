@@ -3,13 +3,13 @@
 // 手写类型经 WidenLiteral 做同样放宽后，以 toExtend 单向断言金样本可赋给契约类型：
 // 金样本缺字段或字段类型不符、手写类型收窄时，tsc 类型检查即失败。
 // 本文件经 packages/api 的 typecheck 脚本挂入 contract:check，不再是无自动化覆盖的编译期断言。
-import { describe, expect, expectTypeOf, it } from 'vitest'
-import type { LoginData, UserListData } from '../modules/user/types'
-import type { Article } from '../modules/article/types'
-import loginSuccess from '../../../../contracts/fixtures/login.success.json'
 import loginWrongPassword from '../../../../contracts/fixtures/login.wrong-password.json'
-import usersList from '../../../../contracts/fixtures/users.list.json'
 import articleDetail from '../../../../contracts/fixtures/article.detail.json'
+import loginSuccess from '../../../../contracts/fixtures/login.success.json'
+import usersList from '../../../../contracts/fixtures/users.list.json'
+import type { LoginData, UserListData } from '../modules/user/types'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import type { Article } from '../modules/article/types'
 
 // 将字面量与联合类型放宽为对应基础类型，用于与 JSON 导入值的推导类型做精确比对。
 type WidenLiteral<T> = T extends string

@@ -1,10 +1,10 @@
-import type { KyInstance } from 'ky'
 import type {
   DeleteMediaResponse,
   ListMediaRequest,
   MediaListResponse,
   MediaResponse
 } from './types.ts'
+import type { KyInstance } from 'ky'
 
 /**
  * 创建媒体接口模块，依赖注入的 http 客户端由调用方提供。

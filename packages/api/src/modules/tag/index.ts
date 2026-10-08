@@ -1,4 +1,3 @@
-import type { KyInstance } from 'ky'
 import type {
   CreateTagRequest,
   DeleteTagResponse,
@@ -8,6 +7,7 @@ import type {
   TagResponse,
   UpdateTagRequest
 } from './types.ts'
+import type { KyInstance } from 'ky'
 
 /**
  * 创建标签接口模块，依赖注入的 http 客户端由调用方提供。

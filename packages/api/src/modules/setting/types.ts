@@ -1,5 +1,5 @@
-import type { ApiResponse } from '@myblog/shared'
 import type { User } from '@myblog/api/modules/user/types'
+import type { ApiResponse } from '@myblog/shared'
 
 // 设置值类型枚举
 export type SettingType = 'string' | 'number' | 'boolean' | 'json' | 'array'

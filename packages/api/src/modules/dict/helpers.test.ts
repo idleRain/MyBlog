@@ -16,8 +16,30 @@ function buildTagStatusGroup(): EnabledDictGroup {
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     items: [
-      { id: 1, typeId: 1, value: '1', label: '启用', description: '', status: 1, sortOrder: 1, extra: null, createdAt: '', updatedAt: '' },
-      { id: 2, typeId: 1, value: '0', label: '隐藏', description: '', status: 1, sortOrder: 2, extra: null, createdAt: '', updatedAt: '' }
+      {
+        id: 1,
+        typeId: 1,
+        value: '1',
+        label: '启用',
+        description: '',
+        status: 1,
+        sortOrder: 1,
+        extra: null,
+        createdAt: '',
+        updatedAt: ''
+      },
+      {
+        id: 2,
+        typeId: 1,
+        value: '0',
+        label: '隐藏',
+        description: '',
+        status: 1,
+        sortOrder: 2,
+        extra: null,
+        createdAt: '',
+        updatedAt: ''
+      }
     ]
   }
 }

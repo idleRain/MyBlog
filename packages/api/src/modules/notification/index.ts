@@ -1,10 +1,10 @@
-import type { KyInstance } from 'ky'
 import type {
   ListNotificationsRequest,
   NotificationActionResponse,
   NotificationListResponse,
   UnreadCountResponse
 } from './types.ts'
+import type { KyInstance } from 'ky'
 
 /**
  * 创建通知接口模块，依赖注入的 http 客户端由调用方提供。

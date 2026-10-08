@@ -1,5 +1,5 @@
-import type { KyInstance } from 'ky'
 import type { StatsOverviewResponse, TrendResponseData } from './types.ts'
+import type { KyInstance } from 'ky'
 
 /**
  * 创建站点统计接口模块，依赖注入的 http 客户端由调用方提供。

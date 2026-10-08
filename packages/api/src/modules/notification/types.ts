@@ -1,5 +1,5 @@
-import type { ApiResponse } from '@myblog/shared'
 import type { User } from '@myblog/api/modules/user/types'
+import type { ApiResponse } from '@myblog/shared'
 
 // 通知类型枚举，与后端 model.Notification 的 type 取值一致。
 export type NotificationType =
