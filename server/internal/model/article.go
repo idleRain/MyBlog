@@ -106,7 +106,7 @@ type Article struct {
 	IsTop          bool           `json:"isTop" gorm:"default:false;index;comment:是否置顶"`
 	CommentEnabled bool           `json:"commentEnabled" gorm:"default:true;comment:是否允许评论"`
 	ViewCount      uint           `json:"viewCount" gorm:"default:0;index;comment:浏览量"`
-	LikeCount      uint           `json:"likeCount" gorm:"default:0;comment:点赞数"`
+	LikeCount      uint           `json:"likeCount" gorm:"default:0;index;comment:点赞数，支撑按点赞数排序的列表查询"`
 	BookmarkCount  uint           `json:"bookmarkCount" gorm:"default:0;comment:收藏数"`
 	CommentCount   uint           `json:"commentCount" gorm:"default:0;comment:评论数"`
 	WordCount      uint           `json:"wordCount" gorm:"default:0;comment:字数统计"`

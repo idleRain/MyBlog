@@ -20,7 +20,7 @@ type User struct {
 	Email             string            `json:"email" gorm:"uniqueIndex;not null;size:100;comment:邮箱地址，全局唯一"`
 	Phone             *string           `json:"phone,omitempty" gorm:"uniqueIndex;size:20;comment:手机号，全局唯一，未绑定时为空"`
 	Password          string            `json:"-" gorm:"not null;size:255;comment:密码，存储 bcrypt 哈希值"`
-	Nickname          string            `json:"nickname" gorm:"size:50;comment:用户昵称，为空时展示用户名"`
+	Nickname          string            `json:"nickname" gorm:"size:50;index;comment:用户昵称，为空时展示用户名"`
 	Avatar            string            `json:"avatar" gorm:"size:255;comment:头像URL"`
 	CoverImage        string            `json:"coverImage" gorm:"size:500;comment:个人主页封面图URL"`
 	Bio               string            `json:"bio" gorm:"type:text;comment:个人简介"`
