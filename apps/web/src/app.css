@@ -1,16 +1,8 @@
 /*
- * 样式入口：仅负责按序聚合字体、框架与本地样式模块，具体样式一律收录于 ./styles。
- * tokens 承载设计令牌，base 承载全局基础层，texture 与 markdown 为站点特性样式。
+ * 样式入口：仅负责按序聚合框架与本地样式模块，具体样式一律收录于 ./styles。
+ * 字体来源经 vite 的 #fonts 别名按构建模式注入（开发本地 fontsource / 生产 CDN），
+ * 本文件不再包含任何字体声明，详情见 src/lib/styles/fonts-local.ts 与 fonts-cdn.ts。
  */
-@import '@fontsource/fira-mono/latin-400.css';
-@import '@fontsource/fira-mono/latin-500.css';
-@import '@fontsource/fira-mono/latin-700.css';
-@import '@fontsource/noto-sans-sc/chinese-simplified-400.css';
-@import '@fontsource/noto-sans-sc/chinese-simplified-500.css';
-@import '@fontsource/noto-sans-sc/chinese-simplified-700.css';
-@import '@fontsource/noto-serif-sc/chinese-simplified-500.css';
-@import '@fontsource/noto-serif-sc/chinese-simplified-700.css';
-@import '@fontsource/noto-serif-sc/chinese-simplified-900.css';
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import './styles/tokens.css';

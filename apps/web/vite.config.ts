@@ -89,6 +89,11 @@ export default ({ mode }: ConfigEnv) => {
     },
     resolve: {
       alias: {
+        // 字体来源按构建模式切换：生产走 CDN 链接模块，开发走本地 fontsource。
+        // 方式与 D-6 决策一致（dev 本地 / prod CDN，构建期注入），本地字体不进入生产产物。
+        ...(mode === 'prod'
+          ? { '#fonts': fileURLToPath(new URL('./src/lib/styles/fonts-cdn.ts', import.meta.url)) }
+          : { '#fonts': fileURLToPath(new URL('./src/lib/styles/fonts-local.ts', import.meta.url)) }),
         $lib: fileURLToPath(new URL('./src/lib', import.meta.url))
       }
     }

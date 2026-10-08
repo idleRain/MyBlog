@@ -76,6 +76,9 @@ jobs:
       - name: 前端生产构建（前台与后台）
         run: pnpm run build:apps
 
+      - name: 字体产物体积门禁
+        run: node --import tsx scripts/check-font-bundle.ts
+
       - name: 格式检查（只读）
         run: pnpm run format:check
 
