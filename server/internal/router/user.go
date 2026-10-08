@@ -56,6 +56,15 @@ func (ur *UserRoutes) RegisterRoutes(api *gin.RouterGroup) {
 			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserDelete),
 			ur.userHandler.DeleteUser)
 
+		// 用户批量接口，管理端列表的批量操作一次请求完成，
+		// 业务规则与单删/单改一致，任一目标违规整批拒绝。
+		userGroup.POST("/batchDelete",
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserDelete),
+			ur.userHandler.BatchDeleteUsers)
+		userGroup.POST("/batchUpdateStatus",
+			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserUpdate),
+			ur.userHandler.BatchUpdateUserStatus)
+
 		// 用户列表接口，需要用户列表权限。
 		userGroup.POST("/list",
 			middleware.RequirePermission(ur.identity, ur.rbacService, service.PermissionUserList),

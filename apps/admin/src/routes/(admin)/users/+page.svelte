@@ -186,50 +186,38 @@ function requestBatchDelete() {
 }
 
 /**
- * 执行确认后的批量操作，按动作类型分发到状态切换或删除。
+ * 执行确认后的批量操作，单次请求交由后端原子处理。
+ * 后端在事务内完成，任一目标违规整批拒绝，前端仅接收整体成败。
  */
 async function executeBatch() {
   if (!batchConfirm || isBatchExecuting) return
   isBatchExecuting = true
 
-  let successCount = 0
-  if (batchConfirm.action === 'delete') {
-    for (const userId of selectedIds) {
-      try {
-        const response = await UserAPI.deleteUser(userId)
-        if (response.code === 200) successCount++
-      } catch (error) {
-        console.error('批量删除失败:', error)
-      }
-    }
-  } else {
-    const targetStatus = batchConfirm.action === 'enable' ? 1 : 0
-    for (const userId of selectedIds) {
-      const user = users.find(item => item.id === userId)
-      if (!user) continue
-      try {
-        const response = await UserAPI.updateUser({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          nickname: user.nickname || '',
-          role: user.role || 'user',
-          birthday: user.birthday || '',
-          status: targetStatus
-        })
-        if (response.code === 200) successCount++
-      } catch (error) {
-        console.error('批量切换状态失败:', error)
-      }
-    }
-  }
-
+  const ids = [...selectedIds]
   const label =
     batchConfirm.action === 'delete' ? '删除' : batchConfirm.action === 'enable' ? '启用' : '禁用'
-  toast.success(`成功${label} ${successCount} 个用户`)
-  batchConfirm = null
-  isBatchExecuting = false
-  loadUsers()
+
+  try {
+    const response =
+      batchConfirm.action === 'delete'
+        ? await UserAPI.batchDeleteUsers({ ids })
+        : await UserAPI.batchUpdateUserStatus({
+            ids,
+            status: batchConfirm.action === 'enable' ? 1 : 0
+          })
+    if (response.code === 200) {
+      toast.success(`批量${label}成功`)
+      batchConfirm = null
+    } else {
+      toast.error(response.message || `批量${label}失败`)
+    }
+  } catch (error) {
+    console.error('批量操作失败:', error)
+    toast.error('网络错误，请稍后重试')
+  } finally {
+    isBatchExecuting = false
+    loadUsers()
+  }
 }
 
 function toggleSelectAll() {

@@ -46,6 +46,10 @@ func (h *recordingUserHandler) GetUserList(c *gin.Context) {}
 
 func (h *recordingUserHandler) DeleteUser(c *gin.Context) {}
 
+func (h *recordingUserHandler) BatchDeleteUsers(c *gin.Context) {}
+
+func (h *recordingUserHandler) BatchUpdateUserStatus(c *gin.Context) {}
+
 func (h *recordingUserHandler) Login(c *gin.Context) {}
 
 func (h *recordingUserHandler) CreateSession(c *gin.Context) {}

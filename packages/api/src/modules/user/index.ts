@@ -1,4 +1,7 @@
 import type {
+  BatchDeleteUsersRequest,
+  BatchOperationResponse,
+  BatchUpdateStatusRequest,
   ChangePasswordRequest,
   ChangePasswordResponse,
   LoginRequest,
@@ -76,6 +79,16 @@ export function createUserAPI(request: KyInstance) {
       return request.post('users/delete', { json: { id } }).json()
     },
 
+    // 批量删除用户，任一目标违规整批拒绝，统一使用 POST 方法。
+    batchDeleteUsers(params: BatchDeleteUsersRequest): Promise<BatchOperationResponse> {
+      return request.post('users/batchDelete', { json: params }).json()
+    },
+
+    // 批量启用或禁用用户，统一使用 POST 方法。
+    batchUpdateUserStatus(params: BatchUpdateStatusRequest): Promise<BatchOperationResponse> {
+      return request.post('users/batchUpdateStatus', { json: params }).json()
+    },
+
     // 刷新令牌
     refreshToken(params: RefreshTokenRequest): Promise<RefreshTokenResponse> {
       return request.post('auth/refresh', { json: params }).json()
@@ -101,6 +114,9 @@ export function createUserAPI(request: KyInstance) {
 export type UserAPI = ReturnType<typeof createUserAPI>
 
 export type {
+  BatchDeleteUsersRequest,
+  BatchOperationResponse,
+  BatchUpdateStatusRequest,
   ChangePasswordRequest,
   ChangePasswordResponse,
   LoginRequest,

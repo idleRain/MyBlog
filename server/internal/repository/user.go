@@ -20,6 +20,9 @@ type UserRepository interface {
 	Update(user *domain.User) error
 	Delete(id uint) error
 	List(offset, limit int, keyword string) ([]*domain.User, int64, error)
+	ListByIDs(ids []uint) ([]*domain.User, error)
+	DeleteBatch(ids []uint) error
+	UpdateStatusBatch(ids []uint, status int) error
 	IncrementLoginFailures(id uint) error
 	LockUserAfterFailures(id uint, maxAttempts uint, lockedUntil time.Time) (bool, error)
 	ResetLoginFailures(id uint) error
@@ -152,6 +155,38 @@ func (r *userRepository) ResetLoginFailures(id uint) error {
 		Select("failed_login_count", "locked_until").
 		Updates(domain.User{FailedLoginCount: 0, LockedUntil: nil}).Error; err != nil {
 		return fmt.Errorf("重置登录失败计数失败: %w", err)
+	}
+	return nil
+}
+
+// ListByIDs 按 ID 集合一次性查询用户，供批量操作的业务规则预校验。
+func (r *userRepository) ListByIDs(ids []uint) ([]*domain.User, error) {
+	var users []*domain.User
+	if err := r.db.Where("id IN ?", ids).Find(&users).Error; err != nil {
+		return nil, fmt.Errorf("查询用户集合失败: %w", err)
+	}
+	return users, nil
+}
+
+// DeleteBatch 批量删除用户，单条 IN 语句原子生效，采用与单删一致的软删除。
+func (r *userRepository) DeleteBatch(ids []uint) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	if err := r.db.Delete(&domain.User{}, ids).Error; err != nil {
+		return fmt.Errorf("批量删除用户失败: %w", err)
+	}
+	return nil
+}
+
+// UpdateStatusBatch 批量更新用户状态，仅触碰状态列的单条语句，避免全字段覆盖。
+func (r *userRepository) UpdateStatusBatch(ids []uint, status int) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	if err := r.db.Model(&domain.User{}).Where("id IN ?", ids).
+		UpdateColumn("status", status).Error; err != nil {
+		return fmt.Errorf("批量更新用户状态失败: %w", err)
 	}
 	return nil
 }

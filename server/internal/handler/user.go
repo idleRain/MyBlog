@@ -24,11 +24,13 @@ type LogoutRequest struct {
 
 // UserHandlerInterface 用户处理器接口，由 router 层消费并注入。
 type UserHandlerInterface interface {
-	CreateUser(c *gin.Context)     // POST /api/users/create - JSON格式
-	UpdateUser(c *gin.Context)     // POST /api/users/update - JSON格式
-	GetUserByID(c *gin.Context)    // POST /api/users/get - JSON格式
-	GetUserList(c *gin.Context)    // POST /api/users/list - JSON格式，用于复杂参数查询
-	DeleteUser(c *gin.Context)     // POST /api/users/delete - JSON格式
+	CreateUser(c *gin.Context)  // POST /api/users/create - JSON格式
+	UpdateUser(c *gin.Context)  // POST /api/users/update - JSON格式
+	GetUserByID(c *gin.Context) // POST /api/users/get - JSON格式
+	GetUserList(c *gin.Context) // POST /api/users/list - JSON格式，用于复杂参数查询
+	DeleteUser(c *gin.Context)  // POST /api/users/delete - JSON格式
+	BatchDeleteUsers(c *gin.Context)
+	BatchUpdateUserStatus(c *gin.Context)
 	Login(c *gin.Context)          // POST /api/users/login - JSON格式
 	CreateSession(c *gin.Context)  // POST /api/auth/session - 建立并续期会话 Cookie
 	RefreshToken(c *gin.Context)   // POST /api/auth/refresh - JSON格式，Header 通道过渡保留
@@ -237,6 +239,97 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 	}
 
 	response.SuccessWithMessage(c, "用户删除成功", nil)
+}
+
+// BatchDeleteUsers 批量删除用户 POST /api/users/batchDelete
+// 逐项复用单删的业务规则（自删与角色管理保护），任一目标违规整批拒绝。
+func (h *UserHandler) BatchDeleteUsers(c *gin.Context) {
+	type BatchDeleteRequest struct {
+		IDs []uint `json:"ids" binding:"required,min=1,max=100,dive,min=1"`
+	}
+
+	var req BatchDeleteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	currentUserID, operOK := h.requireOperator(c)
+	if !operOK {
+		return
+	}
+	currentUserRole := h.operatorRole(c)
+	if currentUserRole == "" {
+		return
+	}
+
+	if err := h.userService.BatchDeleteUsers(req.IDs, currentUserID, currentUserRole); err != nil {
+		HandleServiceError(c, err)
+		return
+	}
+
+	response.SuccessWithMessage(c, "批量删除用户成功", nil)
+}
+
+// BatchUpdateUserStatus 批量启用或禁用用户 POST /api/users/batchUpdateStatus
+func (h *UserHandler) BatchUpdateUserStatus(c *gin.Context) {
+	type BatchUpdateStatusRequest struct {
+		IDs    []uint `json:"ids" binding:"required,min=1,max=100,dive,min=1"`
+		Status int    `json:"status" binding:"oneof=0 1"`
+	}
+
+	var req BatchUpdateStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "请求参数错误: "+err.Error())
+		return
+	}
+
+	currentUserID, operOK := h.requireOperator(c)
+	if !operOK {
+		return
+	}
+	currentUserRole := h.operatorRole(c)
+	if currentUserRole == "" {
+		return
+	}
+
+	if err := h.userService.BatchUpdateUserStatus(req.IDs, req.Status, currentUserID, currentUserRole); err != nil {
+		HandleServiceError(c, err)
+		return
+	}
+
+	response.SuccessWithMessage(c, "批量更新用户状态成功", nil)
+}
+
+// requireOperator 读取操作者身份，缺失时直接写回未授权响应。
+func (h *UserHandler) requireOperator(c *gin.Context) (uint, bool) {
+	currentUserID, userIDExists := c.Get("userID")
+	if !userIDExists {
+		response.Unauthorized(c, "无法获取用户ID信息")
+		return 0, false
+	}
+	userID, ok := currentUserID.(uint)
+	if !ok {
+		response.Unauthorized(c, "无法获取用户ID信息")
+		return 0, false
+	}
+	return userID, true
+}
+
+// operatorRole 读取操作者角色，缺失时直接写回未授权响应。
+// 返回空字符串表示响应已处理，调用方应直接返回。
+func (h *UserHandler) operatorRole(c *gin.Context) string {
+	currentUserRole, roleExists := c.Get("userRole")
+	if !roleExists {
+		response.Unauthorized(c, "无法获取用户权限信息")
+		return ""
+	}
+	role, ok := currentUserRole.(string)
+	if !ok {
+		response.Unauthorized(c, "无法获取用户权限信息")
+		return ""
+	}
+	return role
 }
 
 // Login 用户登录 POST /api/users/login

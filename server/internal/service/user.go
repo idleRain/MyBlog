@@ -34,6 +34,8 @@ type UserService interface {
 	GetUserByID(id uint) (*domain.User, error)
 	GetUserList(page, pageSize int, keyword string) ([]*domain.User, int64, error)
 	DeleteUser(id uint) error
+	BatchDeleteUsers(ids []uint, operatorID uint, operatorRole string) error
+	BatchUpdateUserStatus(ids []uint, status int, operatorID uint, operatorRole string) error
 	Login(username, password string) (*LoginResponse, error)
 	RefreshToken(refreshToken string) (*TokenPair, error)
 	Logout(accessToken, refreshToken string) error
@@ -285,6 +287,76 @@ func (s *userService) DeleteUser(id uint) error {
 	}
 
 	return nil
+}
+
+// batchUserMaxLimit 批量操作的单次人数上限，防止超大集合的单事务放大。
+const batchUserMaxLimit = 100
+
+// BatchDeleteUsers 批量删除用户，先逐项复用单删的业务规则再单事务原子删除。
+// 任一目标不可删除时整批拒绝，避免半程生效的删除状态。
+func (s *userService) BatchDeleteUsers(ids []uint, operatorID uint, operatorRole string) error {
+	if _, err := s.resolveBatchTargets(ids, operatorID, operatorRole); err != nil {
+		return err
+	}
+
+	if err := s.userRepo.DeleteBatch(ids); err != nil {
+		return fmt.Errorf("批量删除用户失败: %w", err)
+	}
+
+	return nil
+}
+
+// BatchUpdateUserStatus 批量启用或禁用用户，先逐项校验角色管理规则再单语句原子更新。
+// 仅开放启用与禁用两态，锁定状态由登录锁定机制专用，不在批量路径访问。
+func (s *userService) BatchUpdateUserStatus(ids []uint, status int, operatorID uint, operatorRole string) error {
+	if status != domain.UserStatusActive && status != domain.UserStatusInactive {
+		return fmt.Errorf("%w：仅允许批量启用或禁用", ErrInvalidRequest)
+	}
+
+	if _, err := s.resolveBatchTargets(ids, operatorID, operatorRole); err != nil {
+		return err
+	}
+
+	if err := s.userRepo.UpdateStatusBatch(ids, status); err != nil {
+		return fmt.Errorf("批量更新用户状态失败: %w", err)
+	}
+
+	return nil
+}
+
+// resolveBatchTargets 校验批量目标集合的公共业务规则并返回目标用户映射。
+// 校验覆盖：数量上限、是否存在、不能操作操作者本人、角色管理规则。
+func (s *userService) resolveBatchTargets(ids []uint, operatorID uint, operatorRole string) (map[uint]*domain.User, error) {
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("%w：批量操作的目标不能为空", ErrInvalidRequest)
+	}
+	if len(ids) > batchUserMaxLimit {
+		return nil, fmt.Errorf("%w：批量操作的单次人数不能超过 %d", ErrInvalidRequest, batchUserMaxLimit)
+	}
+
+	targets, err := s.userRepo.ListByIDs(ids)
+	if err != nil {
+		return nil, err
+	}
+	targetMap := make(map[uint]*domain.User, len(targets))
+	for _, target := range targets {
+		targetMap[target.ID] = target
+	}
+
+	for _, id := range ids {
+		if id == operatorID {
+			return nil, fmt.Errorf("%w：批量操作不能包含自己", ErrInvalidRequest)
+		}
+		target, exists := targetMap[id]
+		if !exists {
+			return nil, fmt.Errorf("%w：用户 %d 不存在", ErrInvalidRequest, id)
+		}
+		if !s.CanUserManageRole(operatorRole, target.Role) {
+			return nil, fmt.Errorf("%w：无法对角色 %s 执行批量操作", ErrPermissionDenied, target.Role)
+		}
+	}
+
+	return targetMap, nil
 }
 
 // GetProfile 获取当前登录用户的资料。

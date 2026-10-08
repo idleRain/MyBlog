@@ -231,6 +231,20 @@ export interface UserStats {
   disabledUsers: number
 }
 
+// 用户批量删除请求，单次集合上限由后端校验
+export interface BatchDeleteUsersRequest {
+  ids: number[]
+}
+
+// 用户批量状态请求，仅允许启用与禁用两态
+export interface BatchUpdateStatusRequest {
+  ids: number[]
+  status: 0 | 1
+}
+
+// 用户批量操作响应
+export type BatchOperationResponse = ApiResponse<null>
+
 // 仪表盘统计数据
 export interface DashboardStats {
   totalUsers: number
