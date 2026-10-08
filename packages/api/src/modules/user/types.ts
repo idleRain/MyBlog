@@ -77,6 +77,15 @@ export interface AuthorPublic {
   website: string
 }
 
+// 上传者公开信息窄化视图，与后端 domain.UploaderPublic 一致；
+// 媒体接口经此视图输出上传者公开字段，不携带 email 等个人信息。
+export interface UploaderPublic {
+  id: number
+  username: string
+  nickname: string
+  avatar: string
+}
+
 // 自助资料更新请求，字段显式传入才更新
 export interface UpdateProfileRequest {
   nickname?: string

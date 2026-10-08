@@ -100,6 +100,29 @@ func (u *User) GetRoleLevel() int {
 	}
 }
 
+// UploaderPublic 上传者公开信息窄化视图。
+// 媒体端点的响应不得直接序列化关联的 User 实体，须经本视图输出白名单字段，
+// 防止上传者 email 等个人信息随媒体文件关联泄露，见债务 D15。
+type UploaderPublic struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Avatar   string `json:"avatar"`
+}
+
+// NewUploaderPublic 从用户实体构建公开上传者视图，用户为空时返回空值。
+func NewUploaderPublic(user *User) *UploaderPublic {
+	if user == nil {
+		return nil
+	}
+	return &UploaderPublic{
+		ID:       user.ID,
+		Username: user.Username,
+		Nickname: user.Nickname,
+		Avatar:   user.Avatar,
+	}
+}
+
 // 定义用户角色常量
 type UserRole string
 

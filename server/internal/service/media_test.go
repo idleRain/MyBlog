@@ -154,6 +154,31 @@ func TestDeleteMediaOwnFile(t *testing.T) {
 	}
 }
 
+// TestGetMediaOwnership 验证媒体详情的水平越权防护，与列表的可见范围保持一致。
+func TestGetMediaOwnership(t *testing.T) {
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{
+			{ID: 1, UploaderID: 1, FilePath: "/tmp/a.png"},
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	// 非上传者、非管理员访问他人文件时按不存在同响应，防止经 ID 枚举探测。
+	if _, err := svc.GetMedia(1, 2, false); !errors.Is(err, domain.ErrMediaNotFound) {
+		t.Errorf("非上传者访问他人文件应按不存在处理，实际: %v", err)
+	}
+
+	// 上传者本人可读取自己的文件，作为归属性校验的防误伤断言。
+	if _, err := svc.GetMedia(1, 1, false); err != nil {
+		t.Errorf("上传者本人读取失败: %v", err)
+	}
+
+	// 管理员可读取任意文件。
+	if _, err := svc.GetMedia(1, 2, true); err != nil {
+		t.Errorf("管理员读取失败: %v", err)
+	}
+}
+
 // pngTestContent 构造可被内容嗅探识别为 image/png 的最小内容。
 var pngTestContent = append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0}, 8)...)
 

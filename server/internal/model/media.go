@@ -10,38 +10,55 @@ import (
 	"golang.org/x/text/language"
 
 	"gorm.io/gorm"
+
+	"MyBlog/internal/domain"
 )
 
 // MediaFile 媒体文件模型
 type MediaFile struct {
-	ID              uint           `json:"id" gorm:"primaryKey;comment:文件ID"`
-	Filename        string         `json:"filename" gorm:"not null;size:255;comment:原始文件名"`
-	StoredName      string         `json:"storedName" gorm:"uniqueIndex;not null;size:255;comment:存储文件名，UUID 命名"`
-	FilePath        string         `json:"filePath" gorm:"not null;size:500;comment:文件存储路径"`
-	FileURL         string         `json:"fileUrl" gorm:"not null;size:500;comment:文件访问URL"`
-	ThumbnailURL    string         `json:"thumbnailUrl" gorm:"size:500;comment:缩略图URL"`
-	MimeType        string         `json:"mimeType" gorm:"not null;size:100;index;comment:MIME类型"`
-	FileSize        uint64         `json:"fileSize" gorm:"not null;comment:文件大小，单位字节"`
-	FileHash        string         `json:"fileHash" gorm:"size:64;index;comment:文件SHA256哈希值，用于秒传与去重"`
-	Width           *uint          `json:"width" gorm:"comment:图片宽度，单位像素"`
-	Height          *uint          `json:"height" gorm:"comment:图片高度，单位像素"`
-	DurationSeconds uint           `json:"durationSeconds" gorm:"default:0;comment:音视频时长，单位秒，非媒体文件为 0"`
-	AltText         string         `json:"altText" gorm:"size:255;comment:替代文本，用于无障碍与SEO"`
-	Status          MediaStatus    `json:"status" gorm:"size:20;default:active;index;comment:文件状态：active-可用 processing-处理中 failed-处理失败 lost-文件丢失"`
-	ProcessedAt     *time.Time     `json:"processedAt" gorm:"type:datetime(3);comment:缩略图等后处理完成时间，为空表示尚未处理"`
-	UploaderID      uint           `json:"uploaderId" gorm:"not null;index;comment:上传者ID"`
-	UploadIP        string         `json:"uploadIP" gorm:"size:45;comment:上传IP地址"`
-	StorageType     StorageType    `json:"storageType" gorm:"default:local;size:20;index;comment:存储类型：local/oss/s3/cos"`
-	Folder          string         `json:"folder" gorm:"size:100;index;comment:文件夹分类"`
-	UsageCount      uint           `json:"usageCount" gorm:"default:0;comment:被正文引用次数，删除前需要校验"`
-	DownloadCount   uint           `json:"downloadCount" gorm:"default:0;comment:累计下载次数"`
-	IsPublic        bool           `json:"isPublic" gorm:"default:true;index;comment:是否公开访问"`
-	CreatedAt       time.Time      `json:"createdAt" gorm:"type:datetime(3);comment:创建时间"`
-	UpdatedAt       time.Time      `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
-	DeletedAt       gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
+	ID              uint        `json:"id" gorm:"primaryKey;comment:文件ID"`
+	Filename        string      `json:"filename" gorm:"not null;size:255;comment:原始文件名"`
+	StoredName      string      `json:"storedName" gorm:"uniqueIndex;not null;size:255;comment:存储文件名，UUID 命名"`
+	FilePath        string      `json:"filePath" gorm:"not null;size:500;comment:文件存储路径"`
+	FileURL         string      `json:"fileUrl" gorm:"not null;size:500;comment:文件访问URL"`
+	ThumbnailURL    string      `json:"thumbnailUrl" gorm:"size:500;comment:缩略图URL"`
+	MimeType        string      `json:"mimeType" gorm:"not null;size:100;index;comment:MIME类型"`
+	FileSize        uint64      `json:"fileSize" gorm:"not null;comment:文件大小，单位字节"`
+	FileHash        string      `json:"fileHash" gorm:"size:64;index;comment:文件SHA256哈希值，用于秒传与去重"`
+	Width           *uint       `json:"width" gorm:"comment:图片宽度，单位像素"`
+	Height          *uint       `json:"height" gorm:"comment:图片高度，单位像素"`
+	DurationSeconds uint        `json:"durationSeconds" gorm:"default:0;comment:音视频时长，单位秒，非媒体文件为 0"`
+	AltText         string      `json:"altText" gorm:"size:255;comment:替代文本，用于无障碍与SEO"`
+	Status          MediaStatus `json:"status" gorm:"size:20;default:active;index;comment:文件状态：active-可用 processing-处理中 failed-处理失败 lost-文件丢失"`
+	ProcessedAt     *time.Time  `json:"processedAt" gorm:"type:datetime(3);comment:缩略图等后处理完成时间，为空表示尚未处理"`
+	UploaderID      uint        `json:"uploaderId" gorm:"not null;index;comment:上传者ID"`
+	// UploadIP 上传者 IP 属审计字段，不随媒体接口输出，见债务 D15 的遮蔽纪律。
+	UploadIP      string         `json:"-" gorm:"size:45;comment:上传IP地址"`
+	StorageType   StorageType    `json:"storageType" gorm:"default:local;size:20;index;comment:存储类型：local/oss/s3/cos"`
+	Folder        string         `json:"folder" gorm:"size:100;index;comment:文件夹分类"`
+	UsageCount    uint           `json:"usageCount" gorm:"default:0;comment:被正文引用次数，删除前需要校验"`
+	DownloadCount uint           `json:"downloadCount" gorm:"default:0;comment:累计下载次数"`
+	IsPublic      bool           `json:"isPublic" gorm:"default:true;index;comment:是否公开访问"`
+	CreatedAt     time.Time      `json:"createdAt" gorm:"type:datetime(3);comment:创建时间"`
+	UpdatedAt     time.Time      `json:"updatedAt" gorm:"type:datetime(3);comment:更新时间"`
+	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Uploader User `json:"uploader" gorm:"foreignKey:UploaderID"`
+	// Uploader 上传者关联仅供服务端读取，对外输出经 UploaderPublic 窄化视图，防止上传者 email 泄露。
+	Uploader       User                   `json:"-" gorm:"foreignKey:UploaderID"`
+	UploaderPublic *domain.UploaderPublic `json:"uploader,omitempty" gorm:"-"`
+}
+
+// AfterFind 查询后从预加载的上传者关联同步公开上传者视图。
+// GORM 保证本钩子在 Preload 完成后执行，媒体输出始终经窄化视图而非 User 实体。
+func (m *MediaFile) AfterFind(_ *gorm.DB) error {
+	// 上传者关联未预加载时零值视图无意义，置空使 uploader 键整体省略。
+	if m.Uploader.ID == 0 {
+		m.UploaderPublic = nil
+		return nil
+	}
+	m.UploaderPublic = domain.NewUploaderPublic(&m.Uploader)
+	return nil
 }
 
 // TableName 指定表名

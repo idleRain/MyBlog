@@ -80,8 +80,18 @@ func (h *MediaHandler) GetMedia(c *gin.Context) {
 		return
 	}
 
-	media, err := h.mediaService.GetMedia(req.ID)
+	// 详情可见范围与列表一致，由操作者身份决定，未登录用户无法访问。
+	userID, ok := getOperatorID(c)
+	if !ok {
+		response.Unauthorized(c, "未登录")
+		return
+	}
+	isAdmin, _ := c.Get("isAdmin")
+	adminFlag, _ := isAdmin.(bool)
+
+	media, err := h.mediaService.GetMedia(req.ID, userID, adminFlag)
 	if err != nil {
+		// 无权访问按不存在同响应，防止经 ID 枚举探测他人文件。
 		if errors.Is(err, domain.ErrMediaNotFound) {
 			response.NotFound(c, err.Error())
 			return
@@ -106,7 +116,7 @@ func (h *MediaHandler) ListMedia(c *gin.Context) {
 	isAdmin, _ := c.Get("isAdmin")
 	adminFlag, _ := isAdmin.(bool)
 
-	// 未登录时默认按游客处理，仅能访问公开媒体，由服务层过滤。
+	// 列表可见范围与详情一致：非管理员仅返回自己上传的文件，未登录请求由路由权限中间件拦截。
 	var uploaderID *uint
 	if userIDOK {
 		uploaderID = &userID

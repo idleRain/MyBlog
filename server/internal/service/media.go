@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"MyBlog/internal/config"
+	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 
@@ -25,7 +26,7 @@ type MediaServiceInterface interface {
 	UploadFile(filename string, reader io.Reader, size int64, uploaderID uint, ipAddress string) (*model.MediaFile, error)
 
 	// 查询操作
-	GetMedia(id uint) (*model.MediaFile, error)
+	GetMedia(id uint, operatorID uint, isAdmin bool) (*model.MediaFile, error)
 	ListMedia(req *ListMediaRequest, uploaderID *uint, isAdmin bool) (*MediaListResponse, error)
 
 	// 删除操作
@@ -140,9 +141,19 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 	return s.mediaRepo.GetByID(media.ID)
 }
 
-// GetMedia 根据ID获取媒体文件。
-func (s *MediaService) GetMedia(id uint) (*model.MediaFile, error) {
-	return s.mediaRepo.GetByID(id)
+// GetMedia 根据ID获取媒体文件，可见范围与列表保持一致。
+// 非管理员仅能读取自己上传的文件；无权访问时按不存在同响应，防止经 ID 枚举探测他人文件。
+func (s *MediaService) GetMedia(id uint, operatorID uint, isAdmin bool) (*model.MediaFile, error) {
+	media, err := s.mediaRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// 非管理员 仅返回自己的文件，与 ListMedia 的归属过滤规则对称。
+	if !isAdmin && media.UploaderID != operatorID {
+		return nil, domain.ErrMediaNotFound
+	}
+	return media, nil
 }
 
 // ListMedia 分页查询媒体文件，非管理员仅能查看自己的文件。

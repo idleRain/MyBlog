@@ -1,5 +1,5 @@
+import type { UploaderPublic } from '@myblog/api/modules/user/types'
 import type { ApiResponse } from '@myblog/shared'
-import type { User } from '@myblog/api/modules/user/types'
 
 // 媒体文件状态枚举
 export type MediaStatus = 'active' | 'processing' | 'failed' | 'lost'
@@ -25,7 +25,6 @@ export interface MediaFile {
   status: MediaStatus
   processedAt: string | null
   uploaderId: number
-  uploadIP: string
   storageType: StorageType
   folder: string
   usageCount: number
@@ -33,7 +32,8 @@ export interface MediaFile {
   isPublic: boolean
   createdAt: string
   updatedAt: string
-  uploader: User
+  // 上传者经窄化视图输出；后端 omitempty 语义下未预加载关联时键整体缺省。
+  uploader?: UploaderPublic
 }
 
 // 媒体列表数据
