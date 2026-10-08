@@ -452,37 +452,47 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 	}, nil
 }
 
-// recordLoginFailure 累计连续登录失败次数，达到阈值时锁定账户一段时间。
-// 计数落库失败不掩盖原始的密码错误结果，仅代表本次计数未持久化。
+// recordLoginFailure 原子累计连续登录失败次数，达到阈值时写入锁定截止时间。
+// 计数自增与锁定写入均为条件更新语句，并发登录时不会互相覆盖，
+// 也不会经全字段写回把先到请求设置的锁定状态冲掉。
+// 落库失败不掩盖原始的密码错误结果，仅代表本次计数未持久化。
 func (s *userService) recordLoginFailure(user *domain.User) error {
-	user.FailedLoginCount++
-	locked := false
-	if s.lockoutPolicy.Enabled && user.FailedLoginCount >= s.lockoutPolicy.MaxFailedLogins {
-		lockedUntil := time.Now().Add(s.lockoutPolicy.LockDuration)
-		user.LockedUntil = &lockedUntil
-		locked = true
-	}
-
-	if err := s.userRepo.Update(user); err != nil {
+	if err := s.userRepo.IncrementLoginFailures(user.ID); err != nil {
 		return fmt.Errorf("密码错误")
 	}
 
-	if locked {
-		return fmt.Errorf("密码错误，失败次数过多，账户已被锁定，请稍后再试")
+	// 阈值判断由条件更新自身完成，返回落库成功标记用于选择响应文案。
+	if s.lockoutPolicy.Enabled {
+		lockedUntil := time.Now().Add(s.lockoutPolicy.LockDuration)
+		locked, err := s.userRepo.LockUserAfterFailures(user.ID, s.lockoutPolicy.MaxFailedLogins, lockedUntil)
+		if err != nil {
+			return fmt.Errorf("密码错误")
+		}
+		if locked {
+			// 同步内存实体，保证登录失败响应与库中状态一致，不写回其他字段。
+			user.LockedUntil = &lockedUntil
+			return fmt.Errorf("密码错误，失败次数过多，账户已被锁定，请稍后再试")
+		}
 	}
+
 	return fmt.Errorf("密码错误")
 }
 
 // resetLoginFailure 登录成功后清零失败计数并清除锁定截止时间。
+// 清零为仅更新登录相关列的原子语句，不做全字段覆盖；
 // 计数本就为零时跳过写库，写库失败不影响本次登录结果。
 func (s *userService) resetLoginFailure(user *domain.User) {
 	if user.FailedLoginCount == 0 && user.LockedUntil == nil {
 		return
 	}
 
+	if err := s.userRepo.ResetLoginFailures(user.ID); err != nil {
+		return
+	}
+
+	// 同步内存实体，登录响应携带的实体状态与库中保持一致。
 	user.FailedLoginCount = 0
 	user.LockedUntil = nil
-	_ = s.userRepo.Update(user)
 }
 
 // RefreshToken 刷新令牌，换取新令牌对前必须查库校验用户存在且状态正常，

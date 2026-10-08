@@ -4,6 +4,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"MyBlog/internal/domain"
 
@@ -19,6 +20,9 @@ type UserRepository interface {
 	Update(user *domain.User) error
 	Delete(id uint) error
 	List(offset, limit int, keyword string) ([]*domain.User, int64, error)
+	IncrementLoginFailures(id uint) error
+	LockUserAfterFailures(id uint, maxAttempts uint, lockedUntil time.Time) (bool, error)
+	ResetLoginFailures(id uint) error
 }
 
 // userRepository 用户仓库实现
@@ -116,4 +120,38 @@ func (r *userRepository) List(offset, limit int, keyword string) ([]*domain.User
 	}
 
 	return users, total, nil
+}
+
+// IncrementLoginFailures 原子累计连续登录失败次数。
+// 使用数据库侧自增表达式，并发登录时各次失败均被计入，不受读改写覆盖影响。
+func (r *userRepository) IncrementLoginFailures(id uint) error {
+	if err := r.db.Model(&domain.User{}).Where("id = ?", id).
+		UpdateColumn("failed_login_count", gorm.Expr("failed_login_count + 1")).Error; err != nil {
+		return fmt.Errorf("累计登录失败计数失败: %w", err)
+	}
+	return nil
+}
+
+// LockUserAfterFailures 在失败计数达到阈值时写入锁定截止时间。
+// 条件更新自身完成阈值判断，计数未达阈值时不写锁定，取消读回值带来的竞态窗口。
+// 返回是否真正写入锁定，供调用方选择对应响应文案。
+func (r *userRepository) LockUserAfterFailures(id uint, maxAttempts uint, lockedUntil time.Time) (bool, error) {
+	result := r.db.Model(&domain.User{}).
+		Where("id = ? AND failed_login_count >= ?", id, maxAttempts).
+		UpdateColumn("locked_until", lockedUntil)
+	if result.Error != nil {
+		return false, fmt.Errorf("写入账户锁定失败: %w", result.Error)
+	}
+	return result.RowsAffected > 0, nil
+}
+
+// ResetLoginFailures 登录成功后原子清零失败计数并清除锁定截止时间。
+// 仅更新登录相关列，避免全字段覆盖写回其他字段的陈旧内存值。
+func (r *userRepository) ResetLoginFailures(id uint) error {
+	if err := r.db.Model(&domain.User{}).Where("id = ?", id).
+		Select("failed_login_count", "locked_until").
+		Updates(domain.User{FailedLoginCount: 0, LockedUntil: nil}).Error; err != nil {
+		return fmt.Errorf("重置登录失败计数失败: %w", err)
+	}
+	return nil
 }
