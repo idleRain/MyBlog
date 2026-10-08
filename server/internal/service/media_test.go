@@ -5,6 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"log"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -232,5 +235,63 @@ func TestUploadFileKeepsExtensionWhenUnrestricted(t *testing.T) {
 	}
 	if !strings.HasSuffix(media.StoredName, ".txt") {
 		t.Errorf("白名单关闭时应保留原始扩展名，实际为 %s", media.StoredName)
+	}
+}
+
+// TestDeleteMediaLogsOrphanFileFailure 验证物理删除失败时事件写入日志且软删结果不受影响。
+func TestDeleteMediaLogsOrphanFileFailure(t *testing.T) {
+	// 物理路径指向一个非空目录，os.Remove 对非空目录返回错误且非不存在，
+	// 等价于删除受阻的孤儿场景。
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "keep.txt"), []byte("keep"), 0o644); err != nil {
+		t.Fatalf("构造非空目录失败: %v", err)
+	}
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{
+			{ID: 1, UploaderID: 1, FilePath: dir},
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	// 捕获标准 logger 输出，验证失败事件确实入日志。
+	logOutput := &bytes.Buffer{}
+	originalOutput := log.Writer()
+	log.SetOutput(logOutput)
+	defer log.SetOutput(originalOutput)
+
+	if err := svc.DeleteMedia(1, 1, false); err != nil {
+		t.Fatalf("物理删除失败不应阻塞软删结果: %v", err)
+	}
+
+	logged := logOutput.String()
+	if !strings.Contains(logged, "媒体物理文件删除失败") || !strings.Contains(logged, dir) {
+		t.Errorf("删除失败事件应携带路径入日志，实际为 %q", logged)
+	}
+
+	// 软删仍应执行：数据库侧记录被移除。
+	if got := len(repo.media); got != 0 {
+		t.Errorf("软删结果不应受物理删除失败影响，剩余记录 %d", got)
+	}
+}
+
+// TestDeleteMediaIgnoresMissingFile 验证物理文件已不存在时按完成处理，不产生孤儿告警。
+func TestDeleteMediaIgnoresMissingFile(t *testing.T) {
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{
+			{ID: 1, UploaderID: 1, FilePath: t.TempDir() + "/missing.png"},
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	logOutput := &bytes.Buffer{}
+	originalOutput := log.Writer()
+	log.SetOutput(logOutput)
+	defer log.SetOutput(originalOutput)
+
+	if err := svc.DeleteMedia(1, 1, false); err != nil {
+		t.Fatalf("文件已不存在时的删除不应失败: %v", err)
+	}
+	if strings.Contains(logOutput.String(), "媒体物理文件删除失败") {
+		t.Error("文件已不存在不构成孤儿事件，不应告警")
 	}
 }

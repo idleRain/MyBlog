@@ -4,8 +4,11 @@ package service
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -202,8 +205,10 @@ func (s *MediaService) DeleteMedia(id uint, operatorID uint, isAdmin bool) error
 		return fmt.Errorf("%w：删除此文件", ErrPermissionDenied)
 	}
 
-	// 删除物理文件，失败不影响数据库软删结果。
-	_ = os.Remove(media.FilePath)
+	// 删除物理文件，失败不阻塞数据库软删结果，但事件必须入日志供孤儿文件巡检。
+	if err := os.Remove(media.FilePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		log.Printf("[WARN] 媒体物理文件删除失败，可能成为孤儿文件：path=%s mediaId=%d err=%v", media.FilePath, media.ID, err)
+	}
 
 	return s.mediaRepo.Delete(id)
 }
