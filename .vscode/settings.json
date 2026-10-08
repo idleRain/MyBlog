@@ -5,6 +5,23 @@
   // Svelte
   "svelte.enable-ts-plugin": true,
 
+  // i18n Ally：仅前台 apps/web 使用 paraglide 多语言，词表按语言与命名空间分文件存放，
+  // 代码侧以 m['ui:site.name'] 形式取词，命名空间的冒号依赖 i18next 框架的键改写规则还原为点号。
+  "i18n-ally.localesPaths": ["apps/web/messages"],
+  "i18n-ally.sourceLanguage": "zh",
+  "i18n-ally.displayLanguage": "zh",
+  "i18n-ally.dirStructure": "dir",
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.namespace": true,
+  "i18n-ally.pathMatcher": "{locale}/{namespace}.json5",
+  "i18n-ally.enabledParsers": ["json5"],
+  // 启用 i18next 框架以获得冒号命名空间改写能力，启用 svelte 框架以覆盖 svelte 语言标识。
+  "i18n-ally.enabledFrameworks": ["i18next", "svelte"],
+  "i18n-ally.annotations": true,
+  "i18n-ally.annotationInPlace": true,
+  // paraglide 的 m['命名空间:键路径'] 取词形态不被默认规则识别，这里追加匹配规则。
+  "i18n-ally.regex.usageMatchAppend": ["(?:[^\\w$.]|^)m\\[['\"]({key})['\"]\\]"],
+
   // Go（编辑器内诊断与格式化交给 gopls，lint 由 lint:server 的 golangci-lint 负责）
   "go.formatTool": "default",
   "go.toolsManagement.autoUpdate": true,
@@ -28,9 +45,9 @@
   "editor.insertSpaces": true,
   "editor.rulers": [80, 100],
 
-  // TypeScript（与 prettier 无分号风格保持一致，import 排序交由 prettier 插件处理）
-  "typescript.preferences.noSemicolons": true,
-  "typescript.updateImportsOnFileMove.enabled": "always",
+  // JS/TS：与 prettier 的无分号风格保持一致，import 排序交由 prettier 插件处理
+  "js/ts.format.semicolons": "remove",
+  "js/ts.updateImportsOnFileMove.enabled": "always",
 
   // Prettier
   "prettier.configPath": "./prettier.config.js",
