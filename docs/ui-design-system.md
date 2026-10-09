@@ -301,7 +301,34 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 ---
 
-## 10. 开发与校验
+## 10. 无障碍约定
+
+### 10.1 减少动态的覆盖面
+
+`@media (prefers-reduced-motion: reduce)` 只停用装饰性循环动画，保留颜色与透明度的理解性过渡。必须覆盖以下动画面：
+
+| 动画 | 载体 | 来源 | 降级后的形态 |
+| --- | --- | --- | --- |
+| `.animate-blob` | 后台登录页光斑 | 应用自有样式 | 光斑保留为静态背景装饰 |
+| `.animate-spin` | 加载态与提交按钮的旋转指示 | Tailwind 工具类，`$ui` 的 spinner 与 sonner 亦使用 | 圆环与缺口保留，缺口即活动状态标记 |
+| `.animate-pulse` | 骨架屏占位 | Tailwind 工具类，`$ui` 的 skeleton 使用 | 弱背景色块保留，占位语义不丢失 |
+| `.animate-caret-blink` | 验证码槽位插入符 | `tw-animate-css` 工具类 | 插入符常亮，仍标记输入焦点 |
+
+**落点在两个应用各自的 `styles/animations.css`，不写进 `packages/ui`。** 组件库保持 stock 且不携带全局样式；`$ui` 内的动画工具类经应用 `app.css` 的 `@source` 纳入扫描，因此在应用层写覆盖即可同时生效于自有组件与组件库组件。`tw-animate-css` 未内建减少动态支持，覆盖必须带 `!important`：工具类位于 Tailwind 的 utilities 层，无重要标记时层内规则优先。
+
+前台另有 8 处经 `gsap.matchMedia('(prefers-reduced-motion: no-preference)')` 门控的 GSAP 动效，以及组件内的 `@media` 样式块，均沿用既有实现，不在本节重复登记。
+
+### 10.2 表单标签的关联方式
+
+- **包裹式标签为可接受形态**：`<label>` 包裹其唯一控件时隐式关联成立，不必补 `for`/`id`。前台 18 处 `<label>` 中 16 处为包裹式，均已核实每个标签恰含一个控件。
+- **显式关联仅在包裹式不可用时使用**：标签与控件分开书写时必须补 `for`/`id`，前台另有 2 处属此形态。
+- **显式关联仅在包裹式不可用时使用**：标签与控件分开书写时必须补 `for`/`id`，前台另有 2 处属此形态。
+- **`for` 不得指向不可关联的控件**：`button`、`div` 等元素不参与标签关联，写 `for` 只会形成悬空引用。组件库的 `Checkbox` 渲染为 `button`，此类控件必须改用 `aria-label` 或 `aria-labelledby` 显式提供可访问名称。
+- **多选组必须用 `fieldset` 与 `legend`**：组标签不可用 `label` 元素，否则形成无法关联任何控件的空标签。同一规则适用于单选框组与复选框组。
+
+---
+
+## 11. 开发与校验
 
 1. 取色必须走 token；动效时长、延迟等必须使用 `MOTION` 常量或命名常量，禁止魔法数字。
 2. 前台杂志版式元素（目录行、朱红竖线引语、幽灵刊号、纸纹）须与既有组件（`lib/components/home/` 各版面、`Header` / `Footer`）保持一致的实现方式。

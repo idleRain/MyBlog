@@ -18,7 +18,6 @@ declare global {
   const derived: typeof import('svelte/store').derived
   const dev: typeof import('$app/environment').dev
   const get: typeof import('svelte/store').get
-  const goto: typeof import('$app/navigation').goto
   const invalidate: typeof import('$app/navigation').invalidate
   const invalidateAll: typeof import('$app/navigation').invalidateAll
   const navigating: typeof import('$app/stores').navigating

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Category, CategoryTreeNode } from '@myblog/api/modules/category/types'
-import { Checkbox, Label, ScrollArea, Select, Skeleton } from '$ui'
+import { Checkbox, ScrollArea, Select, Skeleton } from '$ui'
 import type { Tag } from '@myblog/api/modules/tag/types'
 import { CategoryAPI, TagAPI } from '$lib/api'
 import { onMount } from 'svelte'
@@ -67,7 +67,9 @@ onMount(loadOptions)
 <div class="grid gap-6 md:grid-cols-3">
   <!-- 主分类 -->
   <div class="space-y-2">
-    <Label.Root>主分类</Label.Root>
+    <!-- 触发器由组件库渲染为 button，而 button 不是可被 label 关联的表单控件，
+         写 for 只会形成指向不存在目标的悬空引用，因此此处用视觉等价的说明文本。 -->
+    <span class="text-sm leading-none font-medium">主分类</span>
     {#if isLoading}
       <Skeleton.Skeleton class="h-8 w-full" />
     {:else}
@@ -91,9 +93,14 @@ onMount(loadOptions)
     {/if}
   </div>
 
-  <!-- 关联分类多选 -->
-  <div class="space-y-2">
-    <Label.Root>关联分类</Label.Root>
+  <!--
+    关联分类多选。
+    组件库的复选框渲染为 button，而 button 不参与 label 的隐式与显式关联，
+    因此组标签改用 fieldset 与 legend 提供分组语义，每个选项经 aria-label 携带自己的名称。
+    组标签若继续用 label 元素，会形成无法关联任何控件的空标签。
+  -->
+  <fieldset class="space-y-2">
+    <legend class="text-sm leading-none font-medium">关联分类</legend>
     {#if isLoading}
       <Skeleton.Skeleton class="h-24 w-full" />
     {:else}
@@ -103,6 +110,7 @@ onMount(loadOptions)
             <label class="flex cursor-pointer items-center gap-2 text-sm">
               <Checkbox.Root
                 checked={value.categoryIds.includes(category.id)}
+                aria-label={category.name.trim()}
                 onCheckedChange={(checked: boolean) => toggleCategory(category.id, checked)}
               />
               <span class="truncate">{category.name.trim()}</span>
@@ -114,11 +122,11 @@ onMount(loadOptions)
         </div>
       </ScrollArea.Root>
     {/if}
-  </div>
+  </fieldset>
 
-  <!-- 标签多选 -->
-  <div class="space-y-2">
-    <Label.Root>标签</Label.Root>
+  <!-- 标签多选：分组语义与选项命名同关联分类。 -->
+  <fieldset class="space-y-2">
+    <legend class="text-sm leading-none font-medium">标签</legend>
     {#if isLoading}
       <Skeleton.Skeleton class="h-24 w-full" />
     {:else}
@@ -128,6 +136,7 @@ onMount(loadOptions)
             <label class="flex cursor-pointer items-center gap-2 text-sm">
               <Checkbox.Root
                 checked={value.tagIds.includes(tag.id)}
+                aria-label={tag.name}
                 onCheckedChange={(checked: boolean) => toggleTag(tag.id, checked)}
               />
               <span class="truncate">{tag.name}</span>
@@ -139,5 +148,5 @@ onMount(loadOptions)
         </div>
       </ScrollArea.Root>
     {/if}
-  </div>
+  </fieldset>
 </div>

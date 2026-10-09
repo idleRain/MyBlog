@@ -25,3 +25,38 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/*
+ * 减少动态偏好的降级处理。
+ * 后台的动效全部属于装饰性循环动画：登录页光斑漂移、加载态与提交按钮的旋转指示、
+ * 骨架屏脉冲，以及输入验证码槽位的插入符闪烁。
+ * 设计系统要求减少动态偏好下停用装饰性循环动画并保留静态形态，
+ * 同时保留颜色与透明度的理解性过渡，因此此处只停用循环动画，不改动任何颜色过渡。
+ *
+ * 覆盖面必须包含 packages/ui 的动画工具类：$ui 的 spinner、skeleton、sonner 与
+ * input-otp 分别使用 animate-spin、animate-pulse 与 animate-caret-blink，
+ * 这些类由本站点样式表经 @source 纳入扫描，只能在此处一并降级。
+ * 覆盖必须带 !important，因为工具类位于 Tailwind 的 utilities 层，
+ * 而本文件是不带层的普通规则，无重要标记时层内规则优先。
+ */
+@media (prefers-reduced-motion: reduce) {
+  /* 光斑漂移完全停用，光斑本身保留为静态背景装饰。 */
+  .animate-blob {
+    animation: none !important;
+  }
+
+  /* 旋转指示停用后仍保留圆环与缺口，缺口即可见的活动状态标记。 */
+  .animate-spin {
+    animation: none !important;
+  }
+
+  /* 骨架屏脉冲停用后保留弱背景色块，占位语义不丢失。 */
+  .animate-pulse {
+    animation: none !important;
+  }
+
+  /* 插入符停止闪烁后常亮，仍标记输入焦点位置。 */
+  .animate-caret-blink {
+    animation: none !important;
+  }
+}
