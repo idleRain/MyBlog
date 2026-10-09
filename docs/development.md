@@ -175,8 +175,10 @@ apps/admin/src/               # 后台
 | 工具    | 版本要求 | 说明                            |
 | ------- | -------- | ------------------------------- |
 | Go      | 1.23+    | 后端开发语言                    |
-| Node.js | 20+      | JavaScript 运行时与脚本执行器   |
+| Node.js | 22+      | JavaScript 运行时与脚本执行器   |
 | MySQL   | 8.0+     | 数据库服务                      |
+
+Node.js 版本的单一事实来源为根 `.nvmrc`（当前 `22`），与 CI 的 `actions/setup-node` 保持一致；根 `package.json` 的 `engines.node` 声明为 `>=22`，版本过低时 pnpm 会给出告警。新机器建议先执行 `nvm use` 再执行 `pnpm install`。
 
 ### 快速启动
 

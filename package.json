@@ -6,6 +6,9 @@
   "type": "module",
   "author": "IdleRain",
   "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "setup": "tsx scripts/setup.ts",
     "dev": "tsx scripts/dev.ts",
