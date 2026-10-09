@@ -11,7 +11,9 @@
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write src",
-    "lint": "eslint src --ext .js,.ts,.svelte"
+    "lint": "eslint src --ext .js,.ts,.svelte",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^5.3.0",
@@ -19,7 +21,8 @@
     "mode-watcher": "catalog:",
     "svelte": "catalog:",
     "svelte-sonner": "catalog:",
-    "tw-animate-css": "catalog:"
+    "tw-animate-css": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "@milkdown/crepe": "7.22.1",

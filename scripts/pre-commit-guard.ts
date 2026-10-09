@@ -21,8 +21,15 @@ const serverDirectoryName = 'server'
 // packages 目录前缀，用于判定提交是否触及前端工作区包。
 const packagesDirectoryPrefix = 'packages'
 
+// apps 目录前缀，用于判定提交是否触及两个 SvelteKit 应用。
+const appsDirectoryPrefix = 'apps'
+
 // 纳入 vitest 门禁的工作区包，与根 test:packages 的口径保持一致。
 const gatedWorkspacePackages: string[] = ['packages/api', 'packages/auth', 'packages/http']
+
+// 纳入 vitest 门禁的应用，与根 test:apps 的口径保持一致。
+// 两应用各自持有页面状态模块与渲染管线的单测，提交前必须与 packages 同级把关。
+const gatedApplicationPackages: string[] = ['apps/web', 'apps/admin']
 
 // vitest 入口相对工作区包根目录的路径，pnpm 隔离布局下每个包各自持有。
 const vitestEntryRelativePath = join('node_modules', 'vitest', 'vitest.mjs')
@@ -78,9 +85,11 @@ function collectAffectedGoPackages(stagedFiles: string[]): string[] {
 /**
  * 逐包执行 vitest，任一包失败即终止。
  * 每个包在其自身目录下执行，使 vitest 解析到该包内的依赖与配置。
+ * @param workspacePaths 待测试的工作区包相对路径列表。
+ * @param label 失败提示中使用的工作区类别名称。
  */
-async function runWorkspacePackageTests(): Promise<boolean> {
-  for (const workspacePath of gatedWorkspacePackages) {
+async function runVitestInPackages(workspacePaths: string[], label: string): Promise<boolean> {
+  for (const workspacePath of workspacePaths) {
     const packageDirectory = join(repositoryRoot, workspacePath)
     const vitestEntry = join(packageDirectory, vitestEntryRelativePath)
     if (!existsSync(vitestEntry)) {
@@ -90,6 +99,7 @@ async function runWorkspacePackageTests(): Promise<boolean> {
     console.log(`🧪 运行 ${workspacePath} 单元测试`)
     const result = await tryRunCommand('node', [vitestEntry, 'run'], { cwd: packageDirectory })
     if (!result.success) {
+      console.error(`❌ ${label} 单元测试未通过，提交已被阻止`)
       return false
     }
   }
@@ -121,9 +131,15 @@ async function runGuard(): Promise<void> {
   }
 
   if (touchesDirectory(stagedFiles, packagesDirectoryPrefix)) {
-    const packageTestsPassed = await runWorkspacePackageTests()
+    const packageTestsPassed = await runVitestInPackages(gatedWorkspacePackages, 'packages')
     if (!packageTestsPassed) {
-      console.error('❌ packages 单元测试未通过，提交已被阻止')
+      process.exit(1)
+    }
+  }
+
+  if (touchesDirectory(stagedFiles, appsDirectoryPrefix)) {
+    const appTestsPassed = await runVitestInPackages(gatedApplicationPackages, 'apps')
+    if (!appTestsPassed) {
       process.exit(1)
     }
   }

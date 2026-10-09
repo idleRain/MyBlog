@@ -118,8 +118,9 @@ pnpm run build:server # 仅构建 Go 后端二进制
 pnpm run build:web    # 仅构建前端静态文件
 pnpm run build:clean  # 清理构建产物后构建
 pnpm run build:fast   # 跳过测试与 lint 的快速构建
-pnpm run test         # test:server（go test）+ test:packages（packages 单测）+ typecheck:web（前后台 svelte-check 类型检查）
-pnpm run test:packages # 仅 packages 单测：@myblog/api + @myblog/auth + @myblog/http
+pnpm run test         # 本地门禁全集：test:server（go test -count=1）+ test:packages（packages 单测与类型检查）+ test:apps（两应用单测）+ contract:check
+pnpm run test:packages # 仅 packages 单测与类型检查：@myblog/api + @myblog/auth + @myblog/http
+pnpm run test:apps    # 仅两应用单测：@myblog/web + @myblog/admin（vitest）
 pnpm run lint         # lint:web + lint:server（go vet + golangci-lint）
 pnpm run format       # format:web + format:server
 pnpm run quality      # format + lint + test
@@ -144,7 +145,7 @@ pnpm run migrate [create|up|down|version|help]
 - Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
 - 更改文件后应运行 `pnpm run lint` 与 `pnpm run format` 保持静态零告警。
 - 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，若单次提交跨度较大需补充 message 描述正文，type 枚举以 `commitlint.config.js` 为准。
-- **测试现状**：后端已有单测（`service`/`repository`/`handler` 层 `*_test.go`）；`packages/api`、`packages/auth`、`packages/http` 已有 vitest 单测并经 `pnpm run test:packages` 纳入门禁，其中前两者的 `typecheck` 脚本同时被该命令串联执行；两个 app 尚无测试。新增后端关键逻辑必须配套 `*_test.go`（与被测文件同目录）；新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）时必须配套 `*.test.ts`，并为所在 package 补 `typecheck` 与 `test` 脚本、登记进根 `test:packages`。注意 `pnpm run typecheck:web` 仅为类型检查，不是单元测试。
+- **测试现状**：后端已有单测（`service`/`repository`/`handler` 层 `*_test.go`）；`packages/api`、`packages/auth`、`packages/http` 已有 vitest 单测并经 `pnpm run test:packages` 纳入门禁，其中前两者的 `typecheck` 脚本同时被该命令串联执行；两应用已有 vitest 单测基线（`pnpm run test:apps`），admin 覆盖 `dict-page-state.svelte.ts`，web 覆盖 `render.ts` 的原始 HTML 丢弃守卫与目录日期格式化。新增后端关键逻辑必须配套 `*_test.go`（与被测文件同目录）；新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）时必须配套 `*.test.ts`，并为所在 package 补 `typecheck` 与 `test` 脚本、登记进根 `test:packages`。注意 `pnpm run typecheck:web` 仅为类型检查，不是单元测试。
 
 ## 5. 后端约定（server/）
 

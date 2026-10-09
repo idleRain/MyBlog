@@ -585,7 +585,7 @@ pnpm run build:web     # 构建前端静态文件
 - **代码注释**: 为复杂逻辑添加注释
 - **文档更新**: 保持文档与代码同步（架构规则变更须同步 `docs/architecture-rules.md` 债务登记表）
 - **版本控制**: 使用语义化版本号
-- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`
+- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫与日期格式化，`@myblog/admin` 覆盖字典页状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
 
 ## 更多资源
 
