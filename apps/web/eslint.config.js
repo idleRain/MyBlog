@@ -44,7 +44,7 @@ export default ts.config(
     }
   },
   {
-    // 类型唯一真相源守门（铁律 A2）：拦截影子类型层回潮，与 admin 应用保持一致。
+    // 类型唯一真相源守门：拦截影子类型层重新引入，与 admin 应用保持一致。
     rules: {
       'no-restricted-imports': [
         'error',
@@ -53,7 +53,7 @@ export default ts.config(
             {
               group: ['$lib/types', '$lib/types/*', '$lib/types/**'],
               message:
-                '应用层影子类型目录已删除，接口类型一律来自 @myblog/api/modules/*/types，依据铁律 A2 禁止重新引入。'
+                '应用层影子类型目录已删除，接口类型一律来自 @myblog/api/modules/*/types，禁止重新引入。'
             }
           ]
         }

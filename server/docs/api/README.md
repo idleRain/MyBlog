@@ -250,15 +250,15 @@ curl http://localhost:3000/api/health/ready
 ## 更新日志
 
 ### v1.4.0 (当前版本)
-- ✅ 认证止损真实化：令牌改为服务端登记的不透明随机串，登出后访问令牌立即失效，旧刷新令牌旋转后不可再刷
+- ✅ 认证凭据收紧：令牌改为服务端登记的不透明随机串，登出后访问令牌立即失效，旧刷新令牌旋转后不可再刷
 - ✅ 登出撤销令牌对：`/api/auth/logout` 请求体可选提交 `refreshToken`，与访问令牌一并撤销
 - ✅ 改密全局失效：`/api/users/changePassword` 成功后撤销该用户全部既有令牌，客户端需重新登录
 - ✅ 刷新链路状态校验：`/api/auth/refresh` 旋转前查库校验用户存在且状态正常，被禁用用户令牌无法续期
 - ✅ 登录失败锁定：连续密码失败达到 `security.login_lockout` 阈值后锁定账户，到期自动解除
 - ✅ 文章列表可见性放宽：非管理登录角色可见范围为已发布文章加本人全部状态文章，editor 草稿不再从列表消失；状态筛选叠加在本人可见边界上，越权拉取他人草稿仍被拦截
 - ✅ 浏览上报事务化：计数、访客明细与日统计合并单事务，中断不再产生统计漂移
-- ✅ CORS 白名单化：仅白名单内 Origin 回显 CORS 头，方法表收敛 POST/OPTIONS（`config.yaml` cors 节）
-- ✅ WAF 模式锚定：XSS/SQL 注入正则加词首边界与取值上下文，`content =`、`for i = 1` 等正常正文不再被误拦
+- ✅ CORS 白名单化：仅白名单内 Origin 回显 CORS 头，方法表收窄为 POST/OPTIONS（`config.yaml` cors 节）
+- ✅ WAF 模式收紧：XSS/SQL 注入正则加词首边界与取值上下文，`content =`、`for i = 1` 等正常正文不再被误拦
 - ♻️ 路由路径命名归一：`users/change-password`、`notifications/unread-count`、`notifications/read-all`、`friendly-links/*` 统一改为小驼峰，与 `getBySlug`、`isLiked`、`publicProfile` 等既有路径风格对齐，旧路径不再保留
 
 ### v1.3.0
@@ -279,7 +279,7 @@ curl http://localhost:3000/api/health/ready
 - ✅ 媒体静态目录挂载：`fileUrl` 指向的 `/uploads` 路径可直接公开访问
 
 ### v1.2.0
-- ♻️ 文章接口收敛为单一路径：移除 `/api/admin/articles/*` 冗余端点，创建/更新/删除/状态流转统一走 `/api/articles/*`，授权由服务端按作者或 `article:manage` 统一判定
+- ♻️ 文章接口统一为单一路径：移除 `/api/admin/articles/*` 冗余端点，创建/更新/删除/状态流转统一走 `/api/articles/*`，授权由服务端按作者或 `article:manage` 统一判定
 - ♻️ 公开文章读接口（get/getBySlug/list 等）支持可选认证，具备 `article:manage` 的管理员可按任意状态读取，其他角色强制只返回已发布文章
 - ✅ 新增 `POST /api/tags/list`：文章编辑选择使用的全部标签列表（登录 + `article:read`）
 

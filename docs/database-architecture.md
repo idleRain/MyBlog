@@ -165,7 +165,7 @@
 
 ## 演进与运维约定
 
-### 迁移双轨（2026-09-15 定案）
+### 迁移双轨
 
 - **生产轨（golang-migrate 严格轨）**：非 debug 模式启动时经 `server/internal/database` 的迁移链路执行 `server/migrations/` 增量迁移。基线为 `000001_init_schema`，由开发库 AutoMigrate 生成物导出固化，生产部署以迁移版本为准。
 - **开发轨（AutoMigrate）**：debug 模式保留 GORM AutoMigrate 快速同步，模型改动直接生效；与迁移基线出现漂移时以手写增量迁移对齐。

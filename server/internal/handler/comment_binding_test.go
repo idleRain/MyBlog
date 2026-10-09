@@ -28,7 +28,7 @@ func newCommentBindingRouter() *gin.Engine {
 }
 
 // TestCommentHandlerBindingFailureMapsTo400 参数绑定失败应以业务码 400 承载语义，
-// 统一响应信封固定 HTTP 200，断言遵循响应体业务码口径（与 QA-01/02 矩阵一致）。
+// 统一响应信封固定 HTTP 200，断言遵循响应体业务码口径。
 func TestCommentHandlerBindingFailureMapsTo400(t *testing.T) {
 	router := newCommentBindingRouter()
 

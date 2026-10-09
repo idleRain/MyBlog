@@ -5,7 +5,7 @@ import (
 )
 
 // CreateUserRequest 创建用户请求，承载参数校验。
-// binding 校验 tag 在 handler 层 DTO 分离完成后剥离，见契约 C1。
+// binding 校验 tag 在 handler 层 DTO 分离完成后剥离。
 type CreateUserRequest struct {
 	Username string            `json:"username" binding:"required,min=1,max=50"`
 	Email    string            `json:"email" binding:"required,email"`

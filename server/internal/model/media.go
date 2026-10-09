@@ -32,7 +32,7 @@ type MediaFile struct {
 	Status          MediaStatus `json:"status" gorm:"size:20;default:active;index;comment:文件状态：active-可用 processing-处理中 failed-处理失败 lost-文件丢失"`
 	ProcessedAt     *time.Time  `json:"processedAt" gorm:"type:datetime(3);comment:缩略图等后处理完成时间，为空表示尚未处理"`
 	UploaderID      uint        `json:"uploaderId" gorm:"not null;index;comment:上传者ID"`
-	// UploadIP 上传者 IP 属审计字段，不随媒体接口输出，见债务 D15 的遮蔽纪律。
+	// UploadIP 上传者 IP 属审计字段，不随媒体接口输出，避免公开端点泄漏上传者信息。
 	UploadIP      string         `json:"-" gorm:"size:45;comment:上传IP地址"`
 	StorageType   StorageType    `json:"storageType" gorm:"default:local;size:20;index;comment:存储类型：local/oss/s3/cos"`
 	Folder        string         `json:"folder" gorm:"size:100;index;comment:文件夹分类"`

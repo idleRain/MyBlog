@@ -27,7 +27,7 @@ func (f *fakeUserQueryService) GetUserByID(id uint) (*domain.User, error) {
 	return &domain.User{}, nil
 }
 
-// TestGetUserByIDErrorMapping 验证用户模块错误映射收敛到全局单一映射点：
+// TestGetUserByIDErrorMapping 验证用户模块错误映射统一到全局单一映射点：
 // ErrUserNotFound 统一返回业务码 404，不再存在 user 模块映射 400 的第二套权威。
 func TestGetUserByIDErrorMapping(t *testing.T) {
 	gin.SetMode(gin.TestMode)

@@ -27,7 +27,7 @@ type WidenLiteral<T> = T extends string
 describe('契约金样本类型锚定', () => {
   it('登录成功响应的 data 与 LoginData 结构精确一致', () => {
     expectTypeOf(loginSuccess.data).toExtend<WidenLiteral<LoginData>>()
-    // 运行期兜底：确保金样本确含登录数据字段。
+    // 运行期校验：确保金样本确含登录数据字段。
     expect(loginSuccess.data.accessToken).toBeTypeOf('string')
   })
 

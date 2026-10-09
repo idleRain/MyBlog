@@ -49,7 +49,7 @@ func TestCORSAllowedOriginReceivesHeaders(t *testing.T) {
 	}
 	methods := recorder.Header().Get("Access-Control-Allow-Methods")
 	if methods != "POST, OPTIONS" {
-		t.Errorf("Allow-Methods = %q, 期望收敛为 POST 与 OPTIONS", methods)
+		t.Errorf("Allow-Methods = %q, 期望为 POST 与 OPTIONS", methods)
 	}
 	if !*nextReached {
 		t.Error("白名单内请求应放行到后续处理器")

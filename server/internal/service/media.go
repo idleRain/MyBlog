@@ -54,7 +54,7 @@ type MediaListResponse struct {
 
 // allowedMimeExtensions 白名单 MIME 类型到标准存储扩展名的映射。
 // 存储扩展名一律由内容嗅探结果推导，防止伪造扩展名使静态服务以可执行类型响应。
-// svg 与 html 等可承载脚本的类型刻意不在映射内，杜绝存储型 XSS，见体检项 BE-24。
+// svg 与 html 等可承载脚本的类型刻意不在映射内，杜绝存储型 XSS。
 var allowedMimeExtensions = map[string]string{
 	"image/jpeg":      ".jpg",
 	"image/png":       ".png",

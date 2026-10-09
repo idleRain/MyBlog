@@ -570,7 +570,7 @@ func (s *userService) resetLoginFailure(user *domain.User) {
 // RefreshToken 刷新令牌，换取新令牌对前必须查库校验用户存在且状态正常，
 // 被禁用或已删除用户的 refresh 不得继续换取新令牌。
 // 刷新为低频路径，查库成本可接受；access 链路信任短有效期不逐请求查库，
-// 需要访问令牌实时失效时由 R4 会话方案承接。
+// 需要访问令牌实时失效时由 Cookie 会话方案承接。
 func (s *userService) RefreshToken(refreshToken string) (*TokenPair, error) {
 	identity, err := s.tokenService.ValidateRefreshToken(refreshToken)
 	if err != nil {

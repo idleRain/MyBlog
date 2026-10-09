@@ -114,7 +114,7 @@ func TestGetArticleArchivesAcrossYears(t *testing.T) {
 	}
 }
 
-// TestBuildArticleArchivesSkipsMissingPublishedAt 装配层兜底跳过缺失发布时间的行，
+// TestBuildArticleArchivesSkipsMissingPublishedAt 装配层跳过缺失发布时间的行，
 // 与仓储侧的 published_at 过滤构成双保险。
 func TestBuildArticleArchivesSkipsMissingPublishedAt(t *testing.T) {
 	repo := &fakeArticleRepo{

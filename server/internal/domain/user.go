@@ -102,7 +102,7 @@ func (u *User) GetRoleLevel() int {
 
 // UploaderPublic 上传者公开信息窄化视图。
 // 媒体端点的响应不得直接序列化关联的 User 实体，须经本视图输出白名单字段，
-// 防止上传者 email 等个人信息随媒体文件关联泄露，见债务 D15。
+// 防止上传者 email 等个人信息随媒体文件关联泄露。
 type UploaderPublic struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`

@@ -26,7 +26,7 @@ import { authStore } from '$lib/stores/auth'
 import { Button, Card } from '$ui'
 import { onMount } from 'svelte'
 
-// 当前用户角色与昵称，区块裁剪依据后端登录下发的权限列表（铁律 A4）。
+// 当前用户角色与昵称，区块裁剪依据后端登录下发的权限列表。
 let userRole = $state<UserRole>('user')
 let canViewStats = $state(false)
 let canViewArticles = $state(false)

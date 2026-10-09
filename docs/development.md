@@ -95,7 +95,7 @@ MyBlog/
 
 #### 依赖注入
 
-项目使用构造函数注入模式，**组合根唯一**：依赖对象只能在 `cmd/myblog/main.go` 中构造并逐层注入，禁止在 service / router / middleware 内部私自 `New` 依赖服务（历史违例见 [`architecture-rules.md`](./architecture-rules.md) 债务 D4，只减不增）：
+项目使用构造函数注入模式，**组合根唯一**：依赖对象只能在 `cmd/myblog/main.go` 中构造并逐层注入，禁止在 service / router / middleware 内部私自 `New` 依赖服务（历史违例见 [`architecture-rules.md`](./architecture-rules.md)）：
 
 ```go
 // 在 main.go 中（组合根）
@@ -154,7 +154,7 @@ apps/admin/src/               # 后台
 │   ├── service/              # http 客户端创建
 │   ├── components/           # 后台组件
 │   ├── stores/               # 认证 store 薄封装（逻辑在 @myblog/auth）
-│   ├── constants/            # 权限与角色常量（降级兜底，权限判定读登录下发值）
+│   ├── constants/            # 权限与角色常量（降级逻辑，权限判定读登录下发值）
 │   ├── types/                # 后台专用类型（接口类型一律来自 @myblog/api）
 │   └── utils/                # 认证域工具（logout / permissions / auth-guard / request / navigation）
 └── app.css                   # 原始后台主题（无 --signal）
@@ -366,7 +366,7 @@ func NewUserService(userRepo UserRepository) UserService {
 ```go
 // 错误映射唯一权威：统一经 handler/error.go 的 HandleServiceError 映射
 // （"资源不存在"哨兵 → 404、ErrPermissionDenied → 403、其余 → 500），
-// 禁止在模块内新增私有映射函数产生第二套权威（QA-03 收口口径）
+// 禁止在模块内新增私有映射函数产生第二套权威
 func (h *UserHandler) GetUserByID(c *gin.Context) {
   var req GetUserRequest
 
@@ -485,7 +485,7 @@ const updated = await UserAPI.updateUser({ id: user.id, username: 'new-name' })
 
 #### 3. 可访问性
 
-- 图标按钮必须携带 `aria-label`（UI-09/21 清偿口径），纯装饰图标加 `aria-hidden="true"`
+- 图标按钮必须携带 `aria-label`，纯装饰图标加 `aria-hidden="true"`
 
 #### 4. 用户域类型双形状
 
@@ -496,13 +496,13 @@ const updated = await UserAPI.updateUser({ id: user.id, username: 'new-name' })
 | `User` | `domain.User.ToResponse()` 裁剪形状 | 登录、`users/list`、`users/get` |
 | `ProfileUser` | `domain.User` 自助全量形状（含 bio/website/coverImage 等） | `users/profile`、`users/profile/update` |
 
-修改后端任一形状的输出字段集时，必须同步 `@myblog/api/modules/user/types.ts` 对应类型并运行 `contract:check`（铁律 A2 镜像义务）。
+修改后端任一形状的输出字段集时，必须同步 `@myblog/api/modules/user/types.ts` 对应类型并运行 `contract:check`（类型镜像义务）。
 
 > 已知漂移注记：`User.birthday` 后端经 `datetime.JSONDate` 输出，零值序列化为 `null` 而非常见空字符串；当前前端类型声明为 `string`，触碰该类型时评估改为 `string | null`（历史遗留，金样本以有值样例规避）。
 
 #### 5. 界面多语言（仅 apps/web）
 
-- 用户可见文案经 `$i18n` 的 `m['ui:...']()` 取词；接入现状与红线见 [`architecture-rules.md`](./architecture-rules.md) 债务 D18（Header/Footer/错误页已接入，其余页面待页面大变动后分批，已接入文件禁止回退硬编码）
+- 用户可见文案经 `$i18n` 的 `m['ui:...']()` 取词；接入现状与红线见 [`architecture-rules.md`](./architecture-rules.md)（Header/Footer/错误页已接入，其余页面待页面大变动后分批，已接入文件禁止回退硬编码）
 - `messages/*.json5` 必须保持 **JSON 兼容写法**（双引号、无尾逗号）：paraglide 编译器按严格 JSON 解析，无引号键/尾逗号/单引号会直接编译失败
 - 修改词表后需重新编译生成 `src/lib/paraglide` 产物：`pnpm --filter @myblog/web exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`（`vite dev`/`build` 亦会自动触发）
 
@@ -559,17 +559,17 @@ pnpm run build:web     # 构建前端静态文件
 - **输入验证**: 验证所有用户输入
 - **SQL 注入防护**: 使用参数化查询
 - **跨域配置**: 跨域来源一律改 `server/configs/config.yaml` 的 `cors` 节白名单（精确匹配），禁止代码内硬编码 Origin 或恢复全放行；生产同源网关形态白名单保持为空
-- **WAF 阻止模式**: 新增或修改 `getDefaultBlockedPatterns()` 模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，模式经词首边界或取值上下文锚定，禁止回退宽匹配（债务 D16）
+- **WAF 阻止模式**: 新增或修改 `getDefaultBlockedPatterns()` 模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，模式经词首边界或取值上下文锚定，禁止回退宽匹配
 - **限流键格式**: 用户级限流键统一 `user:<十进制ID>`（经 `getUserKey` 构造），禁止 rune 转换或字符串直拼产生非法键
 - **认证协议变更**: token 形状、刷新、撤销语义变更属最高风险契约变更，须先更新 `contracts/auth-protocol.md` 再动代码（流程见 `architecture-rules.md` §6.3）
 - **敏感信息**: 不在代码中硬编码密钥；数据库口令经 `MYBLOG_DATABASE_PASSWORD` 环境变量注入。令牌为服务端签发的不透明随机串，不存在签名密钥配置项
-- **隐私告知同步**: 后端新增或启用的数据收集场景（如评论 IP/UA 写入、新增埋点）必须先同步更新 web 端 `/privacy` 隐私政策页告知再上线（PM-22 承诺口径，隐私页已写明"新增收集场景前先更新本页"）
-- **设置键有效登记**: 后端业务新消费某个设置键时，必须同步补录 admin `lib/constants/setting.ts` 的 `EFFECTIVE_SETTING_KEYS`（未登记项在设置中心显示"未生效"角标）；安全分组的真实生效渠道为 `config.yaml` 与安全中间件（PM-11 口径）
+- **隐私告知同步**: 后端新增或启用的数据收集场景（如评论 IP/UA 写入、新增埋点）必须先同步更新 web 端 `/privacy` 隐私政策页告知再上线，隐私页已写明"新增收集场景前先更新本页"
+- **设置键有效登记**: 后端业务新消费某个设置键时，必须同步补录 admin `lib/constants/setting.ts` 的 `EFFECTIVE_SETTING_KEYS`（未登记项在设置中心显示"未生效"角标）；安全分组的真实生效渠道为 `config.yaml` 与安全中间件
 
 ### 5. 测试纪律
 
 - **先红后绿**: 修复类任务先写失败测试再改实现，确保用例真实锚定缺陷而非实现细节
-- **替身覆写**: service 层 fake 以内嵌空接口继承全部方法，接口新增方法被既有测试路径调用时必须为受影响 fake 显式覆写，否则以 nil panic 暴露（债务 D17）
+- **替身覆写**: service 层 fake 以内嵌空接口继承全部方法，接口新增方法被既有测试路径调用时必须为受影响 fake 显式覆写，否则以 nil panic 暴露
 - **sqlmock 维护**: repository 层 sqlmock 断言与 GORM 生成的 SQL 文本强耦合，GORM 升级或查询改写时须同步维护期望；匹配 SQL 用 `regexp.QuoteMeta` 前缀正则，期望序列须与事务内实际步骤（含 DELETE、计数 UPDATE）完全一致，否则以"剩余期望未匹配"失败
 - **契约金样本维护**: 金样本须与 Go 响应逐字节一致（`json.Compact` 豁免空白），修改实现输出字段时必须同步修订金样本并跑 `contract:check`。易错点：`datetime.JSONDate` 序列化为零值 `null`、午夜日期-only、非午夜 `"2006-01-02 15:04:05"`（非 RFC3339）；`gin.H` map 序列化按字典序排键；Go `encoding/json` 默认 HTML 转义（`<` `>` 输出 `\u003c`），金样本取值应避开尖括号；`omitempty` 对 nil 指针与空切片省略键。锁②为 `WidenLiteral`+`toExtend` 单向合法实例校验（JSON 单值无法与 nullable 联合精确相等，见 architecture-rules.md §3.4）
 - **gin 中间件测试**: 中间件函数内 `return` 不会中断 gin 的 handler 链，中断必须调用 `c.Abort()`；`IdentityProvider.Resolve` 失败时由实现写响应并 `Abort`，消费方 `if err != nil { return }` 依赖此语义，测试替身须模拟"写响应 + Abort"而非裸返错误。统一响应信封固定 HTTP 200，权限/认证失败以响应体业务码（`code` 字段）断言，不比较 HTTP 状态码
@@ -578,7 +578,7 @@ pnpm run build:web     # 构建前端静态文件
 ### 5.1 质量门禁
 
 - **契约门禁**: `pnpm run contract:check` = Go handler fixture 测试（锁①）+ `@myblog/api` 的 `tsc --noEmit`（锁② typecheck）+ vitest 类型锚定；契约相关改动必须通过
-- **CI**: `.github/workflows/ci.yml` 为五步质量门禁（go 三连、依赖基线 grep、双应用 svelte-check、contract:check、lint），当前**手动触发**（`workflow_dispatch`），push/PR 自动门禁待服务器就绪后改回 `on` 触发；工作流不含自动部署步骤
+- **CI**: `.github/workflows/ci.yml` 为五步质量门禁（go 三连、依赖基线 grep、双应用 svelte-check、contract:check、lint），触发方式为 push 到 master/main 以及所有 pull request；工作流不含自动部署步骤
 
 ### 6. 可维护性
 

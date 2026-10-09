@@ -6,7 +6,7 @@ import { authStore } from '$lib/stores/auth'
 
 /**
  * 检查用户是否拥有指定权限。
- * 权限唯一权威为后端登录下发的权限列表（铁律 A4），未下发时降级使用内置映射。
+ * 权限唯一权威为后端登录下发的权限列表，未下发时降级使用内置映射。
  */
 export function hasPermission(user: User | null, permission: string): boolean {
   if (!user) return false

@@ -8,7 +8,7 @@ const config = {
   preprocess: vitePreprocess(),
 
   kit: {
-    // 前台自托管 SSR：adapter-node 产出 Node 服务，部署时以 node build 启动（OPS-03 定案）。
+    // 前台自托管 SSR：adapter-node 产出 Node 服务，部署时以 node build 启动。
     adapter: adapter(),
     // 路径别名；$ui 指向 packages/ui 源码，$i18n 仅前台应用需要。
     alias: {

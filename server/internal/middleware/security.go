@@ -89,7 +89,7 @@ func DefaultSecurityConfig() *SecurityConfig {
 			AllowedUserAgents: []string{},
 			// BlockedUserAgents 为子串匹配语义，配置项必须选取明确的工具或脚本特征。
 			// 禁止收录 bot、crawler、spider 等泛化词，否则 Googlebot、Baiduspider、bingbot
-			// 等搜索引擎爬虫会被整体 403，直接损害 SSR 博客的搜索收录，见体检项 BE-04。
+			// 等搜索引擎爬虫会被整体 403，直接损害 SSR 博客的搜索收录。
 			BlockedUserAgents: []string{
 				"curl",
 				"wget",
@@ -466,7 +466,7 @@ func AdminSecurityMiddlewareFromConfig(cfg *config.Config) gin.HandlerFunc {
 }
 
 // getDefaultBlockedPatterns 获取默认的阻止模式，全部模式经词首边界或取值上下文锚定，
-// 避免宽匹配误伤博客正文中 "content ="、"for i = 1" 等正常写法（体检项 BE-07）。
+// 避免宽匹配误伤博客正文中 "content ="、"for i = 1" 等正常写法。
 func getDefaultBlockedPatterns() []string {
 	return []string{
 		`(?i)<script[^>]*>.*?</script>`,           // XSS：script 标签对

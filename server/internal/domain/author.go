@@ -3,7 +3,7 @@ package domain
 
 // AuthorPublic 作者公开信息窄化视图。
 // 公开端点的响应不得直接序列化 User 实体，须经本视图输出白名单字段，
-// 防止 email 等个人信息随文章作者与评论者关联泄露，见债务 D15。
+// 防止 email 等个人信息随文章作者与评论者关联泄露。
 type AuthorPublic struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`

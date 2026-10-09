@@ -247,7 +247,7 @@ function verifyDotenv(relativePath, requiredKeys) {
 verifyComposeFile()
 
 // BACKUP_HOST_DIR 当前未登记在模板中，由编排文件提供默认值，故此处不设为必需键。
-// 待该变量补登 deploy/.env.example 后，可将其加入下方必需键列表以获得守护。
+// 待该变量登记进 deploy/.env.example 后，可将其加入下方必需键列表以获得守护。
 verifyDotenv('deploy/.env.example', [])
 
 verifyWording([

@@ -1,6 +1,5 @@
 # MyBlog Docker 部署手册
 
-> 关联体检项：OPS-01（部署载体）/ OPS-03（adapter 选型）。
 > 本机已验证镜像构建逻辑与产物结构，真实环境镜像构建与编排运行待部署环境验证。
 
 ## 架构
@@ -19,7 +18,7 @@
 1. 安装 Docker 与 Docker Compose 插件。
 2. 无需人工补齐任何配置文件。镜像构建改用入库的无密钥模板
    `server/configs/config.example.yaml`，真实配置一律经环境变量在运行时注入。
-   本地开发仍使用 `server/configs/config.yaml`，该文件已脱离 git 追踪（OPS-08）。
+   本地开发仍使用 `server/configs/config.yaml`，该文件已脱离 git 追踪。
 3. 本地镜像构建会执行前端生产构建与 Go 编译，耗时约 5 至 10 分钟。
 
 ## 部署步骤

@@ -90,7 +90,7 @@ func serveWithMiddleware(handler gin.HandlerFunc, body string) *httptest.Respons
 }
 
 // TestSecurityMiddlewareAllowsNormalArticleBody 通过完整中间件链验证
-// 中文正文保存请求不再被 WAF 拦截，对应体检项 BE-07 的文章保存 403 场景。
+// 中文正文保存请求不再被 WAF 拦截，覆盖此前被误判为攻击的文章保存 403 场景。
 func TestSecurityMiddlewareAllowsNormalArticleBody(t *testing.T) {
 	body := `{"title":"正则表达式入门","content":"# 第一节\n\ncontent = '匹配任意字符' 是常见写法，" +
 		"例如 for i = 1 到 10 的循环。修饰词 comparison 与 session 的说明如下……"}`

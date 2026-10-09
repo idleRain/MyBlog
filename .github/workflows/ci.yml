@@ -1,4 +1,4 @@
-# 最小 CI：质量防线四件套 + lint（体检项 QA-11 / OPS-06）。
+# 最小 CI：质量防线四件套 + lint。
 # 触发方式为 push 到 master/main 以及所有 pull request，均为自动执行。
 # 本工作流只做质量检查，不含任何自动部署步骤。
 
@@ -48,7 +48,7 @@ jobs:
           go vet ./...
           go test -count=1 ./...
 
-      - name: 依赖方向基线（D1：12 service + 1 middleware + 0 router）
+      - name: 依赖方向基线（12 service + 1 middleware + 0 router）
         working-directory: server
         run: |
           HITS=$(git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router \

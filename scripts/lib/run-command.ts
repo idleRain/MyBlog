@@ -18,7 +18,7 @@ interface CommandResult {
 }
 
 /**
- * 执行命令并归一化结果，永不 reject，spawn 失败与进程异常都收敛为 success: false。
+ * 执行命令并归一化结果，不会 reject，spawn 失败与进程异常都归为 success: false。
  * pipe 模式下收集标准输出与标准错误到 output，供调用方解析。
  */
 export async function tryRunCommand(

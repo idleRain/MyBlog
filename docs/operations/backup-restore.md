@@ -1,6 +1,6 @@
 # 备份与恢复操作手册
 
-> 对应体检项 OPS-18：全仓此前零备份，单实例 MySQL 与本地媒体目录构成三重单点。
+> 全仓此前零备份，单实例 MySQL 与本地媒体目录构成三重单点。
 > 本手册给出容器化备份的调度方式、恢复步骤与演练流程。
 
 ## 1. 备份范围与频率
@@ -359,7 +359,7 @@ docker run --rm mysql:8.0 sh -c 'for c in bash mysqldump gzip tar sha256sum find
 ### 9.2 缺少命令时的处理方案
 
 若上述命令的输出包含 `MISSING`，说明 `mysql:8.0` 镜像不满足脚本依赖，
-此时需改用**方案 b**：新增 `deploy/Dockerfile.backup`，基于 `mysql:8.0` 补装缺失的软件包，
+此时需改用**自定义镜像**：新增 `deploy/Dockerfile.backup`，基于 `mysql:8.0` 补装缺失的软件包，
 并将编排中 backup 服务的 `image: mysql:8.0` 改为 `build` 指向该 Dockerfile。
 
 补装内容取决于实际缺失项，通常为 `gzip`、`tar`、`findutils` 与 `coreutils`。
