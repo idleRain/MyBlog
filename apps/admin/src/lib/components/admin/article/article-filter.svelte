@@ -6,7 +6,9 @@ import {
 } from '$lib/constants/article'
 import type { ArticleStatus } from '@myblog/api/modules/article/types'
 import { Search, RotateCcw } from '@lucide/svelte'
-import { Button, Input, Select } from '$ui'
+import * as Select from '$ui/select'
+import { Button } from '$ui/button'
+import { Input } from '$ui/input'
 
 interface Props {
   search?: string
@@ -38,7 +40,7 @@ let {
   <!-- 关键词搜索 -->
   <div class="relative min-w-52 flex-1">
     <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-    <Input.Root
+    <Input
       class="pl-9"
       placeholder="搜索标题、摘要或正文..."
       bind:value={search}

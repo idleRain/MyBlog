@@ -13,12 +13,19 @@ import type {
   CommentStatus,
   CommentActionResponse
 } from '@myblog/api/modules/comment/types'
-import { Badge, Button, Card, DropdownMenu, Input, Pagination, Table, ToggleGroup } from '$ui'
 import { Search, MessageSquare, MoreHorizontal, RotateCcw } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { SITE_NAME_ZH, debounce } from '@myblog/shared'
+import * as DropdownMenu from '$ui/dropdown-menu'
+import * as ToggleGroup from '$ui/toggle-group'
+import * as Pagination from '$ui/pagination'
 import { CommentAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import * as Table from '$ui/table'
+import { Input } from '$ui/input'
+import { Badge } from '$ui/badge'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 let comments = $state<Comment[]>([])
@@ -171,7 +178,7 @@ onMount(loadComments)
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-52 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input.Root
+          <Input
             class="pl-9"
             placeholder="搜索评论内容或评论者..."
             bind:value={keyword}

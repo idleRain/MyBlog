@@ -5,8 +5,10 @@ import type { Setting } from '@myblog/api/modules/setting/types'
 import { Save, Settings as SettingsIcon } from '@lucide/svelte'
 import { SETTING_GROUP_LABELS } from '$lib/constants/setting'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { Button, Card, Separator } from '$ui'
+import { Separator } from '$ui/separator'
 import { SettingAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 let settings = $state<Setting[]>([])
@@ -153,7 +155,7 @@ onMount(loadSettings)
             </div>
           </Card.Content>
           {#if index < groupSettings().length - 1}
-            <Separator.Root />
+            <Separator />
           {/if}
         </Card.Root>
       {/each}

@@ -16,12 +16,17 @@ import {
   RotateCcw
 } from '@lucide/svelte'
 import CategoryFormDialog from '$lib/components/admin/category/category-form-dialog.svelte'
-import { Button, Card, Badge, DropdownMenu, Input, ToggleGroup } from '$ui'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { CATEGORY_STATUS_CONFIG } from '$lib/constants/category'
+import * as DropdownMenu from '$ui/dropdown-menu'
+import * as ToggleGroup from '$ui/toggle-group'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { CategoryAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import { Input } from '$ui/input'
+import { Badge } from '$ui/badge'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 // 带缩进深度的分类行，用于表格化展示树形结构。
@@ -178,11 +183,7 @@ onMount(loadCategories)
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-52 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input.Root
-            class="pl-9"
-            placeholder="搜索分类名称或 URL 标识..."
-            bind:value={searchQuery}
-          />
+          <Input class="pl-9" placeholder="搜索分类名称或 URL 标识..." bind:value={searchQuery} />
         </div>
 
         <ToggleGroup.Root type="single" bind:value={statusFilter} variant="outline" size="sm">

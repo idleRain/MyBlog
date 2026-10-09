@@ -2,11 +2,11 @@
 import type { Notification } from '@myblog/api/modules/notification/types'
 import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { formatDate } from '$lib/utils/format-date'
+import * as DropdownMenu from '$ui/dropdown-menu'
 import { authStore } from '$lib/stores/auth'
 import { NotificationAPI } from '$lib/api'
 import { goto } from '$app/navigation'
 import { Bell } from '@lucide/svelte'
-import { DropdownMenu } from '$ui'
 import { m } from '$i18n'
 
 // 下拉面板展示的最近通知条数。

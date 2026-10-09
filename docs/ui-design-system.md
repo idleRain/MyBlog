@@ -27,6 +27,10 @@
 - 组件源码**禁止硬编码业务色与业务样式**，外观一律通过各应用 `app.css` 的语义 token 与调用处 `className` prop 定制。
 - 前后台的外观差异全部落在各自 `app.css`，**不得**通过修改 `packages/ui` 组件源码实现。
 - 组件库内仅使用标准 shadcn token（`--background` / `--foreground` / `--card` / `--primary` / `--muted` / `--border` / `--ring` / `--destructive` / `--radius` 等）。
+- 组件库**只提供逐组件子路径入口**，不提供包级聚合入口：`@myblog/ui` 的 `exports` 仅保留 `./*`，原 `packages/ui/src/index.ts` 聚合文件已删除，两个应用的 eslint 对 `$ui` 与 `@myblog/ui` 裸导入设为 error。
+- 聚合入口的代价是可量化的：经它可达 334 个文件，其中 288 个是 `.svelte`，而按实际使用的组件入口只可达 151 个文件。类型检查需要逐个转换 `.svelte`，这部分开销会直接叠加到每次 `svelte-check` 上。
+- 导入形态与组件的部件结构对齐：单部件组件用具名导入，例如 `import { Input } from '$ui/input'`；多部件组件用命名空间导入，例如 `import * as Card from '$ui/card'`，内部按 `<Card.Root>` / `<Card.Header>` 使用。
+- `Chart` 组件在服务端渲染时会抛出运行时错误，因此不进入任何聚合入口，需要时按子路径 `$ui/chart` 单独引用。
 
 ### 1.3 主题注入机制（三件套）
 

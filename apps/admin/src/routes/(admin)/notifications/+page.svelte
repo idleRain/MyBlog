@@ -6,10 +6,14 @@ import {
 } from '$lib/constants/notification'
 import type { Notification, NotificationType } from '@myblog/api/modules/notification/types'
 import { Bell, CheckCheck, Inbox, RotateCcw } from '@lucide/svelte'
-import { Badge, Button, Card, Pagination, ToggleGroup } from '$ui'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import * as ToggleGroup from '$ui/toggle-group'
 import { SITE_NAME_ZH } from '@myblog/shared'
+import * as Pagination from '$ui/pagination'
 import { NotificationAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import { Badge } from '$ui/badge'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 let notifications = $state<Notification[]>([])

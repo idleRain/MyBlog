@@ -6,9 +6,9 @@ import { AppSidebar } from '$lib/components/admin'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
+import * as Sidebar from '$ui/sidebar'
 import { page } from '$app/stores'
 import { onMount } from 'svelte'
-import { Sidebar } from '$ui'
 
 interface Props {
   children: import('svelte').Snippet

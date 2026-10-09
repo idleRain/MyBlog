@@ -8,8 +8,11 @@ import type {
   UpdateDictTypeRequest
 } from '@myblog/api/modules/dict/types'
 import { BookText, ListTree, Pencil, Plus, Trash2 } from '@lucide/svelte'
-import { Badge, Button, Card, Table } from '$ui'
 import { SITE_NAME_ZH } from '@myblog/shared'
+import { Button } from '$ui/button'
+import * as Table from '$ui/table'
+import { Badge } from '$ui/badge'
+import * as Card from '$ui/card'
 
 import DictTypeFormDialog from '$lib/components/admin/dict/dict-type-form-dialog.svelte'
 import DictItemFormDialog from '$lib/components/admin/dict/dict-item-form-dialog.svelte'

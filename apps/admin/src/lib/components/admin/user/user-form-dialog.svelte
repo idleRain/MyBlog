@@ -1,7 +1,11 @@
 <script lang="ts">
 import type { User, UserRole } from '@myblog/api/modules/user/types'
-import { Button, Dialog, Input, Label, Select } from '$ui'
 import { USER_ROLE_LABELS } from '$lib/constants/user'
+import * as Select from '$ui/select'
+import * as Dialog from '$ui/dialog'
+import { Button } from '$ui/button'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
 
 interface Props {
   open: boolean
@@ -91,8 +95,8 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="user-username">用户名 *</Label.Root>
-        <Input.Root
+        <Label for="user-username">用户名 *</Label>
+        <Input
           id="user-username"
           bind:value={username}
           maxlength={20}
@@ -105,8 +109,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="user-email">邮箱 *</Label.Root>
-        <Input.Root
+        <Label for="user-email">邮箱 *</Label>
+        <Input
           id="user-email"
           type="email"
           bind:value={email}
@@ -119,13 +123,13 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="user-password">
+        <Label for="user-password">
           {isEditMode ? '密码' : '密码 *'}
           {#if isEditMode}
             <span class="text-xs text-muted-foreground">（留空则不修改）</span>
           {/if}
-        </Label.Root>
-        <Input.Root
+        </Label>
+        <Input
           id="user-password"
           type="password"
           bind:value={password}
@@ -138,8 +142,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="user-nickname">昵称</Label.Root>
-        <Input.Root
+        <Label for="user-nickname">昵称</Label>
+        <Input
           id="user-nickname"
           bind:value={nickname}
           placeholder="请输入昵称"
@@ -149,7 +153,7 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root>角色</Label.Root>
+          <Label>角色</Label>
           <Select.Root type="single" bind:value={role} disabled={isSubmitting}>
             <Select.Trigger class="w-full">{USER_ROLE_LABELS[role]}</Select.Trigger>
             <Select.Content>
@@ -165,13 +169,8 @@ function handleSubmit() {
         </div>
 
         <div class="space-y-2">
-          <Label.Root for="user-birthday">生日</Label.Root>
-          <Input.Root
-            id="user-birthday"
-            type="date"
-            bind:value={birthday}
-            disabled={isSubmitting}
-          />
+          <Label for="user-birthday">生日</Label>
+          <Input id="user-birthday" type="date" bind:value={birthday} disabled={isSubmitting} />
         </div>
       </div>
     </div>

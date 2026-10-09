@@ -12,10 +12,12 @@ import { FileText, Plus, RotateCcw } from '@lucide/svelte'
 import { SITE_NAME_ZH, debounce } from '@myblog/shared'
 import { hasPermission } from '$lib/utils/permissions'
 import { PERMISSIONS } from '$lib/constants/auth'
-import { Button, Card, Pagination } from '$ui'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
+import * as Pagination from '$ui/pagination'
 import { ArticleAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 // 筛选与分页状态，sortBy 类型与后端 GetArticleListRequest 的 oneof 约束对齐。

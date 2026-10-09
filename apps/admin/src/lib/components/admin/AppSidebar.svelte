@@ -19,14 +19,18 @@ import {
   type LucideIcon
 } from '@lucide/svelte'
 import type { User, UserRole } from '@myblog/api/modules/user/types'
-import { Avatar, Badge, Button, Separator, Sidebar } from '$ui'
 import { goto, toAdminPath } from '$lib/utils/navigation'
 import { getRoleInfo } from '$lib/utils/permissions'
 import { performLogout } from '$lib/utils/logout'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import { NotificationAPI } from '$lib/api'
+import { Separator } from '$ui/separator'
+import * as Sidebar from '$ui/sidebar'
+import * as Avatar from '$ui/avatar'
+import { Button } from '$ui/button'
 import { page } from '$app/stores'
+import { Badge } from '$ui/badge'
 import { onMount } from 'svelte'
 
 // 侧边栏导航分组配置
@@ -240,7 +244,7 @@ onMount(loadUserState)
       </div>
     </div>
 
-    <Separator.Root class="my-2" />
+    <Separator class="my-2" />
 
     <!-- 分组导航 -->
     <div class="space-y-4">
@@ -265,7 +269,7 @@ onMount(loadUserState)
     </div>
   </Sidebar.Content>
 
-  <Separator.Root />
+  <Separator />
 
   <Sidebar.Footer class="p-4">
     <Button

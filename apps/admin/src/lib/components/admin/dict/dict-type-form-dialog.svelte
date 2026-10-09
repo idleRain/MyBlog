@@ -1,6 +1,11 @@
 <script lang="ts">
 import type { DictStatus, DictType } from '@myblog/api/modules/dict/types'
-import { Button, Dialog, Input, Label, Separator, Switch } from '$ui'
+import { Separator } from '$ui/separator'
+import * as Dialog from '$ui/dialog'
+import { Switch } from '$ui/switch'
+import { Button } from '$ui/button'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
 
 interface Props {
   open: boolean
@@ -92,8 +97,8 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="dict-type-code">字典码 *</Label.Root>
-        <Input.Root
+        <Label for="dict-type-code">字典码 *</Label>
+        <Input
           id="dict-type-code"
           bind:value={code}
           maxlength={50}
@@ -106,8 +111,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="dict-type-name">名称 *</Label.Root>
-        <Input.Root
+        <Label for="dict-type-name">名称 *</Label>
+        <Input
           id="dict-type-name"
           bind:value={name}
           maxlength={50}
@@ -121,8 +126,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="dict-type-sort">排序权重</Label.Root>
-          <Input.Root
+          <Label for="dict-type-sort">排序权重</Label>
+          <Input
             id="dict-type-sort"
             type="number"
             bind:value={sortOrder}
@@ -133,10 +138,10 @@ function handleSubmit() {
         </div>
         <div class="flex items-center justify-between gap-2 pt-2">
           <div class="space-y-0.5">
-            <Label.Root>是否生效</Label.Root>
+            <Label>是否生效</Label>
             <p class="text-xs text-muted-foreground">停用后 app 端不再下发</p>
           </div>
-          <Switch.Switch
+          <Switch
             checked={status === 1}
             onCheckedChange={(checked: boolean) => {
               status = checked ? 1 : 0
@@ -146,11 +151,11 @@ function handleSubmit() {
         </div>
       </div>
 
-      <Separator.Root />
+      <Separator />
 
       <div class="space-y-2">
-        <Label.Root for="dict-type-description">描述</Label.Root>
-        <Input.Root
+        <Label for="dict-type-description">描述</Label>
+        <Input
           id="dict-type-description"
           bind:value={description}
           maxlength={200}
@@ -159,7 +164,7 @@ function handleSubmit() {
         />
       </div>
 
-      <Separator.Root />
+      <Separator />
 
       <div class="space-y-2">
         <p class="text-sm font-medium">英文翻译（可选）</p>
@@ -168,8 +173,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="dict-type-en-name">英文名称</Label.Root>
-          <Input.Root
+          <Label for="dict-type-en-name">英文名称</Label>
+          <Input
             id="dict-type-en-name"
             bind:value={enName}
             maxlength={50}
@@ -178,8 +183,8 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="dict-type-en-description">英文描述</Label.Root>
-          <Input.Root
+          <Label for="dict-type-en-description">英文描述</Label>
+          <Input
             id="dict-type-en-description"
             bind:value={enDescription}
             maxlength={200}

@@ -4,7 +4,7 @@ import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { ExternalLink } from '@lucide/svelte'
 import { FriendlyLinkAPI } from '$lib/api'
 import { toast } from 'svelte-sonner'
-import { Dialog } from '$ui'
+import * as Dialog from '$ui/dialog'
 import { m } from '$i18n'
 
 // 申请字段长度上限，与后端 ApplyFriendlyLinkRequest 的 binding 规则一致。

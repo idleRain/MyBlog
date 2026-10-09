@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as AlertDialog from '$ui/alert-dialog'
-import { Button } from '$ui'
+import { Button } from '$ui/button'
 
 interface Props {
   title: string

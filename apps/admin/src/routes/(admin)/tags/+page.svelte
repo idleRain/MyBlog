@@ -7,15 +7,21 @@ import type {
 } from '@myblog/api/modules/tag/types'
 import { Flame, Pencil, Plus, RotateCcw, Search, Tags as TagsIcon, Trash2 } from '@lucide/svelte'
 import { dictItemLabel, DICT_TYPE_CODE_TAG_STATUS, findDictItem } from '@myblog/api'
-import { Badge, Button, Card, Input, Pagination, Table, ToggleGroup } from '$ui'
 import TagFormDialog from '$lib/components/admin/tag/tag-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import type { EnabledDictGroup } from '@myblog/api/modules/dict/types'
 import { TAG_PAGE_SIZE, TAG_STATUS_CONFIG } from '$lib/constants/tag'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import { SITE_NAME_ZH, debounce } from '@myblog/shared'
+import * as ToggleGroup from '$ui/toggle-group'
 import type { BadgeVariant } from '$ui/badge'
+import * as Pagination from '$ui/pagination'
 import { DictAPI, TagAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import * as Table from '$ui/table'
+import { Input } from '$ui/input'
+import { Badge } from '$ui/badge'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 let tags = $state<Tag[]>([])
@@ -240,7 +246,7 @@ onMount(() => {
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-56 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input.Root
+          <Input
             class="pl-9"
             placeholder="搜索标签名称或描述..."
             bind:value={search}

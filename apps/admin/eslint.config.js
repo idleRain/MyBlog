@@ -44,11 +44,24 @@ export default ts.config(
     }
   },
   {
-    // 类型唯一真相源守门：拦截影子类型层重新引入。
+    // 导入守门：拦截影子类型层与组件库桶文件的重新引入。
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          // 桶文件导入会把整个组件库拉进类型检查与打包范围，组件一律走子路径。
+          paths: [
+            {
+              name: '$ui',
+              message:
+                '$ui 桶文件会一次性引入全部组件，显著扩大类型检查范围，请按组件路径导入，例如 $ui/button。'
+            },
+            {
+              name: '@myblog/ui',
+              message:
+                '@myblog/ui 桶文件会一次性引入全部组件，显著扩大类型检查范围，请按组件路径导入，例如 @myblog/ui/button。'
+            }
+          ],
           patterns: [
             {
               group: ['$lib/types', '$lib/types/*', '$lib/types/**'],

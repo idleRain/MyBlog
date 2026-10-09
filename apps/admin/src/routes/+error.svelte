@@ -1,7 +1,7 @@
 <script lang="ts">
 import { toAdminPath } from '$lib/utils/navigation'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { Button } from '$ui'
+import { Button } from '$ui/button'
 import '@/app.css'
 
 let { error, status }: { error: App.Error; status: number } = $props()

@@ -1,6 +1,6 @@
 <script lang="ts">
 import type { Component } from 'svelte'
-import { Card } from '$ui'
+import * as Card from '$ui/card'
 
 interface Props {
   label: string

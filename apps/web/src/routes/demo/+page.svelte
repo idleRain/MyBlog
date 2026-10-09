@@ -1,6 +1,6 @@
 <script lang="ts">
 import { setLocale } from '$lib/paraglide/runtime'
-import { Button } from '$ui'
+import { Button } from '$ui/button'
 import { m } from '$i18n'
 
 // 演示按钮的取色经语义 token，避免在源码中引入冷色硬编码类名。

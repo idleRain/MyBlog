@@ -18,12 +18,18 @@ import type {
   UpdateFriendlyLinkRequest
 } from '@myblog/api/modules/friendlyLink/types'
 import { LINK_PAGE_SIZE, LINK_STATUS_CONFIG, LINK_STATUS_OPTIONS } from '$lib/constants/link'
-import { Badge, Button, Card, DropdownMenu, Pagination, Table, ToggleGroup } from '$ui'
 import LinkFormDialog from '$lib/components/admin/link/link-form-dialog.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import * as DropdownMenu from '$ui/dropdown-menu'
+import * as ToggleGroup from '$ui/toggle-group'
 import { SITE_NAME_ZH } from '@myblog/shared'
+import * as Pagination from '$ui/pagination'
 import { FriendlyLinkAPI } from '$lib/api'
+import { Button } from '$ui/button'
+import * as Table from '$ui/table'
+import { Badge } from '$ui/badge'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 // 各状态下可执行的审核动作，icon 供下拉菜单项渲染语义图标。

@@ -3,9 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "MyBlog shadcn-svelte 基础组件库，保持 stock 样式，主题经各应用 app.css token 注入。",
+  "description": "MyBlog shadcn-svelte 基础组件库，保持 stock 样式，主题经各应用 app.css token 注入。仅提供逐组件子路径入口，不提供包级聚合入口。",
   "exports": {
-    ".": "./src/index.ts",
     "./*": "./src/*/index.ts"
   },
   "dependencies": {

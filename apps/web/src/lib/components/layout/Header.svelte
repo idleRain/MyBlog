@@ -7,9 +7,12 @@ import type { User as UserType } from '@myblog/api/modules/user/types'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
 import { setLocale, getLocale } from '$lib/paraglide/runtime'
-import { Button, DropdownMenu, Dialog, Sheet } from '$ui'
+import * as DropdownMenu from '$ui/dropdown-menu'
 import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
+import * as Dialog from '$ui/dialog'
+import { Button } from '$ui/button'
+import * as Sheet from '$ui/sheet'
 import { m } from '$i18n'
 
 // 展示中的友情链接，由根布局的全站数据提供；错误页等无数据场景降级为空列表。

@@ -23,7 +23,8 @@ import { ArticleAPI, StatsAPI } from '$lib/api'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { authStore } from '$lib/stores/auth'
-import { Button, Card } from '$ui'
+import { Button } from '$ui/button'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 // 当前用户角色与昵称，区块裁剪依据后端登录下发的权限列表。

@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { ArticleStatus } from '@myblog/api/modules/article/types'
 import { ARTICLE_STATUS_CONFIG } from '$lib/constants/article'
-import { Badge } from '$ui'
+import { Badge } from '$ui/badge'
 
 interface Props {
   status: ArticleStatus

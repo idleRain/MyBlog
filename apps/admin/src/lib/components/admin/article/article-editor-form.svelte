@@ -5,10 +5,14 @@ import CategoryTagPicker, {
 import type { Article, ArticleI18nPayload } from '@myblog/api/modules/article/types'
 import MarkdownEditor from '$lib/components/admin/markdown-editor.svelte'
 import SeoFields from '$lib/components/admin/article/seo-fields.svelte'
-import { Button, Card, Input, Label, Switch } from '$ui'
 import { ArrowLeft, Save, Send } from '@lucide/svelte'
 import { goto } from '$lib/utils/navigation'
 import { ArticleAPI } from '$lib/api'
+import { Switch } from '$ui/switch'
+import { Button } from '$ui/button'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 interface Props {
@@ -197,12 +201,12 @@ async function handleSave(targetStatus: 'draft' | 'published') {
     </Card.Header>
     <Card.Content class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="article-title">
+        <Label for="article-title">
           标题
           <span class="text-destructive" aria-hidden="true">*</span>
           <span class="sr-only">必填</span>
-        </Label.Root>
-        <Input.Root
+        </Label>
+        <Input
           id="article-title"
           bind:value={title}
           maxlength={200}
@@ -212,8 +216,8 @@ async function handleSave(targetStatus: 'draft' | 'published') {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="article-slug">URL 标识</Label.Root>
-        <Input.Root
+        <Label for="article-slug">URL 标识</Label>
+        <Input
           id="article-slug"
           bind:value={slug}
           maxlength={200}
@@ -223,8 +227,8 @@ async function handleSave(targetStatus: 'draft' | 'published') {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="article-summary">摘要</Label.Root>
-        <Input.Root
+        <Label for="article-summary">摘要</Label>
+        <Input
           id="article-summary"
           bind:value={summary}
           maxlength={500}
@@ -234,8 +238,8 @@ async function handleSave(targetStatus: 'draft' | 'published') {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="article-cover">封面图 URL</Label.Root>
-        <Input.Root
+        <Label for="article-cover">封面图 URL</Label>
+        <Input
           id="article-cover"
           bind:value={coverImage}
           maxlength={500}
@@ -269,8 +273,8 @@ async function handleSave(targetStatus: 'draft' | 'published') {
     </Card.Header>
     <Card.Content class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="article-en-title">英文标题</Label.Root>
-        <Input.Root
+        <Label for="article-en-title">英文标题</Label>
+        <Input
           id="article-en-title"
           bind:value={enTitle}
           maxlength={200}
@@ -280,8 +284,8 @@ async function handleSave(targetStatus: 'draft' | 'published') {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="article-en-summary">英文摘要</Label.Root>
-        <Input.Root
+        <Label for="article-en-summary">英文摘要</Label>
+        <Input
           id="article-en-summary"
           bind:value={enSummary}
           maxlength={500}
@@ -291,7 +295,7 @@ async function handleSave(targetStatus: 'draft' | 'published') {
       </div>
 
       <div class="space-y-2">
-        <Label.Root>英文正文</Label.Root>
+        <Label>英文正文</Label>
         <MarkdownEditor bind:value={enContent} />
       </div>
 
@@ -324,24 +328,24 @@ async function handleSave(targetStatus: 'draft' | 'published') {
       <div class="grid gap-4 sm:grid-cols-3">
         <div class="flex items-center justify-between gap-2">
           <div class="space-y-1">
-            <Label.Root>精选</Label.Root>
+            <Label>精选</Label>
             <p class="text-xs text-muted-foreground">在首页精选展示</p>
           </div>
-          <Switch.Switch bind:checked={isFeatured} disabled={isSubmitting} />
+          <Switch bind:checked={isFeatured} disabled={isSubmitting} />
         </div>
         <div class="flex items-center justify-between gap-2">
           <div class="space-y-1">
-            <Label.Root>置顶</Label.Root>
+            <Label>置顶</Label>
             <p class="text-xs text-muted-foreground">列表优先展示</p>
           </div>
-          <Switch.Switch bind:checked={isTop} disabled={isSubmitting} />
+          <Switch bind:checked={isTop} disabled={isSubmitting} />
         </div>
         <div class="flex items-center justify-between gap-2">
           <div class="space-y-1">
-            <Label.Root>允许评论</Label.Root>
+            <Label>允许评论</Label>
             <p class="text-xs text-muted-foreground">关闭后读者无法评论</p>
           </div>
-          <Switch.Switch bind:checked={commentEnabled} disabled={isSubmitting} />
+          <Switch bind:checked={commentEnabled} disabled={isSubmitting} />
         </div>
       </div>
     </Card.Content>

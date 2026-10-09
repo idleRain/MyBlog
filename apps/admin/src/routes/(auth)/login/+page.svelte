@@ -9,8 +9,9 @@ import { goto } from '$lib/utils/navigation'
 import type { PageData } from './$types'
 import { UserAPI } from '$lib/api'
 import { Input } from '$ui/input'
+import * as Form from '$ui/form'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
-import { Form, Card } from '$ui'
 import { z } from 'zod'
 
 export let data: PageData

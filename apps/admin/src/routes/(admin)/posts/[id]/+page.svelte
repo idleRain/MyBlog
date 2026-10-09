@@ -6,8 +6,9 @@ import { ArrowLeft, FileText } from '@lucide/svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import { ArticleAPI } from '$lib/api'
+import { Button } from '$ui/button'
 import { page } from '$app/stores'
-import { Button, Card } from '$ui'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 let article = $state<Article | null>(null)

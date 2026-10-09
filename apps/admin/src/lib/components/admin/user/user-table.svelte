@@ -1,9 +1,14 @@
 <script lang="ts">
 import { Mail, Pencil, Trash2, MoreHorizontal, Power, Users as UsersIcon } from '@lucide/svelte'
 import UserStatusBadge from '$lib/components/admin/user/user-status-badge.svelte'
-import { Avatar, Badge, Button, Checkbox, DropdownMenu, Table } from '$ui'
 import type { User } from '@myblog/api/modules/user/types'
 import { getRoleInfo } from '$lib/utils/permissions'
+import * as DropdownMenu from '$ui/dropdown-menu'
+import { Checkbox } from '$ui/checkbox'
+import * as Avatar from '$ui/avatar'
+import { Button } from '$ui/button'
+import * as Table from '$ui/table'
+import { Badge } from '$ui/badge'
 
 interface Props {
   users: User[]
@@ -32,7 +37,7 @@ let {
   <Table.Header>
     <Table.Row>
       <Table.Head class="w-12">
-        <Checkbox.Root
+        <Checkbox
           checked={isAllSelected}
           onCheckedChange={onToggleSelectAll}
           aria-label="全选用户"
@@ -51,7 +56,7 @@ let {
       {@const roleInfo = getRoleInfo(user.role || 'user')}
       <Table.Row>
         <Table.Cell>
-          <Checkbox.Root
+          <Checkbox
             checked={selectedIds.includes(user.id)}
             onCheckedChange={() => onToggleSelect(user.id)}
             aria-label={`选择用户 ${user.username}`}

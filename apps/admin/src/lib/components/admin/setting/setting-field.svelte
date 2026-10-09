@@ -1,7 +1,10 @@
 <script lang="ts">
 import type { Setting } from '@myblog/api/modules/setting/types'
 import { isSettingEffective } from '$lib/constants/setting'
-import { Input, Label, Switch, Textarea } from '$ui'
+import { Textarea } from '$ui/textarea'
+import { Switch } from '$ui/switch'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
 
 interface Props {
   setting: Setting
@@ -18,7 +21,7 @@ const isEffective = $derived(isSettingEffective(setting.keyName))
 
 <div class="space-y-2">
   <div class="flex items-center justify-between gap-2">
-    <Label.Root for={`setting-${setting.keyName}`}>
+    <Label for={`setting-${setting.keyName}`}>
       {setting.label || setting.keyName}
       {#if isReadonly}
         <span class="text-xs text-muted-foreground">（只读）</span>
@@ -31,18 +34,18 @@ const isEffective = $derived(isSettingEffective(setting.keyName))
           未生效
         </span>
       {/if}
-    </Label.Root>
+    </Label>
   </div>
 
   {#if setting.type === 'boolean'}
-    <Switch.Switch
+    <Switch
       id={`setting-${setting.keyName}`}
       checked={value === 'true' || value === '1'}
       onCheckedChange={(checked: boolean) => onValueChange(String(checked))}
       disabled={isReadonly}
     />
   {:else if setting.type === 'json' || setting.type === 'array'}
-    <Textarea.Textarea
+    <Textarea
       id={`setting-${setting.keyName}`}
       rows={3}
       {value}
@@ -51,7 +54,7 @@ const isEffective = $derived(isSettingEffective(setting.keyName))
       class="resize-y font-mono text-xs"
     />
   {:else}
-    <Input.Root
+    <Input
       id={`setting-${setting.keyName}`}
       type={setting.type === 'number' ? 'number' : 'text'}
       {value}

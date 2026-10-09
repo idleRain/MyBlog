@@ -3,9 +3,10 @@ import { FileText, Eye, Heart, MessageSquare, Users, FolderTree, Tags, Send } fr
 import ViewsTrendChart from '$lib/components/admin/stats/views-trend-chart.svelte'
 import type { StatsOverview } from '@myblog/api/modules/stats/types'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import * as ToggleGroup from '$ui/toggle-group'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { Card, ToggleGroup } from '$ui'
 import { StatsAPI } from '$lib/api'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 // 概览卡片配置，统一图标与语义色。

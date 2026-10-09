@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Skeleton } from '$ui'
+import { Skeleton } from '$ui/skeleton'
 // 骨架行数量：与目录页每页数量保持同一版面节奏，避免加载完成后高度突变。
 interface Props {
   rows?: number
@@ -23,17 +23,13 @@ const rowIndexes = $derived(Array.from({ length: rows }, (_, index) => index))
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0 flex-1">
           <div class="mb-2 flex items-center gap-3">
-            <Skeleton.Skeleton class="h-5 w-8 rounded-none" />
-            <Skeleton.Skeleton class="h-3 w-40 rounded-none" />
+            <Skeleton class="h-5 w-8 rounded-none" />
+            <Skeleton class="h-3 w-40 rounded-none" />
           </div>
-          <Skeleton.Skeleton
-            class={`mb-2 h-6 rounded-none ${TITLE_WIDTHS[index % TITLE_WIDTHS.length]}`}
-          />
-          <Skeleton.Skeleton
-            class={`h-4 rounded-none ${SUMMARY_WIDTHS[index % SUMMARY_WIDTHS.length]}`}
-          />
+          <Skeleton class={`mb-2 h-6 rounded-none ${TITLE_WIDTHS[index % TITLE_WIDTHS.length]}`} />
+          <Skeleton class={`h-4 rounded-none ${SUMMARY_WIDTHS[index % SUMMARY_WIDTHS.length]}`} />
         </div>
-        <Skeleton.Skeleton class="hidden h-4 w-6 shrink-0 rounded-none sm:block" />
+        <Skeleton class="hidden h-4 w-6 shrink-0 rounded-none sm:block" />
       </div>
     </li>
   {/each}

@@ -1,7 +1,8 @@
 <script lang="ts">
 import { toAdminPath } from '$lib/utils/navigation'
 import { ThemeToggle } from '$lib/components'
-import { Breadcrumb, Sidebar } from '$ui'
+import * as Breadcrumb from '$ui/breadcrumb'
+import * as Sidebar from '$ui/sidebar'
 
 interface Props {
   title: string

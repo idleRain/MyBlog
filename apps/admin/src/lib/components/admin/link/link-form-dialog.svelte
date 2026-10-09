@@ -1,6 +1,11 @@
 <script lang="ts">
 import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
-import { Button, Dialog, Input, Label, Separator, Switch } from '$ui'
+import { Separator } from '$ui/separator'
+import * as Dialog from '$ui/dialog'
+import { Switch } from '$ui/switch'
+import { Button } from '$ui/button'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
 
 interface Props {
   open: boolean
@@ -77,8 +82,8 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="link-name">站点名称 *</Label.Root>
-        <Input.Root
+        <Label for="link-name">站点名称 *</Label>
+        <Input
           id="link-name"
           bind:value={name}
           maxlength={50}
@@ -88,8 +93,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="link-url">站点链接 *</Label.Root>
-        <Input.Root
+        <Label for="link-url">站点链接 *</Label>
+        <Input
           id="link-url"
           bind:value={url}
           maxlength={255}
@@ -102,8 +107,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="link-logo">站点图标 URL</Label.Root>
-        <Input.Root
+        <Label for="link-logo">站点图标 URL</Label>
+        <Input
           id="link-logo"
           bind:value={logo}
           maxlength={500}
@@ -113,8 +118,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="link-description">站点简介</Label.Root>
-        <Input.Root
+        <Label for="link-description">站点简介</Label>
+        <Input
           id="link-description"
           bind:value={description}
           maxlength={255}
@@ -125,8 +130,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="link-email">联系邮箱</Label.Root>
-          <Input.Root
+          <Label for="link-email">联系邮箱</Label>
+          <Input
             id="link-email"
             type="email"
             bind:value={contactEmail}
@@ -136,19 +141,19 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="link-sort">排序权重</Label.Root>
-          <Input.Root id="link-sort" type="number" bind:value={sortOrder} disabled={isSubmitting} />
+          <Label for="link-sort">排序权重</Label>
+          <Input id="link-sort" type="number" bind:value={sortOrder} disabled={isSubmitting} />
         </div>
       </div>
 
-      <Separator.Root />
+      <Separator />
 
       <div class="flex items-center justify-between gap-2">
         <div class="space-y-1">
-          <Label.Root>已确认回链</Label.Root>
+          <Label>已确认回链</Label>
           <p class="text-xs text-muted-foreground">对方站点已放置本博客链接</p>
         </div>
-        <Switch.Switch bind:checked={isReciprocal} disabled={isSubmitting} />
+        <Switch bind:checked={isReciprocal} disabled={isSubmitting} />
       </div>
     </div>
 

@@ -1,6 +1,12 @@
 <script lang="ts">
 import type { Category, CategoryStatus } from '@myblog/api/modules/category/types'
-import { Button, Dialog, Input, Label, Select, Separator, Switch } from '$ui'
+import { Separator } from '$ui/separator'
+import * as Select from '$ui/select'
+import * as Dialog from '$ui/dialog'
+import { Switch } from '$ui/switch'
+import { Button } from '$ui/button'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
 
 interface Props {
   open: boolean
@@ -120,12 +126,12 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="category-name">
+        <Label for="category-name">
           名称
           <span class="text-destructive" aria-hidden="true">*</span>
           <span class="sr-only">必填</span>
-        </Label.Root>
-        <Input.Root
+        </Label>
+        <Input
           id="category-name"
           bind:value={name}
           maxlength={50}
@@ -138,8 +144,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="category-slug">URL 标识</Label.Root>
-        <Input.Root
+        <Label for="category-slug">URL 标识</Label>
+        <Input
           id="category-slug"
           bind:value={slug}
           maxlength={50}
@@ -149,8 +155,8 @@ function handleSubmit() {
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="category-description">描述</Label.Root>
-        <Input.Root
+        <Label for="category-description">描述</Label>
+        <Input
           id="category-description"
           bind:value={description}
           maxlength={1000}
@@ -161,7 +167,7 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root>父分类</Label.Root>
+          <Label>父分类</Label>
           <Select.Root type="single" bind:value={parentId} disabled={isEditMode || isSubmitting}>
             <Select.Trigger class="w-full">
               {parentId === ''
@@ -183,20 +189,15 @@ function handleSubmit() {
         </div>
 
         <div class="space-y-2">
-          <Label.Root for="category-sort">排序权重</Label.Root>
-          <Input.Root
-            id="category-sort"
-            type="number"
-            bind:value={sortOrder}
-            disabled={isSubmitting}
-          />
+          <Label for="category-sort">排序权重</Label>
+          <Input id="category-sort" type="number" bind:value={sortOrder} disabled={isSubmitting} />
         </div>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="category-cover">封面图 URL</Label.Root>
-          <Input.Root
+          <Label for="category-cover">封面图 URL</Label>
+          <Input
             id="category-cover"
             bind:value={coverImage}
             maxlength={255}
@@ -208,10 +209,10 @@ function handleSubmit() {
         <div class="space-y-3 pt-2">
           <div class="flex items-center justify-between gap-2">
             <div class="space-y-0.5">
-              <Label.Root>显示状态</Label.Root>
+              <Label>显示状态</Label>
               <p class="text-xs text-muted-foreground">隐藏后前台不可见</p>
             </div>
-            <Switch.Switch
+            <Switch
               checked={status === 1}
               onCheckedChange={(checked: boolean) => {
                 status = checked ? 1 : 0
@@ -221,20 +222,20 @@ function handleSubmit() {
           </div>
           <div class="flex items-center justify-between gap-2">
             <div class="space-y-0.5">
-              <Label.Root>精选</Label.Root>
+              <Label>精选</Label>
               <p class="text-xs text-muted-foreground">作为推荐分类展示</p>
             </div>
-            <Switch.Switch bind:checked={isFeatured} disabled={isSubmitting} />
+            <Switch bind:checked={isFeatured} disabled={isSubmitting} />
           </div>
         </div>
       </div>
 
-      <Separator.Root />
+      <Separator />
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="category-seo-title">SEO 标题</Label.Root>
-          <Input.Root
+          <Label for="category-seo-title">SEO 标题</Label>
+          <Input
             id="category-seo-title"
             bind:value={seoTitle}
             maxlength={100}
@@ -242,8 +243,8 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="category-seo-desc">SEO 描述</Label.Root>
-          <Input.Root
+          <Label for="category-seo-desc">SEO 描述</Label>
+          <Input
             id="category-seo-desc"
             bind:value={seoDescription}
             maxlength={255}
@@ -252,7 +253,7 @@ function handleSubmit() {
         </div>
       </div>
 
-      <Separator.Root />
+      <Separator />
 
       <div class="space-y-2">
         <p class="text-sm font-medium">英文翻译（可选）</p>
@@ -261,8 +262,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="category-en-name">英文名称</Label.Root>
-          <Input.Root
+          <Label for="category-en-name">英文名称</Label>
+          <Input
             id="category-en-name"
             bind:value={enName}
             maxlength={50}
@@ -271,8 +272,8 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="category-en-description">英文描述</Label.Root>
-          <Input.Root
+          <Label for="category-en-description">英文描述</Label>
+          <Input
             id="category-en-description"
             bind:value={enDescription}
             maxlength={1000}
@@ -284,8 +285,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="category-en-seo-title">英文 SEO 标题</Label.Root>
-          <Input.Root
+          <Label for="category-en-seo-title">英文 SEO 标题</Label>
+          <Input
             id="category-en-seo-title"
             bind:value={enSeoTitle}
             maxlength={100}
@@ -293,8 +294,8 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="category-en-seo-desc">英文 SEO 描述</Label.Root>
-          <Input.Root
+          <Label for="category-en-seo-desc">英文 SEO 描述</Label>
+          <Input
             id="category-en-seo-desc"
             bind:value={enSeoDescription}
             maxlength={255}

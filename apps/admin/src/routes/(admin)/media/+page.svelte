@@ -3,9 +3,12 @@ import { Upload, Image, Film, FileText, Copy, Trash2, Loader2, RotateCcw } from 
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { MediaFile } from '@myblog/api/modules/media/types'
-import { Button, Card, Pagination, ToggleGroup } from '$ui'
 import { SITE_NAME_ZH, getFileSize } from '@myblog/shared'
+import * as ToggleGroup from '$ui/toggle-group'
+import * as Pagination from '$ui/pagination'
+import { Button } from '$ui/button'
 import { MediaAPI } from '$lib/api'
+import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
 // 媒体类型筛选选项，mimeType 为前缀过滤值。

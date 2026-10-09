@@ -9,8 +9,10 @@ import ArticleStatusBadge from '$lib/components/admin/article/article-status-bad
 import { Edit, Eye, MessageSquare, MoreHorizontal, Trash2 } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import type { Article } from '@myblog/api/modules/article/types'
-import { Button, DropdownMenu, Table } from '$ui'
+import * as DropdownMenu from '$ui/dropdown-menu'
 import { goto } from '$lib/utils/navigation'
+import { Button } from '$ui/button'
+import * as Table from '$ui/table'
 
 interface Props {
   articles: Article[]

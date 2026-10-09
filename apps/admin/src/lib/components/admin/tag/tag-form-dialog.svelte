@@ -1,6 +1,12 @@
 <script lang="ts">
-import { Button, Dialog, Input, Label, Separator, Switch, Textarea } from '$ui'
 import type { Tag, TagStatus } from '@myblog/api/modules/tag/types'
+import { Separator } from '$ui/separator'
+import { Textarea } from '$ui/textarea'
+import * as Dialog from '$ui/dialog'
+import { Switch } from '$ui/switch'
+import { Button } from '$ui/button'
+import { Label } from '$ui/label'
+import { Input } from '$ui/input'
 
 interface Props {
   open: boolean
@@ -98,12 +104,12 @@ function handleSubmit() {
 
     <div class="space-y-4">
       <div class="space-y-2">
-        <Label.Root for="tag-name">
+        <Label for="tag-name">
           名称
           <span class="text-destructive" aria-hidden="true">*</span>
           <span class="sr-only">必填</span>
-        </Label.Root>
-        <Input.Root
+        </Label>
+        <Input
           id="tag-name"
           bind:value={name}
           maxlength={30}
@@ -117,8 +123,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="tag-slug">URL 标识</Label.Root>
-          <Input.Root
+          <Label for="tag-slug">URL 标识</Label>
+          <Input
             id="tag-slug"
             bind:value={slug}
             maxlength={30}
@@ -127,7 +133,7 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="tag-color">标签颜色</Label.Root>
+          <Label for="tag-color">标签颜色</Label>
           <div class="flex items-center gap-2">
             <input
               id="tag-color"
@@ -136,7 +142,7 @@ function handleSubmit() {
               class="size-8 cursor-pointer rounded border border-input bg-transparent"
               disabled={isSubmitting}
             />
-            <Input.Root bind:value={color} maxlength={7} disabled={isSubmitting} />
+            <Input bind:value={color} maxlength={7} disabled={isSubmitting} />
           </div>
         </div>
       </div>
@@ -144,10 +150,10 @@ function handleSubmit() {
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex items-center justify-between gap-2">
           <div class="space-y-0.5">
-            <Label.Root for="tag-status">启用状态</Label.Root>
+            <Label for="tag-status">启用状态</Label>
             <p class="text-xs text-muted-foreground">隐藏后不再展示</p>
           </div>
-          <Switch.Switch
+          <Switch
             id="tag-status"
             checked={status === 1}
             onCheckedChange={(checked: boolean) => {
@@ -158,16 +164,16 @@ function handleSubmit() {
         </div>
         <div class="flex items-center justify-between gap-2">
           <div class="space-y-0.5">
-            <Label.Root for="tag-hot">热门标签</Label.Root>
+            <Label for="tag-hot">热门标签</Label>
             <p class="text-xs text-muted-foreground">在热门标签区优先展示</p>
           </div>
-          <Switch.Switch id="tag-hot" bind:checked={isHot} disabled={isSubmitting} />
+          <Switch id="tag-hot" bind:checked={isHot} disabled={isSubmitting} />
         </div>
       </div>
 
       <div class="space-y-2">
-        <Label.Root for="tag-description">描述</Label.Root>
-        <Textarea.Root
+        <Label for="tag-description">描述</Label>
+        <Textarea
           id="tag-description"
           bind:value={description}
           maxlength={200}
@@ -176,7 +182,7 @@ function handleSubmit() {
         />
       </div>
 
-      <Separator.Root />
+      <Separator />
 
       <div class="space-y-2">
         <p class="text-sm font-medium">英文翻译（可选）</p>
@@ -185,8 +191,8 @@ function handleSubmit() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="space-y-2">
-          <Label.Root for="tag-en-name">英文名称</Label.Root>
-          <Input.Root
+          <Label for="tag-en-name">英文名称</Label>
+          <Input
             id="tag-en-name"
             bind:value={enName}
             maxlength={30}
@@ -195,8 +201,8 @@ function handleSubmit() {
           />
         </div>
         <div class="space-y-2">
-          <Label.Root for="tag-en-description">英文描述</Label.Root>
-          <Input.Root
+          <Label for="tag-en-description">英文描述</Label>
+          <Input
             id="tag-en-description"
             bind:value={enDescription}
             maxlength={200}

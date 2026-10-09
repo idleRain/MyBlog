@@ -1,8 +1,11 @@
 <script lang="ts">
 import type { Category, CategoryTreeNode } from '@myblog/api/modules/category/types'
-import { Checkbox, ScrollArea, Select, Skeleton } from '$ui'
 import type { Tag } from '@myblog/api/modules/tag/types'
 import { CategoryAPI, TagAPI } from '$lib/api'
+import { ScrollArea } from '$ui/scroll-area'
+import { Skeleton } from '$ui/skeleton'
+import { Checkbox } from '$ui/checkbox'
+import * as Select from '$ui/select'
 import { onMount } from 'svelte'
 
 // 文章的分类与标签选择结果，主分类、多分类与多标签三者独立维护。
@@ -71,7 +74,7 @@ onMount(loadOptions)
          写 for 只会形成指向不存在目标的悬空引用，因此此处用视觉等价的说明文本。 -->
     <span class="text-sm leading-none font-medium">主分类</span>
     {#if isLoading}
-      <Skeleton.Skeleton class="h-8 w-full" />
+      <Skeleton class="h-8 w-full" />
     {:else}
       <Select.Root
         type="single"
@@ -102,13 +105,13 @@ onMount(loadOptions)
   <fieldset class="space-y-2">
     <legend class="text-sm leading-none font-medium">关联分类</legend>
     {#if isLoading}
-      <Skeleton.Skeleton class="h-24 w-full" />
+      <Skeleton class="h-24 w-full" />
     {:else}
-      <ScrollArea.Root class="h-24 rounded-md border">
+      <ScrollArea class="h-24 rounded-md border">
         <div class="grid gap-1 p-2">
           {#each categories as category (category.id)}
             <label class="flex cursor-pointer items-center gap-2 text-sm">
-              <Checkbox.Root
+              <Checkbox
                 checked={value.categoryIds.includes(category.id)}
                 aria-label={category.name.trim()}
                 onCheckedChange={(checked: boolean) => toggleCategory(category.id, checked)}
@@ -120,7 +123,7 @@ onMount(loadOptions)
             <p class="p-2 text-sm text-muted-foreground">暂无分类</p>
           {/if}
         </div>
-      </ScrollArea.Root>
+      </ScrollArea>
     {/if}
   </fieldset>
 
@@ -128,13 +131,13 @@ onMount(loadOptions)
   <fieldset class="space-y-2">
     <legend class="text-sm leading-none font-medium">标签</legend>
     {#if isLoading}
-      <Skeleton.Skeleton class="h-24 w-full" />
+      <Skeleton class="h-24 w-full" />
     {:else}
-      <ScrollArea.Root class="h-24 rounded-md border">
+      <ScrollArea class="h-24 rounded-md border">
         <div class="grid gap-1 p-2">
           {#each tags as tag (tag.id)}
             <label class="flex cursor-pointer items-center gap-2 text-sm">
-              <Checkbox.Root
+              <Checkbox
                 checked={value.tagIds.includes(tag.id)}
                 aria-label={tag.name}
                 onCheckedChange={(checked: boolean) => toggleTag(tag.id, checked)}
@@ -146,7 +149,7 @@ onMount(loadOptions)
             <p class="p-2 text-sm text-muted-foreground">暂无标签</p>
           {/if}
         </div>
-      </ScrollArea.Root>
+      </ScrollArea>
     {/if}
   </fieldset>
 </div>
