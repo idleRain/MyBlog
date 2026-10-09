@@ -1,21 +1,18 @@
 <script lang="ts">
-import { setLocale, getLocale } from '$lib/paraglide/runtime'
+import { setLocale } from '$lib/paraglide/runtime'
 import { Button } from '$ui'
 import { m } from '$i18n'
 
-console.log('Current locale:', getLocale())
-console.log('Available messages:', Object.keys(m))
+// 演示按钮的取色经语义 token，避免在源码中引入冷色硬编码类名。
+// 切换语言沿用 paraglide 的默认整页重载语义，以反映词表切换后的完整取词结果。
+const demoButtonClass = 'border border-line bg-card px-4 py-2 text-sm font-bold text-foreground'
 </script>
 
 <div class="space-y-6 p-6">
   <!-- 语言切换 -->
   <div class="space-x-2">
-    <Button class="rounded bg-blue-500 px-4 py-2 text-white" onclick={() => setLocale('zh')}>
-      中文
-    </Button>
-    <Button class="rounded bg-green-500 px-4 py-2 text-white" onclick={() => setLocale('en')}>
-      English
-    </Button>
+    <Button class={demoButtonClass} onclick={() => setLocale('zh')}>中文</Button>
+    <Button class={demoButtonClass} onclick={() => setLocale('en')}>English</Button>
   </div>
 
   <div>
