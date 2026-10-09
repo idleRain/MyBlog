@@ -15,12 +15,20 @@ function pageHref(page: number): string {
 }
 </script>
 
+<!--
+  分页版式保留为前台自有实现，未收口到 $ui/pagination。
+  原因：组件库的分页原语只渲染 button 元素。bits-ui 的 Page 与 PrevButton 支持经 child
+  片段替换元素，但 $ui 包装层未透传该属性，前台无法在消费 $ui 的同时产出可被爬虫与
+  无 JavaScript 环境跟随的真实链接。包装层补齐透传之前，此处保留锚点版式。
+-->
 <nav
+  aria-label="分页导航"
   class="mt-12 flex items-center justify-between border-t border-border pt-6 font-mono text-sm text-muted-foreground"
 >
   {#if currentPage > 1}
     <a
       href={pageHref(currentPage - 1)}
+      rel="prev"
       class="py-2 transition-colors duration-200 hover:text-signal"
     >
       ← 上一页
@@ -32,6 +40,7 @@ function pageHref(page: number): string {
   {#if currentPage < totalPages}
     <a
       href={pageHref(currentPage + 1)}
+      rel="next"
       class="py-2 transition-colors duration-200 hover:text-signal"
     >
       下一页 →
