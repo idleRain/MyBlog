@@ -46,7 +46,9 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 ### 2.1 前台编辑杂志主题（`apps/web/src/app.css`）
 
-**基调**：「编辑杂志风」暖纸墨色系，色板源自参考稿（纸 `#f7f3ea`、墨 `#221d16`、朱红 `#c83e1d`）。暗色为配套的「深夜书房」暖黑纸墨。
+**基调**：「编辑杂志风」暖纸墨色系，色板源自参考稿（纸 `#f7f3ea`、墨 `#221d16`、朱红）。暗色为配套的「深夜书房」暖黑纸墨。
+
+> **朱红 signal 的对比度下界（2026-10 定案）**：正文级朱红文字在浅色系全部语义面上均不得低于 WCAG AA 的 4.5，最差面为 hover 态高亮背景 `accent`。为满足该下界，亮色 `--signal` 由参考稿的 `#c83e1d` 加深为 `#a83214`，原值在 `accent` 面上仅 3.85；暗色由 `#d8572f` 提亮为 `#e4653c`，原值在 `accent` 面上仅 3.97。**调整 `--signal` 前必须按 WCAG 2.1 公式复算 `background`、`card`、`secondary`、`muted`、`accent` 五组面，任一组合低于 4.5 即不得合入。** 参考稿原色 `#c83e1d` 仅保留在 8.1 的「精选封面版画」既定画布色板内，不参与语义 token 体系。
 
 #### 亮色模式
 
@@ -62,8 +64,8 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 | `--primary` | `#221d16` | 主按钮（墨色） |
 | `--destructive` | `oklch(0.577 0.245 27.325)` | 危险操作 |
 | `--border` / `--input` | `#ded3bf` | 分隔线 / 边框 |
-| `--ring` | `#c83e1d` | 焦点环（朱红） |
-| `--signal` | `#c83e1d` | **强调色（朱红）** |
+| `--ring` | `#a83214` | 焦点环（朱红） |
+| `--signal` | `#a83214` | **强调色（朱红）** |
 | `--signal-foreground` | `#f7f3ea` | 红底上的纸色文字 |
 
 #### 暗色模式（深夜书房）
@@ -78,7 +80,7 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 | `--muted-foreground` | `#a3947c` | 次级文字 |
 | `--primary` | `#ece3d1` | 主按钮（纸白） |
 | `--border` / `--input` | `#372e23` | 发丝线 |
-| `--ring` / `--signal` | `#d8572f` | 焦点环 / 强调色（提亮朱红） |
+| `--ring` / `--signal` | `#e4653c` | 焦点环 / 强调色（提亮朱红） |
 | `--signal-foreground` | `#1a120c` | 红底上的深墨文字 |
 
 图表与侧边栏 token（`--chart-1..5`、`--sidebar-*`）随主题在 `app.css` 中定义，业务代码只经 `@theme inline` 映射后的工具类取用。
@@ -274,7 +276,9 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 - 硬编码色值（应走 token；唯一例外见下）
 - wheel / 键盘事件拦截式整屏滚动劫持
 
-**唯一例外——精选封面版画**：`FeaturedStory` 的封面是杂志版面的「画布」，允许使用内容性渐变（`bg-gradient-to-br from-[#3a2f26] via-[#6b4f3a] to-[#c83e1d]`）。该色板为既定艺术设定，不进入语义 token 体系；除封面外任何位置不得复用此渐变或色值。
+**朱红用面约束**：`text-signal` 只允许用于 `background`、`card` 两类浅面的直接后代，以及 `primary`、`signal` 两类深面之上。设计系统在 2026-10 前曾有四处违例，写法为祖先设 `bg-secondary` 而后代用 `text-signal`，实测对比度 4.14，低于 WCAG AA 的 4.5。当前 `--signal` 取值已使该组合达标，但**新增版面仍不得在 `bg-secondary`、`bg-muted`、`bg-accent` 三组浅面上直接使用朱红正文**，以免后续调色时再次击穿下界。判定方法：检索同文件内的 `bg-secondary` 祖先元素，确认其后代不存在 `text-signal`。
+
+**唯一例外——精选封面版画**：`FeaturedStory` 的封面是杂志版面的「画布」，允许使用内容性渐变（`bg-gradient-to-br from-[#3a2f26] via-[#6b4f3a] to-[#c83e1d]`）。该色板为既定艺术设定，不进入语义 token 体系；除封面外任何位置不得复用此渐变或色值。该渐变末端的 `#c83e1d` 是参考稿原始朱红，与语义 token `--signal` 的当前取值 `#a83214` 相互独立：前者是画布上的图像色，后者是可访问性受约束的文字与底色。**不得因两者色相相近就把渐变改为引用 `var(--signal)`，也不得据渐变反推 token 取值。**
 
 ### 8.2 后台（相对宽松）
 

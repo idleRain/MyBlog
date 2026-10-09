@@ -2,6 +2,11 @@
  * 设计基调：「编辑杂志风」暖纸墨色系。
  * 大面积暖纸色与墨色构成安静基底，朱红 signal 作为唯一锐利强调色，
  * 以衬线标题与等宽标注共同构成纸质刊物的阅读质感。
+ *
+ * signal 取值受无障碍对比度下界约束：正文级朱红文字在浅色系全部语义面上
+ * 均不得低于 WCAG AA 的 4.5。最差面为 hover 态高亮背景 accent，亮色与暗色
+ * 的取值都必须先满足该面。亮色取 #a83214，在 accent 面上为 5.11；
+ * 暗色取 #e4653c，在 accent 面上为 4.64。调整该色值前必须按 WCAG 2.1 公式复算全部组合。
  */
 :root {
   --radius: 0.25rem;
@@ -22,10 +27,10 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: #ded3bf;
   --input: #ded3bf;
-  --ring: #c83e1d;
-  --signal: #c83e1d;
+  --ring: #a83214;
+  --signal: #a83214;
   --signal-foreground: #f7f3ea;
-  --chart-1: #c83e1d;
+  --chart-1: #a83214;
   --chart-2: #6b4f3a;
   --chart-3: #3a2f26;
   --chart-4: #b08d57;
@@ -37,7 +42,7 @@
   --sidebar-accent: #e9e0cd;
   --sidebar-accent-foreground: #221d16;
   --sidebar-border: #ded3bf;
-  --sidebar-ring: #c83e1d;
+  --sidebar-ring: #a83214;
 
   /* 动效缓动令牌：入场用强 ease-out，屏内位移用强 ease-in-out。 */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
@@ -47,7 +52,7 @@
 /*
  * 暗色配套：「深夜书房」暖黑纸墨。
  * 底色为带暖相的近黑墨色，文字为陈旧纸色的亮调，
- * 朱红提亮一档以维持暗色下的对比度与辨识度。
+ * 朱红提亮一档以在暗色面上维持同一对比度下界。
  */
 .dark {
   --background: #171310;
@@ -67,10 +72,10 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: #372e23;
   --input: #372e23;
-  --ring: #d8572f;
-  --signal: #d8572f;
+  --ring: #e4653c;
+  --signal: #e4653c;
   --signal-foreground: #1a120c;
-  --chart-1: #d8572f;
+  --chart-1: #e4653c;
   --chart-2: #8a6d4f;
   --chart-3: #4a3d30;
   --chart-4: #b08d57;
@@ -82,7 +87,7 @@
   --sidebar-accent: #2a2219;
   --sidebar-accent-foreground: #ece3d1;
   --sidebar-border: #372e23;
-  --sidebar-ring: #d8572f;
+  --sidebar-ring: #e4653c;
 }
 
 @theme inline {
