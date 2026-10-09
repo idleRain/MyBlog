@@ -1,20 +1,31 @@
 <script lang="ts">
-import { ArticleIndexList, PaginationNav } from '$lib/components/article'
+import { ArticleIndexList, ArticleListSkeleton, PaginationNav } from '$lib/components/article'
 import type { Article } from '@myblog/api/modules/article/types'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
+import { navigating } from '$app/state'
 
 // 收藏列表每页数量，与 +page.server.ts 保持一致，用于计算列表跨页编号偏移。
 const FAVORITES_PAGE_SIZE = 12
 
+// 骨架行的下限，避免收藏极少时骨架比内容更矮而造成高度跳动。
+const MIN_SKELETON_ROWS = 3
+
 // 数据由 +page.server.ts 的 load 在服务端取回，页面只负责渲染。
 let { data }: PageProps = $props()
 
-// 页面状态直接派生自 load 结果，因此不存在「先渲染容器再补拉」的空窗。
+// 页面状态直接派生自 load 结果，因此首屏不存在「先渲染容器再补拉」的空窗。
 const articles = $derived<Article[]>(data.list.articles)
 const total = $derived(data.list.total)
 const currentPage = $derived(data.currentPage)
 const totalPages = $derived(Math.max(1, Math.ceil(total / FAVORITES_PAGE_SIZE)))
+
+// 翻页经客户端路由触发，load 在服务端重新求值期间以骨架屏承接等待。
+// 仅在目标路径仍为本页时接管显示，跳转其他页面时不清空既有内容。
+const isNavigatingHere = $derived(navigating?.to?.url.pathname === '/favorites')
+
+// 骨架行数取当前页规模与下限的较大值，使骨架高度接近加载完成后的版式。
+const skeletonRows = $derived(Math.max(MIN_SKELETON_ROWS, articles.length))
 </script>
 
 <svelte:head>
@@ -38,7 +49,9 @@ const totalPages = $derived(Math.max(1, Math.ceil(total / FAVORITES_PAGE_SIZE)))
       <span class="shrink-0 font-mono text-sm text-muted-foreground">共 {total} 篇</span>
     </div>
 
-    {#if articles.length}
+    {#if isNavigatingHere}
+      <ArticleListSkeleton rows={skeletonRows} />
+    {:else if articles.length}
       <ArticleIndexList {articles} offset={(currentPage - 1) * FAVORITES_PAGE_SIZE} />
 
       <PaginationNav {currentPage} {totalPages} basePath="/favorites" />

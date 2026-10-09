@@ -1,9 +1,11 @@
 <script lang="ts">
 import type { ProfileUser } from '@myblog/api/modules/user/types'
+import { ProfileFormSkeleton } from '$lib/components/user'
 import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import type { PageProps } from './$types'
+import { navigating } from '$app/state'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { UserAPI } from '$lib/api'
@@ -55,6 +57,10 @@ let savingPassword = $state(false)
 $effect(() => {
   authStore.login(loadedProfile, authStore.getPermissions())
 })
+
+// 资料页的重新导航同样经客户端路由触发，服务端重新求值期间以表单骨架承接等待。
+// 仅在目标路径仍为本页时接管显示，跳转其他页面时不清空既有内容。
+const isNavigatingHere = $derived(navigating?.to?.url.pathname === '/profile')
 
 // 将响应资料写入页面状态。
 function applyProfile(profile: ProfileUser) {
@@ -145,123 +151,127 @@ async function handlePasswordSubmit(event: SubmitEvent) {
       <h1 class="font-display text-3xl font-black">个人资料</h1>
     </div>
 
-    <p class="mb-10 font-mono text-sm text-muted-foreground">
-      {loadedProfile.username} · {loadedProfile.email}
-    </p>
+    {#if isNavigatingHere}
+      <ProfileFormSkeleton />
+    {:else}
+      <p class="mb-10 font-mono text-sm text-muted-foreground">
+        {loadedProfile.username} · {loadedProfile.email}
+      </p>
 
-    <div class="grid gap-8 lg:grid-cols-2">
-      <!-- 资料表单：纸深面卡片承载，沿用站内输入框样式。 -->
-      <form onsubmit={handleProfileSubmit} class="border border-line bg-secondary p-6">
-        <h2 class="font-display text-xl font-black">基础资料</h2>
-        <p class="mt-1 text-xs text-muted-foreground">昵称与简介会展示在评论与作者主页。</p>
+      <div class="grid gap-8 lg:grid-cols-2">
+        <!-- 资料表单：纸深面卡片承载，沿用站内输入框样式。 -->
+        <form onsubmit={handleProfileSubmit} class="border border-line bg-secondary p-6">
+          <h2 class="font-display text-xl font-black">基础资料</h2>
+          <p class="mt-1 text-xs text-muted-foreground">昵称与简介会展示在评论与作者主页。</p>
 
-        <label class="mt-6 block">
-          <span class="mb-2 block text-sm font-bold">昵称</span>
-          <input
-            type="text"
-            bind:value={nickname}
-            required
-            maxlength={NICKNAME_MAX_LENGTH}
-            placeholder="展示昵称"
-            class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          />
-        </label>
+          <label class="mt-6 block">
+            <span class="mb-2 block text-sm font-bold">昵称</span>
+            <input
+              type="text"
+              bind:value={nickname}
+              required
+              maxlength={NICKNAME_MAX_LENGTH}
+              placeholder="展示昵称"
+              class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            />
+          </label>
 
-        <label class="mt-4 block">
-          <span class="mb-2 block text-sm font-bold">头像地址</span>
-          <input
-            type="url"
-            bind:value={avatar}
-            maxlength={AVATAR_MAX_LENGTH}
-            placeholder="https://…"
-            class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          />
-        </label>
+          <label class="mt-4 block">
+            <span class="mb-2 block text-sm font-bold">头像地址</span>
+            <input
+              type="url"
+              bind:value={avatar}
+              maxlength={AVATAR_MAX_LENGTH}
+              placeholder="https://…"
+              class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            />
+          </label>
 
-        <label class="mt-4 block">
-          <span class="mb-2 block text-sm font-bold">个人简介</span>
-          <textarea
-            bind:value={bio}
-            maxlength={BIO_MAX_LENGTH}
-            rows="4"
-            placeholder="一句话介绍自己"
-            class="w-full resize-y border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          ></textarea>
-        </label>
+          <label class="mt-4 block">
+            <span class="mb-2 block text-sm font-bold">个人简介</span>
+            <textarea
+              bind:value={bio}
+              maxlength={BIO_MAX_LENGTH}
+              rows="4"
+              placeholder="一句话介绍自己"
+              class="w-full resize-y border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            ></textarea>
+          </label>
 
-        <label class="mt-4 block">
-          <span class="mb-2 block text-sm font-bold">个人网站</span>
-          <input
-            type="url"
-            bind:value={website}
-            maxlength={WEBSITE_MAX_LENGTH}
-            placeholder="https://…"
-            class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          />
-        </label>
+          <label class="mt-4 block">
+            <span class="mb-2 block text-sm font-bold">个人网站</span>
+            <input
+              type="url"
+              bind:value={website}
+              maxlength={WEBSITE_MAX_LENGTH}
+              placeholder="https://…"
+              class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            />
+          </label>
 
-        <button
-          type="submit"
-          disabled={savingProfile}
-          class="mt-6 inline-flex w-full items-center justify-center bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingProfile ? '保存中…' : '保存资料'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={savingProfile}
+            class="mt-6 inline-flex w-full items-center justify-center bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {savingProfile ? '保存中…' : '保存资料'}
+          </button>
+        </form>
 
-      <!-- 改密码表单：独立于资料表单单独提交。 -->
-      <form onsubmit={handlePasswordSubmit} class="h-fit border border-line bg-secondary p-6">
-        <h2 class="font-display text-xl font-black">修改密码</h2>
-        <p class="mt-1 text-xs text-muted-foreground">
-          长度 {PASSWORD_MIN_LENGTH}-{PASSWORD_MAX_LENGTH} 位，需同时包含字母和数字。
-        </p>
+        <!-- 改密码表单：独立于资料表单单独提交。 -->
+        <form onsubmit={handlePasswordSubmit} class="h-fit border border-line bg-secondary p-6">
+          <h2 class="font-display text-xl font-black">修改密码</h2>
+          <p class="mt-1 text-xs text-muted-foreground">
+            长度 {PASSWORD_MIN_LENGTH}-{PASSWORD_MAX_LENGTH} 位，需同时包含字母和数字。
+          </p>
 
-        <label class="mt-6 block">
-          <span class="mb-2 block text-sm font-bold">当前密码</span>
-          <input
-            type="password"
-            bind:value={oldPassword}
-            required
-            autocomplete="current-password"
-            placeholder="请输入当前密码"
-            class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          />
-        </label>
+          <label class="mt-6 block">
+            <span class="mb-2 block text-sm font-bold">当前密码</span>
+            <input
+              type="password"
+              bind:value={oldPassword}
+              required
+              autocomplete="current-password"
+              placeholder="请输入当前密码"
+              class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            />
+          </label>
 
-        <label class="mt-4 block">
-          <span class="mb-2 block text-sm font-bold">新密码</span>
-          <input
-            type="password"
-            bind:value={newPassword}
-            required
-            minlength={PASSWORD_MIN_LENGTH}
-            maxlength={PASSWORD_MAX_LENGTH}
-            autocomplete="new-password"
-            placeholder="请输入新密码"
-            class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          />
-        </label>
+          <label class="mt-4 block">
+            <span class="mb-2 block text-sm font-bold">新密码</span>
+            <input
+              type="password"
+              bind:value={newPassword}
+              required
+              minlength={PASSWORD_MIN_LENGTH}
+              maxlength={PASSWORD_MAX_LENGTH}
+              autocomplete="new-password"
+              placeholder="请输入新密码"
+              class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            />
+          </label>
 
-        <label class="mt-4 block">
-          <span class="mb-2 block text-sm font-bold">确认新密码</span>
-          <input
-            type="password"
-            bind:value={confirmPassword}
-            required
-            autocomplete="new-password"
-            placeholder="请再次输入新密码"
-            class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
-          />
-        </label>
+          <label class="mt-4 block">
+            <span class="mb-2 block text-sm font-bold">确认新密码</span>
+            <input
+              type="password"
+              bind:value={confirmPassword}
+              required
+              autocomplete="new-password"
+              placeholder="请再次输入新密码"
+              class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
+            />
+          </label>
 
-        <button
-          type="submit"
-          disabled={savingPassword}
-          class="mt-6 inline-flex w-full items-center justify-center bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingPassword ? '提交中…' : '修改密码'}
-        </button>
-      </form>
-    </div>
+          <button
+            type="submit"
+            disabled={savingPassword}
+            class="mt-6 inline-flex w-full items-center justify-center bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {savingPassword ? '提交中…' : '修改密码'}
+          </button>
+        </form>
+      </div>
+    {/if}
   </div>
 </section>

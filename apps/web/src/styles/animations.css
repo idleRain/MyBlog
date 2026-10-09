@@ -1,0 +1,31 @@
+/*
+ * 前台动效补充声明。
+ *
+ * 绝大部分动效已就地声明：GSAP 侧经 gsap.matchMedia 门控，装饰性循环动画写在所属组件的
+ * 样式块内。此文件只承载无法就地归属的补充规则。
+ */
+
+/*
+ * 减少动态优先级的降级处理。
+ * 骨架屏的脉冲来自 packages/ui 的 skeleton 组件，组件库保持 stock 且不携带全局样式，
+ * 因此覆盖写在应用层。packages/ui 源码经 app.css 的 @source 纳入扫描，
+ * 该覆盖同时作用于组件库组件与应用自有元素。
+ * 覆盖必须带 !important：animate-pulse 位于 Tailwind 的 utilities 层，
+ * 而本文件是不带层的普通规则，无重要标记时层内规则优先。
+ */
+@media (prefers-reduced-motion: reduce) {
+  /* 骨架屏脉冲停用后保留弱背景色块，占位语义不丢失。 */
+  .animate-pulse {
+    animation: none !important;
+  }
+
+  /* 加载态旋转指示停用后保留圆环与缺口，缺口即可见的活动状态标记。 */
+  .animate-spin {
+    animation: none !important;
+  }
+
+  /* 插入符停止闪烁后常亮，仍标记输入焦点位置。 */
+  .animate-caret-blink {
+    animation: none !important;
+  }
+}
