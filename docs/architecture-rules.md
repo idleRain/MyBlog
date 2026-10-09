@@ -224,10 +224,10 @@ git grep -n "NewRBACService()" -- server
 | D2 | 双 User 模型同写 users 表 | **已清偿（R1）**：合并为唯一 `domain.User` 实体 | `git grep -n "type User struct" -- server/internal --include="*.go"`（仅 domain） | 新字段只加 `domain.User` |
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言 | **已清偿（R0）**：router 重复接口 0、断言 0 | `git grep -c "HandlerInterface interface" -- server/internal/router`（应为空） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化 | **已收敛（R0）**：仅 main.go 组合根 1 处 | 见 §5.3 | 禁止新增实例化点 |
-| D5 | 两 app 基础设施逐字重复 | **大幅清偿（R1）**：auth store 下沉 `@myblog/auth`（202 行×2 → 16 行×2）；service/index.ts、theme-toggle、layout、error 仍重复 | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应近零差异） | 修改任一必须同步另一份 |
+| D5 | 两 app 基础设施逐字重复 | **重新锚定（2026-10 实测）**：逐字重复仅 **2 文件 60 行**——`src/lib/stores/auth.ts`（15 行 ×2，SHA256 一致）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2，SHA256 一致）。另有 3 文件职责同构但内容不同，不计入逐字重复：`service/index.ts`（69 / 67 行）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，两 app 版式已各自独立设计）。原登记「5 文件约 420 行」含已下沉 `@myblog/auth` 的 auth store 主体，口径失准 | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应为零差异）；同法核对 `theme-toggle.svelte` | 修改任一必须同步另一份 |
 | D6 | admin 认证工具三轨并行 | **已收敛（R3）**：`utils/jwt.ts`、`utils/auth.ts` 已删（约 488 行）；`performLogout` 单轨（utils/logout）、刷新单轨（service/index.ts） | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken\|getAuthStatus" -- apps/admin/src/lib` | 禁止新增认证工具文件；禁止回潮双轨 |
 | D7 | 影子类型层 | **已清偿（R1，2026-09 扩面收尾）**：`types/api.d.ts` 与 admin `lib/types`（admin/common/auth/index 共 535 行）已删，两应用 eslint 守门由 paths 改 patterns，拦截 `$lib/types` 全部引入形态 | `git grep -n "interface BaseApiResponse" -- apps`（应为空） | 禁止回潮；类型一律来自 `@myblog/api` |
-| D8 | admin 胖组件 + onMount 取数 | **users 跨页补偿已清偿（R3）**：users/list 增加 keyword 参数；12 个胖组件存量保留（新页面禁用） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"` | 新页面禁用；后端缺口推回后端 |
+| D8 | admin 胖组件 + onMount 取数 | **重新锚定（2026-10 实测）**：口径明确为「`apps/admin/src/routes` 下单文件 > 300 行」，实测 **7 个**，降序为 tags 448 / users 401 / links 399 / dicts 341 / comments 324 / categories 321 / media 320；路由 svelte 文件共 19 个。`onMount` 取数命中 13 个路由文件。原登记「12 个胖组件」未定义口径且与实测不符。users 跨页补偿已清偿（R3，users/list 支持 keyword） | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"`；行数按上述口径统计 | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码 | **已清偿（R0）**：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配 | **已清偿（R0）**：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |
 | D11 | 令牌表为内存 map | **已加锁（R0）+ 过期惰性清理**：`sync.RWMutex` 保护；令牌为不透明随机串，身份唯一权威在服务端令牌表，过期记录随签发清理 | `git grep -n "tokensByUser" -- server` | 单实例部署前提；持久化前保持锁；服务重启即全部会话失效 |
@@ -238,6 +238,7 @@ git grep -n "NewRBACService()" -- server
 | D16 | WAF 内容级黑名单的固有误伤面 | **误伤回归已锚定（BE-07）**：默认模式全部经词首边界或取值上下文锚定，攻击拦截与误伤回归两组用例在位；残余风险为讲解 SQL/XSS 的技术文章正文命中关键词模式仍会被拦，根治需内容感知解析或按路由豁免 | `go test ./internal/middleware/ -run "TestDefaultBlockedPatterns\|TestSecurityMiddleware" -count=1` | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
 | D17 | 测试替身内嵌空接口的运行时脆性 | **既有约定（三处实证）**：service 层 fake 以内嵌接口继承全部方法，接口新增方法被既有测试路径调用时以 nil panic 暴露而非编译错误（`recordedTokenService.GenerateTokenPair`、`loginUserRepo.Update`、`lockoutUserRepo.GetByUsername` 三例） | `go test ./internal/... -count=1` | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写；禁止依赖内嵌空接口的静默兼容 |
 | D18 | web 界面多语言局部接入 | **UI-27 拍板半程态（2026-09-16）**：语言切换对 Header/Footer/错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败） | `git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、+error） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进 |
+| D19 | 字典页窄屏交互与工具栏布局遗留 | **补登（2026-10）**：2026-09 双端小屏响应式修复时，`apps/admin/src/routes/(admin)/dicts/+page.svelte` 的类型列表窄屏交互与工具栏布局打磨未完成，当时仅记录在提交信息中，未进入债务表，存在随提交历史沉没的风险。该页同时是 D8 口径下的 7 个胖组件之一（341 行），两个问题可在同一次触碰中一并处理 | 读 `apps/admin/src/routes/(admin)/dicts/+page.svelte` 的类型列表与工具栏区块在窄屏下的布局 | 触碰该页时必须顺带处理，不得再次遗留；不得以「已记录在提交信息」替代债务登记 |
 
 ---
 

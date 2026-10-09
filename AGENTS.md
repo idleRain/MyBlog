@@ -42,7 +42,7 @@ git grep -ln "MyBlog/internal/repository" -- internal/service internal/middlewar
 
 ### A5 禁止复制粘贴式共享
 
-- 两 app 之间禁止新增逐字/近似重复的文件；公共逻辑必须下沉到 packages。存量违例 D5（auth store 等 5 文件约 420 行）。
+- 两 app 之间禁止新增逐字/近似重复的文件；公共逻辑必须下沉到 packages。存量违例 D5（逐字重复 2 文件 60 行，数值见第 9 节）。
 - 修改任一已知重复文件时，必须同步检查另一份并在提交信息中注明同步情况。
 
 ### A6 数据加载归位
@@ -202,10 +202,10 @@ pnpm run migrate [create|up|down|version|help]
 | D2 | 双 User 模型（**已清偿**：合并为唯一 `domain.User`） | 新字段只加 `domain.User` |
 | D3 | router 重复定义 handler 接口 + `interface{}` 断言（**已清偿**） | 禁止回潮 |
 | D4 | `RBACService` 生产实例化（**已收敛**：仅 main 组合根 1 处） | 禁止新增实例化点 |
-| D5 | 两 app 基础设施逐字重复（auth store 已下沉 `@myblog/auth`，service/theme/layout 仍重复） | 修改任一必须同步另一份 |
+| D5 | 两 app 基础设施逐字重复（**2026-10 重新锚定**：逐字重复仅 **2 文件 60 行**——`stores/auth.ts` 15 行 ×2、`theme-toggle.svelte` 45 行 ×2，SHA256 一致；`service/index.ts`、`+layout.svelte`、`+error.svelte` 职责同构但内容不同，不计入） | 修改任一必须同步另一份 |
 | D6 | admin 认证工具三轨并行（**已收敛**：`jwt.ts`/`auth.ts` 已删，刷新/登出单轨） | 禁止新增认证工具文件 |
 | D7 | 应用层影子类型（**已清偿**：`types/api.d.ts` 与 admin `lib/types` 4 文件 535 行一并删除，两应用守门实测拦截） | 禁止回潮；类型一律来自 `@myblog/api` |
-| D8 | admin 12 个页面胖组件 + onMount 取数（users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
+| D8 | admin 胖组件 + onMount 取数（**2026-10 重新锚定**：口径为 `apps/admin/src/routes` 下单文件 > 300 行，实测 **7 个**——tags 448 / users 401 / links 399 / dicts 341 / comments 324 / categories 321 / media 320；users 跨页补偿**已清偿**，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
 | D9 | web 首页 load 死代码（**已清偿**） | 新页面禁用 load 调认证接口 |
 | D10 | 401 文案匹配（**已清偿**：`code === 401` 判定） | 禁止回退文案匹配 |
 | D11 | 令牌表为内存 map（**已加锁**；过期记录随签发惰性清理；令牌为不透明随机串，身份唯一权威在服务端令牌表） | 单实例部署前提；持久化前保持锁；服务重启即全部会话失效 |
@@ -216,6 +216,7 @@ pnpm run migrate [create|up|down|version|help]
 | D16 | WAF 内容级黑名单的固有误伤面（**BE-07 已锚定**：模式全部词首边界/取值上下文锚定，误伤回归在位；SQL/XSS 教学正文残余误拦待内容感知解析） | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
 | D17 | 测试替身内嵌空接口的运行时脆性（接口加方法以 nil panic 暴露，三处实证） | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写，禁止依赖内嵌空接口的静默兼容 |
 | D18 | web 界面多语言局部接入（**UI-27 拍板半程态**：Header/Footer/错误页已接入 paraglide，其余页面文案硬编码中文） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；词表文件保持 JSON 兼容写法 |
+| D19 | 字典页窄屏交互与工具栏布局遗留（**2026-10 补登**：原仅记录在提交信息中，未进债务表，存在随提交历史沉没的风险；该页同时是 7 个胖组件之一） | 触碰该页时必须顺带处理，不得再次遗留；不得以"已记录在提交信息"替代债务登记 |
 
 ## 10. 开发进度概览
 
@@ -235,4 +236,4 @@ pnpm run migrate [create|up|down|version|help]
 - 后续候选：多语言其余页面接入（D18，待页面大变动后分批）。
 - 可选细化（非验收口径）：handler 层全面 DTO 分离（D12 已用 `json:"-"` 兜底）、组合根按域装配。
 
-架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D18 只减不增。
+架构大清洗已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：R0/R1/R2 全部完成，R3 的 IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具收敛均已完成；债务 D1-D19 只减不增。
