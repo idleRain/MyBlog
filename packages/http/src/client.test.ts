@@ -18,7 +18,7 @@ type TestableResponseHook = (
 // ky 替身：捕获 createHttpClient 注册的钩子，并记录每一次重放调用。
 const kyMock = vi.hoisted(() => {
   const state = {
-    hooks: null as { afterResponse: unknown[] } | null,
+    hooks: null as { afterResponse: unknown[]; beforeRequest?: unknown[] } | null,
     replayCalls: [] as Array<[Request, ResponseHookOptionsLike]>
   }
 
@@ -28,10 +28,12 @@ const kyMock = vi.hoisted(() => {
       return Promise.resolve(new Response('{}'))
     }),
     {
-      create: vi.fn((options: { hooks: { afterResponse: unknown[] } }) => {
-        state.hooks = options.hooks
-        return { mockedClient: true }
-      })
+      create: vi.fn(
+        (options: { hooks: { afterResponse: unknown[]; beforeRequest?: unknown[] } }) => {
+          state.hooks = options.hooks
+          return { mockedClient: true }
+        }
+      )
     }
   )
 
@@ -176,5 +178,46 @@ describe('401 语义边界', () => {
     expect(auth.refreshSession).not.toHaveBeenCalled()
     expect(auth.onAuthFailure).not.toHaveBeenCalled()
     expect(onError).toHaveBeenCalledWith('服务器内部错误')
+  })
+})
+
+// 取回 createHttpClient 注册的请求拦截器。
+function getRequestHook(): (request: Request) => Promise<void> | void {
+  const hooks = kyMock.state.hooks
+  if (!hooks?.beforeRequest?.[0]) throw new Error('请求拦截器尚未注册')
+  return hooks.beforeRequest[0] as (request: Request) => Promise<void> | void
+}
+
+describe('注入请求头', () => {
+  it('把调用方注入的请求头写入每一次请求', async () => {
+    createHttpClient({
+      prefixUrl: 'http://localhost/api',
+      headers: { Cookie: 'mb_access_token=abc; mb_refresh_token=def' }
+    })
+
+    const request = new Request('http://localhost/api/articles/list', { method: 'POST' })
+    await getRequestHook()(request)
+
+    expect(request.headers.get('Cookie')).toBe('mb_access_token=abc; mb_refresh_token=def')
+  })
+
+  it('接受 Headers 实例作为注入源', async () => {
+    const headers = new Headers()
+    headers.set('Cookie', 'mb_access_token=xyz')
+    createHttpClient({ prefixUrl: 'http://localhost/api', headers })
+
+    const request = new Request('http://localhost/api/articles/list', { method: 'POST' })
+    await getRequestHook()(request)
+
+    expect(request.headers.get('Cookie')).toBe('mb_access_token=xyz')
+  })
+
+  it('未注入请求头时不写入 Cookie，浏览器场景保持自动携带语义', async () => {
+    createHttpClient({ prefixUrl: 'http://localhost/api' })
+
+    const request = new Request('http://localhost/api/articles/list', { method: 'POST' })
+    await getRequestHook()(request)
+
+    expect(request.headers.get('Cookie')).toBeNull()
   })
 })

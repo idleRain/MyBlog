@@ -1,66 +1,20 @@
 <script lang="ts">
 import { ArticleIndexList, PaginationNav } from '$lib/components/article'
 import type { Article } from '@myblog/api/modules/article/types'
-import { page as pageStore } from '$app/stores'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { authStore } from '$lib/stores/auth'
-import { goto } from '$app/navigation'
-import { toast } from 'svelte-sonner'
-import { ArticleAPI } from '$lib/api'
+import type { PageProps } from './$types'
 
-// 收藏列表每页数量，与其他目录页保持一致的版面节奏。
+// 收藏列表每页数量，与 +page.server.ts 保持一致，用于计算列表跨页编号偏移。
 const FAVORITES_PAGE_SIZE = 12
 
-// 后端统一响应的成功业务码。
-const RESPONSE_CODE_SUCCESS = 200
+// 数据由 +page.server.ts 的 load 在服务端取回，页面只负责渲染。
+let { data }: PageProps = $props()
 
-// 收藏数据与分页状态。
-let articles = $state<Article[]>([])
-let total = $state(0)
-let currentPage = $state(1)
-let loading = $state(true)
-
-// 收藏数据依赖登录令牌，未登录时引导前往登录页。
-// 认证状态经 store 自动订阅读取，组件卸载时由 Svelte 自动退订，避免重挂载累积订阅。
-const isAuthenticated = $derived($authStore.isAuthenticated)
-
-// 分页由 URL 查询参数驱动，分页链接变更时自动重新加载。
-const queryPage = $derived(
-  Math.max(1, Math.floor(Number($pageStore.url.searchParams.get('page')) || 1))
-)
-
+// 页面状态直接派生自 load 结果，因此不存在「先渲染容器再补拉」的空窗。
+const articles = $derived<Article[]>(data.list.articles)
+const total = $derived(data.list.total)
+const currentPage = $derived(data.currentPage)
 const totalPages = $derived(Math.max(1, Math.ceil(total / FAVORITES_PAGE_SIZE)))
-
-// 登录态或页码变化时拉取收藏列表，登出时清空。
-$effect(() => {
-  if (!isAuthenticated) {
-    articles = []
-    total = 0
-    currentPage = 1
-    void goto('/login')
-    return
-  }
-  void loadFavorites(queryPage)
-})
-
-// 拉取指定页的收藏文章。
-async function loadFavorites(targetPage: number) {
-  loading = true
-  try {
-    const response = await ArticleAPI.bookmarks({ page: targetPage, pageSize: FAVORITES_PAGE_SIZE })
-    if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) {
-      toast.error(response.message || '收藏列表加载失败，请稍后重试')
-      return
-    }
-    articles = response.data.articles
-    total = response.data.total
-    currentPage = response.data.page
-  } catch {
-    toast.error('收藏列表加载失败，请稍后重试')
-  } finally {
-    loading = false
-  }
-}
 </script>
 
 <svelte:head>
@@ -84,17 +38,15 @@ async function loadFavorites(targetPage: number) {
       <span class="shrink-0 font-mono text-sm text-muted-foreground">共 {total} 篇</span>
     </div>
 
-    {#if loading}
-      <p class="py-10 text-center text-sm text-muted-foreground">正在加载收藏…</p>
-    {:else if articles.length === 0}
+    {#if articles.length}
+      <ArticleIndexList {articles} offset={(currentPage - 1) * FAVORITES_PAGE_SIZE} />
+
+      <PaginationNav {currentPage} {totalPages} basePath="/favorites" />
+    {:else}
       <div class="border-l-2 border-signal py-4 pl-6">
         <p class="font-display text-xl font-medium">还没有收藏任何文章。</p>
         <p class="mt-2 text-sm text-muted-foreground">在文章页点击收藏按钮，即可在这里找到它们。</p>
       </div>
-    {:else}
-      <ArticleIndexList {articles} offset={(currentPage - 1) * FAVORITES_PAGE_SIZE} />
-
-      <PaginationNav {currentPage} {totalPages} basePath="/favorites" />
     {/if}
   </div>
 </section>

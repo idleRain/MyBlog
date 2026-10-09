@@ -51,6 +51,13 @@ export interface CreateHttpClientOptions {
   getLanguage?: () => string | null | Promise<string | null>
 
   /**
+   * 每次请求附加的固定请求头。
+   * 服务端渲染场景据此转发入站请求的 Cookie，使请求在服务端同样具备登录身份。
+   * 浏览器场景不传该选项，会话 Cookie 由浏览器自动携带。
+   */
+  headers?: HeadersInit
+
+  /**
    * 全局错误提示回调，例如 toast。
    */
   onError?: (message: string) => void
@@ -89,10 +96,17 @@ async function parseResponseBody(
  * 创建带会话续期、超时与错误提示的 HTTP 客户端。
  */
 export function createHttpClient(options: CreateHttpClientOptions) {
-  const { prefixUrl, timeout = 30000, auth, getLanguage, onError } = options
+  const { prefixUrl, timeout = 30000, auth, getLanguage, headers, onError } = options
 
-  // 请求拦截器：为请求附加内容语言标识；会话 Cookie 由浏览器随同源请求自动携带。
+  // 请求拦截器：为请求附加内容语言与调用方注入的固定请求头；
+  // 浏览器场景的会话 Cookie 由浏览器随同源请求自动携带，无需在此注入。
   const requestInterceptor: BeforeRequestHook = async request => {
+    if (headers) {
+      const injectedHeaders = new Headers(headers)
+      injectedHeaders.forEach((value, key) => {
+        request.headers.set(key, value)
+      })
+    }
     if (getLanguage) {
       const language = await getLanguage()
       if (language) {
