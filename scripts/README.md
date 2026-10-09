@@ -33,18 +33,23 @@ pnpm run migrate -- goto 5
 | `lint-staged-goimports.ts` | lint-staged 专用 goimports 执行入口                                                                   | 由 lint-staged 传入文件列表                                                                                  | 由 `.husky/pre-commit` 触发                                                                                  |
 | `migrate.ts`               | 基于 golang-migrate 的数据库迁移管理                                                                  | `create <name>` / `up` / `down [steps]` / `goto <version>` / `force <version>` / `version` / `drop` / `help` | `pnpm run migrate` 及 `migrate:create` / `migrate:up` / `migrate:down` / `migrate:version`                   |
 | `seed.ts`                  | 初始化或提升超级管理员账户，命令幂等                                                                  | `--username` / `--password` / `--email` / `--help`                                                           | `pnpm run seed:admin`                                                                                        |
+| `measure-assets.ts`        | 按字体、JavaScript、样式表、源映射分类汇总前台产物体积，超阈值时非零退出                              | 无                                                                                                           | `pnpm run measure:assets`                                                                                    |
+| `check-font-bundle.ts`     | 生产构建的字体体积门禁，防本地 CJK 字体回流产物                                                       | 无                                                                                                           | `pnpm run check:fonts`                                                                                       |
+| `format-check.ts`          | 只读格式检查，按应用与包分别 glob 以避免配置解析误报                                                  | 无                                                                                                           | `pnpm run format:check`                                                                                      |
+| `pre-commit-guard.ts`      | pre-commit 门禁编排，按暂存范围条件触发 packages、apps 与受影响 Go 包的测试                           | 由 `.husky/pre-commit` 触发                                                                                  | 无，钩子内执行                                                                                               |
+| `lib/assets.ts`            | 产物扫描与按扩展名分类的公共实现，供体积度量与字体门禁共用                                            | —                                                                                                            | 内部工具                                                                                                     |
 | `lib/is-main.ts`           | 判断当前模块是否为直接运行的入口，供各脚本复用                                                        | —                                                                                                            | 内部工具                                                                                                     |
 
 ## 备份与部署校验脚本
 
 `scripts/backup/` 下为容器化备份链路的脚本与静态校验工具，均为纯 Node 执行，无 tsx 依赖。
 
-| 脚本                              | 用途                                                        | 参数 | pnpm 入口 |
-| --------------------------------- | ----------------------------------------------------------- | ---- | --------- |
-| `backup/backup.sh`                | 容器内执行数据库导出与 uploads 打包，写入校验清单并清理过期 | 经环境变量配置，见 `docs/operations/backup-restore.md` | 无，由编排的 backup 服务调用 |
-| `backup/restore.sh`               | 容器内执行备份还原，位置参数为备份目录与可选目标库名         | `<备份目录> [目标库名]` | 无，手工执行 |
-| `backup/check-dependencies.mjs`   | 静态列出 `backup.sh`/`restore.sh` 的外部命令依赖，供容器镜像能力核对 | 无 | 无，直接 `node` 执行 |
-| `backup/verify-static.mjs`        | 备份与编排交付物的静态校验套件，共 10 项，失败时退出码非零   | 无 | 无，直接 `node` 执行 |
+| 脚本                            | 用途                                                                 | 参数                                                   | pnpm 入口                    |
+| ------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------- |
+| `backup/backup.sh`              | 容器内执行数据库导出与 uploads 打包，写入校验清单并清理过期          | 经环境变量配置，见 `docs/operations/backup-restore.md` | 无，由编排的 backup 服务调用 |
+| `backup/restore.sh`             | 容器内执行备份还原，位置参数为备份目录与可选目标库名                 | `<备份目录> [目标库名]`                                | 无，手工执行                 |
+| `backup/check-dependencies.mjs` | 静态列出 `backup.sh`/`restore.sh` 的外部命令依赖，供容器镜像能力核对 | 无                                                     | 无，直接 `node` 执行         |
+| `backup/verify-static.mjs`      | 备份与编排交付物的静态校验套件，共 10 项，失败时退出码非零           | 无                                                     | 无，直接 `node` 执行         |
 
 ## 脚本设计约定
 

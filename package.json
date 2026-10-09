@@ -22,6 +22,8 @@
     "build:web": "tsx scripts/build.ts --web-only",
     "build:fast": "tsx scripts/build.ts --skip-tests --skip-lint",
     "build:apps": "tsx scripts/build-web.ts && tsx scripts/build-admin.ts",
+    "measure:assets": "tsx scripts/measure-assets.ts",
+    "check:fonts": "tsx scripts/check-font-bundle.ts",
     "test": "pnpm run test:server && pnpm run test:packages && pnpm run test:apps && pnpm run contract:check",
     "test:server": "tsx scripts/go-tools.ts test",
     "test:packages": "pnpm --filter @myblog/api --filter @myblog/auth --filter @myblog/http run typecheck && pnpm --filter @myblog/api --filter @myblog/auth --filter @myblog/http run test",
