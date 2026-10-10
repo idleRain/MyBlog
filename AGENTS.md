@@ -99,7 +99,7 @@ MyBlog/
 ├── packages/
 │   ├── shared/               # 公共纯工具与通用类型（ApiResponse 等）
 │   ├── http/                 # HTTP 请求器（ky 封装，认证回调注入）
-│   ├── api/                  # 后端接口模块与响应类型（11 个模块工厂）
+│   ├── api/                  # 后端接口模块与响应类型（12 个模块工厂）
 │   ├── auth/                 # 认证会话组装（createAuthStore 工厂，注入式）
 │   └── ui/                   # shadcn-svelte 基础组件（stock，主题注入）
 ├── server/                   # Go 后端服务（Gin + GORM + MySQL）
@@ -185,7 +185,7 @@ pnpm run migrate [create|up|down|version|help]
 - **框架**：SvelteKit + Svelte 5 + TypeScript，Svelte 5 runes 风格，**不使用 Options API**。应用分 `apps/web`（前台 toC，SSR 路线）与 `apps/admin`（后台 toB，SPA 路线 `ssr=false`）。
 - **组件库**：shadcn-svelte 基础组件统一位于 `packages/ui`（保持 stock，主题经各应用 `app.css` token 注入），经 `$ui` 与 `$ui/*` 子路径别名引入，由根级 eslint/prettier 排除。**禁止在应用内重写 `$ui` 已有组件**（admin 分页已回归 `$ui`）。别名见各应用 `svelte.config.js`：`$lib`（SvelteKit 隐式提供）、`$ui`、`$ui/*`、`$i18n`（仅前台）、`@/*`（应用自身 `src`）；前台另有构建期 `#fonts` 别名，dev 走本地 fontsource、prod 走 CDN 模块，见 `apps/web/vite.config.ts`。
 - **样式**：TailwindCSS v4（`@tailwindcss/vite`）；前台 `apps/web/src/app.css`（编辑杂志主题，暖纸墨色系，含 `--signal` 与 `--color-line` 别名）、后台 `apps/admin/src/app.css`（原始主题，无 `--signal`）；`packages/ui` 不携带全局样式。视觉与动效准则见 `docs/ui-design-system.md`。
-- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 11 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow）；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
+- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 12 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow/dict）；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
 - **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用薄封装各持一份）；admin 认证域工具已统一（`utils/jwt.ts`、`utils/auth.ts` 已删，刷新/登出单轨）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
 - **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`（i18n 演示沙盒）；后台使用 `(admin)`、`(auth)`（登录页归属后台）。数据加载纪律见 0.6：web 用 load，admin 新页面优先 load。
 - **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。接入现状与文案取词纪律见第 9 节债务登记（Header/Footer/错误页已接入，其余页面待页面大变动后分批）。
@@ -235,7 +235,7 @@ pnpm run migrate [create|up|down|version|help]
 
 已完成：
 - 基础设施：Monorepo 架构、环境与工具链、Git hooks、智能开发脚本与监控、pnpm catalog 版本治理。
-- 后端：11 个业务模块（用户/认证/不透明双令牌/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数约 90，详见 `server/docs/api/`）。
+- 后端：12 个业务模块（用户/认证/不透明双令牌/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注、字典）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数 104：`/api` 业务接口 102 + 健康探针 2，逐条清单见 `server/docs/api/README.md`）。
 - 后端数据管道：通知生产链路（评论回复/点赞/关注）、浏览明细与日统计、搜索日志、评论设置开关消费均已打通。
 - 前端 admin：14 个页面（仪表盘、文章管理、分类、标签、评论、媒体、用户、设置、友链、统计、通知、登录）+ markdown 编辑器组件。
 - 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题。

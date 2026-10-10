@@ -8,7 +8,7 @@
 
 > 一个 Monorepo 全栈个人博客应用，采用 Go + SvelteKit 技术栈构建
 
-[![Go Version](https://img.shields.io/badge/Go-1.23+-blue.svg)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.26.9-blue.svg)](https://golang.org)
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-Latest-orange.svg)](https://kit.svelte.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org)
 
@@ -43,7 +43,8 @@ MyBlog/                   # Monorepo 根目录
 ├── packages/             # 公共包
 │   ├── shared/           # 纯工具与通用类型
 │   ├── http/             # HTTP 请求器（ky 封装）
-│   ├── api/              # 后端接口模块
+│   ├── api/              # 后端接口模块（12 个模块工厂）
+│   ├── auth/             # 认证会话组装（createAuthStore 工厂）
 │   └── ui/               # shadcn-svelte 基础组件（stock）
 ├── server/               # Go 后端服务
 │   ├── cmd/myblog/       # 应用程序入口
@@ -65,7 +66,7 @@ MyBlog/                   # Monorepo 根目录
 
 ### 后端 (server/)
 
-- **Go 1.23+** - 高性能后端语言
+- **Go 1.26.9** - 高性能后端语言（版本唯一来源为 `server/go.mod` 的 `go` 指令）
 - **Gin** - 轻量级 Web 框架
 - **GORM** - ORM 数据库操作
 - **MySQL** - 关系型数据库
@@ -88,8 +89,8 @@ MyBlog/                   # Monorepo 根目录
 ## 🚀 快速开始
 
 ### 环境要求
-- **Go 1.23+** - [下载安装](https://golang.org/)
-- **Node.js 20+** - [下载安装](https://nodejs.org/)
+- **Go 1.26.9** - [下载安装](https://golang.org/)（以 `server/go.mod` 的 `go` 指令为准）
+- **Node.js 22+** - [下载安装](https://nodejs.org/)（仓库根 `.nvmrc` 与 `engines.node` 均要求 22+）
 - **MySQL 8.0+** - [下载安装](https://dev.mysql.com/)
 
 ### 一键环境设置
@@ -147,19 +148,23 @@ pnpm run quality         # 完整质量检查 (格式化 + 检查 + 测试)
 
 ```bash
 # 前端专用
-pnpm run typecheck:web  # 前后台应用类型检查（尚无前端测试，暂以类型检查代替）
-pnpm run check          # 与 typecheck:web 相同，前后台类型检查
+pnpm run check          # 前后台 SvelteKit 类型检查（svelte-check）
+pnpm run typecheck:web  # 与 check 等价的旧入口，两应用并行类型检查
+pnpm run test:packages  # packages 单测与类型检查：@myblog/api + @myblog/auth + @myblog/http
+pnpm run test:apps      # 两应用单测：@myblog/web + @myblog/admin（vitest）
 cd apps/web && pnpm run check   # 前台 SvelteKit 类型检查
 cd apps/admin && pnpm run check # 后台 SvelteKit 类型检查
 
 # 后端专用  
-pnpm run test:server     # 后端测试
+pnpm run test:server     # 后端测试（go test -count=1）
 cd server && go test -v ./...  # 详细测试输出
 
 # Go 工具链
 pnpm run go:lint-install # 安装 Go 代码检查工具
 pnpm run go:quality      # Go 完整质量检查
 ```
+
+> 前端类型检查与单元测试是两条独立入口：`check` 只做类型检查，单测经 `test:packages` 与 `test:apps` 执行，两者都在 `pnpm run test` 与 CI 中串联。
 
 ## ⚙️ 配置管理
 

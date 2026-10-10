@@ -174,9 +174,11 @@ apps/admin/src/               # 后台
 
 | 工具    | 版本要求 | 说明                            |
 | ------- | -------- | ------------------------------- |
-| Go      | 1.23+    | 后端开发语言                    |
+| Go      | 1.26.9   | 后端开发语言                    |
 | Node.js | 22+      | JavaScript 运行时与脚本执行器   |
 | MySQL   | 8.0+     | 数据库服务                      |
+
+Go 版本的单一事实来源为 `server/go.mod` 的 `go` 指令（当前 `1.26.9`），CI 经 `actions/setup-go` 的 `go-version-file` 读取该值；本地低于该版本时由 `GOTOOLCHAIN` 自动下载对应工具链。
 
 Node.js 版本的单一事实来源为根 `.nvmrc`（当前 `22`），与 CI 的 `actions/setup-node` 保持一致；根 `package.json` 的 `engines.node` 声明为 `>=22`，版本过低时 pnpm 会给出告警。新机器建议先执行 `nvm use` 再执行 `pnpm install`。
 
