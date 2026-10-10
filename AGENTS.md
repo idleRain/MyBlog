@@ -110,6 +110,7 @@ MyBlog/
 ```
 
 - 包管理：**pnpm**（catalog 协议统一版本）；脚本运行时：**Node.js + tsx**；后端 Go 版本唯一来源为 `server/go.mod` 的 `go` 指令（当前 `1.26.9`），CI 经 `setup-go` 的 `go-version-file` 读取该值。
+- **产品定位**：单作者个人博客，**不开放注册**，账号由站点管理员创建（首次部署 `pnpm run seed:admin` 初始化超级管理员，之后在后台用户管理页新增）；**无找回密码通道**，忘记密码由超级管理员经 `POST /api/users/update` 重置。游客可浏览与提交评论（受审核设置约束），点赞/收藏/关注需登录。以上均为**有意取舍而非功能缺口**，新增功能提案前先确认是否与定位冲突；表述须与 `apps/web` 隐私政策页一致。
 - 配置承载于 `apps/web/.env`、`apps/admin/.env` 与 `server/configs/config.yaml`，默认端口：前台 8899、后台 9988、后端 3000。
 - 两应用认证基础设施重复为已知债务，新公共代码一律进 packages。
 

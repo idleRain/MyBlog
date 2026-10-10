@@ -12,6 +12,14 @@
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-Latest-orange.svg)](https://kit.svelte.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org)
 
+## 📌 产品定位
+
+本站为**单作者个人博客，不开放注册**。账号由站点管理员创建：首次部署经 `pnpm run seed:admin` 初始化超级管理员，之后的账号在后台用户管理页新增。
+
+- **无注册入口**，也**无找回密码通道**；忘记密码由超级管理员在后台用户管理页重置（`POST /api/users/update`）。
+- 游客可浏览全部公开内容并提交评论（受站点审核设置约束）；点赞、收藏与关注需要登录。
+- 以上均为**有意的设计取舍**，不是尚未实现的功能缺口；`apps/web` 隐私政策页的告知与本节表述一致。
+
 ## ✨ 特性
 
 - 🏗️ **Monorepo 架构** - 统一管理前后端代码和依赖
