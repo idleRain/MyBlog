@@ -25,8 +25,8 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@milkdown/crepe": "7.22.1",
-    "@milkdown/kit": "7.22.1",
+    "@milkdown/crepe": "7.22.2",
+    "@milkdown/kit": "7.22.2",
     "@myblog/api": "workspace:*",
     "@myblog/auth": "workspace:*",
     "@myblog/http": "workspace:*",
