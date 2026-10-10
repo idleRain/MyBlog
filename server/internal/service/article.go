@@ -438,14 +438,11 @@ func (s *ArticleService) GetArticleList(req *GetArticleListRequest, userID *uint
 	// 借状态参数越权拉取他人草稿仍被边界拦截。
 	// 权限解析一次完成，既决定状态筛选边界也供给逐篇可见性判定，
 	// 列表内的 GetByID 调用次数与文章数量解耦。
-	viewerCanManage := s.resolveViewerCanManage(userID)
-	if !viewerCanManage {
-		if userID != nil {
-			params.VisibleAuthorID = *userID
-		} else {
-			params.Status = model.ArticleStatusPublished
-		}
+	viewerOwnerID := uint(0)
+	if userID != nil {
+		viewerOwnerID = *userID
 	}
+	viewerCanManage := s.applyListVisibility(params, listScopeViewerAware, userID, viewerOwnerID)
 
 	articles, total, err := s.articleRepo.List(params)
 	if err != nil {
@@ -481,13 +478,7 @@ func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListR
 
 	// 可见性判定：管理员全量；作者本人查看自己的作者页时放开全状态；
 	// 其余查看者强制已发布，防止公开接口借状态参数越权拉取非公开文章。
-	if !s.resolveViewerCanManage(userID) {
-		if userID != nil && *userID == authorID {
-			params.VisibleAuthorID = authorID
-		} else {
-			params.Status = model.ArticleStatusPublished
-		}
-	}
+	s.applyListVisibility(params, listScopeViewerAware, userID, authorID)
 
 	articles, total, err := s.articleRepo.GetByAuthor(authorID, params)
 	if err != nil {
@@ -502,16 +493,16 @@ func (s *ArticleService) GetArticlesByAuthor(authorID uint, req *GetArticleListR
 	}, nil
 }
 
-// GetArticlesByCategory 获取指定分类的文章
+// GetArticlesByCategory 获取指定分类的文章，可见性由公开聚合面规则统一施加。
 func (s *ArticleService) GetArticlesByCategory(categoryID uint, req *GetArticleListRequest) (*ArticleListResponse, error) {
 	params := &repository.ArticleListParams{
 		Page:     req.Page,
 		PageSize: req.PageSize,
-		Status:   model.ArticleStatusPublished,
 		SortBy:   req.SortBy,
 		Order:    req.Order,
 		Search:   req.Search,
 	}
+	s.applyListVisibility(params, listScopePublishedOnly, nil, 0)
 
 	articles, total, err := s.articleRepo.GetByCategory(categoryID, params)
 	if err != nil {
@@ -526,16 +517,16 @@ func (s *ArticleService) GetArticlesByCategory(categoryID uint, req *GetArticleL
 	}, nil
 }
 
-// GetArticlesByTag 获取指定标签的文章
+// GetArticlesByTag 获取指定标签的文章，可见性由公开聚合面规则统一施加。
 func (s *ArticleService) GetArticlesByTag(tagID uint, req *GetArticleListRequest) (*ArticleListResponse, error) {
 	params := &repository.ArticleListParams{
 		Page:     req.Page,
 		PageSize: req.PageSize,
-		Status:   model.ArticleStatusPublished,
 		SortBy:   req.SortBy,
 		Order:    req.Order,
 		Search:   req.Search,
 	}
+	s.applyListVisibility(params, listScopePublishedOnly, nil, 0)
 
 	articles, total, err := s.articleRepo.GetByTag(tagID, params)
 	if err != nil {
@@ -557,10 +548,10 @@ func (s *ArticleService) SearchArticles(keyword string, req *GetArticleListReque
 	params := &repository.ArticleListParams{
 		Page:     req.Page,
 		PageSize: req.PageSize,
-		Status:   model.ArticleStatusPublished,
 		SortBy:   req.SortBy,
 		Order:    req.Order,
 	}
+	s.applyListVisibility(params, listScopePublishedOnly, nil, 0)
 
 	articles, total, err := s.articleRepo.Search(keyword, params)
 	s.recordSearchLog(keyword, startedAt, len(articles), err)
@@ -618,10 +609,10 @@ func (s *ArticleService) GetRelatedArticles(articleID uint, limit int) ([]*model
 	params := &repository.ArticleListParams{
 		Page:     1,
 		PageSize: limit * 2, // 获取更多文章用于筛选
-		Status:   model.ArticleStatusPublished,
 		SortBy:   "view_count",
 		Order:    "desc",
 	}
+	s.applyListVisibility(params, listScopePublishedOnly, nil, 0)
 
 	var relatedArticles []*model.Article
 
@@ -947,6 +938,43 @@ func (s *ArticleService) resolveViewerCanManage(userID *uint) bool {
 	}
 
 	return s.rbacService.HasPermission(user.Role, PermissionArticleManage)
+}
+
+// articleListScope 标识文章列表入口的可见性范围。
+type articleListScope int
+
+const (
+	// listScopeViewerAware 入口区分查看者身份：管理员全量，登录者可见已发布文章与本人全部状态。
+	listScopeViewerAware articleListScope = iota
+	// listScopePublishedOnly 入口仅输出已发布文章，不因查看者身份放宽。
+	listScopePublishedOnly
+)
+
+// applyListVisibility 在查询参数上施加该入口的可见性边界，文章列表入口共用本实现。
+// 查看者维度入口按「管理员全量、登录者已发布加本人全状态、匿名仅已发布」判定，
+// ownerID 为列表归属者，查看者即归属者时可见其全部状态。
+// 分类、标签、搜索与相关文章属公开聚合面，固定仅已发布：未发布内容的浏览入口是
+// 文章列表与作者页，二者已按查看者身份放宽，该差异是有意的语义边界而非实现分叉。
+// 返回查看者是否持有文章管理权限，供调用方复用于逐篇可见性判定。
+// listScopePublishedOnly 不使用 userID 与 ownerID。
+func (s *ArticleService) applyListVisibility(params *repository.ArticleListParams, scope articleListScope, userID *uint, ownerID uint) bool {
+	if scope == listScopePublishedOnly {
+		params.Status = model.ArticleStatusPublished
+		return false
+	}
+
+	viewerCanManage := s.resolveViewerCanManage(userID)
+	if viewerCanManage {
+		return true
+	}
+
+	if userID != nil && *userID == ownerID {
+		params.VisibleAuthorID = ownerID
+	} else {
+		params.Status = model.ArticleStatusPublished
+	}
+
+	return false
 }
 
 // CanEdit 检查用户是否可以编辑文章

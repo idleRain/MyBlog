@@ -17,6 +17,7 @@ type fakeArticleRepo struct {
 	list                func(params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	getByAuthor         func(authorID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	getByCategory       func(categoryID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
+	getByTag            func(tagID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	getByTags           func(tagIDs []uint, params *repository.ArticleListParams) ([]*model.Article, int64, error)
 	getByTagsCalls      int
 	search              func(keyword string, params *repository.ArticleListParams) ([]*model.Article, int64, error)
@@ -43,6 +44,9 @@ func (f *fakeArticleRepo) GetByCategory(categoryID uint, params *repository.Arti
 }
 
 func (f *fakeArticleRepo) GetByTag(tagID uint, params *repository.ArticleListParams) ([]*model.Article, int64, error) {
+	if f.getByTag != nil {
+		return f.getByTag(tagID, params)
+	}
 	return nil, 0, errors.New("未实现的测试替身方法")
 }
 
