@@ -16,10 +16,11 @@ const config = {
       base: '/admin',
       relative: false
     },
+    // 路径别名；$ui 指向 packages/ui 源码。
     alias: {
       $ui: '../../packages/ui/src',
       '$ui/*': '../../packages/ui/src/*',
-      '@': './src'
+      '@/*': './src/*'
     }
   }
 }

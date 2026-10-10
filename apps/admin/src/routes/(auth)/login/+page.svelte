@@ -6,22 +6,22 @@ import { authStore } from '$lib/stores/auth.ts'
 import { ThemeToggle } from '$lib/components'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
-import type { PageData } from './$types'
+import type { PageProps } from './$types'
+import { onMount, untrack } from 'svelte'
 import { UserAPI } from '$lib/api'
 import { Input } from '$ui/input'
 import * as Form from '$ui/form'
 import * as Card from '$ui/card'
-import { onMount } from 'svelte'
 import { z } from 'zod'
 
-export let data: PageData
+let { data }: PageProps = $props()
 
 const loginSchema = z.object({
   username: z.string().min(1, '请输入用户名'),
   password: z.string().min(1, '请输入密码')
 })
 
-let isSubmitting = false
+let isSubmitting = $state(false)
 
 async function handleLogin(e: SubmitEvent) {
   e.preventDefault()
@@ -64,13 +64,16 @@ async function handleLogin(e: SubmitEvent) {
   }
 }
 
-const form = superForm(data.form, {
-  validators: zod4Client(loginSchema)
-})
+// 表单只取首次加载的初始值，untrack 读取可避免把 data 变化当成表单重建信号。
+const form = untrack(() =>
+  superForm(data.form, {
+    validators: zod4Client(loginSchema)
+  })
+)
 
 const { form: formData, validateForm } = form
 
-let showPassword = false
+let showPassword = $state(false)
 
 // 如果已登录，重定向到首页
 onMount(async () => {

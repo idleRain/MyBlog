@@ -23,7 +23,6 @@ declare global {
   const invalidateAll: typeof import('$app/navigation').invalidateAll
   const navigating: typeof import('$app/stores').navigating
   const onDestroy: typeof import('svelte').onDestroy
-  const onMount: typeof import('svelte').onMount
   const page: typeof import('$app/stores').page
   const preloadCode: typeof import('$app/navigation').preloadCode
   const preloadData: typeof import('$app/navigation').preloadData

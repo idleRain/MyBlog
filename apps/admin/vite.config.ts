@@ -2,7 +2,6 @@ import { type ConfigEnv, type PluginOption, defineConfig, loadEnv } from 'vite'
 import devtoolsJson from 'vite-plugin-devtools-json'
 import AutoImport from 'unplugin-auto-import/vite'
 import { sveltekit } from '@sveltejs/kit/vite'
-import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import ViteJson5 from 'vite-plugin-json5'
 
@@ -80,11 +79,6 @@ export default ({ mode }: ConfigEnv) => {
     ssr: {
       // ui 包以源码直连方式被引用，需参与 SSR 编译以支持 .svelte 组件。
       noExternal: ['@myblog/ui']
-    },
-    resolve: {
-      alias: {
-        $lib: fileURLToPath(new URL('./src/lib', import.meta.url))
-      }
     }
   })
 }

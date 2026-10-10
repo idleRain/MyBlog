@@ -40,15 +40,8 @@ export default ({ mode }: ConfigEnv) => {
               'afterNavigate'
             ],
             '$app/stores': ['page', 'navigating', 'updated'],
-            // Svelte 核心
-            svelte: [
-              'onMount',
-              'onDestroy',
-              'beforeUpdate',
-              'afterUpdate',
-              'tick',
-              'createEventDispatcher'
-            ],
+            // Svelte 核心；onMount 不在白名单，前台取数一律经 load。
+            svelte: ['onDestroy', 'beforeUpdate', 'afterUpdate', 'tick', 'createEventDispatcher'],
             'svelte/store': ['writable', 'readable', 'derived', 'get'],
             'svelte-sonner': ['toast']
           }
@@ -93,8 +86,9 @@ export default ({ mode }: ConfigEnv) => {
         // 本地字体因此不进入生产产物。
         ...(mode === 'prod'
           ? { '#fonts': fileURLToPath(new URL('./src/lib/styles/fonts-cdn.ts', import.meta.url)) }
-          : { '#fonts': fileURLToPath(new URL('./src/lib/styles/fonts-local.ts', import.meta.url)) }),
-        $lib: fileURLToPath(new URL('./src/lib', import.meta.url))
+          : {
+              '#fonts': fileURLToPath(new URL('./src/lib/styles/fonts-local.ts', import.meta.url))
+            })
       }
     }
   })
