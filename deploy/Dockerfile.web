@@ -2,7 +2,7 @@
 # 前端 API 地址经构建参数注入：浏览器端走同源 /api，SSR 端直连容器网络内的 server 服务。
 
 # 阶段一：构建前台产物
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 WORKDIR /repo
 RUN corepack enable
 # 拷贝 monorepo 全部源码，pnpm 按 workspace 配置解析本地包依赖
@@ -37,7 +37,7 @@ COPY packages/ui/package.json ./packages/ui/package.json
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts --config.node-linker=hoisted
 
 # 阶段二：运行前台产物
-FROM node:22-alpine
+FROM node:25-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 # adapter-node 产物为 ESM 且保留外部依赖引用，运行阶段必须随镜像提供 node_modules
