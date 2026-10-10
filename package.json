@@ -56,7 +56,7 @@
     "lint-staged": "lint-staged"
   },
   "dependencies": {
-    "yaml": "^2.8.0"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
@@ -79,20 +79,20 @@
     "globals": "^16.0.0",
     "husky": "^9.0.11",
     "lint-staged": "^17.6.0",
-    "prettier": "^3.6.2",
+    "prettier": "^3.9.9",
     "prettier-plugin-css-order": "^2.1.2",
     "prettier-plugin-sort-imports": "^1.8.8",
     "prettier-plugin-svelte": "^4.1.1",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "svelte-check": "catalog:",
     "tailwindcss": "catalog:",
-    "tsx": "^4.19.2",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.20.0",
+    "typescript-eslint": "^8.71.1",
     "unplugin-auto-import": "catalog:",
     "vite": "catalog:",
     "vite-plugin-devtools-json": "catalog:",
-    "vite-plugin-json5": "^1.4.4"
+    "vite-plugin-json5": "^1.5.0"
   },
   "keywords": [
     "monorepo",
