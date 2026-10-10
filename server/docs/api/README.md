@@ -17,6 +17,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 #### 用户与社交
 - [用户管理 API](./user-api.md) - 用户登录、CRUD操作和权限管理
+- [会话 API](./session-api.md) - 会话建立与续期、Cookie 属性与前端接入约定
 - [用户关注 API](./user-follow-api.md) - 关注、取消关注、粉丝与关注列表
 - [通知 API](./notification-api.md) - 站内消息列表与已读管理
 
@@ -25,6 +26,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - [分类管理 API](./category-api.md) - 分类树形管理与展示
 - [标签管理 API](./tag-api.md) - 标签管理与热门标签
 - [评论管理 API](./comment-api.md) - 评论展示、发表、点赞与审核
+- [字典管理 API](./dict-api.md) - 字典类型与字典项的动态维护与公开读取
 
 #### 资源与运营
 - [媒体文件 API](./media-api.md) - 文件上传、查看、管理与删除
@@ -36,8 +38,9 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 | 模块 | 接口数量 | 说明 |
 |------|----------|------|
-| 健康检查 | 2 | 存活与就绪探针 |
-| 用户管理 | 11 | 用户认证和管理 |
+| 健康检查 | 2 | 存活与就绪探针（基础设施端点，`GET`，不计入业务接口） |
+| 用户管理 | 11 | `/api/users/*`：登录与账号管理 |
+| 认证与会话 | 3 | `/api/auth/*`：会话建立与续期、令牌刷新、登出 |
 | 用户关注 | 6 | 关注关系管理 |
 | 通知 | 4 | 站内消息中心 |
 | 文章管理 | 26 | 文章内容管理 |
@@ -48,11 +51,14 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | 系统设置 | 3 | 站点配置管理 |
 | 友情链接 | 9 | 友链申请与审核 |
 | 站点统计 | 2 | 运营数据分析 |
-| **总计** | **90** | **完整的博客系统 API** |
+| 字典管理 | 10 | 字典类型与字典项 |
+| **总计** | **104** | 含健康探针 2 条，**业务接口 102 条**（全部 `POST`） |
+
+> 统计口径为 `internal/router/*.go` 的路由注册数（`RegisterRoutes` 内的 `POST`/`GET` 调用），修改路由后必须同步本节数字。
 
 ## 内容多语言说明
 
-文章、分类与标签支持内容多语言，通用规则见 `contracts/i18n-protocol.md`：
+文章、分类、标签与字典支持内容多语言，通用规则见 `contracts/i18n-protocol.md`：
 
 - 请求头 `Accept-Language` 决定关键字段输出语言，缺省中文，白名单外回退中文；
 - `Accept-Language: *` 返回实体的全量翻译行数组 `translations`，供管理端编辑使用；
@@ -62,9 +68,10 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 
 ## 接口概览
 
-### 认证相关
+### 认证与会话
 - `POST /api/users/login` - 用户登录
-- `POST /api/auth/refresh` - 刷新令牌
+- `POST /api/auth/session` - 建立或续期会话（写入 HttpOnly Cookie）
+- `POST /api/auth/refresh` - 刷新令牌（Header 通道，过渡保留）
 - `POST /api/auth/logout` - 用户登出
 
 ### 用户管理 (需要权限)
@@ -75,6 +82,8 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/users/get` - 获取用户信息
 - `POST /api/users/update` - 更新用户信息
 - `POST /api/users/delete` - 删除用户
+- `POST /api/users/batchDelete` - 批量删除用户
+- `POST /api/users/batchUpdateStatus` - 批量更新用户状态
 - `POST /api/users/list` - 获取用户列表
 
 ### 用户关注
@@ -180,6 +189,21 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/admin/stats/overview` - 站点概览
 - `POST /api/admin/stats/articles` - 浏览量趋势
 
+### 字典管理
+#### 公开接口
+- `POST /api/dicts/all` - 全量已生效字典
+- `POST /api/dicts/:type` - 按字典码查询单个字典
+
+#### 管理端接口 (需要 `dict:manage` 权限)
+- `POST /api/admin/dicts/types/create` - 创建字典类型
+- `POST /api/admin/dicts/types/update` - 更新字典类型
+- `POST /api/admin/dicts/types/delete` - 删除字典类型
+- `POST /api/admin/dicts/types/list` - 字典类型列表
+- `POST /api/admin/dicts/items/create` - 创建字典项
+- `POST /api/admin/dicts/items/update` - 更新字典项
+- `POST /api/admin/dicts/items/delete` - 删除字典项
+- `POST /api/admin/dicts/items/list` - 字典项列表
+
 ### 系统监控
 - `GET /api/health` - 存活探针（基础设施端点例外）
 - `GET /api/health/ready` - 就绪探针（基础设施端点例外）
@@ -200,14 +224,16 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - **分类标签管理**: `category:manage`, `tag:manage`
 - **评论管理**: `comment:create`, `comment:read`, `comment:update`, `comment:delete`, `comment:moderate`
 - **文件管理**: `file:upload`, `file:read`, `file:delete`
-- **系统管理**: `system:config`, `system:logs`, `system:stats`
+- **系统管理**: `system:config`, `system:logs`, `system:stats`, `dict:manage`
+
+> 上表为便于阅读的分组示例，**权限标识与角色映射的唯一权威**是后端 `configs/config.yaml` 的 `rbac` 节（经 `LoadRBACConfig` 加载，`internal/service/rbac.go` 的常量表为配置缺失时的降级数据）。前端不得复刻该映射，登录响应已下发 `permissions[]`。
 
 ## 请求规范
 
 ### 统一请求格式
 - **请求方式**: POST
 - **Content-Type**: application/json（媒体上传为 multipart/form-data）
-- **认证头**: Authorization: Bearer {accessToken}
+- **认证通道**: 双轨并行，`Authorization: Bearer {accessToken}` 头优先，其次读取会话 Cookie `mb_access_token`；浏览器场景经 `POST /api/auth/session` 建立 Cookie 会话后无需手工设置请求头
 
 ### 统一响应格式
 ```json
@@ -228,19 +254,21 @@ pnpm run dev
 # 存活探针
 curl http://localhost:3000/api/health
 
-# 就绪探针（探测数据库连通性）
+# 就绪探针（探测数据库连通性与上传目录可写性）
 curl http://localhost:3000/api/health/ready
 ```
 
 ### 认证流程
-1. 使用 `/api/users/login` 登录获取令牌
-2. 在请求头中添加 `Authorization: Bearer {accessToken}`
-3. 令牌过期时使用 `/api/auth/refresh` 刷新（旋转前校验用户状态）
-4. 使用 `/api/auth/logout` 安全登出（请求体可选提交 refreshToken 一并撤销令牌对）
+1. `POST /api/users/login` 登录，响应返回用户信息、权限列表与令牌对
+2. `POST /api/auth/session` 凭刷新令牌建立会话，令牌对写入两个 HttpOnly Cookie；此后浏览器自动携带，前端不再持久化令牌
+3. 业务接口的令牌解析为**双轨**：`Authorization: Bearer` 头优先，其次读取 `mb_access_token` Cookie
+4. 会话过期时再次调用 `POST /api/auth/session` 续期，续期即旋转并重写 Cookie；`POST /api/auth/refresh` 为 Header 通道的存量客户端保留
+5. `POST /api/auth/logout` 双轨撤销令牌对并清除会话 Cookie
 
-完整认证协议见 `contracts/auth-protocol.md`。
+完整认证协议见 `contracts/auth-protocol.md`，会话端点的请求响应细节见 [`session-api.md`](./session-api.md)。
 
 ### 错误处理
+业务错误经 `pkg/response` 信封返回，**HTTP 状态码恒为 200**，错误语义只在响应体 `code` 字段中；健康探针的 503 与限流的 429 是仅有的例外。
 - `400` - 请求参数错误
 - `401` - 认证失败或令牌过期
 - `403` - 权限不足
@@ -306,8 +334,8 @@ curl http://localhost:3000/api/health/ready
 ## 技术架构
 
 ### 后端技术栈
-- **语言**: Go 1.23+
+- **语言**: Go 1.26.9（版本唯一来源为 `server/go.mod` 的 `go` 指令）
 - **框架**: Gin
 - **数据库**: MySQL 8.0 + GORM
-- **认证**: 不透明令牌
+- **认证**: 不透明令牌 + HttpOnly Cookie 会话
 - **权限**: RBAC

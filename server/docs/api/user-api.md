@@ -90,7 +90,7 @@ curl -X POST http://localhost:3000/api/users/login \
     },
     "accessToken": "<opaque access token>",
     "refreshToken": "<opaque refresh token>",
-    "expiresIn": 3600,
+    "expiresIn": 900,
     "permissions": ["article:read", "comment:create", "comment:read", "comment:update"]
   }
 }
@@ -400,6 +400,8 @@ curl -X POST http://localhost:3000/api/users/list \
 
 使用刷新令牌获取新的访问令牌。服务端在旋转前查库校验令牌归属用户存在且状态正常，被禁用或已删除用户的刷新令牌无法换取新令牌对。
 
+> 该端点为 Header 通道的存量客户端保留，浏览器场景请改用 [`POST /api/auth/session`](./session-api.md) 的 Cookie 会话与续期。
+
 #### 请求信息
 
 - **接口地址**: `/api/auth/refresh`
@@ -419,7 +421,7 @@ curl -X POST http://localhost:3000/api/users/list \
 curl -X POST http://localhost:3000/api/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "refreshToken": "9f2a5c1e4b7d8056a1c3e5f70b2d4689"
   }'
 ```
 
@@ -430,18 +432,22 @@ curl -X POST http://localhost:3000/api/auth/refresh \
   "code": 200,
   "message": "令牌刷新成功",
   "data": {
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "expiresIn": 3600
+    "accessToken": "<opaque access token>",
+    "refreshToken": "<opaque refresh token>",
+    "expiresIn": 900
   }
 }
 ```
+
+> `expiresIn` 由 `token.access_expire`（分钟）换算为秒，示例值对应默认的 15 分钟。
 
 ---
 
 ### 8. 用户登出
 
 登出用户账号，撤销访问令牌与刷新令牌构成的对。
+
+> 双轨语义与 Cookie 清除行为见 [`session-api.md`](./session-api.md) 的「相关端点」。
 
 #### 请求信息
 
