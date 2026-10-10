@@ -70,7 +70,7 @@
     "@tailwindcss/forms": "catalog:",
     "@tailwindcss/typography": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "@types/node": "^24.0.13",
+    "@types/node": "^26.6.4",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "eslint": "^9.18.0",
