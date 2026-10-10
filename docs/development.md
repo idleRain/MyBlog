@@ -578,7 +578,8 @@ pnpm run build:web     # 构建前端静态文件
 ### 5.1 质量门禁
 
 - **契约门禁**: `pnpm run contract:check` = Go handler fixture 测试（锁①）+ `@myblog/api` 的 `tsc --noEmit`（锁② typecheck）+ vitest 类型锚定；契约相关改动必须通过
-- **CI**: `.github/workflows/ci.yml` 为五步质量门禁（go 三连、依赖基线 grep、双应用 svelte-check、contract:check、lint），触发方式为 push 到 master/main 以及所有 pull request；工作流不含自动部署步骤
+- **CI**: `.github/workflows/ci.yml` 为质量门禁流水线，覆盖 go 三连、依赖方向基线 grep、依赖漏洞扫描、公共包与应用单测、双应用 svelte-check、contract:check、前端生产构建与体积门禁、格式检查与 lint，触发方式为 push 到 master/main 以及所有 pull request；工作流不含自动部署步骤
+- **依赖漏洞扫描**: Go 侧经 `pnpm run go:vulncheck` 运行固定版本的 `govulncheck`，判定口径为「存在可达调用链即失败」；前端与工具链侧经 `pnpm run audit:deps` 运行 `pnpm audit`，按 high/critical 阻塞、medium 及以下告警的阈值执行。扫描数据源与已知漏洞的收敛清单见 `scripts/README.md`；依赖升级由 `.github/dependabot.yml` 按周提交 PR
 
 ### 6. 可维护性
 

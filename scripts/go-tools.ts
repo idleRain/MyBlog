@@ -23,9 +23,14 @@ type Command =
   | 'format'
   | 'fmt'
   | 'vet'
+  | 'vulncheck'
   | 'clean'
   | 'quality'
   | 'quality-check'
+
+// 依赖漏洞扫描工具的固定版本，升级时需重新核对扫描结论。
+// 以 go run 方式运行，不把扫描工具写入 go.mod 依赖图。
+const govulncheckPackage = 'golang.org/x/vuln/cmd/govulncheck@v1.1.4'
 
 // 命令行参数
 const command: string = process.argv[2]
@@ -110,6 +115,13 @@ async function vetCode(): Promise<void> {
   console.log('✅ 代码检查完成')
 }
 
+// 扫描依赖中的已知漏洞
+async function vulnCheck(): Promise<void> {
+  console.log('🛡️ 扫描 Go 依赖漏洞...')
+  await runCommand('go', ['run', govulncheckPackage, './...'], { cwd: serverDir })
+  console.log('✅ 依赖漏洞扫描完成')
+}
+
 // 清理临时文件
 async function cleanFiles(): Promise<void> {
   console.log('🧹 清理临时文件...')
@@ -148,6 +160,7 @@ function showHelp(): void {
   console.log('  lint        - 运行代码检查 (golangci-lint)')
   console.log('  format      - 格式化代码 (gofmt + goimports)')
   console.log('  vet         - 运行 go vet 代码检查')
+  console.log('  vulncheck   - 扫描 Go 依赖中的已知漏洞')
   console.log('  clean       - 清理临时文件')
   console.log('  quality     - 运行完整代码质量检查')
 }
@@ -184,6 +197,9 @@ async function main(): Promise<void> {
         break
       case 'vet':
         await vetCode()
+        break
+      case 'vulncheck':
+        await vulnCheck()
         break
       case 'clean':
         await cleanFiles()

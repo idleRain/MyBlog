@@ -1,4 +1,4 @@
-# 最小 CI：质量防线四件套 + lint。
+# CI：质量防线 + lint + 依赖漏洞扫描。
 # 触发方式为 push 到 master/main 以及所有 pull request，均为自动执行。
 # 本工作流只做质量检查，不含任何自动部署步骤。
 
@@ -47,6 +47,14 @@ jobs:
           go build ./...
           go vet ./...
           go test -count=1 ./...
+
+      # Go 侧漏洞扫描无严重级划分，存在可达调用链即失败。
+      - name: Go 依赖漏洞扫描
+        run: pnpm run go:vulncheck
+
+      # 审计端点仅官方 registry 提供；阈值策略为 high/critical 阻塞。
+      - name: 前端依赖漏洞扫描
+        run: pnpm run audit:deps
 
       - name: 依赖方向基线（12 service + 1 middleware + 0 router）
         working-directory: server

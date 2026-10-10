@@ -43,6 +43,8 @@
     "quality": "pnpm run format && pnpm run lint && pnpm run test",
     "go:lint-install": "tsx scripts/go-tools.ts lint-install",
     "go:quality": "tsx scripts/go-tools.ts quality",
+    "go:vulncheck": "tsx scripts/go-tools.ts vulncheck",
+    "audit:deps": "pnpm audit --audit-level=high --registry=https://registry.npmjs.org/",
     "migrate": "tsx scripts/migrate.ts",
     "migrate:create": "tsx scripts/migrate.ts create",
     "migrate:up": "tsx scripts/migrate.ts up",
