@@ -51,6 +51,16 @@ git grep -ln "MyBlog/internal/repository" -- internal/service internal/middlewar
 - `apps/admin` 存量 onMount 模式不强制迁移（SPA 定位），但新页面优先采用 load + 页面状态模块（`.svelte.ts`）模式，禁止复制 400 行级胖组件（UI+数据+状态+权限焊死一个文件）。
 - API 调用不得深入叶子组件；数据获取入口限定为 load 函数或页面顶层组件。
 
+### 0.7 部署形态：单实例（有意接受的取舍）
+
+以下四条是**已接受**的架构约束而非待修缺陷，完整细则见 `docs/architecture-rules.md` 第 7 节。任何「按多副本假设」的设计与承诺均不成立。
+
+- 部署形态为**单实例**：应用进程、MySQL、网关各一份（`docker-compose.yml` 无副本与故障转移），**不支持多副本扩容**。
+- 会话令牌表与请求限流计数均为**进程内存**结构。因此服务重启或发布将导致**全体用户登出**，发布窗口需提前预告；限流阈值是单进程口径，多副本会使其成倍放大。
+- **不存在故障自动转移，故障即停站**：任一组件不可用即整站不可用，恢复依赖人工介入；无 RTO 承诺，RPO 为 24 小时（`docs/operations/backup-restore.md`）。
+- **扩容前置改造三项**（须全部完成才能增加副本）：令牌表持久化（`model.AuthToken` 的 `TokenHash` 通道已就绪）、限流器外置、补 `SetTrustedProxies` 配置（当前零配置，缺它会使 `ClientIP()` 经网关后失真，波及限流、登录锁定、访问审计与 WAF）。
+- 验证：`git grep -n "SetTrustedProxies" -- server`（改造前应为空）；`git grep -n "replicas" -- docker-compose.yml`（应为空）。
+
 ## 1. 任务完成自检（声明任务完成前必跑）
 
 所有指标**只准变好**，任何一项差于改动前即不得声明完成：
@@ -196,7 +206,7 @@ pnpm run migrate [create|up|down|version|help]
 
 ## 9. 已知架构债务登记（基线只减不增）
 
-完整债务说明、基线数值与验证命令见 `docs/architecture-rules.md` 第 7 节。触碰相关区域时必须遵守对应红线：
+完整债务说明、基线数值与验证命令见 `docs/architecture-rules.md` 第 8 节。触碰相关区域时必须遵守对应红线：
 
 | 债务 | 红线 |
 |---|---|
@@ -238,4 +248,4 @@ pnpm run migrate [create|up|down|version|help]
 - 后续候选：多语言其余页面接入（待页面大变动后分批）。
 - 可选细化：handler 层全面 DTO 分离（审计字段已统一 `json:"-"`）、组合根按域装配。
 
-架构重构已完成，详见 `docs/architecture-rules.md` §8 分期路线状态：五个阶段中前四个已全部完成，IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具统一均已落地；债务基线只减不增。
+架构重构已完成，详见 `docs/architecture-rules.md` §9 分期路线状态：五个阶段中前四个已全部完成，IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具统一均已落地；债务基线只减不增。部署形态为单实例，约束与扩容前置改造见第 0.7 节。

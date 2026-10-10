@@ -389,7 +389,7 @@ handler 层出现新的"资源不存在"哨兵错误时，扩展 `HandleServiceE
 
 #### 4. 结构体标签（实体与请求 DTO 必须分离）
 
-实体只携带 `json` + `gorm` tag；`binding`（HTTP 校验）只出现在请求 DTO 上。**禁止把三类 tag 写进同一个结构体**——那会让存储结构、API 契约与请求校验互相锁死（历史教训见 [`architecture-rules.md`](./architecture-rules.md) 第 9 节）：
+实体只携带 `json` + `gorm` tag；`binding`（HTTP 校验）只出现在请求 DTO 上。**禁止把三类 tag 写进同一个结构体**——那会让存储结构、API 契约与请求校验互相锁死（历史教训见 [`architecture-rules.md`](./architecture-rules.md) 第 10 节）：
 
 ```go
 // 实体（internal/domain）：领域实体 + GORM tag，禁止 binding tag
