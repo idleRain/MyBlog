@@ -10,6 +10,7 @@ import (
 	"MyBlog/internal/repository"
 	"MyBlog/internal/router"
 	"MyBlog/internal/service"
+	"MyBlog/pkg/storage"
 	"time"
 
 	"gorm.io/gorm"
@@ -38,6 +39,14 @@ func newDependencies(cfg *config.Config, db *gorm.DB) *router.Dependencies {
 		IdentityProvider:    services.identity,
 		RBACService:         services.rbac,
 		DBHealthCheck:       database.HealthCheck,
+		UploadsHealthCheck:  uploadsHealthCheck(cfg),
+	}
+}
+
+// uploadsHealthCheck 返回上传目录可写性探针，目录语义与媒体上传一致。
+func uploadsHealthCheck(cfg *config.Config) func() error {
+	return func() error {
+		return storage.CheckWritable(cfg.Media.UploadDir)
 	}
 }
 

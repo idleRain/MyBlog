@@ -69,6 +69,9 @@ apps/*/.env*
 dist
 build
 
+# 本地上传目录，内容不入库
+server/uploads/
+
 # 证书文件
 *.pem
 *.key

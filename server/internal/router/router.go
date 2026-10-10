@@ -73,7 +73,7 @@ func (r *Router) SetupRoutes(deps *Dependencies) {
 	adminAPI.Use(middleware.AdminSecurityMiddlewareFromConfig(r.cfg))
 
 	// 注册健康检查路由
-	healthRoutes := NewHealthRoutes(deps.DBHealthCheck)
+	healthRoutes := NewHealthRoutes(deps.DBHealthCheck, deps.UploadsHealthCheck)
 	healthRoutes.RegisterRoutes(api)
 
 	// 注册用户相关路由
@@ -143,4 +143,5 @@ type Dependencies struct {
 	IdentityProvider    middleware.IdentityProvider          // 身份解析抽象
 	RBACService         service.RBACService                  // RBAC权限服务
 	DBHealthCheck       func() error                         // 数据库连通性探针，供就绪检查使用
+	UploadsHealthCheck  func() error                         // 上传目录可写性探针
 }
