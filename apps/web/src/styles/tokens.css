@@ -7,6 +7,9 @@
  * 均不得低于 WCAG AA 的 4.5。最差面为 hover 态高亮背景 accent，亮色与暗色
  * 的取值都必须先满足该面。亮色取 #a83214，在 accent 面上为 5.11；
  * 暗色取 #e4653c，在 accent 面上为 4.64。调整该色值前必须按 WCAG 2.1 公式复算全部组合。
+ *
+ * 次级文字 muted-foreground 适用同一套面判定：亮色原值 #6f6555 在 accent 面上
+ * 仅 4.36，现取 #675d4b，五组面最差 4.93；暗色 #a3947c 最差 5.28。
  */
 :root {
   --radius: 0.25rem;
@@ -21,7 +24,7 @@
   --secondary: #efe8d9;
   --secondary-foreground: #3a3227;
   --muted: #f0e9db;
-  --muted-foreground: #6f6555;
+  --muted-foreground: #675d4b;
   --accent: #e9e0cd;
   --accent-foreground: #221d16;
   --destructive: oklch(0.577 0.245 27.325);

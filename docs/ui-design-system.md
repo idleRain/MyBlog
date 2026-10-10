@@ -54,6 +54,8 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 > **朱红 signal 的对比度下界**：正文级朱红文字在浅色系全部语义面上均不得低于 WCAG AA 的 4.5，最差面为 hover 态高亮背景 `accent`。为满足该下界，亮色 `--signal` 由参考稿的 `#c83e1d` 加深为 `#a83214`，原值在 `accent` 面上仅 3.85；暗色由 `#d8572f` 提亮为 `#e4653c`，原值在 `accent` 面上仅 3.97。**调整 `--signal` 前必须按 WCAG 2.1 公式复算 `background`、`card`、`secondary`、`muted`、`accent` 五组面，任一组合低于 4.5 即不得合入。** 参考稿原色 `#c83e1d` 仅保留在 8.1 的「精选封面版画」既定画布色板内，不参与语义 token 体系。
 
+> **次级文字 muted-foreground 的对比度下界**：判定面与 `--signal` 相同。亮色原值 `#6f6555` 在 `accent` 面上仅 4.36，低于 4.5，现取 `#675d4b`，五组面最差 4.93；暗色 `#a3947c` 最差 5.28，无需调整。**调整 `--muted-foreground` 前同样必须复算五组面。**
+
 #### 亮色模式
 
 | Token | 值 | 用途 |
@@ -63,7 +65,7 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 | `--card` | `#fbf7ec` | 卡片面 |
 | `--secondary` | `#efe8d9` | 纸深面（侧栏卡片、页脚） |
 | `--muted` | `#f0e9db` | 弱背景 |
-| `--muted-foreground` | `#6f6555` | 次级文字（墨灰） |
+| `--muted-foreground` | `#675d4b` | 次级文字（墨灰） |
 | `--accent` | `#e9e0cd` | 悬停/高亮背景 |
 | `--primary` | `#221d16` | 主按钮（墨色） |
 | `--destructive` | `oklch(0.577 0.245 27.325)` | 危险操作 |
