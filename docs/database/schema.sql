@@ -1,6 +1,9 @@
 -- MyBlog 数据库架构设计 SQL 脚本
--- 用途: 数据库设计文档和参考实现，共 23 张业务表。
--- 注意: 此文件仅作为文档参考，实际数据库结构由 GORM 模型自动迁移管理。
+-- 用途: 数据库设计文档和参考实现，共 30 张业务表。
+-- 注意: 此文件仅作为文档参考，不用于实际迁移。实际结构由 GORM 模型管理：
+--       开发模式经 AutoMigrate 同步，生产环境经 golang-migrate 执行 server/migrations/ 增量迁移。
+-- 索引命名: 本文档使用 uk_* / idx_* / ft_* 的文档化命名，便于按语义检索；
+--       GORM 自动生成的未命名索引实际形如 idx_<table>_<column>，以迁移脚本与实体 tag 为准。
 -- 约定: 时间字段统一 datetime(3) 精度；状态类字段使用命名常量枚举；
 --       树形结构使用 parent_id、root_id、level 三件套并辅以 path 物化路径；
 --       多对多关系使用独立关联表并声明复合唯一索引。
@@ -49,6 +52,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `uk_users_phone` (`phone`),
   KEY `idx_users_role` (`role`),
   KEY `idx_users_status` (`status`),
+  KEY `idx_users_nickname` (`nickname`),
   KEY `idx_users_last_login_at` (`last_login_at`),
   KEY `idx_users_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表，存储账号身份、个人资料与安全状态';
@@ -138,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `categories` (
   `root_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '根分类ID，用于整棵子树的聚合查询',
   `level` TINYINT UNSIGNED DEFAULT 1 COMMENT '分类层级，顶级为 1',
   `path` VARCHAR(100) DEFAULT NULL COMMENT '物化路径，形如 /1/5/12，用于一次查询取整棵子树',
-  `sort_order` INT DEFAULT 0 COMMENT '排序权重，数值小的靠前',
+  `sort_order` BIGINT DEFAULT 0 COMMENT '排序权重，数值小的靠前',
   `status` TINYINT DEFAULT 1 COMMENT '分类状态：1-显示 0-隐藏',
   `article_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '文章数量，发布时异步维护',
   `is_featured` TINYINT(1) DEFAULT 0 COMMENT '是否为精选分类',
@@ -199,7 +203,7 @@ CREATE TABLE IF NOT EXISTS `articles` (
   `is_top` TINYINT(1) DEFAULT 0 COMMENT '是否置顶',
   `comment_enabled` TINYINT(1) DEFAULT 1 COMMENT '是否允许评论',
   `view_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '浏览量',
-  `like_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '点赞数',
+  `like_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '点赞数，支撑按点赞数排序的列表查询',
   `bookmark_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '收藏数',
   `comment_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '评论数',
   `word_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '字数统计',
@@ -225,11 +229,13 @@ CREATE TABLE IF NOT EXISTS `articles` (
   KEY `idx_articles_is_featured` (`is_featured`),
   KEY `idx_articles_is_top` (`is_top`),
   KEY `idx_articles_view_count` (`view_count`),
+  KEY `idx_articles_like_count` (`like_count`),
   KEY `idx_articles_scheduled_at` (`scheduled_at`),
   KEY `idx_articles_published_at` (`published_at`),
   KEY `idx_articles_deleted_at` (`deleted_at`),
   KEY `idx_status_published` (`status`,`published_at`),
   KEY `idx_author_status` (`author_id`,`status`),
+  FULLTEXT KEY `ft_articles_search` (`title`,`content`,`summary`) WITH PARSER ngram,
   CONSTRAINT `fk_articles_author_id` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_articles_category_id` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章表，博客核心内容实体';
@@ -306,6 +312,60 @@ CREATE TABLE IF NOT EXISTS `article_revisions` (
   CONSTRAINT `fk_article_revisions_editor_id` FOREIGN KEY (`editor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章修订历史表，保存正文快照支持回滚';
 
+-- 2.8 文章翻译表
+CREATE TABLE IF NOT EXISTS `article_translations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '翻译ID',
+  `article_id` BIGINT UNSIGNED NOT NULL COMMENT '文章ID',
+  `locale` VARCHAR(10) NOT NULL COMMENT '语言标识，主子标签形式，如 zh、en',
+  `title` VARCHAR(200) DEFAULT NULL COMMENT '该语言文章标题',
+  `summary` TEXT DEFAULT NULL COMMENT '该语言文章摘要',
+  `content` LONGTEXT DEFAULT NULL COMMENT '该语言文章正文，Markdown 格式',
+  `content_html` LONGTEXT DEFAULT NULL COMMENT '该语言正文渲染后的 HTML 缓存',
+  `word_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '该语言正文字数统计',
+  `seo_title` VARCHAR(100) DEFAULT NULL COMMENT '该语言SEO标题',
+  `seo_description` VARCHAR(255) DEFAULT NULL COMMENT '该语言SEO描述',
+  `seo_keywords` VARCHAR(200) DEFAULT NULL COMMENT '该语言SEO关键词',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_article_translation` (`article_id`,`locale`),
+  KEY `idx_article_translations_locale` (`locale`),
+  FULLTEXT KEY `ft_article_translations_search` (`title`,`content`,`summary`) WITH PARSER ngram,
+  CONSTRAINT `fk_article_translations_article_id` FOREIGN KEY (`article_id`) REFERENCES `articles` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章翻译表，按语言存储标题摘要正文的翻译内容';
+
+-- 2.9 分类翻译表
+CREATE TABLE IF NOT EXISTS `category_translations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '翻译ID',
+  `category_id` BIGINT UNSIGNED NOT NULL COMMENT '分类ID',
+  `locale` VARCHAR(10) NOT NULL COMMENT '语言标识，主子标签形式，如 zh、en',
+  `name` VARCHAR(50) DEFAULT NULL COMMENT '该语言分类名称',
+  `description` TEXT DEFAULT NULL COMMENT '该语言分类描述',
+  `seo_title` VARCHAR(100) DEFAULT NULL COMMENT '该语言SEO标题',
+  `seo_description` VARCHAR(255) DEFAULT NULL COMMENT '该语言SEO描述',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_category_translation` (`category_id`,`locale`),
+  KEY `idx_category_translations_locale` (`locale`),
+  CONSTRAINT `fk_category_translations_category_id` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='分类翻译表，按语言存储分类名称与描述的翻译内容';
+
+-- 2.10 标签翻译表
+CREATE TABLE IF NOT EXISTS `tag_translations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '翻译ID',
+  `tag_id` BIGINT UNSIGNED NOT NULL COMMENT '标签ID',
+  `locale` VARCHAR(10) NOT NULL COMMENT '语言标识，主子标签形式，如 zh、en',
+  `name` VARCHAR(30) DEFAULT NULL COMMENT '该语言标签名称',
+  `description` VARCHAR(200) DEFAULT NULL COMMENT '该语言标签描述',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tag_translation` (`tag_id`,`locale`),
+  KEY `idx_tag_translations_locale` (`locale`),
+  CONSTRAINT `fk_tag_translations_tag_id` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='标签翻译表，按语言存储标签名称与描述的翻译内容';
+
 -- ===================================
 -- 3. 评论系统模块
 -- ===================================
@@ -319,16 +379,16 @@ CREATE TABLE IF NOT EXISTS `comments` (
   `root_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '根评论ID，便于一次查询整棵评论树',
   `level` TINYINT UNSIGNED DEFAULT 1 COMMENT '评论层级，根评论为 1',
   `author_name` VARCHAR(50) DEFAULT NULL COMMENT '游客姓名',
-  `author_email` VARCHAR(100) DEFAULT NULL COMMENT '游客邮箱',
+  `author_email` VARCHAR(100) DEFAULT NULL COMMENT '游客邮箱，仅管理端审计可见',
   `author_website` VARCHAR(255) DEFAULT NULL COMMENT '游客网站',
-  `author_ip` VARCHAR(45) DEFAULT NULL COMMENT '评论者IP地址，用于反垃圾与封禁',
+  `author_ip` VARCHAR(45) DEFAULT NULL COMMENT '评论者IP地址，用于反垃圾与封禁，仅管理端审计可见',
   `content` TEXT NOT NULL COMMENT '评论内容，Markdown 格式',
   `content_html` TEXT DEFAULT NULL COMMENT '评论内容，渲染后的 HTML 缓存',
   `status` VARCHAR(20) DEFAULT 'pending' COMMENT '审核状态：pending/approved/rejected/spam/trash',
   `like_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '点赞数',
   `reply_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '回复数量',
   `reported_count` BIGINT UNSIGNED DEFAULT 0 COMMENT '被举报次数，达到阈值后进入待复核队列',
-  `user_agent` TEXT DEFAULT NULL COMMENT '用户代理',
+  `user_agent` TEXT DEFAULT NULL COMMENT '用户代理，仅管理端审计可见',
   `is_author` TINYINT(1) DEFAULT 0 COMMENT '是否为文章作者回复',
   `is_pinned` TINYINT(1) DEFAULT 0 COMMENT '是否置顶评论',
   `edited_at` DATETIME(3) DEFAULT NULL COMMENT '内容最后编辑时间，用于展示已编辑标记',
@@ -509,7 +569,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `is_readonly` TINYINT(1) DEFAULT 0 COMMENT '是否只读，只读项由系统内部维护',
   `is_sensitive` TINYINT(1) DEFAULT 0 COMMENT '是否敏感配置，输出时需要脱敏',
   `validation_rule` VARCHAR(200) DEFAULT NULL COMMENT '验证规则，如正则表达式或取值范围',
-  `sort_order` INT DEFAULT 0 COMMENT '排序权重',
+  `sort_order` BIGINT DEFAULT 0 COMMENT '排序权重',
   `updated_by` BIGINT UNSIGNED DEFAULT NULL COMMENT '最后更新该配置的用户ID',
   `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
   `updated_at` DATETIME(3) DEFAULT NULL COMMENT '更新时间',
@@ -531,7 +591,7 @@ CREATE TABLE IF NOT EXISTS `friendly_links` (
   `logo` VARCHAR(500) DEFAULT NULL COMMENT '站点图标或头像URL',
   `description` VARCHAR(255) DEFAULT NULL COMMENT '站点简介',
   `contact_email` VARCHAR(100) DEFAULT NULL COMMENT '站长联系邮箱',
-  `sort_order` INT DEFAULT 0 COMMENT '展示排序权重，数值小的靠前',
+  `sort_order` BIGINT DEFAULT 0 COMMENT '展示排序权重，数值小的靠前',
   `status` VARCHAR(20) DEFAULT 'pending' COMMENT '链接状态：pending-待审核 active-展示中 hidden-已隐藏 rejected-已拒绝',
   `is_reciprocal` TINYINT(1) DEFAULT 0 COMMENT '是否已确认对方回链',
   `note` VARCHAR(255) DEFAULT NULL COMMENT '管理员备注，如收录时间与沟通记录',
@@ -546,10 +606,83 @@ CREATE TABLE IF NOT EXISTS `friendly_links` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='友情链接表，互链申请与展示管理';
 
 -- ===================================
--- 7. 统计和日志模块
+-- 7. 字典管理模块
+-- ===================================
+-- 字典为读多写少的配置数据，类型与字典项均采用硬删除策略，无 deleted_at 列；
+-- 删除类型时经外键级联清理字典项与翻译行，避免软删除与唯一索引的占位冲突。
+
+-- 7.1 字典类型表
+CREATE TABLE IF NOT EXISTS `dict_types` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '字典类型ID',
+  `code` VARCHAR(50) NOT NULL COMMENT '字典码，业务侧唯一定位标识，如 tag_status',
+  `name` VARCHAR(50) NOT NULL COMMENT '字典类型名称，缺省语言',
+  `description` VARCHAR(200) DEFAULT NULL COMMENT '字典类型描述，缺省语言',
+  `status` TINYINT DEFAULT 1 COMMENT '生效状态：1-生效 0-停用',
+  `sort_order` BIGINT DEFAULT 0 COMMENT '排序权重，数值小的靠前',
+  `extra` JSON DEFAULT NULL COMMENT '预留扩展字段，存储颜色图标等展示元数据',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dict_types_code` (`code`),
+  KEY `idx_dict_types_status` (`status`),
+  KEY `idx_dict_types_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典类型表，状态类枚举的动态配置维度';
+
+-- 7.2 字典项表
+CREATE TABLE IF NOT EXISTS `dict_items` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '字典项ID',
+  `type_id` BIGINT UNSIGNED NOT NULL COMMENT '所属字典类型ID',
+  `value` VARCHAR(50) NOT NULL COMMENT '字典项值，同类型内唯一',
+  `label` VARCHAR(50) NOT NULL COMMENT '字典项显示名，缺省语言',
+  `description` VARCHAR(200) DEFAULT NULL COMMENT '字典项描述，缺省语言',
+  `status` TINYINT DEFAULT 1 COMMENT '生效状态：1-生效 0-停用',
+  `sort_order` BIGINT DEFAULT 0 COMMENT '排序权重，数值小的靠前',
+  `extra` JSON DEFAULT NULL COMMENT '预留扩展字段，存储颜色图标等展示元数据',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dict_item` (`type_id`,`value`),
+  KEY `idx_dict_items_type_id` (`type_id`),
+  KEY `idx_dict_items_status` (`status`),
+  KEY `idx_dict_items_sort_order` (`sort_order`),
+  CONSTRAINT `fk_dict_items_type_id` FOREIGN KEY (`type_id`) REFERENCES `dict_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项表，字典类型下的可选值集合';
+
+-- 7.3 字典类型翻译表
+CREATE TABLE IF NOT EXISTS `dict_type_translations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '翻译ID',
+  `type_id` BIGINT UNSIGNED NOT NULL COMMENT '字典类型ID',
+  `locale` VARCHAR(10) NOT NULL COMMENT '语言标识，主子标签形式，如 zh、en',
+  `name` VARCHAR(50) DEFAULT NULL COMMENT '该语言字典类型名称',
+  `description` VARCHAR(200) DEFAULT NULL COMMENT '该语言字典类型描述',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dict_type_translation` (`type_id`,`locale`),
+  KEY `idx_dict_type_translations_locale` (`locale`),
+  CONSTRAINT `fk_dict_type_translations_type_id` FOREIGN KEY (`type_id`) REFERENCES `dict_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典类型翻译表，按语言存储名称与描述的翻译内容';
+
+-- 7.4 字典项翻译表
+CREATE TABLE IF NOT EXISTS `dict_item_translations` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '翻译ID',
+  `item_id` BIGINT UNSIGNED NOT NULL COMMENT '字典项ID',
+  `locale` VARCHAR(10) NOT NULL COMMENT '语言标识，主子标签形式，如 zh、en',
+  `label` VARCHAR(50) DEFAULT NULL COMMENT '该语言字典项显示名',
+  `description` VARCHAR(200) DEFAULT NULL COMMENT '该语言字典项描述',
+  `created_at` DATETIME(3) DEFAULT NULL COMMENT '创建时间',
+  `updated_at` DATETIME(3) DEFAULT NULL COMMENT '最后更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dict_item_translation` (`item_id`,`locale`),
+  KEY `idx_dict_item_translations_locale` (`locale`),
+  CONSTRAINT `fk_dict_item_translations_item_id` FOREIGN KEY (`item_id`) REFERENCES `dict_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='字典项翻译表，按语言存储显示名与描述的翻译内容';
+
+-- ===================================
+-- 8. 统计和日志模块
 -- ===================================
 
--- 7.1 操作日志表
+-- 8.1 操作日志表
 CREATE TABLE IF NOT EXISTS `operation_logs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '日志ID',
   `user_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '操作用户ID，系统任务为空',
@@ -574,12 +707,12 @@ CREATE TABLE IF NOT EXISTS `operation_logs` (
   CONSTRAINT `fk_operation_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作日志表，安全审计与问题追踪';
 
--- 7.2 搜索记录表
+-- 8.2 搜索记录表
 CREATE TABLE IF NOT EXISTS `search_logs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '搜索记录ID',
   `user_id` BIGINT UNSIGNED DEFAULT NULL COMMENT '搜索用户ID，游客为空',
   `keyword` VARCHAR(255) NOT NULL COMMENT '搜索关键词',
-  `results_count` INT DEFAULT 0 COMMENT '搜索结果数量',
+  `results_count` BIGINT DEFAULT 0 COMMENT '搜索结果数量',
   `status` VARCHAR(20) DEFAULT 'success' COMMENT '执行结果：success-成功 failed-失败',
   `duration_ms` BIGINT UNSIGNED DEFAULT 0 COMMENT '搜索耗时，单位毫秒',
   `ip_address` VARCHAR(45) DEFAULT NULL COMMENT 'IP地址',
@@ -593,7 +726,7 @@ CREATE TABLE IF NOT EXISTS `search_logs` (
   CONSTRAINT `fk_search_logs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='搜索记录表，搜索行为分析';
 
--- 7.3 内容统计表
+-- 8.3 内容统计表
 CREATE TABLE IF NOT EXISTS `content_stats` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '统计ID',
   `content_type` VARCHAR(50) NOT NULL COMMENT '内容类型：article/tag/category',
@@ -613,7 +746,7 @@ CREATE TABLE IF NOT EXISTS `content_stats` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='内容统计表，多维度聚合指标';
 
 -- ===================================
--- 8. 默认数据插入
+-- 9. 默认数据插入
 -- ===================================
 
 -- 插入默认系统配置
@@ -644,6 +777,14 @@ INSERT INTO `tags` (`name`, `slug`, `color`, `status`) VALUES
 ('TypeScript', 'typescript', '#3178C6', 1),
 ('Svelte', 'svelte', '#FF3E00', 1),
 ('MySQL', 'mysql', '#4479A1', 1);
+
+-- 插入默认字典数据，与 SeedDicts 的种子保持一致，仅写入缺省语言主列
+INSERT INTO `dict_types` (`code`, `name`, `description`, `status`, `sort_order`) VALUES
+('tag_status', '标签状态', '标签启用与隐藏状态的展示配置', 1, 1);
+
+INSERT INTO `dict_items` (`type_id`, `value`, `label`, `description`, `status`, `sort_order`, `extra`) VALUES
+(1, '1', '启用', '标签对外展示并可用于文章挂载', 1, 1, '{"variant":"default"}'),
+(1, '0', '隐藏', '标签不对外展示，已挂载文章不可再选择', 1, 2, '{"variant":"secondary"}');
 
 -- 恢复外键检查
 SET FOREIGN_KEY_CHECKS = 1;

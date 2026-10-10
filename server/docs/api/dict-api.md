@@ -22,7 +22,7 @@
 | status | integer | 生效状态：`1` 生效、`0` 停用 |
 | sortOrder | integer | 排序权重，数值小的靠前 |
 | extra | object | 预留扩展字段，存放颜色、图标等展示元数据 |
-| createdAt / updatedAt | string | 创建与更新时间，`datetime(3)` |
+| createdAt / updatedAt | string | 创建与更新时间，列类型 `datetime(3)`，JSON 输出 RFC3339（偏移随服务运行时区） |
 | translations | array | 翻译行数组，仅 `Accept-Language: *` 时返回 |
 
 ### 字典项
@@ -37,7 +37,7 @@
 | status | integer | 生效状态：`1` 生效、`0` 停用 |
 | sortOrder | integer | 排序权重，数值小的靠前 |
 | extra | object | 预留扩展字段 |
-| createdAt / updatedAt | string | 创建与更新时间，`datetime(3)` |
+| createdAt / updatedAt | string | 创建与更新时间，列类型 `datetime(3)`，JSON 输出 RFC3339（偏移随服务运行时区） |
 | translations | array | 翻译行数组，仅 `Accept-Language: *` 时返回 |
 
 ## 公开接口
@@ -86,8 +86,8 @@ curl -X POST http://localhost:3000/api/dicts/all
         "status": 1,
         "sortOrder": 0,
         "extra": null,
-        "createdAt": "2026-01-01 10:00:00",
-        "updatedAt": "2026-01-01 10:00:00",
+        "createdAt": "2026-01-01T10:00:00+08:00",
+        "updatedAt": "2026-01-01T10:00:00+08:00",
         "items": [
           {
             "id": 1,
@@ -98,8 +98,8 @@ curl -X POST http://localhost:3000/api/dicts/all
             "status": 1,
             "sortOrder": 0,
             "extra": null,
-            "createdAt": "2026-01-01 10:00:00",
-            "updatedAt": "2026-01-01 10:00:00"
+            "createdAt": "2026-01-01T10:00:00+08:00",
+            "updatedAt": "2026-01-01T10:00:00+08:00"
           }
         ]
       }
@@ -137,8 +137,8 @@ curl -X POST http://localhost:3000/api/dicts/tag_status
     "status": 1,
     "sortOrder": 0,
     "extra": null,
-    "createdAt": "2026-01-01 10:00:00",
-    "updatedAt": "2026-01-01 10:00:00",
+    "createdAt": "2026-01-01T10:00:00+08:00",
+    "updatedAt": "2026-01-01T10:00:00+08:00",
     "items": []
   }
 }
@@ -192,7 +192,7 @@ curl -X POST http://localhost:3000/api/dicts/tag_status
 |--------|------|------|------|----------|
 | page | integer | 否 | 页码 | 最小 1，缺省 1 |
 | pageSize | integer | 否 | 每页条数 | 1–100，缺省 10 |
-| status | integer | 否 | 按生效状态过滤 | `0` 或 `1`，缺省不过滤 |
+| status | integer | 否 | 按生效状态过滤 | 取值 `0` 或 `1`，缺省不过滤；未加枚举校验，其他值按无匹配处理 |
 | search | string | 否 | 关键词，匹配字典码与名称 | — |
 
 响应 `data` 为 `{ types, total, page, pageSize }`。
@@ -233,7 +233,7 @@ curl -X POST http://localhost:3000/api/dicts/tag_status
 | typeId | integer | 是 | 所属字典类型 ID | 必填 |
 | page | integer | 否 | 页码 | 最小 1，缺省 1 |
 | pageSize | integer | 否 | 每页条数 | 1–100，缺省 10 |
-| status | integer | 否 | 按生效状态过滤 | `0` 或 `1`，缺省不过滤 |
+| status | integer | 否 | 按生效状态过滤 | 取值 `0` 或 `1`，缺省不过滤；未加枚举校验，其他值按无匹配处理 |
 | search | string | 否 | 关键词，匹配字典项值与显示名 | — |
 
 响应 `data` 为 `{ items, total, page, pageSize }`。
@@ -246,7 +246,7 @@ curl -X POST http://localhost:3000/api/dicts/tag_status
 |--------|----------|------|
 | 400 | 请求参数错误: {具体原因} | `binding` 校验失败，含字段名与约束 |
 | 400 | 字典码需以小写字母开头，仅含小写字母、数字与下划线 | 字典码格式不符 |
-| 400 | 字典码已存在 | 创建或更新时字典码被其他类型占用 |
+| 400 | 字典码已存在 | 创建时字典码被其他类型占用 |
 | 400 | 字典项值已存在 | 同类型内字典项值重复 |
 | 400 | 扩展字段必须是合法 JSON | `extra` 不是合法 JSON |
 | 401 | 未提供认证令牌 / 无效的认证令牌 / 用户不存在 | 管理端接口缺少有效访问令牌 |
@@ -257,7 +257,7 @@ curl -X POST http://localhost:3000/api/dicts/tag_status
 ## 多语言说明
 
 - 请求头 `Accept-Language` 决定 `name`/`description`/`label` 的输出语言，缺省中文；白名单外的语言回退中文，响应头 `Content-Language` 标注实际输出语言。
-- `Accept-Language: *` 返回全量翻译行数组 `translations`，供管理端编辑使用；指定语言时该字段不返回。
+- `Accept-Language: *` 返回全量翻译行数组 `translations`，供管理端编辑使用；指定语言时该字段不返回，无翻译行时该键同样省略（模型侧为 `omitempty`）。
 - 创建与更新请求体的 `i18n` 键为语言标识，缺省语言键被拒绝并返回 400。
 
 ## 权限说明
@@ -267,4 +267,4 @@ curl -X POST http://localhost:3000/api/dicts/tag_status
 | 读取公开字典 | 无需权限 |
 | 管理字典类型与字典项 | `dict:manage` |
 
-`dict:manage` 的持有角色由后端 `configs/config.yaml` 的 `rbac` 节唯一权威定义，前端不得复刻该映射。
+`dict:manage` 的持有角色由后端 `configs/config.yaml` 的 `rbac` 节唯一权威定义，前端不得复刻该映射（红线见 [`docs/architecture-rules.md`](../../../docs/architecture-rules.md) 第 5.1 节）。

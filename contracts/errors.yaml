@@ -3,22 +3,61 @@
 # 本文件是前后端错误码的单一事实来源。规划中的生成目标：
 #   - 后端：pkg/errcode/errcode_gen.go（CI 从本文件重新生成，diff 非零即失败）
 #   - 前端：@myblog/shared/src/errors.ts（同上）
-# 现状：仅登记传输层错误码与业务码命名空间，业务码细分待落地。
+# 现状：两个生成目标文件均未创建，传输层错误码与哨兵错误映射已固化，业务码细分待落地。
 
-# 传输层错误码（与 pkg/response 预定义码一致，HTTP 状态恒为 200）
+# 传输层错误码，与 pkg/response 的预定义码一致（CodeSuccess / CodeInvalid / CodeAuth /
+# CodeForbid / CodeNotFound / CodeError）。
+# 业务接口响应的 HTTP 状态恒为 200，错误语义由响应体 code 承载；
+# 未匹配路由（HTTP 404）与就绪探针未就绪（HTTP 503）不是业务响应，按编排器惯例使用真实状态码。
 transport:
   200: 成功
   400: 请求参数错误
   401: 认证失败
   403: 权限不足
-  # 各域"资源不存在"哨兵错误（含 ErrUserNotFound）统一经 handler/error.go
-  # 的 HandleServiceError 单一映射点返回 404，禁止模块私有映射出现第二套权威。
   404: 资源不存在
   500: 服务器内部错误
+
+# service 层错误到传输层错误码的映射，唯一映射点为 handler/error.go 的 HandleServiceError，
+# 禁止模块私有映射出现第二套权威；handler 层的 binding 校验失败与中间件权限判定不经此处，
+# 直接经 pkg/response 返回 400 / 401 / 403。
+mapping:
+  '403':
+    - service.ErrPermissionDenied
+  '404':
+    # 全部定义于 internal/domain/errors.go；新增 not-found 哨兵须同步扩展此处与映射集合
+    - domain.ErrArticleNotFound
+    - domain.ErrCategoryNotFound
+    - domain.ErrTagNotFound
+    - domain.ErrCommentNotFound
+    - domain.ErrMediaNotFound
+    - domain.ErrNotificationNotFound
+    - domain.ErrFriendlyLinkNotFound
+    - domain.ErrSettingNotFound
+    - domain.ErrUserNotFound
+    - domain.ErrFollowNotFound
+    - domain.ErrDictTypeNotFound
+    - domain.ErrDictItemNotFound
+  '400':
+    - service.ErrInvalidRequest
+    - service.ErrUsernameTaken
+    - service.ErrEmailTaken
+  '500':
+    # 未命中以上哨兵的错误统一归入此类，响应文案固定为「服务器内部错误」，
+    # 原始错误仅写入日志，防止表名、列名与 SQL 片段经响应体泄漏。
+    []
+
+# 实现偏差：以下路径的代码与上表不一致，实际返回 500。契约口径以上表为准，
+# 修复方向是让这些路径返回或经 %w 包装对应哨兵，不要按现状修改契约；偏差清除后删除本节。
+#   - domain.ErrSettingNotFound：service/setting.go:71 判定后以不带 %w 的 fmt.Errorf 重包，哨兵链丢失
+#   - service.ErrUsernameTaken / service.ErrEmailTaken：service/user.go:131（创建时邮箱冲突）、
+#     service/user.go:189（更新时用户名冲突）以裸 fmt.Errorf 表达，未引用哨兵
+#   - 400 语义：密码强度校验（service/user.go:445）与只读设置项拒绝（service/setting.go:78）
+#     返回裸错误，未包装 service.ErrInvalidRequest
 
 # 业务错误码命名空间（目标态细分）
 # 命名空间规则：1xxx 用户域、2xxx 文章域、3xxx 评论域、4xxx 分类/标签域、
 #              5xxx 媒体域、6xxx 设置/友链域、7xxx 通知域、8xxx 关注域
+# 未分配：字典域（dict），排序/分页等通用业务码同样待分配。
 namespaces:
   user: 1xxx
   article: 2xxx

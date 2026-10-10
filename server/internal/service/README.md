@@ -1,177 +1,19 @@
 # Service 模块
 
-业务逻辑层（Service Layer），负责处理业务规则和逻辑。
+业务逻辑层。业务规则（状态流转、slug 生成、密码强度、权限判定）的唯一权威在本层，repository 只做持久化，handler 只做协议转换。
 
-## 设计原则
+## 本层约定
 
-- 业务封装：将复杂的业务逻辑封装在Service层
-- 数据校验：对输入数据进行业务级别的验证
-- 事务管理：处理跨多个Repository的事务操作
-- 接口抽象：通过接口定义服务规范
+- 各业务域接口声明在 service 包内，命名统一为 `XxxServiceInterface`（存量例外 `UserService`、`RBACService`），各层只依赖接口。
+- 依赖一律经构造函数注入，组合根为 `cmd/myblog/`（`main.go` 管生命周期、`deps.go` 按域装配）；可选依赖用选项函数注入，如 `NewUserService(userRepo, tokenService, rbacService, WithLoginLockoutPolicy(...))`。
+- 业务错误集中在 `errors.go` 的哨兵错误（`ErrPermissionDenied`、`ErrInvalidRequest`、`ErrUsernameTaken`、`ErrEmailTaken`），handler 经 `errors.Is` 分档映射，不得另起裸 `errors.New` 表达同类语义。
+- 多段写库在 repository 的事务方法内完成，service 不自行拼装事务。
+- 权限判定经 `RBACService`，权限映射的生产环境唯一权威为 `configs/config.yaml` 的 `rbac` 节，由 `LoadRBACConfig` 加载（见 `cmd/myblog/deps.go`）。
 
-## 用户服务 (UserService)
+## 认证与密码
 
-### 接口定义
+- 登录先按用户名查找，未命中回退邮箱；锁定检查先于密码校验；失败计数原子自增，达到 `security.login_lockout` 阈值写入 `locked_until`，登录成功清零。
+- 密码使用 bcrypt，成本常量 `BcryptCost = 12`；强度校验 `validatePasswordStrength` 要求 6 至 100 位、同时含字母与数字、拒绝常见弱密码。
+- 刷新令牌换取新令牌对前查库校验用户存在且状态正常；改密成功后经 `RevokeUserTokens` 撤销该用户全部既有令牌。
 
-```go
-type UserService interface {
-    CreateUser(req *domain.CreateUserRequest) (*domain.User, error)
-    UpdateUser(req *domain.UpdateUserRequest) (*domain.User, error)
-    GetUserByID(id uint) (*domain.User, error)
-    GetUserList(page, pageSize int, keyword string) ([]*domain.User, int64, error)
-    DeleteUser(id uint) error
-    Login(username, password string) (*LoginResponse, error)
-    RefreshToken(refreshToken string) (*TokenPair, error)
-    Logout(accessToken, refreshToken string) error
-    GetProfile(userID uint) (*domain.User, error)
-    UpdateProfile(userID uint, req *UpdateProfileRequest) (*domain.User, error)
-    ChangePassword(userID uint, req *ChangePasswordRequest) error
-    CanUserManageRole(managerRole, targetRole string) bool
-    ValidateRoleTransition(currentRole, newRole string) error
-}
-```
-
-### 构造与依赖
-
-依赖经构造函数注入，组合根可经选项注入登录锁定策略：
-
-```go
-// 组合根内构造（第三参起为可选选项，缺省时启用默认锁定策略）
-userService := service.NewUserService(userRepo, tokenService, rbacService,
-    service.WithLoginLockoutPolicy(service.LoginLockoutPolicy{
-        Enabled:         true,
-        MaxFailedLogins: 5,
-        LockDuration:    15 * time.Minute,
-    }))
-```
-
-### 核心功能
-
-#### 创建用户
-
-- 验证用户名和邮箱的唯一性
-- 密码加密处理
-- 设置默认昵称与默认角色
-- 数据持久化
-
-#### 用户查询
-
-- 根据ID查询用户信息
-- 分页查询用户列表，keyword 非空时按用户名、邮箱或昵称模糊匹配
-- 参数验证和默认值处理
-
-#### 用户删除
-
-- 验证用户存在性
-- 执行软删除操作
-
-### 认证语义
-
-- **登录**：用户名未命中时回退邮箱查找；连续密码失败达到 `security.login_lockout` 配置阈值后置 `locked_until` 锁定账户，到期自动解除，登录成功清零计数
-- **刷新**：换取新令牌对前查库校验用户存在且状态正常，被禁用或已删除用户拒绝刷新
-- **登出**：撤销访问与刷新令牌构成的对，刷新令牌经请求体可选提交
-- **改密**：成功后撤销该用户全部既有令牌，当前会话一并失效
-
-### 业务规则
-
-1. **用户名唯一性**: 不允许重复的用户名
-2. **邮箱唯一性**: 不允许重复的邮箱地址
-3. **密码安全**: 使用bcrypt加密密码
-4. **默认昵称**: 如果不提供昵称，使用用户名作为默认昵称
-5. **分页限制**: 每页最多100条记录，默认10条
-
-### 使用示例
-
-```go
-// 创建用户
-req := &domain.CreateUserRequest{
-    Username: "john_doe",
-    Email:    "john@example.com",
-    Password: "Passw0rd123",
-    Nickname: "John",
-}
-user, err := userService.CreateUser(req)
-
-// 登录
-login, err := userService.Login("john_doe", "Passw0rd123")
-
-// 获取用户列表（keyword 支持用户名、邮箱、昵称模糊匹配）
-users, total, err := userService.GetUserList(1, 10, "john")
-
-// 修改密码（成功后撤销该用户全部既有令牌）
-err = userService.ChangePassword(1, &ChangePasswordRequest{
-    OldPassword: "Passw0rd123",
-    NewPassword: "N3wPassw0rd456",
-})
-```
-
-### 密码加密
-
-#### 加密方案（bcrypt）
-系统使用安全的bcrypt加密：
-
-```go
-func (s *userService) hashPassword(password string) (string, error) {
-    hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), BcryptCost)
-    if err != nil {
-        return "", fmt.Errorf("密码加密失败: %w", err)
-    }
-    return string(hashedBytes), nil
-}
-```
-
-#### 密码强度验证
-系统会验证密码强度，要求：
-- 最少6位，最多100位
-- 必须包含字母和数字
-- 不能使用常见弱密码
-
-#### 密码验证
-系统使用bcrypt进行密码验证：
-
-```go
-func (s *userService) verifyPassword(password, hashedPassword string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-    return err == nil
-}
-```
-
-**安全特性**：
-- ✅ 使用bcrypt加密（安全）
-- ✅ 密码强度验证
-- ✅ 防止常见弱密码
-
-### 错误处理
-
-Service层会返回具体的业务错误信息：
-
-- "用户名已存在"
-- "邮箱已存在"
-- "用户不存在"
-- "创建用户失败"
-- "删除用户失败"
-
-## 扩展指南
-
-### 添加新的业务方法
-
-1. 在接口中定义新方法
-2. 在实现中添加业务逻辑
-3. 编写单元测试
-4. 更新文档
-
-### 添加新的Service
-
-1. 定义Service接口
-2. 实现Service接口
-3. 注入依赖的Repository
-4. 在main.go中注册服务
-5. 编写测试和文档
-
-### 最佳实践
-
-1. **单一职责**: 每个Service只处理一个业务域
-2. **依赖注入**: 通过构造函数注入Repository依赖
-3. **错误包装**: 将Repository错误包装为业务错误
-4. **参数验证**: 对所有输入参数进行验证
-5. **事务处理**: 复杂操作使用数据库事务
+方法与字段清单以各 `service/*.go` 的接口声明为准。相关约束见 `AGENTS.md` 第 5 节与 `docs/architecture-rules.md` 第 5 节。

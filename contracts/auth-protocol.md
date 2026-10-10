@@ -1,7 +1,7 @@
 # 认证协议契约
 
 > 本文档是前后端认证协议的**唯一权威描述**。任何实现变更必须先改本文档，再双端同步切换。
-> 生效范围：`server/internal/service/token.go`、`server/internal/handler/session.go`、`packages/http/src/client.ts`、两应用 `src/lib/service/index.ts`。
+> 生效范围：`server/internal/service/token.go`、`server/internal/handler/session.go`、`server/internal/middleware/{auth.go,identity.go}`、`packages/http/src/client.ts`、两应用 `src/lib/service/index.ts`、`apps/web/src/lib/service/ssr.ts`。
 > 相关事实登记见 `docs/architecture-rules.md` §6.3。
 
 ## 1. 令牌对形状
@@ -10,11 +10,12 @@
 {
   "accessToken": "<opaque token>",
   "refreshToken": "<opaque token>",
-  "expiresIn": 1800
+  "expiresIn": 900
 }
 ```
 
-- `expiresIn` 为访问令牌有效期，单位秒，来源于 `config.yaml` 的 `token.access_expire`（分钟）换算。
+- `expiresIn` 为访问令牌有效期，单位秒，来源于 `config.yaml` 的 `token.access_expire`（分钟）换算；示例按默认配置 15 分钟取值。
+- 契约金样本 `contracts/fixtures/login.success.json` 的 `expiresIn` 为测试字面量 1800（锁①逐字节比对用），不代表默认有效期。
 - 刷新令牌有效期以 `token.refresh_expire`（小时）为准，不随响应下发。
 
 ## 2. 线格式：不透明令牌
@@ -25,7 +26,7 @@
 - 令牌自身不承载用户标识与有效期，身份与生命周期登记在服务端令牌表；`ValidateAccessToken` 与 `ValidateRefreshToken` 以查表结果为唯一依据。
 - 校验同时核对令牌类型，访问令牌与刷新令牌不可互换使用。
 - 令牌不可由调用方构造：任何未经服务端签发的串都会因查表失败被拒绝，不存在依据请求内容现算凭证的路径。
-- 服务重启会清空令牌表，所有用户需重新登录。这是有状态方案的固有代价，多实例部署前必须将令牌表迁至共享存储。
+- 服务重启会清空令牌表，多实例部署前必须将令牌表迁至共享存储（单实例约束与扩容前置改造见 `docs/architecture-rules.md` §7）。
 
 ## 3. 刷新协议与 Cookie 会话
 
@@ -39,12 +40,16 @@
 - 同站策略采用 Lax 在缓解跨站伪造的同时保留外部链接跳转后的会话识别；业务接口全部为 POST 且同源部署，跨站 POST 不会携带 Cookie。
 - `POST /api/auth/session` 同时承担续期：请求体省略时服务端从 Cookie 读取刷新令牌完成旋转并重写 Cookie。
 - 刷新即旋转语义下，旋转结果写入共享的浏览器 Cookie 存储，天然规避多标签页并发旋转的令牌竞争。
+- 响应体固定为 `{ "code": 200, "message": "会话已建立", "data": { "expiresIn": <秒> } }`；刷新令牌缺失返回业务码 400，令牌无效返回业务码 401，两者均不写 Cookie。
+  该端点与 `POST /api/auth/refresh` 均不挂认证中间件，400 分支可达；`POST /api/auth/logout` 挂认证中间件，无令牌时由中间件先返回 401。
 
 ### 3.2 双轨过渡
 
 - 服务端令牌解析双轨：`Authorization: Bearer` 头优先，其次读取 `mb_access_token` Cookie；RBAC 链路经 `IdentityProvider` 统一获得双轨能力。
-- `POST /api/auth/refresh`（第 4 节语义）为 Header 通道的存量客户端过渡保留，新前端不再调用。
-- `POST /api/auth/logout` 双轨撤销：Header 令牌与会话 Cookie 任一存在即处理；Cookie 会话存在时随 Cookie 一并撤销并以 `Max-Age=-1` 指示浏览器清除。
+- `POST /api/auth/refresh`（语义见 §3.3）为 Header 通道的存量客户端过渡保留，新前端不再调用。
+- `POST /api/auth/logout` 双轨撤销：请求先经认证中间件按 Header 优先、其次 Cookie 的顺序取得访问令牌，无令牌或令牌无效时由中间件直接返回业务码 401，有效访问令牌是进入撤销逻辑的前提。
+  进入撤销后按实际存在的通道处理，Cookie 会话存在时访问与刷新令牌一并撤销，响应以 `Max-Age=-1` 指示浏览器清除会话 Cookie。
+- 前台 SSR 取数经 `apps/web/src/lib/service/ssr.ts` 把入站请求中 `mb_` 前缀的会话 Cookie 经 `Cookie` 请求头转发给后端，使服务端取数同样具备登录身份；浏览器场景的 Cookie 由浏览器自动携带。
 - 前端不再持久化任何令牌（localStorage 令牌退役），仅持久化用户信息与权限列表用于界面渲染。
 
 ### 3.3 刷新协议（Header 通道，过渡保留）
@@ -52,6 +57,7 @@
 - 端点：`POST /api/auth/refresh`，请求体 `{ "refreshToken": "<refresh token>" }`。
 - 刷新即旋转：成功后旧 refresh token 被撤销，响应返回全新令牌对。
 - 旋转前服务端查库校验令牌归属用户存在且状态正常，被禁用或已删除用户的刷新请求返回业务码 401。
+- 与刷新不同，access 链路只信任短有效期，**不逐请求查库**：被禁用用户的存量访问令牌至多存活 `token.access_expire` 分钟，实时失效诉求由会话 Cookie 续期通道承接。
 
 ## 4. 401 语义
 
@@ -64,12 +70,12 @@
 
 ## 5. 跨标签页状态一致性
 
-- 会话 Cookie 由同源标签页共享，令牌旋转不产生跨标签页竞争；localStorage 仅持久化用户信息与权限列表。
+- 会话 Cookie 由同源标签页共享，令牌旋转不产生跨标签页竞争；localStorage 仅持久化用户信息与权限列表，键为 `auth_user` 与 `auth_permissions`。
 - `packages/auth` 的 `createAuthStore` 注册 `storage` 事件监听，其他标签页登出或更新用户信息时重新加载本页状态。`storage` 事件只在写入方之外的标签页触发，不会形成回环。
 
 ## 6. 登出语义
 
-- 端点：`POST /api/auth/logout`，Authorization 头与会话 Cookie 双轨。
+- 端点：`POST /api/auth/logout`，路由挂认证中间件，Authorization 头与会话 Cookie 双轨取令牌；有效访问令牌是进入撤销逻辑的前提（见 §3.2）。
 - Header 通道：请求头 `Authorization: Bearer <access token>`，请求体可选提交 `{ "refreshToken": "<refresh token>" }`，提交后访问与刷新令牌一并撤销。
 - Cookie 通道：会话 Cookie 存在时访问与刷新令牌一并撤销，响应以 `Max-Age=-1` 指示浏览器清除两个会话 Cookie。
 - 修改密码成功后服务端撤销该用户当前全部既有令牌，客户端须清除本地状态并引导重新登录。
@@ -79,6 +85,7 @@
 
 | 限制 | 影响 | 计划 |
 |---|---|---|
-| 令牌表为内存 map（已加互斥锁，过期记录随签发惰性清理） | 服务重启导致全部会话失效；多实例部署即失效 | 换持久化存储前保持单实例前提 |
-| 登录失败（密码错误）同样返回 code 401 | 前端已排除登录端点不触发刷新 | 已在 client.ts 固化 |
-| 跨标签页对齐依赖 `storage` 事件送达时机 | 事件送达前仍可能携带旧刷新令牌发起一次刷新，此时依赖重放退化为登出 | 已在刷新前补同步存储读取，事件延迟窗口内不再误用旧令牌 |
+| 令牌表为内存 map（已加互斥锁，过期记录随签发惰性清理） | 服务重启或发布导致全体用户登出；多实例部署即失效 | 单实例前提与扩容前置改造见 `docs/architecture-rules.md` §7 |
+| 登录失败（密码错误）同样返回 code 401 | 前端已排除登录端点与 `/auth/session` 自身，二者均不触发自动续期 | 已在 `packages/http/src/client.ts` 固化 |
+| 跨标签页对齐依赖 `storage` 事件送达时机 | 事件送达前本页仍展示已失效的登录态，直到首个请求返回 code 401 被纠正 | 登录态无本地令牌可误用，服务端会话 Cookie 为唯一裁决方 |
+| 并发 401 各自发起续期 | 续期即旋转，后到的请求会携带已被撤销的旧 Cookie 而失败 | 续期经 `refreshSingleFlight` 单飞，并发请求共享同一次续期 |

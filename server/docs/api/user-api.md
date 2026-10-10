@@ -17,7 +17,7 @@
 
 ### 1. 用户登录
 
-用户账号密码登录，获取访问令牌。连续密码失败达到 `security.login_lockout` 配置阈值后账户将被锁定一段时间，到期自动解除，登录成功后失败计数清零。
+用户账号密码登录，获取访问令牌。连续密码失败达到 `security.login_lockout` 配置阈值后账户将被锁定一段时间，到期自动解除，登录成功后失败计数清零；配置缺省时按内置默认值 5 次 / 15 分钟执行。锁定检查先于密码校验，锁定期间密码正确同样拒绝。
 
 #### 请求信息
 
@@ -59,7 +59,7 @@ curl -X POST http://localhost:3000/api/users/login \
 | data.user.avatar | string | 是 | 头像URL |
 | data.user.birthday | string | 否 | 生日，格式 YYYY-MM-DD |
 | data.user.role | string | 是 | 用户角色 |
-| data.user.status | integer | 是 | 用户状态，1启用0禁用 |
+| data.user.status | integer | 是 | 用户状态，1启用0禁用2锁定 |
 | data.user.createdAt | string | 是 | 创建时间 |
 | data.user.updatedAt | string | 是 | 更新时间 |
 | data.accessToken | string | 是 | 访问令牌（不透明令牌，见下方注记） |
@@ -68,6 +68,8 @@ curl -X POST http://localhost:3000/api/users/login \
 | data.permissions | string[] | 是 | 当前角色权限列表（后端唯一权威） |
 
 > **线格式注记**：令牌为**不透明随机串**（32 位十六进制，服务端令牌表是身份唯一权威，不携带可解码信息）。完整协议见 `contracts/auth-protocol.md`。
+
+> **响应形状注记**：本模块存在两个用户响应形状。`users/login`、`users/get`、`users/list`、`users/create`、`users/update` 输出裁剪形状（字段见上表，不含手机号、简介、时区等）；`users/profile` 与 `users/profile/update` 直接输出用户实体的自助全量形状，字段清单与时间格式见第 9 节。
 
 #### 响应示例
 
@@ -95,6 +97,18 @@ curl -X POST http://localhost:3000/api/users/login \
   }
 }
 ```
+
+#### 错误响应
+
+登录失败全部映射为业务码 401，`message` 区分原因：
+
+| 状态码 | 错误信息 | 说明 |
+|--------|----------|------|
+| 401 | 用户不存在 | 用户名与邮箱两种查找方式均未命中 |
+| 401 | 密码错误 | 密码校验失败，失败计数自增 |
+| 401 | 密码错误，失败次数过多，账户已被锁定，请稍后再试 | 本次失败使计数达到阈值并写入锁定 |
+| 401 | 账户已被锁定，请稍后再试 | 请求落在锁定窗口内，未做密码校验 |
+| 401 | 用户已被禁用 | 密码正确但账号状态非启用 |
 
 ---
 
@@ -172,7 +186,7 @@ curl -X POST http://localhost:3000/api/users/get \
 |--------|------|------|------|----------|
 | username | string | 是 | 用户名 | 长度1-50字符，唯一 |
 | email | string | 是 | 邮箱 | 有效邮箱格式，唯一 |
-| password | string | 是 | 密码 | 长度6-100字符，须包含字母和数字 |
+| password | string | 是 | 密码 | 长度6-100字符，须包含字母和数字，且不在弱口令表内 |
 | nickname | string | 否 | 昵称 | 长度0-50字符，留空时使用用户名 |
 | role | string | 否 | 用户角色 | user/editor/admin/superadmin，默认user |
 | birthday | string | 否 | 生日 | 格式 YYYY-MM-DD |
@@ -235,11 +249,13 @@ curl -X POST http://localhost:3000/api/users/create \
 | id | integer | 是 | 用户ID | 大于0的整数 |
 | username | string | 是 | 用户名 | 长度1-50字符，唯一 |
 | email | string | 是 | 邮箱 | 有效邮箱格式，唯一 |
-| password | string | 否 | 新密码 | 长度6-100字符，留空则不修改 |
+| password | string | 否 | 新密码 | 长度6-100字符，须包含字母和数字，且不在弱口令表内，留空则不修改 |
 | nickname | string | 否 | 昵称 | 长度0-50字符，留空时使用用户名 |
 | role | string | 否 | 用户角色 | user/editor/admin/superadmin |
 | birthday | string | 否 | 生日 | 格式 YYYY-MM-DD |
 | status | integer | 否 | 用户状态 | 1启用0禁用 |
+
+> **字段语义注记**：服务层对 `role` 与 `status` 均为无条件赋值。省略 `role` 时角色按默认值 `user` 写回，省略 `status` 时状态按 `0`（禁用）写回，客户端需回填当前值后再提交。
 
 #### 请求示例
 
@@ -252,6 +268,7 @@ curl -X POST http://localhost:3000/api/users/update \
     "username": "newuser",
     "email": "newuser@example.com",
     "nickname": "更新的昵称",
+    "role": "user",
     "status": 1
   }'
 ```
@@ -339,6 +356,7 @@ curl -X POST http://localhost:3000/api/users/delete \
 |--------|------|------|------|----------|
 | page | integer | 否 | 页码 | 大于0的整数，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100之间，默认10 |
+| keyword | string | 否 | 关键词，按用户名、邮箱或昵称模糊匹配 | 无长度约束，空值不参与过滤 |
 
 #### 请求示例
 
@@ -399,6 +417,8 @@ curl -X POST http://localhost:3000/api/users/list \
 ### 7. 刷新访问令牌
 
 使用刷新令牌获取新的访问令牌。服务端在旋转前查库校验令牌归属用户存在且状态正常，被禁用或已删除用户的刷新令牌无法换取新令牌对。
+
+> **刷新即旋转**：成功响应后旧刷新令牌立即从令牌表撤销，同一刷新令牌不能重复兑换；校验失败时旧令牌保持不变。
 
 > 该端点为 Header 通道的存量客户端保留，浏览器场景请改用 [`POST /api/auth/session`](./session-api.md) 的 Cookie 会话与续期。
 
@@ -493,19 +513,28 @@ curl -X POST http://localhost:3000/api/auth/logout \
 
 | 状态码 | 错误信息 | 说明 |
 |--------|----------|------|
-| 400 | 请求参数错误 | 参数格式或内容不正确 |
-| 401 | 未提供认证令牌 / 无效的认证令牌 | 需要登录或令牌已过期 |
-| 403 | 权限不足 | 当前角色没有操作权限 |
-| 404 | 用户不存在 | 指定的用户ID不存在 |
-| 500 | 用户名已存在 / 邮箱已存在 | 创建或更新时违反唯一性约束 |
-| 500 | 服务器内部错误 | 服务器异常 |
+| 400 | 请求参数错误: ... | `binding` 校验失败，参数格式或内容不正确 |
+| 400 | 用户名已存在 | 创建用户时用户名冲突（哨兵错误 `ErrUsernameTaken`） |
+| 400 | 邮箱已被其他用户使用 | 更新用户时邮箱被占用（哨兵错误 `ErrEmailTaken`） |
+| 400 | 不能删除自己的账户 | `users/delete` 目标为当前操作者本人 |
+| 400 | 超级管理员角色只能通过系统管理员设置 / 超级管理员角色不能被降级 / 无效的目标角色: x | 更新用户的角色转换校验失败 |
+| 400 | 请求参数不合法：批量操作的目标不能为空 / 批量操作的单次人数不能超过 100 / 批量操作不能包含自己 / 用户 N 不存在 | 批量接口的业务规则校验失败 |
+| 401 | 未提供认证令牌 / 无效的认证令牌 | 缺少访问令牌，或令牌未登记、已过期、类型不符 |
+| 401 | 用户不存在 / 密码错误 / 用户已被禁用 / 账户已被锁定，请稍后再试 | 登录失败，`users/login` 全部错误映射为 401 |
+| 401 | 未登录 | 认证中间件通过但上下文缺少用户ID，自助接口直接返回 |
+| 403 | 权限不足，无法访问该资源 | 缺少接口所需 RBAC 权限 |
+| 403 | 权限不足，无法管理该角色的用户 / 权限不足，无法分配该角色 / 权限不足，无法删除该角色的用户 | 角色管理规则拒绝，操作者级别低于目标用户 |
+| 404 | 用户不存在 | `users/get`、`users/delete`、`users/profile` 等目标用户不存在 |
+| 500 | 服务器内部错误 | 未归入哨兵错误的业务失败与内部异常，错误原文仅落日志 |
+
+> 现行实现中「邮箱已存在」（创建用户邮箱冲突）、「用户名已被其他用户使用」（更新用户用户名冲突）、「密码长度不能少于6位」等密码强度错误、「旧密码不正确」均未使用哨兵错误，实际统一返回 500 服务器内部错误，见各接口小节。
 
 ### 错误响应示例
 
 ```json
 {
   "code": 400,
-  "message": "请求参数错误: 用户名长度必须在1到50之间"
+  "message": "请求参数错误: Key: 'CreateUserRequest.Username' Error:Field validation for 'Username' failed on the 'max' tag"
 }
 ```
 
@@ -526,9 +555,10 @@ curl -X POST http://localhost:3000/api/auth/logout \
 ```json
 {
   "code": 500,
-  "message": "用户名已存在"
+  "message": "服务器内部错误"
 }
 ```
+
 ---
 
 ### 9. 获取当前用户资料
@@ -547,9 +577,57 @@ curl -X POST http://localhost:3000/api/auth/logout \
 
 无请求参数，请求体传空对象。
 
+#### 响应参数
+
+该端点直接输出用户实体的自助全量形状（不含密码、失败计数、锁定时间等 `json:"-"` 字段），与登录等接口的裁剪形状不同：
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| id | integer | 是 | 用户ID |
+| username | string | 是 | 用户名 |
+| email | string | 是 | 邮箱 |
+| phone | string | 否 | 手机号，未绑定时不返回该字段 |
+| nickname | string | 是 | 昵称 |
+| avatar | string | 是 | 头像URL |
+| coverImage | string | 是 | 个人主页封面图URL |
+| bio | string | 是 | 个人简介 |
+| website | string | 是 | 个人网站URL |
+| location | string | 是 | 常居地描述 |
+| gender | integer | 否 | 性别，未设置时不返回该字段 |
+| birthday | string | 是 | 生日，当天零点输出 `YYYY-MM-DD`，未设置为 `null` |
+| timezone | string | 是 | 时区标识 |
+| locale | string | 是 | 界面语言标识 |
+| role | string | 是 | 用户角色 |
+| status | integer | 是 | 用户状态，1启用0禁用2锁定 |
+| createdAt | string | 是 | 创建时间，RFC3339 格式 |
+| updatedAt | string | 是 | 更新时间，RFC3339 格式 |
+
 #### 响应示例
 
-响应格式同"获取用户信息"接口，返回当前登录用户的资料。
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "nickname": "管理员",
+    "avatar": "",
+    "coverImage": "",
+    "bio": "白天写代码，晚上写字。",
+    "website": "https://example.com",
+    "location": "杭州",
+    "birthday": "1990-01-01",
+    "timezone": "Asia/Shanghai",
+    "locale": "zh-CN",
+    "role": "admin",
+    "status": 1,
+    "createdAt": "2024-01-01T10:00:00+08:00",
+    "updatedAt": "2024-01-01T10:00:00+08:00"
+  }
+}
+```
 
 ---
 
@@ -588,7 +666,7 @@ curl -X POST http://localhost:3000/api/users/profile/update \
 
 #### 响应示例
 
-响应格式同"获取用户信息"接口，返回更新后的资料。
+响应格式与第 9 节一致，返回更新后的自助全量形状资料。
 
 ---
 
@@ -609,7 +687,7 @@ curl -X POST http://localhost:3000/api/users/profile/update \
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
 | oldPassword | string | 是 | 旧密码 | 非空字符串 |
-| newPassword | string | 是 | 新密码 | 8-64字符，需满足强度校验 |
+| newPassword | string | 是 | 新密码 | 8-64字符，且须通过密码强度校验（含字母与数字、不少于6位、不在弱口令表内） |
 
 #### 响应示例
 
@@ -624,4 +702,106 @@ curl -X POST http://localhost:3000/api/users/profile/update \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 旧密码不正确或新密码强度不足 |
+| 401 | 未提供或无效的认证令牌 |
+| 500 | 旧密码不正确或新密码强度不足：实现未使用哨兵错误，错误原文不进入响应体，统一返回「服务器内部错误」 |
+
+---
+
+### 12. 批量删除用户
+
+按 ID 集合批量软删除用户，逐项复用单删的业务规则，任一目标违规整批拒绝。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/batchDelete`
+- **请求方式**: `POST`
+- **权限要求**: `user:delete` 权限
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| ids | integer[] | 是 | 目标用户ID集合 | 1-100 项，每项大于0 |
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/users/batchDelete \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {accessToken}" \
+  -d '{
+    "ids": [2, 3]
+  }'
+```
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "批量删除用户成功"
+}
+```
+
+#### 错误响应
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 批量操作的目标不能为空、单次人数超过100、集合包含操作者本人、目标用户不存在 |
+| 403 | 目标用户角色超出操作者可管理的范围 |
+
+---
+
+### 13. 批量更新用户状态
+
+按 ID 集合批量启用或禁用用户，业务规则与批量删除一致；仅开放启用与禁用两态，锁定状态由登录锁定机制专用。
+
+#### 请求信息
+
+- **接口地址**: `/api/users/batchUpdateStatus`
+- **请求方式**: `POST`
+- **权限要求**: `user:update` 权限
+- **Content-Type**: `application/json`
+- **Authorization**: `Bearer {accessToken}`
+
+#### 请求参数
+
+| 字段名 | 类型 | 必填 | 说明 | 验证规则 |
+|--------|------|------|------|----------|
+| ids | integer[] | 是 | 目标用户ID集合 | 1-100 项，每项大于0 |
+| status | integer | 是 | 目标状态 | 取值 0 或 1，省略时按 0（禁用）写回 |
+
+#### 请求示例
+
+```bash
+curl -X POST http://localhost:3000/api/users/batchUpdateStatus \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer {accessToken}" \
+  -d '{
+    "ids": [2, 3],
+    "status": 1
+  }'
+```
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "批量更新用户状态成功"
+}
+```
+
+---
+
+### 14. 建立或续期会话
+
+凭刷新令牌换取新令牌对并写入 HttpOnly Cookie，是浏览器场景的默认认证通道。
+
+- **接口地址**: `/api/auth/session`
+- **请求方式**: `POST`
+- **权限要求**: 无需访问令牌，但需要有效的刷新令牌
+
+请求参数、Cookie 属性、错误分档与前端接入约定见 [`session-api.md`](./session-api.md)。

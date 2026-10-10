@@ -13,7 +13,7 @@
 
 ## 管理接口（需要 system:stats 权限）
 
-管理接口需在请求头携带 `Authorization: Bearer {accessToken}`，操作者角色为 admin 及以上。
+管理接口位于 `/api/admin` 分组，认证经双轨解析：`Authorization: Bearer {accessToken}` 头优先，其次读取会话 Cookie `mb_access_token`（浏览器经 `POST /api/auth/session` 建立会话后无需手工设置请求头）；`security.admin_security.enabled` 开启时该分组另受管理员安全中间件约束，限流阈值更严格，`security.admin_security.ip_whitelist` 非空时先校验来源 IP。
 
 ### 1. 站点概览
 
@@ -44,6 +44,7 @@ curl -X POST http://localhost:3000/api/admin/stats/overview \
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | code | integer | 是 | 状态码，200表示成功 |
+| message | string | 是 | 响应消息 |
 | data | object | 是 | 站点概览数据 |
 | data.articleCount | integer | 是 | 文章总数 |
 | data.publishedCount | integer | 是 | 已发布文章数 |
@@ -106,6 +107,7 @@ curl -X POST http://localhost:3000/api/admin/stats/articles \
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | code | integer | 是 | 状态码，200表示成功 |
+| message | string | 是 | 响应消息 |
 | data | object | 是 | 趋势数据 |
 | data.dates | array | 是 | 日期列表，格式 YYYY-MM-DD |
 | data.values | array | 是 | 与日期对应的浏览量数组 |

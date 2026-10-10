@@ -2,7 +2,7 @@
 
 ## 概述
 
-MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文章管理、分类标签、评论互动、媒体文件、系统设置、友情链接、站点统计、通知与关注等模块。所有接口遵循统一的设计规范，使用 POST 方法和 JSON 数据格式。
+MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文章管理、分类标签、评论互动、媒体文件、系统设置、友情链接、站点统计、通知、关注与字典等模块。业务接口遵循统一的设计规范，使用 `POST` 方法和 JSON 数据格式；健康探针属基础设施端点，按编排器标准使用 `GET`（见 [health-api.md](./health-api.md)）。
 
 ## 文档结构
 
@@ -55,6 +55,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | **总计** | **104** | 含健康探针 2 条，**业务接口 102 条**（全部 `POST`） |
 
 > 统计口径为 `internal/router/*.go` 的路由注册数（`RegisterRoutes` 内的 `POST`/`GET` 调用），修改路由后必须同步本节数字。
+> 业务路由模块共 **12** 个，与上表对应关系为：`article`、`category`、`tag`、`comment`、`media`、`setting`、`friendly_link`、`stats`、`notification`、`user_follow`、`dict` 各占一个路由文件，`user` 模块的 `user.go` 同时注册 `/api/users/*` 与 `/api/auth/*`，即上表的「用户管理」与「认证与会话」两行；`health.go` 为基础设施探针，不计入业务模块。
 
 ## 内容多语言说明
 
@@ -69,12 +70,12 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 ## 接口概览
 
 ### 认证与会话
-- `POST /api/users/login` - 用户登录
-- `POST /api/auth/session` - 建立或续期会话（写入 HttpOnly Cookie）
-- `POST /api/auth/refresh` - 刷新令牌（Header 通道，过渡保留）
-- `POST /api/auth/logout` - 用户登出
+- `POST /api/users/login` - 用户登录（免鉴权）
+- `POST /api/auth/session` - 建立或续期会话（免访问令牌，凭刷新令牌；响应写入 HttpOnly Cookie）
+- `POST /api/auth/refresh` - 刷新令牌（免鉴权，Header 通道过渡保留）
+- `POST /api/auth/logout` - 用户登出（登录）
 
-### 用户管理 (需要权限)
+### 用户管理 (需要权限：profile 系列仅需登录，其余按 user:list / user:create / user:update / user:delete 校验)
 - `POST /api/users/profile` - 获取当前用户资料（登录）
 - `POST /api/users/profile/update` - 更新当前用户资料（登录）
 - `POST /api/users/changePassword` - 修改密码（登录）
@@ -124,7 +125,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/articles/isBookmarked` - 收藏状态查询
 - `POST /api/articles/bookmarks` - 我的收藏列表
 
-#### 文章操作接口（作者或有 article:manage 的管理员，服务端统一授权）
+#### 文章操作接口（路由层要求 `article:create`；服务端再判定为作者本人或具备 `article:manage` 的管理员）
 - `POST /api/articles/create` - 创建文章
 - `POST /api/articles/update` - 更新文章
 - `POST /api/articles/delete` - 删除文章
@@ -137,55 +138,55 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/categories/get` - 获取分类详情（公开）
 - `POST /api/categories/getBySlug` - 按 Slug 获取分类（公开）
 - `POST /api/categories/tree` - 获取分类树（公开）
-- `POST /api/admin/categories/create` - 创建分类
-- `POST /api/admin/categories/update` - 更新分类
-- `POST /api/admin/categories/delete` - 删除分类
-- `POST /api/admin/categories/list` - 分类列表
+- `POST /api/admin/categories/create` - 创建分类（category:manage）
+- `POST /api/admin/categories/update` - 更新分类（category:manage）
+- `POST /api/admin/categories/delete` - 删除分类（category:manage）
+- `POST /api/admin/categories/list` - 分类列表（category:manage）
 
 ### 标签管理
 - `POST /api/tags/get` - 获取标签详情（公开）
 - `POST /api/tags/popular` - 获取热门标签（公开）
 - `POST /api/tags/list` - 全部标签列表（登录，article:read，供文章编辑选择）
-- `POST /api/admin/tags/create` - 创建标签
-- `POST /api/admin/tags/update` - 更新标签
-- `POST /api/admin/tags/delete` - 删除标签
-- `POST /api/admin/tags/list` - 标签列表
+- `POST /api/admin/tags/create` - 创建标签（tag:manage）
+- `POST /api/admin/tags/update` - 更新标签（tag:manage）
+- `POST /api/admin/tags/delete` - 删除标签（tag:manage）
+- `POST /api/admin/tags/list` - 标签列表（tag:manage）
 
 ### 评论管理
 - `POST /api/comments/list` - 文章评论列表（公开）
 - `POST /api/comments/create` - 发表评论（游客/登录）
 - `POST /api/comments/like` - 点赞评论（登录）
 - `POST /api/comments/unlike` - 取消点赞评论（登录）
-- `POST /api/admin/comments/approve` - 审核通过
-- `POST /api/admin/comments/reject` - 拒绝评论
-- `POST /api/admin/comments/spam` - 标记垃圾
-- `POST /api/admin/comments/trash` - 移入回收站
-- `POST /api/admin/comments/delete` - 删除评论
-- `POST /api/admin/comments/list` - 管理端评论列表
+- `POST /api/admin/comments/approve` - 审核通过（comment:moderate）
+- `POST /api/admin/comments/reject` - 拒绝评论（comment:moderate）
+- `POST /api/admin/comments/spam` - 标记垃圾（comment:moderate）
+- `POST /api/admin/comments/trash` - 移入回收站（comment:moderate）
+- `POST /api/admin/comments/delete` - 删除评论（comment:moderate）
+- `POST /api/admin/comments/list` - 管理端评论列表（comment:moderate）
 
-### 媒体文件 (需要权限)
-- `POST /api/media/upload` - 上传文件（multipart）
-- `POST /api/media/get` - 获取文件详情
-- `POST /api/media/list` - 文件列表
-- `POST /api/media/delete` - 删除文件
+### 媒体文件 (需要权限：file:upload / file:read / file:delete)
+- `POST /api/media/upload` - 上传文件（multipart，file:upload）
+- `POST /api/media/get` - 获取文件详情（file:read）
+- `POST /api/media/list` - 文件列表（file:read）
+- `POST /api/media/delete` - 删除文件（file:delete）
 
 ### 系统设置
 - `POST /api/settings/public` - 公开设置（免鉴权）
-- `POST /api/admin/settings/list` - 设置项列表
-- `POST /api/admin/settings/update` - 批量更新设置
+- `POST /api/admin/settings/list` - 设置项列表（system:config）
+- `POST /api/admin/settings/update` - 批量更新设置（system:config）
 
 ### 友情链接
 - `POST /api/friendlyLinks/list` - 展示中的链接（公开）
 - `POST /api/friendlyLinks/apply` - 提交友链申请（公开）
-- `POST /api/admin/friendlyLinks/create` - 创建链接
-- `POST /api/admin/friendlyLinks/update` - 更新链接
-- `POST /api/admin/friendlyLinks/delete` - 删除链接
-- `POST /api/admin/friendlyLinks/approve` - 审核通过
-- `POST /api/admin/friendlyLinks/hide` - 下架
-- `POST /api/admin/friendlyLinks/reject` - 拒绝
-- `POST /api/admin/friendlyLinks/list` - 链接列表
+- `POST /api/admin/friendlyLinks/create` - 创建链接（system:config）
+- `POST /api/admin/friendlyLinks/update` - 更新链接（system:config）
+- `POST /api/admin/friendlyLinks/delete` - 删除链接（system:config）
+- `POST /api/admin/friendlyLinks/approve` - 审核通过（system:config）
+- `POST /api/admin/friendlyLinks/hide` - 下架（system:config）
+- `POST /api/admin/friendlyLinks/reject` - 拒绝（system:config）
+- `POST /api/admin/friendlyLinks/list` - 链接列表（system:config）
 
-### 站点统计 (需要权限)
+### 站点统计 (需要权限：system:stats)
 - `POST /api/admin/stats/overview` - 站点概览
 - `POST /api/admin/stats/articles` - 浏览量趋势
 
@@ -205,8 +206,8 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - `POST /api/admin/dicts/items/list` - 字典项列表
 
 ### 系统监控
-- `GET /api/health` - 存活探针（基础设施端点例外）
-- `GET /api/health/ready` - 就绪探针（基础设施端点例外）
+- `GET /api/health` - 存活探针（无需认证，基础设施端点例外）
+- `GET /api/health/ready` - 就绪探针（无需认证，基础设施端点例外）
 
 ## 权限系统
 
@@ -226,7 +227,7 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 - **文件管理**: `file:upload`, `file:read`, `file:delete`
 - **系统管理**: `system:config`, `system:logs`, `system:stats`, `dict:manage`
 
-> 上表为便于阅读的分组示例，**权限标识与角色映射的唯一权威**是后端 `configs/config.yaml` 的 `rbac` 节（经 `LoadRBACConfig` 加载，`internal/service/rbac.go` 的常量表为配置缺失时的降级数据）。前端不得复刻该映射，登录响应已下发 `permissions[]`。
+> 上表为便于阅读的分组示例，**权限标识与角色映射的唯一权威**是后端 `configs/config.yaml` 的 `rbac` 节；前端不得复刻该映射，登录响应已下发 `permissions[]`（红线见 [`docs/architecture-rules.md`](../../../docs/architecture-rules.md) 第 5.1 节）。
 
 ## 请求规范
 
@@ -268,7 +269,7 @@ curl http://localhost:3000/api/health/ready
 完整认证协议见 `contracts/auth-protocol.md`，会话端点的请求响应细节见 [`session-api.md`](./session-api.md)。
 
 ### 错误处理
-业务错误经 `pkg/response` 信封返回，**HTTP 状态码恒为 200**，错误语义只在响应体 `code` 字段中；健康探针的 503 与限流的 429 是仅有的例外。
+业务错误经 `pkg/response` 信封返回，**HTTP 状态码恒为 200**，错误语义只在响应体 `code` 字段中。真实非 200 的状态只出现在中间件层与基础设施端点：限流 429、UA 拦截 403、内容拦截 400、请求体过大 413、未匹配路由 404、CORS 预检 204、健康探针未就绪 503，完整口径见 [api-specification.md](./api-specification.md) 的错误处理规范。
 - `400` - 请求参数错误
 - `401` - 认证失败或令牌过期
 - `403` - 权限不足
@@ -276,6 +277,8 @@ curl http://localhost:3000/api/health/ready
 - `500` - 服务器内部错误
 
 ## 更新日志
+
+> 本节按版本倒序记录当时的变更，属历史叙述。接口的当前行为以各模块文档与上文「接口概览」为准；已被后续版本覆盖的历史口径不再生效（例如文章列表的可见性边界在 v1.4.0 被放宽）。
 
 ### v1.4.0 (当前版本)
 - ✅ 认证凭据收紧：令牌改为服务端登记的不透明随机串，登出后访问令牌立即失效，旧刷新令牌旋转后不可再刷
@@ -312,29 +315,15 @@ curl http://localhost:3000/api/health/ready
 - ✅ 新增 `POST /api/tags/list`：文章编辑选择使用的全部标签列表（登录 + `article:read`）
 
 ### v1.1.0
-- ✅ 分类管理与分类树
-- ✅ 标签管理与热门标签
-- ✅ 评论系统与审核状态机
-- ✅ 媒体文件上传与管理
-- ✅ 系统设置管理
-- ✅ 友情链接申请与审核
-- ✅ 站点统计概览与趋势
-- ✅ 站内通知中心
-- ✅ 用户关注关系
+- ✅ 初始业务模块落地：分类、标签、评论、媒体、设置、友情链接、站点统计、通知与用户关注，接口清单见上文「接口概览」。
 
 ### v1.0.0
-- ✅ 完整的用户认证和授权系统
-- ✅ 基于RBAC的权限控制
-- ✅ 完整的文章管理系统
-- ✅ 文章分类与标签关联
-- ✅ 文章关键词搜索
-- ✅ 文章统计和分析
-- ✅ 健康检查和监控
+- ✅ 初始版本：基于 RBAC 的用户认证与授权、文章管理与关键词搜索、健康检查。
 
 ## 技术架构
 
 ### 后端技术栈
-- **语言**: Go 1.26.9（版本唯一来源为 `server/go.mod` 的 `go` 指令）
+- **语言**: Go 1.26.9
 - **框架**: Gin
 - **数据库**: MySQL 8.0 + GORM
 - **认证**: 不透明令牌 + HttpOnly Cookie 会话

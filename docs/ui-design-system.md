@@ -19,18 +19,16 @@
 
 前台以「编辑杂志风」为视觉方向：像一本纸质刊物，而不是数字产品模板。大面积暖纸色与墨色构成安静基底，朱红作为唯一锐利强调色；标题使用衬线字体承担刊头气质，目录、时间线等版式强调「翻阅索引」的阅读体验。
 
-两套主题互不共享样式文件，分别由各自 `app.css` 的 CSS token 定义。`packages/ui` 不携带任何全局样式。
+两套主题互不共享样式文件，分别由各自 `src/styles/tokens.css` 的 CSS token 定义，`app.css` 只作聚合入口。`packages/ui` 不携带任何全局样式。
 
 ### 1.2 `packages/ui` 边界（stock 原则）
 
-- `packages/ui` 承载 shadcn-svelte 全部基础组件，**必须保持 stock（原始）样式**。
-- 组件源码**禁止硬编码业务色与业务样式**，外观一律通过各应用 `app.css` 的语义 token 与调用处 `className` prop 定制。
-- 前后台的外观差异全部落在各自 `app.css`，**不得**通过修改 `packages/ui` 组件源码实现。
+- 组件归属、stock 原则与「禁止在应用内重写」见根 `AGENTS.md` 第 6 节，本节不重复；组件源码**禁止硬编码业务色与业务样式**，外观一律通过各应用 `src/styles/tokens.css` 的语义 token 与调用处 `className` prop 定制，前后台的外观差异全部落在该文件，**不得**通过修改 `packages/ui` 组件源码实现。
 - 组件库内仅使用标准 shadcn token（`--background` / `--foreground` / `--card` / `--primary` / `--muted` / `--border` / `--ring` / `--destructive` / `--radius` 等）。
 - 组件库**只提供逐组件子路径入口**，不提供包级聚合入口：`@myblog/ui` 的 `exports` 仅保留 `./*`，原 `packages/ui/src/index.ts` 聚合文件已删除，两个应用的 eslint 对 `$ui` 与 `@myblog/ui` 裸导入设为 error。
-- 聚合入口的代价是可量化的：经它可达 334 个文件，其中 288 个是 `.svelte`，而按实际使用的组件入口只可达 151 个文件。类型检查需要逐个转换 `.svelte`，这部分开销会直接叠加到每次 `svelte-check` 上。
+- 聚合入口的代价是可量化的：包内 `packages/ui/src` 共 394 个文件，其中 334 个是 `.svelte`，类型检查需要逐个转换 `.svelte`；按两个应用实际引用的 24 个组件入口做静态可达分析，可达文件为 166 个（其中 `.svelte` 142 个）。
 - 导入形态与组件的部件结构对齐：单部件组件用具名导入，例如 `import { Input } from '$ui/input'`；多部件组件用命名空间导入，例如 `import * as Card from '$ui/card'`，内部按 `<Card.Root>` / `<Card.Header>` 使用。
-- `Chart` 组件在服务端渲染时会抛出运行时错误，因此不进入任何聚合入口，需要时按子路径 `$ui/chart` 单独引用。
+- `Chart` 组件在服务端渲染时会抛出运行时错误，需要时按子路径 `$ui/chart` 单独引用。
 
 ### 1.3 主题注入机制（三件套）
 
@@ -40,7 +38,7 @@
 2. **`vite.config.ts`**：`ssr.noExternal: ['@myblog/ui']`，使 `.svelte` 源码参与 SSR 编译。
 3. **`app.css` 的 `@source`**：`@source '../../../packages/ui/src'`，让 Tailwind v4 扫描包内组件类。
 
-Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` / `text-*` 等），组件才能在应用中直接使用。
+Token 经 `src/styles/tokens.css` 的 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` / `text-*` 等），组件才能在应用中直接使用。
 
 ---
 
@@ -48,7 +46,7 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 **取色硬约束**：所有颜色必须通过语义 token（`bg-signal`、`text-muted-foreground`、`border-line` 等）取用，**禁止硬编码色值**。唯一例外见 8.1 的「精选封面版画」既定画布色板。
 
-### 2.1 前台编辑杂志主题（`apps/web/src/app.css`）
+### 2.1 前台编辑杂志主题（`apps/web/src/styles/tokens.css`，经 `apps/web/src/app.css` 聚合引入）
 
 **基调**：「编辑杂志风」暖纸墨色系，色板源自参考稿（纸 `#f7f3ea`、墨 `#221d16`、朱红）。暗色为配套的「深夜书房」暖黑纸墨。
 
@@ -89,9 +87,9 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 | `--ring` / `--signal` | `#e4653c` | 焦点环 / 强调色（提亮朱红） |
 | `--signal-foreground` | `#1a120c` | 红底上的深墨文字 |
 
-图表与侧边栏 token（`--chart-1..5`、`--sidebar-*`）随主题在 `app.css` 中定义，业务代码只经 `@theme inline` 映射后的工具类取用。
+图表与侧边栏 token（`--chart-1..5`、`--sidebar-*`）随主题在 `src/styles/tokens.css` 中定义，业务代码只经 `@theme inline` 映射后的工具类取用。
 
-### 2.2 后台 shadcn 原始主题（`apps/admin/src/app.css`）
+### 2.2 后台 shadcn 原始主题（`apps/admin/src/styles/tokens.css`，经 `apps/admin/src/app.css` 聚合引入）
 
 **基调**：shadcn-svelte 默认 slate 蓝主题，纯白底，**不含 `--signal`**。后台不使用前台朱红强调色。
 
@@ -119,7 +117,7 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 | `--muted` / `--secondary` | `oklch(0.279 0.041 260.031)` | 弱背景 |
 | `--muted-foreground` | `oklch(0.704 0.04 256.788)` | 次级文字 |
 | `--primary` | `oklch(0.929 0.013 255.508)` | 主按钮（亮蓝白） |
-| `--border` | `oklch(1 0 0 / 10%)` | 边框 |
+| `--border` / `--input` | `oklch(1 0 0 / 10%)` / `oklch(1 0 0 / 15%)` | 边框 |
 | `--ring` | `oklch(0.551 0.027 264.364)` | 焦点环 |
 
 ### 2.3 取色约定
@@ -138,22 +136,23 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 | 角色 | 字体 | 字重 | 引入方式 |
 | --- | --- | --- | --- |
-| 标题（`font-display`） | Noto Serif SC（思源宋体） | 500 / 700 / 900 | `@fontsource/noto-serif-sc` 自托管 |
-| 正文（`font-sans`） | Noto Sans SC（思源黑体） | 400 / 500 / 700 | `@fontsource/noto-sans-sc` 自托管 |
-| 等宽（技术标注，`font-mono`） | Fira Mono | 400 / 500 / 700 | `@fontsource/fira-mono` 自托管 |
+| 标题（`font-display`） | Noto Serif SC（思源宋体） | 500 / 700 / 900 | `@fontsource/noto-serif-sc`，dev 本地加载 / prod jsDelivr CDN |
+| 正文（`font-sans`） | Noto Sans SC（思源黑体） | 400 / 500 / 700 | `@fontsource/noto-sans-sc`，dev 本地加载 / prod jsDelivr CDN |
+| 等宽（技术标注，`font-mono`） | Fira Mono | 400 / 500 / 700 | `@fontsource/fira-mono`，dev 本地加载 / prod jsDelivr CDN |
 
-- 三者均在 `app.css` 顶部按 `chinese-simplified-*.css` 分包引入，Tailwind v4 经 `@theme` 的 `--font-display` / `--font-sans` / `--font-mono` 映射为工具类。
+- 三者的来源经 `apps/web/vite.config.ts` 的 `#fonts` 构建期别名注入：dev 解析到 `src/lib/styles/fonts-local.ts`，按 `chinese-simplified-*.css` 与 `latin-*.css` 分包引入 `@fontsource` 模块；prod 解析到 `src/lib/styles/fonts-cdn.ts`，由 `routes/+layout.svelte` 输出 jsDelivr 上的 fontsource 样式表链接，本地字体不进入构建产物。`app.css` 本身不含任何字体声明。
+- Tailwind v4 经 `src/styles/tokens.css` 的 `@theme` 的 `--font-display` / `--font-sans` / `--font-mono` 映射为工具类。
 - 全局 `h1..h6` 默认应用 `--font-display`（衬线），正文与 UI 组件应用 `--font-sans`。
 - CJK 字体按 unicode-range 分包加载，仅实际用到的字符子集会产生请求。
 
 ### 3.2 后台（`apps/admin`）
 
-- 正文声明 `'Manrope'`、标题声明 `'Inter'`，但**两者尚未经 `@fontsource` 自托管**，当前实际回退系统字体栈。如需正式启用，必须自托管（见 3.3）；否则应从 `font-family` 移除以免误导。
+- 正文声明 `'Manrope'`、标题声明 `'Inter'`，但**两者均未经 `@fontsource` 引入**，当前实际回退系统字体栈。如需正式启用，必须按 3.3 经 `@fontsource` 引入；否则应从 `font-family` 移除以免误导。
 
-### 3.3 自托管约束
+### 3.3 字体来源约束
 
 - **禁止**新增 Google Fonts CDN 引用（大陆网络不可达）。
-- 新增字体必须走 `@fontsource` 自托管并加入依赖，使用前在 `app.css` 的 `@theme` 中完成映射。
+- 新增字体必须经 `@fontsource` 包引入并加入依赖，字体来源由 `#fonts` 别名按构建模式切换；使用前在 `src/styles/tokens.css` 的 `@theme` 中完成映射。
 
 ---
 
@@ -164,7 +163,7 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 - 全局 `--radius: 0.25rem`，使 `rounded-md` 锐利化。
 - 卡片 / 按钮 / 输入框：`rounded-none` 或继承 `rounded-md`，**禁止**装饰性 `rounded-full` 与 `rounded-xl`。
 - 保留的功能性圆形：头像 `avatar`、开关 `switch`、单选 `radio-group`、进度 `progress`、滚动区 `scroll-area`、轮播翻页按钮、抽屉拖拽把手、回到顶部浮动按钮、时间线节点圆点。
-- 纸纹底纹：`.texture-grid`（印刷细网格，基于 `color-mix` 前景色叠加，明暗主题自适应），施加于首页正文容器。
+- 纸纹底纹：`.texture-grid`（印刷细网格，基于 `color-mix` 前景色叠加，明暗主题自适应），施加于各业务版面正文容器（首页、博客目录与详情、归档、作者页、登录页等）。
 
 ### 4.2 后台（shadcn 默认）
 
@@ -255,14 +254,14 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 ### 7.2 后台（shadcn 默认）
 
-- 全部使用 `packages/ui` 的 stock 组件，样式经后台 `app.css` token 生效。
+- 全部使用 `packages/ui` 的 stock 组件，样式经后台 `src/styles/tokens.css` 的 token 生效。
 - 状态/角色 Badge 等走 shadcn 变体（`secondary` / `outline` / `destructive` 等），不硬编码颜色类。
 
 ### 7.3 `packages/ui` 维护流程
 
 - `components.json` 位于 `packages/ui` 根目录，新增组件在包内执行 `npx shadcn-svelte@latest add <组件>`。
 - 各应用不各自维护 `components.json`。
-- 新增组件保持 stock；外观定制一律经应用 `app.css` token 与调用处 `className` 完成。
+- 新增组件保持 stock；外观定制一律经应用 `src/styles/tokens.css` 的 token 与调用处 `className` 完成。
 
 ---
 
@@ -301,9 +300,9 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 | 前台 `.spec-grid` | **已清理**（无引用死代码，随规格书风格退役移除） | 后台登录页如需网格底纹可自行实现 |
 | 前台 `.animate-blob` / 延迟类 | **已清理**（同上） | 后台登录页 blob 动画保留于后台自身样式 |
 | 首页文章数据 | **已接入真实数据**（popular/recent/archives/热门标签，占位 `home-content.ts` 已删除） | 精选文章暂取热门榜首，后续可按 isFeatured 筛选 |
-| 后台 Manrope / Inter 字体 | 已声明于 `font-family` 但未自托管，实际回退系统栈 | 自托管或移除声明 |
+| 后台 Manrope / Inter 字体 | 已声明于 `font-family` 但未经 `@fontsource` 引入，实际回退系统栈 | 按 3.3 引入或移除声明 |
 | 后台登录页 blob 动画 | 历史保留的登录页特色 | 保持；如需清理单独立项 |
-| Header 触发器 button 嵌套 | `Dialog.Trigger`/`Sheet.Trigger` 包裹 `$ui` Button 产生 `hydration_mismatch` 警告 | 触碰 Header 时顺带修复（改用 `Button asChild` 或原生按钮）；新增的通知铃铛已改用 `child` snippet 模式 |
+| Header 触发器 button 嵌套 | `DropdownMenu.Trigger`/`Sheet.Trigger` 包裹 `$ui` Button 产生 `hydration_mismatch` 警告 | 触碰 Header 时顺带修复（改用 `Button asChild` 或原生按钮）；新增的通知铃铛已改用 `child` snippet 模式 |
 
 ---
 
@@ -322,12 +321,11 @@ Token 经 `@theme inline` 映射为 Tailwind 工具类（`--color-*` → `bg-*` 
 
 **落点在两个应用各自的 `styles/animations.css`，不写进 `packages/ui`。** 组件库保持 stock 且不携带全局样式；`$ui` 内的动画工具类经应用 `app.css` 的 `@source` 纳入扫描，因此在应用层写覆盖即可同时生效于自有组件与组件库组件。`tw-animate-css` 未内建减少动态支持，覆盖必须带 `!important`：工具类位于 Tailwind 的 utilities 层，无重要标记时层内规则优先。
 
-前台另有 8 处经 `gsap.matchMedia('(prefers-reduced-motion: no-preference)')` 门控的 GSAP 动效，以及组件内的 `@media` 样式块，均沿用既有实现，不在本节重复登记。
+前台另有 5 处 `gsap.matchMedia` 门控点（`src/lib/motion/reveal.ts` 的两个 action，以及 `ArchiveTimeline`、`FeaturedStory`、`HeroSection`），以及组件内的 `@media` 样式块，均沿用既有实现，不在本节重复登记。
 
 ### 10.2 表单标签的关联方式
 
 - **包裹式标签为可接受形态**：`<label>` 包裹其唯一控件时隐式关联成立，不必补 `for`/`id`。前台 18 处 `<label>` 中 16 处为包裹式，均已核实每个标签恰含一个控件。
-- **显式关联仅在包裹式不可用时使用**：标签与控件分开书写时必须补 `for`/`id`，前台另有 2 处属此形态。
 - **显式关联仅在包裹式不可用时使用**：标签与控件分开书写时必须补 `for`/`id`，前台另有 2 处属此形态。
 - **`for` 不得指向不可关联的控件**：`button`、`div` 等元素不参与标签关联，写 `for` 只会形成悬空引用。组件库的 `Checkbox` 渲染为 `button`，此类控件必须改用 `aria-label` 或 `aria-labelledby` 显式提供可访问名称。
 - **多选组必须用 `fieldset` 与 `legend`**：组标签不可用 `label` 元素，否则形成无法关联任何控件的空标签。同一规则适用于单选框组与复选框组。

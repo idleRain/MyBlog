@@ -2,11 +2,11 @@
 
 ## 概述
 
-分类管理模块提供文章分类的树形管理与展示功能。分类采用 `parent_id`、`root_id`、`level`、`path` 四字段描述层级结构，支持子树查询与排序。
+分类管理模块提供文章分类的树形管理与展示功能。分类采用 `parent_id`、`root_id`、`level`、`path` 四字段描述层级结构，列表与分类树按 `sortOrder` 升序输出。
 
 ## 内容多语言说明
 
-分类模块支持内容多语言，完整规则见 [`contracts/i18n-protocol.md`](../../../contracts/i18n-protocol.md)：请求头 `Accept-Language` 决定 `name`、`description` 与 SEO 字段输出语言，缺省中文，缺失翻译按字段回退；`Accept-Language: *` 时响应额外携带 `translations` 翻译行数组；创建与更新请求体可选 `i18n` 字段按语言提交翻译补丁（`{"en": {"name": "..."}}`），缺省语言键与白名单外语言键返回 400。
+分类模块支持内容多语言，完整规则见 [`contracts/i18n-protocol.md`](../../../contracts/i18n-protocol.md)：`name`、`description`、`seoTitle`、`seoDescription` 按 `Accept-Language` 输出本地化值，响应头 `Content-Language` 标注本次输出语言；`Accept-Language: *` 时响应额外携带 `translations` 翻译行数组；创建与更新请求体可选 `i18n` 字段按语言提交翻译补丁（`{"en": {"name": "..."}}`），缺省语言键与白名单外语言键返回 400。
 
 ## 分类树结构说明
 
@@ -21,7 +21,7 @@
 
 | 操作 | 所需权限 | 角色要求 |
 |------|----------|----------|
-| 获取分类详情 / 分类树 | 无 | 无 |
+| 获取分类详情 / 按 Slug 获取分类 / 分类树 | 无 | 无 |
 | 创建 / 更新 / 删除分类 | `category:manage` | admin及以上 |
 | 分类列表 | `category:manage` | admin及以上 |
 
@@ -74,6 +74,8 @@ curl -X POST http://localhost:3000/api/categories/get \
 | data.status | integer | 是 | 状态，1显示 0隐藏 |
 | data.articleCount | integer | 是 | 文章数量 |
 | data.isFeatured | boolean | 是 | 是否精选分类 |
+| data.seoTitle | string | 否 | SEO标题 |
+| data.seoDescription | string | 否 | SEO描述 |
 | data.createdAt | string | 是 | 创建时间 |
 | data.updatedAt | string | 是 | 更新时间 |
 
@@ -158,14 +160,7 @@ curl -X POST http://localhost:3000/api/categories/tree \
 
 #### 响应参数
 
-| 字段名 | 类型 | 必填 | 说明 |
-|--------|------|------|------|
-| code | integer | 是 | 状态码，200表示成功 |
-| data | object | 是 | 响应数据 |
-| data.tree | array | 是 | 根分类节点数组 |
-| data.tree[].id | integer | 是 | 分类ID |
-| data.tree[].name | string | 是 | 分类名称 |
-| data.tree[].children | array | 否 | 子分类节点数组 |
+`data.tree` 为根分类节点数组，节点为完整分类对象（字段同「获取分类详情」）并附 `children` 子节点数组；叶子节点不输出 `children` 键。
 
 #### 响应示例
 
@@ -178,11 +173,16 @@ curl -X POST http://localhost:3000/api/categories/tree \
       {
         "id": 1,
         "name": "技术分享",
+        "slug": "tech",
+        "level": 1,
+        "path": "/1",
         "children": [
           {
             "id": 2,
             "name": "后端开发",
-            "children": []
+            "slug": "backend",
+            "level": 2,
+            "path": "/1/2"
           }
         ]
       }
@@ -209,7 +209,7 @@ curl -X POST http://localhost:3000/api/categories/tree \
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
 | name | string | 是 | 分类名称 | 1-50字符 |
-| slug | string | 否 | URL友好标识，省略时按名称自动生成 | 最大50字符 |
+| slug | string | 否 | URL友好标识，省略时由服务端生成并保证唯一 | 最大50字符 |
 | description | string | 否 | 分类描述 | 最大1000字符 |
 | coverImage | string | 否 | 封面图URL | 最大255字符 |
 | parentId | integer | 否 | 父分类ID，顶级分类不传 | 正整数 |
@@ -227,6 +227,7 @@ curl -X POST http://localhost:3000/api/admin/categories/create \
   -H "Authorization: Bearer {accessToken}" \
   -d '{
     "name": "后端开发",
+    "slug": "backend",
     "parentId": 1
   }'
 ```
@@ -260,7 +261,10 @@ curl -X POST http://localhost:3000/api/admin/categories/create \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 父分类不存在、请求参数错误 |
+| 400 | 请求参数错误（binding 校验或翻译语言键非法） |
+| 500 | 父分类不存在 |
+
+> 父分类不存在的校验错误当前归入未分类错误，实际响应码为 500。
 
 ### 5. 更新分类
 
@@ -353,8 +357,10 @@ curl -X POST http://localhost:3000/api/admin/categories/delete \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 分类下存在子分类，无法删除 |
 | 404 | 分类不存在 |
+| 500 | 分类下存在子分类，无法删除 |
+
+> 存在子分类的校验错误当前归入未分类错误，实际响应码为 500。
 
 ### 7. 分类列表
 
@@ -371,7 +377,7 @@ curl -X POST http://localhost:3000/api/admin/categories/delete \
 |--------|------|------|------|----------|
 | page | integer | 否 | 页码 | 最小1，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100，默认10 |
-| status | integer | 否 | 按状态过滤 | 0或1 |
+| status | integer | 否 | 按状态过滤 | 整数 |
 | search | string | 否 | 名称或描述模糊搜索 | 字符串 |
 
 #### 请求示例
@@ -392,7 +398,7 @@ curl -X POST http://localhost:3000/api/admin/categories/list \
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | code | integer | 是 | 状态码，200表示成功 |
-| data.categories | array | 是 | 分类列表 |
+| data.categories | array | 是 | 分类列表，按 sortOrder 升序 |
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |

@@ -11,7 +11,7 @@
 | 关注 / 取消关注 | 登录 | user及以上 |
 | 粉丝列表 / 关注列表 | 无 | 无 |
 
-> 关注与取消关注接口需在请求头携带 `Authorization: Bearer {accessToken}`；粉丝与关注列表公开可查。
+> 关注与取消关注接口需要已登录身份，`Authorization: Bearer {accessToken}` 头与会话 Cookie `mb_access_token` 双轨任一即可（Header 优先）；粉丝与关注列表公开可查。
 
 ## 认证接口（需要登录）
 
@@ -54,9 +54,11 @@ curl -X POST http://localhost:3000/api/users/follow \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 不能关注自己、目标用户不存在 |
+| 400 | 不能关注自己（`请求参数不合法：不能关注自己`） |
+| 401 | 未提供或无效的认证令牌 |
+| 404 | 目标用户不存在（关注前查库校验） |
 
-> 关注操作依赖 `(follower_id, following_id)` 唯一索引防重复，重复关注保持幂等。
+> 关注操作依赖 `(follower_id, following_id)` 唯一索引防重复，重复关注保持幂等（仓储层 `OnConflict{DoNothing}`），响应仍为 200；关注成功后向被关注用户写入 `follow` 通知，通知为副产物，写入失败不影响关注结果。
 
 ### 2. 取消关注
 
@@ -92,6 +94,8 @@ curl -X POST http://localhost:3000/api/users/unfollow \
   "message": "取消关注成功"
 }
 ```
+
+> 取消关注保持幂等，未建立关注关系时同样返回 200；该端点不校验目标用户是否存在。
 
 ## 公开接口（无需认证）
 
@@ -134,6 +138,8 @@ curl -X POST http://localhost:3000/api/users/followers \
 | data.follows | array | 是 | 关注关系列表，按关注时间倒序 |
 | data.follows[].id | integer | 是 | 关注关系ID |
 | data.follows[].followerId | integer | 是 | 粉丝用户ID |
+| data.follows[].followingId | integer | 是 | 被关注用户ID，粉丝列表中即被查询用户本人 |
+| data.follows[].createdAt | string | 是 | 关注时间，RFC3339 格式 |
 | data.follows[].user | object | 是 | 对方用户摘要，粉丝列表中为关注者 |
 | data.follows[].user.id | integer | 是 | 用户ID |
 | data.follows[].user.username | string | 是 | 用户名 |
@@ -142,6 +148,8 @@ curl -X POST http://localhost:3000/api/users/followers \
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
+
+> 该端点仅校验 `userId` 为非零，不校验目标用户是否存在，目标不存在或已软删除时返回 200 与空列表；`user` 摘要取自关注关系预加载的用户记录，用户缺失时摘要为零值标识。
 
 #### 响应示例
 
@@ -205,8 +213,11 @@ curl -X POST http://localhost:3000/api/users/following \
 | 字段名 | 类型 | 必填 | 说明 |
 |--------|------|------|------|
 | code | integer | 是 | 状态码，200表示成功 |
-| data.follows | array | 是 | 关注关系列表 |
+| data.follows | array | 是 | 关注关系列表，按关注时间倒序 |
+| data.follows[].id | integer | 是 | 关注关系ID |
+| data.follows[].followerId | integer | 是 | 关注者用户ID，关注列表中即被查询用户本人 |
 | data.follows[].followingId | integer | 是 | 被关注用户ID |
+| data.follows[].createdAt | string | 是 | 关注时间，RFC3339 格式 |
 | data.follows[].user | object | 是 | 对方用户摘要，关注列表中为被关注者 |
 | data.follows[].user.id | integer | 是 | 用户ID |
 | data.follows[].user.username | string | 是 | 用户名 |
@@ -215,6 +226,34 @@ curl -X POST http://localhost:3000/api/users/following \
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
+
+#### 响应示例
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "follows": [
+      {
+        "id": 11,
+        "followerId": 1,
+        "followingId": 2,
+        "createdAt": "2026-09-02T10:00:00+08:00",
+        "user": {
+          "id": 2,
+          "username": "user2",
+          "nickname": "用户二",
+          "avatar": ""
+        }
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "pageSize": 10
+  }
+}
+```
 
 ---
 
@@ -248,6 +287,8 @@ curl -X POST http://localhost:3000/api/users/following \
 }
 ```
 
+> 该端点直接统计关注关系，不校验目标用户是否存在，目标不存在时返回 `false`。
+
 ---
 
 ### 6. 用户公开资料
@@ -266,6 +307,27 @@ curl -X POST http://localhost:3000/api/users/following \
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
 | userId | integer | 是 | 用户ID | 大于0的整数 |
+
+#### 响应参数
+
+| 字段名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| data.id | integer | 是 | 用户ID |
+| data.username | string | 是 | 用户名 |
+| data.nickname | string | 是 | 昵称 |
+| data.avatar | string | 是 | 头像URL |
+| data.bio | string | 是 | 个人简介 |
+| data.website | string | 是 | 个人网站URL |
+| data.followerCount | integer | 是 | 粉丝数 |
+| data.followingCount | integer | 是 | 关注数 |
+| data.articleCount | integer | 是 | 已发布文章数，仅统计状态为已发布的文章 |
+
+#### 错误响应
+
+| 状态码 | 说明 |
+|--------|------|
+| 400 | 缺少 `userId` 或值为0 |
+| 404 | 用户不存在 |
 
 #### 响应示例
 

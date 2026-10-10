@@ -12,6 +12,8 @@
 
 增量与 PITR：如需恢复到任意时间点，需在 MySQL 服务端开启 `log_bin` 并将 binlog 随备份归档。
 当前脚本仅做每日全量，RPO 为 24 小时，开启 binlog 后可缩短至分钟级，方案见第 7 节。
+部署形态与可用性约束（单实例、无自动故障转移、故障即停站、恢复依赖人工介入与重启、无 RTO 承诺）
+以 `docs/architecture-rules.md` 第 7 节为唯一口径，本手册不重复。
 
 ## 2. 备份的落盘位置与数据流
 
@@ -29,7 +31,7 @@
 
 `BACKUP_HOST_DIR` 可在 `.env` 中设置，编排文件为该变量提供了默认值，未设置时按默认值落盘。
 生产环境应显式设置该变量并指向独立于 Docker 数据目录的磁盘或挂载点。
-该变量当前未登记在 `deploy/.env.example` 模板中，新建 `.env` 时需手工补齐。
+该变量与 `BACKUP_RETENTION_DAYS` 均已登记在 `deploy/.env.example` 模板中，默认值分别为 `./backups` 与 14 天。
 
 ## 3. 为什么备份不作为常驻服务运行
 
@@ -126,7 +128,7 @@ docker compose run --rm --dependencies backup
 mysqldump ... "${DB_NAME}" | gzip > "${TARGET_DIR}/database.sql.gz"
 ```
 
-在 `set -e` 下，**shell 只取管道中最后一条命令的退出码**。因此当 `mysqldump` 因连接失败、
+备份脚本原先只声明 `set -e`，而 **shell 只取管道中最后一条命令的退出码**。因此当 `mysqldump` 因连接失败、
 权限不足或库不存在而报错退出时，`gzip` 仍会正常读完（空的）输入并以 `0` 退出，
 整个管道被判为成功。后果是脚本打印「备份完成」，实际产出一个仅含 gzip 头的**残缺归档**，
 而这类故障通常直到需要恢复时才会暴露。
@@ -142,6 +144,8 @@ fi
 
 `restore.sh` 中的 `gzip -dc ... | mysql ...` 存在完全同型的缺陷：`mysql` 正常退出会掩盖
 `gzip` 的解压失败，从而留下一个导入不完整的库。两处均已在同一变更中修复。
+两个脚本现已在文件头全局声明 `set -euo pipefail`，并在导出与导入管道就近重复声明
+`set -o pipefail` 作为意图标注；上述 `if !` 显式判定仍然保留，作为第一道拦截。
 
 > **同类风险提示**：本仓库其他位置若存在「生产者 | 消费者」形式的管道且依赖 `set -e`
 > 判定失败，都需按上述方式显式判定。仅在有 `set -o pipefail` 的前提下，管道才会
@@ -153,8 +157,11 @@ fi
 
 ```bash
 # 校验完整性并恢复到指定库，库不存在时脚本会自动创建
-docker compose run --rm backup /opt/myblog/scripts/restore.sh /backups/20260915-030000 blog
+docker compose run --rm backup /opt/myblog/scripts/backup/restore.sh /backups/20260915-030000 myblog
 ```
+
+脚本在容器内的路径为 `/opt/myblog/scripts/backup/`，与编排中 `./scripts/backup` 的只读挂载点一致；
+`restore.sh` 与 `backup.sh` 同在该目录下。
 
 脚本会依次执行：检查归档存在且非空、按 `checksums.sha256` 核对完整性、创建目标库并导入。
 
@@ -163,8 +170,8 @@ docker compose run --rm backup /opt/myblog/scripts/restore.sh /backups/20260915-
 **验证备份可用性时必须恢复到演练库**，避免覆盖生产数据：
 
 ```bash
-# 恢复到演练库 blog_restore_drill，不触碰生产库
-docker compose run --rm backup /opt/myblog/scripts/restore.sh /backups/20260915-030000 blog_restore_drill
+# 恢复到演练库 myblog_restore_drill，不触碰生产库
+docker compose run --rm backup /opt/myblog/scripts/backup/restore.sh /backups/20260915-030000 myblog_restore_drill
 ```
 
 ### 5.3 恢复 uploads 媒体文件
@@ -180,7 +187,9 @@ uploads 归档的解包目标由 `UPLOAD_DIR` 决定，脚本会解包到该目�
 ### 6.1 历史演练记录
 
 > **2026-09-15 开发库演练，非容器环境**：在开发机直接调用 MySQL 客户端完成。
-> 备份 `blog` 库 23 张表，恢复至演练库后表数量与 `users` 行数一致，随后清理演练库。
+> 备份 `blog` 库全部业务表（表清单见 `docs/database-architecture.md`，当前 30 张：用户 4、
+> 内容 10、评论 2、互动 4、媒体 1、站点运营 2、字典 4、统计日志 3），
+> 恢复至演练库后表数量与 `users` 行数一致，随后清理演练库。
 > 该记录**仅覆盖脚本逻辑在传统环境下的正确性**，未覆盖容器化编排、命名卷挂载与
 > 跨机器恢复，不能作为生产环境的演练结论。
 
@@ -195,7 +204,7 @@ uploads 归档的解包目标由 `UPLOAD_DIR` 决定，脚本会解包到该目�
 #### 阶段一：在有数据的环境中产出备份
 
 ```bash
-# 1) 确认四个服务已启动且 mysql 与 server 为 healthy
+# 1) 确认四个常驻服务已启动且 mysql 与 server 为 healthy（backup 是一次性 job，不在常驻服务内）
 docker compose up -d
 docker compose ps
 
@@ -229,7 +238,7 @@ BACKUP_HOST_DIR=/srv/myblog-drill-backups \
 
 # 6) 在干净环境中恢复数据库到独立库名
 docker compose -p myblog-drill run --rm backup \
-  /opt/myblog/scripts/restore.sh /backups/<时间戳> myblog_restore_drill
+  /opt/myblog/scripts/backup/restore.sh /backups/<时间戳> myblog_restore_drill
 ```
 
 期望结果：恢复脚本输出 `恢复完成: 数据库 myblog_restore_drill 与上传目录 uploads`，
@@ -305,7 +314,7 @@ docker compose -p myblog-drill down -v
 | `BACKUP_DIR` | `/var/backups/myblog` | 备份输出根目录，每次备份创建以时间戳命名的子目录 |
 | `RETENTION_DAYS` | `14` | 备份保留天数，超期目录自动清理 |
 | `DB_HOST` / `DB_PORT` | `127.0.0.1` / `3306` | 数据库连接地址 |
-| `DB_USER` / `DB_NAME` | `root` / `blog` | 数据库账户与库名 |
+| `DB_USER` / `DB_NAME` | `root` / `blog` | 数据库账户与库名；脚本默认库名为 `blog`，经编排运行时由 `${MYSQL_DATABASE:-myblog}` 覆盖为 `myblog` |
 | `UPLOAD_DIR` | `uploads` | 上传目录，须与 `media.upload_dir` 一致 |
 | `MYSQL_PWD` | 无 | 数据库口令，经环境变量传递以避免出现在进程参数列表中 |
 
@@ -325,6 +334,11 @@ docker compose -p myblog-drill down -v
 | `UPLOAD_DIR` | `/app/uploads` | 指向 uploads 命名卷在备份容器内的挂载点 |
 | `MYSQL_PWD` | `${MYSQL_ROOT_PASSWORD}` | 复用数据库口令变量，避免第二处口令来源 |
 
+> **口令与账户来源**：`MYSQL_PWD` 取自编排文件中数据库服务已声明的 `${MYSQL_ROOT_PASSWORD}`；
+> `DB_USER` 为该口令对应的 root 账户，`DB_NAME` 取自 `${MYSQL_DATABASE:-myblog}`。
+> 后端容器经 MYBLOG_DATABASE_* 前缀的环境变量连接同一库与同一账户（见 `docker-compose.yml` 的 server 服务），
+> 备份侧因此不引入第二处口令来源。
+
 > **注意**：`RETENTION_DAYS` 与 `BACKUP_RETENTION_DAYS` 是两个不同层级的变量。
 > 前者是脚本读取的变量，后者是 `.env` 中供编排取值使用的变量，编排负责把后者注入为前者。
 > 设置保留期应修改 `.env` 中的 `BACKUP_RETENTION_DAYS`，而非直接设置 `RETENTION_DAYS`。
@@ -336,7 +350,7 @@ docker compose -p myblog-drill down -v
 | 命令 | 提供方 |
 |---|---|
 | `mysqldump`、`mysql` | MySQL 客户端 |
-| `sha256sum`、`date`、`mkdir`、`ls`、`cat`、`basename`、`dirname`、`sort` | GNU coreutils |
+| `sha256sum`、`date`、`mkdir`、`rm`、`ls`、`cat`、`basename`、`dirname`、`sort` | GNU coreutils |
 | `find` | GNU findutils |
 | `tar` | GNU tar |
 | `gzip` | gzip |
@@ -351,7 +365,7 @@ docker compose -p myblog-drill down -v
 在**具备 Docker 的环境**中执行以下命令，可一次判定镜像是否满足脚本的全部依赖：
 
 ```bash
-docker run --rm mysql:8.0 sh -c 'for c in bash mysqldump gzip tar sha256sum find sort date basename dirname cat ls; do printf "%-12s" "$c"; command -v "$c" || echo MISSING; done'
+docker run --rm mysql:8.0 sh -c 'for c in bash mysqldump mysql gzip tar sha256sum find sort date basename dirname cat ls rm; do printf "%-12s" "$c"; command -v "$c" || echo MISSING; done'
 ```
 
 期望结果：每一行都输出该命令的绝对路径，**不应出现任何 `MISSING`**。

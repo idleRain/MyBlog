@@ -1,252 +1,127 @@
-# MyBlog 项目 Agent 指南
+# MyBlog 工程规范
 
-> 本文件为 AI Agent 在本仓库工作时提供项目级上下文与约束。
-> 用户全局工作规范见 `~/.dsh/AGENTS.md`；裁决顺序：全局规范 < 本文档 < `docs/architecture-rules.md` 细则，冲突时以更具体者为准。
->
-> **文档分级**：本文含【铁律】（违反必须返工，每条附验证方式）与【约定】（应当遵循）两级。
-> 铁律的完整裁决标准、历史案例与债务登记见 `docs/architecture-rules.md`。
+> 本文件只保留结构性红线与高频约定；完整裁决标准、历史案例见 `docs/architecture-rules.md`，债务完整条目见 `docs/debt/`。
+> 裁决顺序：全局规范（`~/.dsh/AGENTS.md`）< 本文件 < `docs/architecture-rules.md` 细则，冲突时以更具体者为准。
 
-## 0. 架构铁律（最高优先级，先读这里）
+## 1. 结构红线
 
-以下规则从全栈架构诊断中提炼，结论是：**本项目的抽象设计基本正确，但被系统性绕行**（类型寄生、复制粘贴、影子层、私自实例化），导致每次演进成本远超预期。铁律的目的就是终结"绕行"。
+违反必须返工，每条附验证方式。
 
-### 0.1 依赖方向，只准向下
+1. **依赖只准向下**。后端 `handler → service → repository → domain`，禁止 service import handler、repository import service/handler、handler/middleware/router 直接 import repository；前端 `apps → @myblog/api → @myblog/http → @myblog/shared`，禁止 packages 反向 import apps，禁止页面/组件直接 import `ky`（唯一豁免：各应用 `src/lib/service/index.ts` 的令牌刷新直连）。
+   验证：在 `server/` 下执行 `git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router ':(exclude)*_test.go'`，基线 13 个文件（service 12 + middleware 仅 `identity.go` + router 0），只减不增。
+2. **类型唯一真相源**。后端 `internal/domain` 与 `internal/model` 的 json tag 即 API 契约；前端接口类型唯一来源为 `@myblog/api/modules/*/types`，apps 内禁止定义与后端请求/响应同构的 interface/type；通用响应信封 `{code, message, data}` 唯一来源为 `@myblog/shared` 的 `ApiResponse`。
+   验证：`git grep -n "BaseApiResponse" -- apps` 应为空。
+3. **契约先行，双端对齐**。改 wire 格式（请求/响应结构、错误码语义、认证协议）必须同一变更窗口内同步两端，禁止"先改后端、前端以后再说"；改认证协议先更新 `contracts/auth-protocol.md`，改类型镜像跑 `pnpm run contract:check`。新增业务模块必须同时落地后端四层、`packages/api/src/modules/<module>/` 与两应用 `lib/api/index.ts` 注册。
+4. **单一权威，禁止私自实例化**。业务规则（状态流转、slug 生成、密码强度、权限判定）权威在后端，前端只做展示层优化；RBAC 权限表权威为生产 `server/configs/config.yaml` 的 `rbac` 节，权限经登录响应 `permissions[]` 下发，`apps/admin/src/lib/constants/auth.ts` 的映射仅作未下发时的降级；依赖一律构造函数注入，生产实例化点仅组合根 `server/cmd/myblog/`（`main.go` 管生命周期、`deps.go` 按域装配），禁止在 service/router/middleware 内 `NewXxxService()`。
+   验证：`git grep -n "NewRBACService()" -- server` 的生产命中应仅 `cmd/myblog/deps.go` 一处。
+5. **禁止复制粘贴式共享**。两 app 间禁止新增逐字或近似重复文件，公共逻辑下沉 packages；存量逐字重复仅 `src/lib/stores/auth.ts`（15 行 ×2）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2），改任一份必须同步另一份。
+   验证：`git diff --no-index` 上述两份文件应零差异。
+6. **数据加载归位**。`apps/web` 新页面禁止 `onMount` 取数，用 `+page.server.ts` / `+page.ts` 的 load；`apps/admin` 新页面优先 load + 页面状态模块（`.svelte.ts`），禁止复制 300 行以上胖组件；API 调用不得深入叶子组件。
+7. **部署形态为单实例**（有意取舍，非待修缺陷）。应用进程、MySQL、网关各一份，无副本与故障转移；会话令牌表与限流计数均为进程内存结构，服务重启或发布将导致全体用户登出，发布窗口需提前预告；故障即停站，无 RTO 承诺，RPO 为 24 小时。扩容前必须完成令牌表持久化、限流器外置、补 `SetTrustedProxies` 三项改造。
+   验证：`git grep -n "SetTrustedProxies" -- server` 与 `git grep -n "replicas" -- docker-compose.yml` 均应为空。
+8. **先确认产品定位**。单作者个人博客，不开放注册、无找回密码通道：账号由管理员创建（首次部署 `pnpm run seed:admin`，之后在后台用户管理页新增），忘记密码由超级管理员经 `POST /api/users/update` 重置；游客可浏览并提交评论（受审核设置约束），点赞/收藏/关注需登录。以上为有意取舍，功能提案前先确认是否与之冲突；新增数据收集场景须先同步 `apps/web` 的 `/privacy` 页告知。
 
-- 后端：`handler → service → repository → domain` 单向依赖。禁止：service import handler；repository import service/handler；handler/middleware/router 直接 import repository（router 归零，middleware 仅 `identity.go` 实现 1 处，handler 已随哨兵错误上移 `internal/domain/errors.go` 归零，只减不增）。领域类型统一来自 `internal/domain`。
-- 前端：`apps → @myblog/api → @myblog/http → @myblog/shared` 单向依赖。禁止：packages 反向 import apps；页面/组件直接 import `ky`（唯一豁免：各应用 `src/lib/service/index.ts` 的令牌刷新直连，为避免循环依赖）。
-- 验证（在 `server/` 目录下执行）：
-
-```bash
-git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router
-# 输出文件数不得高于基线（service 12 + middleware 1 + router 0，合计 13）
-```
-
-### 0.2 类型唯一真相源
-
-- 后端 `model` 实体的 `json` tag 即 API 契约，修改输出字段前必须评估前端影响面（`@myblog/api` 类型 + 页面消费点）。
-- 前端接口类型唯一来源为 `@myblog/api/modules/*/types`；**禁止在 apps 内定义与后端请求/响应同构的 interface/type**（影子类型，禁止扩大）。
-- 通用响应结构 `{code, message, data}` 唯一来源为 `@myblog/shared` 的 `ApiResponse`。
-- 验证：`git grep -n "BaseApiResponse" -- apps` 应为空（apps 内零命中，禁止重新引入）。
-
-### 0.3 契约先行，模块对齐
-
-- 修改 wire 格式（请求/响应结构、错误码语义、认证协议）前，必须先明确双端影响面并在同一变更窗口内同步两端；禁止"先改后端、前端以后再说"。
-- 新增业务模块必须双端对齐：后端 `internal/{handler,service,repository}/<module>.go` + 前端 `packages/api/src/modules/<module>/` + 两应用 `lib/api/index.ts` 注册。历史反例 `user_follow` 曾仅后端存在，后已补齐 API 模块。
-- 后端能力缺口（如列表接口缺关键词参数）必须推回后端修复；**禁止前端补偿**（全量跨页拉取后客户端过滤）。
-
-### 0.4 单一权威，禁止私自实例化
-
-- 业务规则（状态流转、slug 生成、密码强度、权限判定）唯一权威在后端；前端只能做展示层优化（如隐藏按钮），不得复刻规则逻辑。
-- RBAC 权限表唯一权威为后端（生产环境 `configs/config.yaml` 的 `rbac` 节），登录响应下发 `permissions[]`；前端 `apps/admin/src/lib/constants/auth.ts` 的映射仅作未下发时的降级逻辑，**禁止新增第三份权限定义**。
-- 依赖一律经构造函数注入，**禁止在 service/router/middleware 内部私自 `NewXxxService()`**（生产实例化仅 `cmd/myblog/main.go` 组合根 1 处，禁止新增实例化点）。
-
-### 0.5 禁止复制粘贴式共享
-
-- 两 app 之间禁止新增逐字/近似重复的文件；公共逻辑必须下沉到 packages。存量违例为逐字重复 2 文件 60 行，数值见第 9 节。
-- 修改任一已知重复文件时，必须同步检查另一份并在提交信息中注明同步情况。
-
-### 0.6 数据加载归位
-
-- `apps/web` 新页面禁止 `onMount` 取数，必须使用 `+page.server.ts` / `+page.ts` load（SSR 应用）。
-- `apps/admin` 存量 onMount 模式不强制迁移（SPA 定位），但新页面优先采用 load + 页面状态模块（`.svelte.ts`）模式，禁止复制 400 行级胖组件（UI+数据+状态+权限焊死一个文件）。
-- API 调用不得深入叶子组件；数据获取入口限定为 load 函数或页面顶层组件。
-
-### 0.7 部署形态：单实例（有意接受的取舍）
-
-以下四条是**已接受**的架构约束而非待修缺陷，完整细则见 `docs/architecture-rules.md` 第 7 节。任何「按多副本假设」的设计与承诺均不成立。
-
-- 部署形态为**单实例**：应用进程、MySQL、网关各一份（`docker-compose.yml` 无副本与故障转移），**不支持多副本扩容**。
-- 会话令牌表与请求限流计数均为**进程内存**结构。因此服务重启或发布将导致**全体用户登出**，发布窗口需提前预告；限流阈值是单进程口径，多副本会使其成倍放大。
-- **不存在故障自动转移，故障即停站**：任一组件不可用即整站不可用，恢复依赖人工介入；无 RTO 承诺，RPO 为 24 小时（`docs/operations/backup-restore.md`）。
-- **扩容前置改造三项**（须全部完成才能增加副本）：令牌表持久化（`model.AuthToken` 的 `TokenHash` 通道已就绪）、限流器外置、补 `SetTrustedProxies` 配置（当前零配置，缺它会使 `ClientIP()` 经网关后失真，波及限流、登录锁定、访问审计与 WAF）。
-- 验证：`git grep -n "SetTrustedProxies" -- server`（改造前应为空）；`git grep -n "replicas" -- docker-compose.yml`（应为空）。
-
-## 1. 任务完成自检（声明任务完成前必跑）
-
-所有指标**只准变好**，任何一项差于改动前即不得声明完成：
+## 2. 完成前自检
 
 ```bash
-# 1) 后端：编译 + 静态检查 + 测试
-cd server && go build ./... && go vet ./... && go test ./...
-
-# 2) 依赖方向基线不恶化（在 server/ 目录下）
-git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router
-
-# 3) 前端：对应应用类型检查
-cd apps/web && pnpm run check    # 或 cd apps/admin && pnpm run check
-
-# 4) 格式与 lint 零告警
-pnpm run lint && pnpm run format
+cd server && go build ./... && go vet ./... && go test ./...   # 后端编译、静态检查、测试
+pnpm run check                                                 # 两应用 SvelteKit 类型检查
+pnpm run lint && pnpm run format                               # 静态检查与格式零告警
 ```
 
-触碰以下区域时追加专项自检：
+触碰以下区域时追加：
 
-- 改认证/权限：确认未新增权限定义副本、未新增认证工具文件。
-- 改 `model` 实体 json tag：确认已评估前端 `@myblog/api` 类型与页面影响。
-- 改两 app 重复文件：确认另一份已同步。
+- 认证/权限：确认未新增权限定义副本、未新增认证工具文件。
+- `domain`/`model` 输出字段：评估 `@myblog/api` 类型与页面消费点，跑 `pnpm run contract:check`。
+- 两 app 重复文件：确认另一份已同步。
 - 新增模块：确认双端对齐。
-- 改依赖（`server/go.mod`、`go.sum`、根 lockfile 或 `pnpm-workspace.yaml` 的 `overrides`）：追加依赖漏洞扫描，`pnpm run go:vulncheck` 与 `pnpm run audit:deps` 均须零阻塞项。
+- 依赖（`server/go.mod`、`go.sum`、根 lockfile、`pnpm-workspace.yaml` 的 `overrides`）：`pnpm run go:vulncheck` 与 `pnpm run audit:deps` 须零阻塞项。
 
-## 2. 项目概览
-
-MyBlog 是一个 Monorepo 全栈个人博客应用，采用 Go + SvelteKit 技术栈构建。
+## 3. 仓库概览
 
 ```
 MyBlog/
 ├── apps/
-│   ├── web/                  # 前台应用（Svelte 5 + TS + TailwindCSS v4，公开博客 + demo + i18n）
-│   └── admin/                # 后台应用（SvelteKit SPA，管理控制台 + 登录页，无 i18n）
+│   ├── web/                  # 前台（Svelte 5 + TS + TailwindCSS v4，SSR 博客 + demo + i18n）
+│   └── admin/                # 后台（SvelteKit SPA，管理控制台 + 登录页，基准路径 /admin）
 ├── packages/
-│   ├── shared/               # 公共纯工具与通用类型（ApiResponse 等）
+│   ├── shared/               # 公共纯工具与通用类型（ApiResponse、响应码常量）
 │   ├── http/                 # HTTP 请求器（ky 封装，认证回调注入）
 │   ├── api/                  # 后端接口模块与响应类型（12 个模块工厂）
 │   ├── auth/                 # 认证会话组装（createAuthStore 工厂，注入式）
 │   └── ui/                   # shadcn-svelte 基础组件（stock，主题注入）
-├── server/                   # Go 后端服务（Gin + GORM + MySQL）
-├── scripts/                  # 跨项目构建/开发脚本（Node.js + tsx）
-├── docs/                     # 架构铁律、数据库架构、开发指南、UI 设计系统
-├── .husky/                   # Git hooks（commitlint + lint-staged）
-└── package.json              # monorepo 根，pnpm workspaces = ["apps/*", "packages/*"]
+├── server/                   # Go 后端（Gin + GORM + MySQL）
+├── contracts/                # 认证与 i18n 协议、错误码口径、契约金样本
+├── scripts/                  # 跨项目构建与开发脚本（Node.js + tsx）
+└── docs/                     # 架构细则、开发指南、数据库与 UI 文档
 ```
 
-- 包管理：**pnpm**（catalog 协议统一版本）；脚本运行时：**Node.js + tsx**；后端 Go 版本唯一来源为 `server/go.mod` 的 `go` 指令（当前 `1.26.9`），CI 经 `setup-go` 的 `go-version-file` 读取该值。
-- **产品定位**：单作者个人博客，**不开放注册**，账号由站点管理员创建（首次部署 `pnpm run seed:admin` 初始化超级管理员，之后在后台用户管理页新增）；**无找回密码通道**，忘记密码由超级管理员经 `POST /api/users/update` 重置。游客可浏览与提交评论（受审核设置约束），点赞/收藏/关注需登录。以上均为**有意取舍而非功能缺口**，新增功能提案前先确认是否与定位冲突；表述须与 `apps/web` 隐私政策页一致。
-- 配置承载于 `apps/web/.env`、`apps/admin/.env` 与 `server/configs/config.yaml`，默认端口：前台 8899、后台 9988、后端 3000。
-- 两应用认证基础设施重复为已知债务，新公共代码一律进 packages。
+- 版本：Go 以 `server/go.mod` 的 `go` 指令为唯一来源（当前 `1.26.9`）；Node 以根 `.nvmrc` 为唯一来源（当前 `22`，`engines.node` 为 `>=22`）。包管理 pnpm（catalog 统一版本），脚本运行时 Node.js + tsx。
+- 端口：前台 8899、后台 9988、后端 3000；健康探针 `GET /api/health`（存活）与 `GET /api/health/ready`（就绪，探测数据库连通性与上传目录可写性，未就绪返回 503 与原因码）。
+- 后端业务模块 12 个：user / article / category / tag / comment / media / setting / friendlyLink / stats / notification / follow / dict；路由注册 104 条 = `/api` 业务接口 102 + 健康探针 2，逐条清单见 `server/docs/api/README.md`。
 
-## 3. 常用命令
-
-均在仓库根目录通过 `pnpm run <script>` 执行（根 `package.json` 的 scripts）。
+## 4. 常用命令
 
 ```bash
-pnpm run setup        # 一键环境设置
-pnpm run dev          # 智能启动（含环境检查、端口检查、健康监控）
-pnpm run dev:server   # 仅 Go 后端（dev.ts --server）
-pnpm run dev:web      # 仅前台 SvelteKit 应用（dev.ts --web）
-pnpm run dev:admin    # 仅后台 SvelteKit 应用（dev.ts --admin）
-
-pnpm run build        # 生产构建（可加 --clean / --production / --server-only / --web-only / --skip-tests --skip-lint）
-pnpm run build:server # 仅构建 Go 后端二进制
-pnpm run build:web    # 仅构建前端静态文件
-pnpm run build:clean  # 清理构建产物后构建
-pnpm run build:fast   # 跳过测试与 lint 的快速构建
-pnpm run test         # 本地门禁全集：test:server（go test -count=1）+ test:packages（packages 单测与类型检查）+ test:apps（两应用单测）+ contract:check
-pnpm run test:packages # 仅 packages 单测与类型检查：@myblog/api + @myblog/auth + @myblog/http
-pnpm run test:apps    # 仅两应用单测：@myblog/web + @myblog/admin（vitest）
-pnpm run lint         # lint:web + lint:server（go vet + golangci-lint）
-pnpm run format       # format:web + format:server
-pnpm run quality      # format + lint + test
-pnpm run check        # 前后台 SvelteKit 类型检查（svelte-check）
-pnpm run clean        # 清理前后端构建产物
-pnpm run seed:admin   # 初始化或提升超级管理员账户，命令幂等
-
-# Go 专项
-pnpm run go:lint-install / go:quality
-# 数据库迁移
-pnpm run migrate [create|up|down|version|help]
+pnpm run setup                                   # 一键环境设置
+pnpm run dev                                     # 智能启动（环境与端口检查、健康监控）
+pnpm run dev:server / dev:web / dev:admin        # 分别启动后端 / 前台 / 后台
+pnpm run build                                   # 生产构建，可加 --clean --production --skip-tests --skip-lint --server-only --web-only
+pnpm run build:clean / build:production / build:server / build:web / build:fast
+pnpm run test                                    # test:server + test:packages + test:apps + contract:check
+pnpm run test:server / test:packages / test:apps # 分开执行三类测试
+pnpm run check                                   # 两应用 svelte-check 类型检查
+pnpm run lint / format / quality                 # 静态检查 / 格式化 / 全量质量门禁
+pnpm run contract:check                          # 契约三把锁（Go fixture + tsc + vitest 锚定）
+pnpm run seed:admin                              # 初始化或提升超级管理员，幂等
+pnpm run migrate [create|up|down|goto|force|version]
+pnpm run go:lint-install / go:quality / go:vulncheck / audit:deps
 ```
 
-> `scripts/` 下各脚本的用途、参数与 pnpm 入口对照见 `scripts/README.md`。
-
-## 4. 代码质量与格式化约定
-
-- 根 `prettier.config.js`：`semi: false`、`singleQuote: true`、`arrowParens: 'avoid'`、`printWidth: 100`、`tabWidth: 2`、`trailingComma: 'none'`。
-- **导入排序规范**：根与两个 app 的 prettier 配置均挂载 `prettier-plugin-sort-imports`，该插件的排序依据是**单条 import 语句的字符长度**，语句越长排得越靠前，既不看模块名字母序，也不区分外部依赖与相对路径。这是既定规范，导入块看似错乱时不要手工“修正”，手工调整会被下一次格式化还原。
-- **格式化覆盖范围**：lint-staged 仅对 `apps/**/src/**` 运行 prettier，`packages/**` 不在任何 format 门禁覆盖内，因此 packages 下存在未按上述规范格式化的存量文件。新增或改动 packages 文件时必须手动执行 `npx prettier --write <file>` 对齐规范。
-- 根 `eslint.config.js` 导出 `baseConfig` 供子项目继承；`apps/*/eslint.config.js` 在其上叠加 Svelte/TS 规则。
-- Git hooks：`commitlint`（conventional commits）与 `lint-staged`（对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 `gofmt`/`goimports`）。提交信息需符合 conventional commits 规范。
-- 更改文件后应运行 `pnpm run lint` 与 `pnpm run format` 保持静态零告警。
-- 每完成一个对应功能变更后，使用**简体中文**编写符合 conventional commits 规范的提交信息，并保证提交颗粒度，若单次提交跨度较大需补充 message 描述正文，type 枚举以 `commitlint.config.js` 为准。
-- **测试现状**：后端已有单测（`service`/`repository`/`handler` 层 `*_test.go`）；`packages/api`、`packages/auth`、`packages/http` 已有 vitest 单测并经 `pnpm run test:packages` 纳入门禁，其中前两者的 `typecheck` 脚本同时被该命令串联执行；两应用已有 vitest 单测基线（`pnpm run test:apps`），admin 覆盖 `dict-page-state.svelte.ts`，web 覆盖 `render.ts` 的原始 HTML 丢弃守卫与目录日期格式化。新增后端关键逻辑必须配套 `*_test.go`（与被测文件同目录）；新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）时必须配套 `*.test.ts`，并为所在 package 补 `typecheck` 与 `test` 脚本、登记进根 `test:packages`。注意 `pnpm run typecheck:web` 仅为类型检查，不是单元测试。
+> 各脚本的用途、参数与 pnpm 入口对照见 `scripts/README.md`。
 
 ## 5. 后端约定（server/）
 
-- **POST-Only 规范**：后端业务接口一律通过 `POST` 方法注册，查询类接口同样使用 `POST`，不使用 `GET`、`PUT`、`DELETE` 等方法。请求参数统一承载于 JSON 请求体，纯 id 类短参数可放在 path 中。健康探针等基础设施端点不属于业务接口，按编排器标准使用 `GET`（见 `internal/router/health.go`）。
-- **接口健壮性**：涉及外部输入的接口不得省略必要校验。请求参数在 handler 层通过 `ShouldBindJSON` 与 `binding` tag 完成必填、长度、格式、枚举等校验，业务规则在 service 层校验，校验全部通过后才进入数据访问层。
-- **公共校验方法**：跨接口复用的校验逻辑必须提取为公共方法或工具函数，不得仅内联在单个 handler 或 service 局部。存量私有校验（如 `service/user.go` 的密码强度校验）触碰时应迁移为公共校验工具，禁止其他模块复制其逻辑。
-- **分层架构**：`handler`（HTTP 层，参数校验与 DTO 映射）→ `service`（业务逻辑）→ `repository`（数据访问）。路由注册见 `internal/router/router.go`。
-- **错误分档**：service 返回的哨兵错误（`ErrArticleNotFound`、`ErrUserNotFound` 等）必须在 handler 映射为对应语义（404/403/400），**禁止一律 500**；`binding` 校验失败映射 400；权限不足映射 403。
-- **依赖注入**：集中在 `cmd/myblog/main.go`（组合根）与 `router.Dependencies`；handler 通过接口注入。禁止包内私自实例化依赖服务。
-- **统一响应**：使用 `pkg/response` 包，响应结构为 `{ code, message, data? }`；预定义响应码 `CodeSuccess=200`、`CodeError=500`、`CodeInvalid=400`、`CodeAuth=401`、`CodeForbid=403`、`CodeNotFound=404`。统一通过 `response.Success` / `response.Error` 等函数返回。
-- **模型与类型归属**：领域实体与请求/响应 DTO 统一位于 `internal/domain`（`domain.User`、`domain/dto.go`），为全系统唯一类型语言；`internal/model` 保留各业务 GORM 实体；`repository` 只承载持久化实现。**禁止在 repository 包新增实体或 DTO 定义**。
-- **入口与工具包**：服务入口在 `cmd/myblog/main.go`，种子脚本入口在 `cmd/seed/main.go`，种子逻辑见 `internal/database/seed.go`；通用包 `pkg/response`、`pkg/datetime`、`pkg/slug`。
-- **数据库**：MySQL 单库（GORM）；迁移由 `internal/database/migrate.go` 与根 `migrate` 脚本管理（开发模式 AutoMigrate / 生产 golang-migrate 双轨）。模型见 `internal/model/*.go`，架构细节见 `docs/database-architecture.md`。
-- **数据库设计可持续性**：表结构以可长期健康演进为目标设计。每张业务表须具备完整的生命周期字段、状态字段、业务字段与必要的预留扩展字段，且每个字段均带 `comment` 说明业务含义，字段类型与长度须贴合真实数据需求。
-- **规范化与索引**：遵循第三范式，多对多关系使用独立关联表，树形结构使用 `parent_id`、`root_id`、`level` 字段；唯一性字段加唯一索引，外键与高频查询字段加普通索引，禁止无索引的大表查询。
-- **数据一致性**：显式声明 GORM 关联关系与外键删除策略，如 `OnDelete:CASCADE` 与 `OnDelete:SET NULL`；状态类字段使用命名常量枚举，时间字段统一为 `datetime(3)` 精度。多步骤写库操作必须用事务包裹（`CreateArticle`/`UpdateArticle`/`ViewArticle` 均已事务化，新增多段写库沿用 repository 的 `xxxTx` 事务方法先例）。
-- **密码**：bcrypt（成本常量 `BcryptCost = 12`），密码强度校验在 `service/user.go`（待迁移公共工具）。
-- **命名**：Go 结构体字段与 JSON tag 使用小驼峰；接口与实现同包定义，命名统一为 `XxxInterface` 后缀，如 `ArticleHandlerInterface`、`ArticleServiceInterface`、`ArticleRepositoryInterface`。存量不一致：user 模块的 `UserService`、`RBACService`、`UserRepository` 未带后缀（触碰时统一，不强制专项重构）。各层只依赖接口而非具体实现。
-- **接口定义位置**：接口统一声明在各层实现所在包，即 `handler`、`service`、`repository` 内；`router` 只引用各层接口完成依赖注入，**不得在 `router` 包重复定义接口**（存量违例：router 包曾重复定义 11 个 handler 接口 + `Dependencies` 字段为 `interface{}` 运行时断言，禁止扩大）。
-- **配置**：`internal/config` 包通过 Viper 读取 `configs/config.yaml`，所有配置项均以 YAML 为唯一来源。
-- **中间件**：`middleware` 包含 logger、request ID、CORS、汇总安全、auth、rbac、ratelimit。权限与认证中间件只依赖 `IdentityProvider` 抽象（`middleware/identity.go`），唯一实现 `tokenIdentityProvider` 经组合根注入 tokenService 与 userRepo。
+- **POST-Only**：业务接口一律 `POST`（查询类同样 `POST`），参数承载于 JSON 请求体，纯 id 类短参数可放 path；健康探针属基础设施端点，按编排器标准用 `GET`（`internal/router/health.go`）。
+- **校验**：handler 用 `ShouldBindJSON` + `binding` tag 完成必填、长度、格式、枚举校验，业务规则在 service 校验，校验通过才进入数据访问层；跨接口复用的校验必须提取公共方法，禁止复制（`service/user.go` 的密码强度校验为存量私有实现，触碰时迁移）。
+- **分层**：`handler`（HTTP 与 DTO 映射）→ `service`（业务）→ `repository`（持久化）；路由注册见 `internal/router/router.go` 与各模块 `internal/router/<module>.go`。
+- **错误分档**：handler 的 `binding` 校验失败直接经 `response.BadRequest` 返回 400；service 返回的错误交 `internal/handler/error.go` 的 `HandleServiceError` 统一映射（`ErrPermissionDenied` → 403、12 个 not-found 哨兵 → 404、`ErrInvalidRequest`/`ErrUsernameTaken`/`ErrEmailTaken` → 400、其余脱敏为 500「服务器内部错误」并只把原文写日志），禁止模块内新增私有映射；新增 not-found 哨兵须同步扩展映射集合与 `contracts/errors.yaml`。
+- **统一响应**：统一经 `pkg/response`，结构为 `{code, message, data?}`；响应码 `CodeSuccess=200`、`CodeError=500`、`CodeInvalid=400`、`CodeAuth=401`、`CodeForbid=403`、`CodeNotFound=404`。
+- **类型归属**：领域实体统一在 `internal/domain`（`domain.User` 等），`internal/model` 保留各业务 GORM 实体，`repository` 只承载持久化实现，禁止在 repository 新增实体或 DTO。请求/响应 DTO 以所在业务域的 service 包内定义为常态（如 `service.CreateArticleRequest`），用户域的 `CreateUserRequest`/`UpdateUserRequest` 在 `internal/domain/dto.go`，少数 handler 就地声明（`SessionRequest`、`LogoutRequest`、`deleteDictRequest`）；对外响应优先经 `domain` 的响应形状或窄化视图，禁止直出 GORM 实体（存量违例见 `docs/debt/security-runtime.md` 第 1 条）。
+- **命名与接口位置**：Go 字段与 json tag 用小驼峰；接口与实现同包声明，统一 `XxxInterface` 后缀（存量 `UserService`、`RBACService`、`UserRepository` 未带后缀，触碰时统一）；各层依赖接口而非实现，`router` 不得重复定义接口。
+- **数据库**：MySQL 单库 + GORM；开发模式 `AutoMigrate`、生产 golang-migrate，由 `internal/database/migrate.go` 与 `pnpm run migrate` 管理。表设计须含生命周期字段、状态字段与字段级 `comment`，唯一字段加唯一索引、外键与高频查询加普通索引，显式声明 GORM 关联与删除策略（`OnDelete:CASCADE` / `OnDelete:SET NULL`），时间字段统一 `datetime(3)`；多段写库必须事务化（`CreateArticle`、`UpdateArticle`、`ViewArticle` 为先例，事务内统一走事务句柄）。
+- **认证与密码**：bcrypt 成本 `BcryptCost = 12`（`service/user.go`）；令牌为服务端签发的不透明随机串，内存令牌表是身份唯一权威（单实例前提），刷新即旋转、登出撤销令牌对、改密撤销该用户全部令牌。
+- **配置与中间件**：`internal/config` 经 Viper 读 `configs/config.yaml`（YAML 为唯一来源，含 `server`、`database`、`logger`、`api`、`token`、`security`、`cors`、`media`、`rbac`、`i18n` 节）；中间件含 logger（含 RequestID）、cors、security、auth、rbac、ratelimit、language 与 identity，认证/权限中间件只依赖 `IdentityProvider` 抽象。
+- **入口与工具包**：服务入口 `cmd/myblog/`，种子入口 `cmd/seed/`（逻辑 `internal/database/seed.go`）；通用包 `pkg/response`、`pkg/datetime`、`pkg/slug`、`pkg/markdown`、`pkg/storage`。
 
 ## 6. 前端约定（apps/ + packages/）
 
-- **框架**：SvelteKit + Svelte 5 + TypeScript，Svelte 5 runes 风格，**不使用 Options API**。应用分 `apps/web`（前台 toC，SSR 路线）与 `apps/admin`（后台 toB，SPA 路线 `ssr=false`）。
-- **组件库**：shadcn-svelte 基础组件统一位于 `packages/ui`（保持 stock，主题经各应用 `app.css` token 注入），经 `$ui` 与 `$ui/*` 子路径别名引入，由根级 eslint/prettier 排除。**禁止在应用内重写 `$ui` 已有组件**（admin 分页已回归 `$ui`）。别名见各应用 `svelte.config.js`：`$lib`（SvelteKit 隐式提供）、`$ui`、`$ui/*`、`$i18n`（仅前台）、`@/*`（应用自身 `src`）；前台另有构建期 `#fonts` 别名，dev 走本地 fontsource、prod 走 CDN 模块，见 `apps/web/vite.config.ts`。
-- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；前台 `apps/web/src/app.css`（编辑杂志主题，暖纸墨色系，含 `--signal` 与 `--color-line` 别名）、后台 `apps/admin/src/app.css`（原始主题，无 `--signal`）；`packages/ui` 不携带全局样式。视觉与动效准则见 `docs/ui-design-system.md`。
-- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 12 个模块工厂（user/article/category/tag/comment/media/setting/friendlyLink/stats/notification/follow/dict）；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调，`src/lib/api` 实例化接口，一律使用 `POST` 调用后端接口，与后端 POST-Only 规范呼应。**新增接口必须先加在 `packages/api`，禁止页面直连 ky**。
-- **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用薄封装各持一份）；admin 认证域工具已统一（`utils/jwt.ts`、`utils/auth.ts` 已删，刷新/登出单轨）。新公共状态逻辑必须下沉 packages，禁止第三处复制。
-- **路由**：前台 `src/routes` 使用分组路由 `(app)`、`demo`（i18n 演示沙盒）；后台使用 `(admin)`、`(auth)`（登录页归属后台）。数据加载纪律见 0.6：web 用 load，admin 新页面优先 load。
-- **i18n**：仅前台 `apps/web` 使用 `@inlang/paraglide-js`，`project.inlang`/`messages/` 目录，别名 `$i18n`；后台不引入 i18n。接入现状与文案取词纪律见第 9 节债务登记（Header/Footer/错误页已接入，其余页面待页面大变动后分批）。
-- **类型**：接口类型唯一来源 `@myblog/api`。`types/api.d.ts` 与 admin `lib/types` 影子层共 4 文件 535 行已删，两应用 eslint 守门改为 patterns 拦截 `$lib/types` 全部引入形态，禁止重新引入。
-- 前端代码改动需运行对应应用 `cd apps/web && pnpm run check` 或 `cd apps/admin && pnpm run check`（svelte-check + svelte-kit sync）。
+- **框架**：SvelteKit + Svelte 5 runes + TypeScript，不使用 Options API。`apps/web` 为前台 toC、SSR 路线（adapter-node）；`apps/admin` 为后台 toB、SPA 路线（`ssr=false`、adapter-static，`paths.base='/admin'`），无 i18n。
+- **组件库**：shadcn-svelte 基础组件统一在 `packages/ui`（保持 stock，主题经各应用设计令牌注入），经 `$ui` 与 `$ui/*` 引入；禁止在应用内重写 `$ui` 已有组件。
+- **别名**：各应用 `svelte.config.js` 声明 `$ui`、`$ui/*`、`@/*`（应用自身 `src`），前台另有 `$i18n`（指向 `src/lib/paraglide/messages`）；`$lib` 由 SvelteKit 隐式提供；前台另有构建期 `#fonts` 别名，dev 走本地 fontsource、prod 走 CDN 模块，见 `apps/web/vite.config.ts`。
+- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；`app.css` 只做聚合入口（含 `@source '../../../packages/ui/src'`），设计令牌定义在同应用 `src/styles/tokens.css`——前台为编辑杂志主题（暖纸墨色系，含 `--signal` 与 `--color-line` 别名），后台为原始主题（无 `--signal`），`packages/ui` 不携带全局样式。视觉与动效准则见 `docs/ui-design-system.md`。
+- **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 12 个模块工厂；认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调、`src/lib/api` 实例化接口，一律 `POST` 调用后端。新增接口必须先加在 `packages/api`，禁止页面直连 ky。
+- **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用各持薄封装），新公共状态逻辑必须下沉 packages，禁止第三处复制。
+- **i18n（仅前台）**：`@inlang/paraglide-js` + `project.inlang` / `messages/*.json5`（必须保持 JSON 兼容写法，否则编译失败）。已接入 Header、Footer、NotificationBell、FriendlyLinkDialog、错误页与 demo 页，已接入文件禁止回退硬编码；新增用户可见文案优先经 `m['ui:...']()` 取词，其余页面待页面大变动后分批接入。
+- **类型**：接口类型唯一来源 `@myblog/api`；影子类型层已清除，两应用 eslint 以 patterns 拦截 `$lib/types` 引入形态，禁止重新引入。
 
-## 7. 注释与代码规范硬约束
+## 7. 代码风格、注释与测试
 
-遵循全局 `~/.dsh/AGENTS.md`，在此强调项目内高频要求：
+- prettier 配置（根 `prettier.config.js`）：`semi: false`、`singleQuote: true`、`arrowParens: 'avoid'`、`printWidth: 100`、`tabWidth: 2`、`trailingComma: 'none'`。
+- **导入排序**：prettier 挂载 `prettier-plugin-sort-imports`，排序依据是单条 import 语句的字符长度，语句越长越靠前，既不看模块名字母序也不区分外部依赖与相对路径。这是既定规范，导入块看似错乱时不要手工调整，手工修改会被下次格式化还原。
+- **格式化覆盖范围**：lint-staged 仅对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 gofmt 与 goimports；`packages/**` 不在任何 format 门禁覆盖内，新增或改动 packages 文件须手动执行 `npx prettier --write <file>`。
+- **注释**：只解释代码无法直接表达的意图、业务规则、约束、原因、风险与副作用，不复述代码；具体要求遵循全局规范。
+- **测试现状**：后端 `service`、`repository`、`handler`、`middleware`、`router`、`config`、`database`、`pkg/*` 均有 `*_test.go`，新增后端关键逻辑必须配套同目录测试。`packages/api`、`packages/auth`、`packages/http` 均已有 `typecheck` 与 vitest 单测，并经 `pnpm run test:packages` 串联纳入门禁；两应用单测经 `pnpm run test:apps`（admin 覆盖 `dict-page-state.svelte.ts`，web 覆盖 `render.ts` 的原始 HTML 丢弃守卫与目录日期格式化）。新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）须配套 `*.test.ts`，并为所在 package 补 `typecheck`、`test` 脚本且登记进根 `test:packages`。`pnpm run check` 与 `typecheck:web` 只做类型检查，不是单元测试。
+- **提交**：提交信息用简体中文、符合 commitlint 的 conventional commits（type 枚举见 `commitlint.config.js`）；单次提交跨度过大时补充正文说明。
 
-- 开发过程中遇到可维护性差、建议重构或优化的代码，不要忽略，而是寻求是否确认进行顺带优化。
-- 非异步场景调用 async 函数需用 `void` 显式忽略返回的 Promise。
-- 遇到与铁律冲突的存量代码：**新改动不得加重违规**，并在提交信息中注明触碰的债务。
+## 8. 文档地图
 
-## 8. 环境配置
-
-- 后端：`server/configs/config.yaml`（数据库、服务器、日志、API、令牌、安全配置）。默认 MySQL `blog` 库，`root/123456`，含校验与沙箱占位。
-- 前端：`apps/web/.env`（`VITE_SERVER_PORT=8899`）与 `apps/admin/.env`（`VITE_SERVER_PORT=9988`），均含 `VITE_PROXY_URL=http://localhost:3000`、`VITE_BASE_URL=/api`、`VITE_REQUEST_TIMEOUT=15000`。
-
-## 9. 已知架构债务登记（基线只减不增）
-
-完整债务说明、基线数值与验证命令见 `docs/architecture-rules.md` 第 8 节。触碰相关区域时必须遵守对应红线：
-
-| 债务 | 红线 |
-|---|---|
-| service/middleware/router 依赖 repository 包（service 12 + middleware 1 + router 0，只减不增） | 只减不增 |
-| 双 User 模型（已修复：合并为唯一 `domain.User`） | 新字段只加 `domain.User` |
-| router 重复定义 handler 接口 + `interface{}` 断言（已修复） | 禁止重新引入 |
-| `RBACService` 生产实例化（生产实例化点仅 main 组合根 1 处） | 禁止新增实例化点 |
-| 两 app 基础设施逐字重复（逐字重复仅 **2 文件 60 行**：`stores/auth.ts` 15 行 ×2、`theme-toggle.svelte` 45 行 ×2，SHA256 一致；`service/index.ts`、`+layout.svelte`、`+error.svelte` 职责同构但内容不同，不计入） | 修改任一必须同步另一份 |
-| admin 认证工具三轨并行（已统一：`jwt.ts`/`auth.ts` 已删，刷新/登出单轨） | 禁止新增认证工具文件 |
-| 应用层影子类型（`types/api.d.ts` 与 admin `lib/types` 4 文件 535 行已删除，两应用守门实测拦截） | 禁止重新引入；类型一律来自 `@myblog/api` |
-| admin 胖组件 + onMount 取数（口径为 `apps/admin/src/routes` 下单文件 > 300 行，实测 **7 个**：tags 448 / users 401 / links 399 / dicts 341 / comments 324 / categories 321 / media 320；users 跨页补偿已移除，users/list 支持 keyword） | 新页面禁用；后端缺口推回后端 |
-| web 首页 load 死代码（已修复） | 新页面禁用 load 调认证接口 |
-| 401 文案匹配（已修复：`code === 401` 判定） | 禁止回退文案匹配 |
-| 令牌表为内存 map（已加锁；过期记录随签发惰性清理；令牌为不透明随机串，身份唯一权威在服务端令牌表） | 单实例部署前提；持久化前保持锁；服务重启即全部会话失效 |
-| 文章响应泄漏作者审计字段（已修复：审计字段 `json:"-"`） | 新增审计字段默认 `json:"-"` |
-| `user_follow` 前端零消费（作者页 FollowButton 已消费 follow/isFollowing 接口） | 关注数据仅经 service 域端点读写 |
-| admin 本地 `pagination.svelte` 重写 `$ui` 已有组件（已修复：7 页回归 `$ui`）；**web 侧 `PaginationNav` 保留自有实现**：`$ui/pagination` 包装层未透传 bits-ui 原语的 `child` 元素替换通道，改用该包装层将失去可爬取的真实 `<a href>`，登记为受接受存量 | 禁止仿效；新分页一律 `$ui`；web 侧完成统一前不得新增第三处分页实现 |
-| 公开端点直出实体泄漏个人信息（评论审计字段与作者 email 已窄化；`/users/get` 已收紧：挂 `user:list` 权限仅限管理端，普通用户走 `publicProfile`；媒体域已收紧：上传者经 `domain.UploaderPublic` 窄化输出、`uploadIP` 改 `json:"-"`、媒体详情补齐归属校验） | 公开端点输出个人信息必须经窄化 DTO 或字段白名单；新增隐私/审计字段默认 `json:"-"` |
-| WAF 内容级黑名单的固有误伤面（模式全部词首边界/取值上下文锚定，误伤回归用例已在位；SQL/XSS 教学正文残余误拦待内容感知解析） | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
-| 测试替身内嵌空接口的运行时脆性（接口加方法以 nil panic 暴露，三处实证） | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写，禁止依赖内嵌空接口的静默兼容 |
-| web 界面多语言局部接入（Header/Footer/错误页已接入 paraglide，其余页面文案硬编码中文） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；词表文件保持 JSON 兼容写法 |
-| 字典页窄屏交互与工具栏布局遗留（`apps/admin/src/routes/(admin)/dicts/+page.svelte` 的类型列表窄屏交互与工具栏打磨未完成；该页同时是 7 个胖组件之一） | 触碰该页时必须顺带处理，不得再次遗留；不得以"已记录在提交信息"替代债务登记 |
-
-## 10. 开发进度概览
-
-已完成：
-- 基础设施：Monorepo 架构、环境与工具链、Git hooks、智能开发脚本与监控、pnpm catalog 版本治理。
-- 后端：12 个业务模块（用户/认证/不透明双令牌/RBAC、文章 CRUD 与状态及互动、分类、标签、评论、媒体、设置、友链、统计、通知、关注、字典）均已完成三层实现与路由注册；自助资料、互动状态查询、归档分组、公开分类与资料、友链申请等前台支撑端点已补齐（接口总数 104：`/api` 业务接口 102 + 健康探针 2，逐条清单见 `server/docs/api/README.md`）。
-- 后端数据管道：通知生产链路（评论回复/点赞/关注）、浏览明细与日统计、搜索日志、评论设置开关消费均已打通。
-- 前端 admin：14 个页面（仪表盘、文章管理、分类、标签、评论、媒体、用户、设置、友链、统计、通知、登录）+ markdown 编辑器组件。
-- 前端 web：业务页面已接入（首页真实数据、博客目录/详情、评论、分类列表、归档时间线、作者主页、登录页、收藏列表页），布局与展位页遵循编辑杂志主题。
-- 2026-09-16：通知铃铛移动端入口、博客目录检索框、个人资料页、友链申请表单、三展位页、订阅暂未开放反馈、隐私政策页、设置未生效标注、ErrUserNotFound 映射归位、主题按钮定位参数化、Header/Footer/错误页多语言、UpdateArticle 事务化。
-- 认证会话收紧：令牌表撤销、登出/改密撤销、CORS 白名单、登录锁定、Server 超时、ViewArticle 事务化、WAF 模式收紧等。
-- 内容多语言（i18n）：文章/分类/标签翻译表（`*_translations`，主列恒为缺省中文）；后端按 `Accept-Language` 输出本地化字段并附 `Content-Language`，`*` 供管理端读全量翻译包，`i18n` 补丁随创建/更新写入，搜索合并翻译表匹配；语言白名单权威在 `config.yaml` 的 `i18n` 节，契约见 `contracts/i18n-protocol.md`；web 注入 paraglide 语言回调并随切换刷新，admin 注入全量包标识并提供英文翻译编辑（界面本身不做多语言）。
-
-- 2026-09-24：认证会话 Cookie 化：新增 `POST /auth/session` 建立与续期会话，令牌对经 HttpOnly Cookie 携带（`mb_access_token`/`mb_refresh_token`，`Path=/api`、SameSite=Lax、Secure 由 `token.cookie_secure` 控制），令牌解析 Header/Cookie 双轨过渡，前端 localStorage 令牌退役并改造登录与登出流程，协议契约同步 `contracts/auth-protocol.md`。
-
-待办：
-- 后续候选：多语言其余页面接入（待页面大变动后分批）。
-- 可选细化：handler 层全面 DTO 分离（审计字段已统一 `json:"-"`）、组合根按域装配。
-
-架构重构已完成，详见 `docs/architecture-rules.md` §9 分期路线状态：五个阶段中前四个已全部完成，IdentityProvider 横切归位、RBAC 迁 config 并下发、users/keyword、分页回归 `$ui`、follow 模块、认证工具统一均已落地；债务基线只减不增。部署形态为单实例，约束与扩容前置改造见第 0.7 节。
+- `docs/architecture-rules.md`：铁律细则、债务索引与验证命令、历史教训（与本文冲突时以该文件为准）。
+- `docs/debt/`：债务完整条目分册（结构类型 / 前端复用 / 安全运行时 / 测试），基线只减不增。
+- `docs/development.md`：环境设置、开发工作流、工具陷阱、代码风格示例。
+- `docs/database-architecture.md` 与 `docs/database/schema.sql`：数据库设计说明与参考 DDL（仅供设计参考，实际结构以 GORM 模型为准，生产经 `server/migrations/` 增量迁移）。
+- `docs/ui-design-system.md`：视觉、动效与可访问性准则。
+- `docs/operations/backup-restore.md`：备份与恢复流程、RPO 口径。
+- `contracts/`：认证协议、i18n 协议、错误码口径与契约金样本。
+- `server/docs/api/`：接口总数口径与逐模块接口说明。
+- `scripts/README.md`：脚本用途、参数与 pnpm 入口对照。

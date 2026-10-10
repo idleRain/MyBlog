@@ -1,10 +1,12 @@
 # MyBlog 架构铁律与纪律手册
 
-> 本手册是 AGENTS.md 第 0 节铁律的完整裁决细则，效力高于普通文档。
+> 本手册是 `AGENTS.md` 第 1 节「结构红线」的完整裁决细则，效力高于普通文档。
 > 本项目的抽象设计基本正确（分层骨架、packages 单向依赖、工厂注入），但历史上被长期系统性绕行，
 > 形成了若干结构性顽疾。本手册的使命是让"绕行"在代码评审与自检命令层面被拦截。
 >
 > **裁决顺序**：`~/.dsh/AGENTS.md`（全局）< `AGENTS.md`（项目）< 本手册（细则）。冲突时以更具体者为准。
+>
+> **分册**：第 1 至 7 节为规则本体，第 8 节为债务索引，第 9 至 10 节为历史登记；债务的完整条目（状态、基线数值、验证命令、完整红线）按关注域分册在 [`debt/`](./debt/README.md)。
 
 ---
 
@@ -14,7 +16,7 @@
 |---|---|---|
 | 【铁律】 | 依赖方向、真相源、契约、权威、复用、数据加载六类结构性约束 | 必须返工 |
 | 【约定】 | 命名、格式、注释等风格约束 | 应当修正 |
-| 【债务】 | 已存在的违例，登记基线与验证命令 | **基线只减不增** |
+| 【债务】 | 已存在的违例，登记基线与验证命令 | **基线只减不增**（条目分册见 [`debt/`](./debt/README.md)） |
 
 **基线只减不增是本手册的核心执行机制**：存量违规不要求立即修复，但任何改动使债务指标恶化，即新增违例文件、新增实例化点或新增重复代码时判定违规。每条债务附带验证命令，任务完成前 Agent 必须自检。
 
@@ -25,9 +27,9 @@
 ### 2.1 后端允许的依赖图
 
 ```
-cmd/myblog/main.go（组合根，唯一允许 new 一切的地方）
+cmd/myblog/（组合根：main.go 管生命周期、deps.go 按域装配，唯一允许 new 一切的地方）
     ↓
-router → handler → service → repository → model
+router → handler → service → repository → domain / model
               ↑ 严禁越过        ↓
            middleware（只依赖抽象接口，不依赖 repository 实现）
 ```
@@ -40,7 +42,7 @@ router → handler → service → repository → model
 | repository → service / handler | 数据层不得承载业务 | 已合规 |
 | middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 仅 `identity.go` 实现 1 处 |
 | router → repository（仅为拼装中间件） | 路由层不应持有数据访问句柄 | router 依赖 repository 归零 |
-| 任何包 → `database.GetDB()` 全局单例 | 破坏可测试性 | 已合规（仅 main/seed 使用） |
+| 任何包 → `database.GetDB()` 全局单例 | 破坏可测试性 | 已合规（仅 `cmd/myblog` 与 `cmd/seed` 使用） |
 
 ### 2.2 前端允许的依赖图
 
@@ -62,10 +64,11 @@ apps/web, apps/admin（组合根：实例化与回调注入）
 ### 2.3 验证命令
 
 ```bash
-# 在 server/ 目录下（基线：service 12 + middleware 1 + router 0 = 13 文件，`*_test.go` 测试替身不计入）
-git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router
+# 在 server/ 目录下执行（路径相对当前目录解析，在仓库根执行会得到零命中的假绿）
+# 基线：service 12 + middleware 1（仅 identity.go）+ router 0 = 13 文件
+git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router ':(exclude)*_test.go'
 
-# 前端：packages 反向依赖应用（应为空）
+# 前端：packages 反向依赖应用（应为空；在仓库根执行）
 git grep -ln "apps/web" -- packages
 git grep -ln "apps/admin" -- packages
 ```
@@ -119,6 +122,8 @@ git grep -n "interface BaseApiResponse" -- apps
 3. 需对外发布 API 文档；
 4. 团队扩张超单人。
 
+**当前状态**：路由注册总数已达 104 条（`/api` 业务接口 102 + 健康探针 2），触发器 1 已被命中，但 codegen 迁移尚未启动，现行机制仍为三把锁。是否迁移属待决事项，决策变化时必须同步本节。
+
 **备注**：handler DTO 分离是既定方向，与类型生成策略的选择正交；`article.detail` 金样本的类型锚定已补齐（Author 窄化后直接锚定 `Article` 类型）。未来升级 codegen 时 DTO 层零返工。
 
 ---
@@ -138,7 +143,7 @@ git grep -n "interface BaseApiResponse" -- apps
 
 | 端 | 必须创建/修改 |
 |---|---|
-| 后端 | `internal/model/<entity>.go`（如需）、`internal/repository/<module>.go`、`internal/service/<module>.go`、`internal/handler/<module>.go`、`internal/router/<module>.go`、`main.go` 装配 |
+| 后端 | `internal/model/<entity>.go`（如需）、领域实体与共享 DTO 进 `internal/domain`、请求 DTO 就近定义在所属 service 包、`internal/repository/<module>.go`、`internal/service/<module>.go`、`internal/handler/<module>.go`、`internal/router/<module>.go`、`cmd/myblog/deps.go` 装配 |
 | 前端 | `packages/api/src/modules/<module>/{types.ts, index.ts}`、`packages/api/src/index.ts` 导出、两应用 `src/lib/api/index.ts` 注册 |
 
 **历史反例**：`user_follow` 曾后端完整、前端零消费，后补齐 API 模块（`@myblog/api/modules/follow` + 两应用注册）。**此为"两端各自演进"的实证，模块对齐表的目的就是让这类偏差在发生当天可见。**
@@ -164,15 +169,15 @@ git grep -n "interface BaseApiResponse" -- apps
 
 ### 5.2 实例化纪律
 
-- 依赖对象只能由组合根（`main.go`）构造并逐层注入。
+- 依赖对象只能由组合根构造并逐层注入。组合根为 `cmd/myblog/`：`main.go` 负责配置加载、数据库初始化与 HTTP 生命周期，`deps.go` 按业务域装配仓储、服务与处理器；二者同属组合根，不构成第二个实例化点。
 - **禁止**在 service 构造函数内部 `New` 另一个 service。`NewUserService` 不得内部实例化 `RBACService`。
 - **禁止**在中间件、路由注册函数内部实例化服务。`router/user.go`、`middleware/rbac.go` 的私自实例化已被移除。
 
 ### 5.3 验证命令
 
 ```bash
-# RBACService 生产实例化点为 1 处，即 cmd/myblog/main.go 组合根
-# rbac.go 本体的命中为定义，不计入；测试文件不计入
+# RBACService 生产实例化点为 1 处，即组合根 cmd/myblog/deps.go
+# rbac.go 本体的命中为定义，不计入；*_test.go 测试文件不计入
 git grep -n "NewRBACService()" -- server
 ```
 
@@ -190,7 +195,12 @@ git grep -n "NewRBACService()" -- server
      └─ 是 → 违反复用纪律，停下提取；否 → 正常开发
 ```
 
-已知跨 app 重复文件（修改任一必须同步另一份）：`stores/auth.ts`、`service/index.ts`（仅 goto 导入路径一处既定差异，语义逐字一致）、`components/theme-toggle.svelte`（经 `git diff --no-index` 校验逐字一致）、`routes/+layout.svelte`（仅导入排序与类型标注差异）。error 页两 app 已各自独立设计（web 编辑杂志版式、admin 居中后台版式），仅同名职责，已移出同构清单。
+已知跨 app 重复文件分两档，处理方式不同：
+
+1. **逐字重复，改任一必须同步另一份**（`git diff --no-index` 应零差异）：`src/lib/stores/auth.ts`（15 行 ×2）、`src/lib/components/theme-toggle.svelte`（45 行 ×2）。
+2. **职责同构但内容不同，不计入逐字重复**，也不要求逐字同步：`service/index.ts`（69 / 67 行，差异在 `getLanguage` 取值与 `goto` 导入来源）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，web 编辑杂志版式与 admin 居中版式已各自独立设计）。
+
+新增公共逻辑仍按 6.1 决策树优先下沉 packages；两档文件均不得再增加第三份同构实现。
 
 ### 6.2 数据加载
 
@@ -248,40 +258,41 @@ git grep -n "replicas" -- docker-compose.yml
 
 ## 8. 债务登记表（基线只减不增）
 
-> 触碰相关区域前先读对应条目的红线；任务自检时核对基线不恶化。
+> 完整条目（状态、基线数值、验证命令、完整红线）按关注域分册登记在 `docs/debt/`，机制与维护流程见 [`debt/README.md`](./debt/README.md)。
+> 本节只保留索引：触碰相关区域前先按「所属分册」读对应条目，任务自检时核对基线不恶化。
 
-| 债务 | 基线 | 验证命令 | 红线 |
-|---|---|---|---|
-| service/middleware/router import repository | service **12** + middleware **1** + router **0**。router 已归零，middleware 仅 `identity.go`；`*_test.go` 测试替身文件不计入。dict 模块接入曾使 service 层由 11 增至 12 | 见 §2.3 | 只减不增 |
-| 双 User 模型同写 users 表 | 已修复：合并为唯一 `domain.User` 实体 | `git grep -n "type User struct" -- server/internal --include="*.go"`（仅 domain） | 新字段只加 `domain.User` |
-| router 重复定义 handler 接口 + `interface{}` 断言 | 已修复：router 重复接口 0、断言 0 | `git grep -c "HandlerInterface interface" -- server/internal/router`（应为空） | 禁止重新引入 |
-| `RBACService` 生产实例化 | 生产实例化点 1 处，即 main.go 组合根 | 见 §5.3 | 禁止新增实例化点 |
-| 两 app 基础设施逐字重复 | 逐字重复仅 **2 文件 60 行**：`src/lib/stores/auth.ts`（15 行 ×2，SHA256 一致）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2，SHA256 一致）。另有 3 文件职责同构但内容不同，不计入逐字重复：`service/index.ts`（69 / 67 行）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，两 app 版式已各自独立设计） | `git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应为零差异）；同法核对 `theme-toggle.svelte` | 修改任一必须同步另一份 |
-| admin 认证工具三轨并行 | 已统一：`utils/jwt.ts`、`utils/auth.ts` 已删（约 488 行）；`performLogout` 单轨（utils/logout）、刷新单轨（service/index.ts） | `git grep -ln "requireAuth\|performLogout\|manualRefreshToken\|getAuthStatus" -- apps/admin/src/lib` | 禁止新增认证工具文件；禁止双轨回退 |
-| 影子类型层 | 已修复：`types/api.d.ts` 与 admin `lib/types`（admin/common/auth/index 共 535 行）已删，两应用 eslint 守门由 paths 改 patterns，拦截 `$lib/types` 全部引入形态 | `git grep -n "interface BaseApiResponse" -- apps`（应为空） | 禁止重新引入；类型一律来自 `@myblog/api` |
-| admin 胖组件 + onMount 取数 | 口径为「`apps/admin/src/routes` 下单文件 > 300 行」，当前 **7 个**，降序为 tags 448 / users 401 / links 399 / dicts 341 / comments 324 / categories 321 / media 320；路由 svelte 文件共 19 个。`onMount` 取数命中 13 个路由文件。users 跨页补偿已移除，users/list 支持 keyword | `git grep -ln "onMount" -- "apps/admin/src/routes/(admin)"`；行数按上述口径统计 | 新页面禁用；后端缺口推回后端 |
-| web 首页 load 死代码 | 已修复：`(app)/+page.ts` 死 load 已移除 | 读文件确认 | 新页面禁用 load 调认证接口 |
-| 401 文案匹配 | 已修复：`client.ts` 改为响应体 `code === 401` 判定 | `git grep -n "TOKEN_ERROR_MESSAGES" -- packages`（应为空） | 禁止回退文案匹配 |
-| 令牌表为内存 map | 已加锁并支持过期惰性清理：`sync.RWMutex` 保护；令牌为不透明随机串，身份唯一权威在服务端令牌表，过期记录随签发清理 | `git grep -n "tokensByUser" -- server` | 单实例部署前提；持久化前保持锁；服务重启即全部会话失效 |
-| 文章响应泄漏作者审计字段 | 已修复：`lastLoginIP` 等审计字段改为 `json:"-"` | 读 `domain/user.go` json tag | 新增审计字段默认 `json:"-"` |
-| follow 模块仅后端 | API 模块已补齐：`@myblog/api/modules/follow` + 两应用注册；页面消费待 web 业务接入 | `git grep -ln "createFollowAPI" -- packages/api/src`（非空即已补齐） | 页面消费前视为功能未完成 |
-| admin 重写 `$ui` 已有组件 | **admin 侧已修复**：本地 `pagination.svelte` 已删，7 页回归 `$ui`。**web 侧保留自有实现**：`apps/web/src/lib/components/article/PaginationNav.svelte` 使用锚点版式，因为 `$ui/pagination` 的包装层未透传 bits-ui 原语的 `child` 元素替换通道，前台改用该包装层将失去可爬取的真实 `<a href>`，与 SSR 站点的 SEO 与渐进增强目标冲突。该组件已补齐 `aria-label` 与 `rel` 语义，包装层补齐 `child` 透传后方可统一 | `git diff --no-index <(git show 865b613^:apps/admin/src/lib/components/admin/pagination.svelte) apps/web/src/lib/components/article/PaginationNav.svelte` 仅供对照；`git grep -n "child" -- packages/ui/src/pagination`（当前无命中，即透传缺口） | admin 侧禁止仿效；新分页一律 `$ui`；web 侧在该项统一前不得新增第三处分页实现 |
-| 公开端点直出实体泄漏个人信息 | **评论域与作者域已窄化**：`model.Comment` 游客邮箱/IP/UserAgent 改 `json:"-"`，评论 `user` 与文章 `author` 经 `domain.AuthorPublic` 窄化视图输出，管理端审计走 `AdminCommentView`。**`/users/get` 已收紧**：由仅挂基础认证改为挂 `user:list` 权限仅限管理端访问，普通用户查看他人资料走窄化的 `publicProfile` 端点，回归测试在 `internal/router/user_rbac_test.go`。**媒体域已收紧**：媒体接口的上传者经 `domain.UploaderPublic` 窄化视图输出、`uploadIP` 审计字段改 `json:"-"`，媒体详情补齐水平越权校验（与列表归属规则对称），回归测试在 `model/media_public_test.go` 与 `service/media_test.go` | 读 `model/comment.go`、`model/article.go`、`model/media.go` json tag 与 `domain/author.go`；service 层测试断言公开响应无审计字段；`go test ./internal/router/ -run TestUsersGetRequiresUserListPermission -count=1` | 公开端点输出个人信息前必须经窄化 DTO 或字段白名单；实体新增隐私/审计字段默认 `json:"-"` |
-| WAF 内容级黑名单的固有误伤面 | 误伤回归用例已就位：默认模式全部经词首边界或取值上下文锚定，攻击拦截与误伤回归两组用例在位；残余风险为讲解 SQL/XSS 的技术文章正文命中关键词模式仍会被拦，根治需内容感知解析或按路由豁免 | `go test ./internal/middleware/ -run "TestDefaultBlockedPatterns\|TestSecurityMiddleware" -count=1` | 新增或修改阻止模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，禁止回退宽匹配 |
-| 测试替身内嵌空接口的运行时脆性 | 既有约定，三处实证：service 层 fake 以内嵌接口继承全部方法，接口新增方法被既有测试路径调用时以 nil panic 暴露而非编译错误（`recordedTokenService.GenerateTokenPair`、`loginUserRepo.Update`、`lockoutUserRepo.GetByUsername` 三例） | `go test ./internal/... -count=1` | 接口新增方法被既有测试路径触达时，必须为受影响 fake 显式覆写；禁止依赖内嵌空接口的静默兼容 |
-| web 界面多语言局部接入 | 语言切换对 Header/Footer/错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败） | `git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、+error） | 已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进 |
-| 字典页窄屏交互与工具栏布局遗留 | `apps/admin/src/routes/(admin)/dicts/+page.svelte` 的类型列表窄屏交互与工具栏布局打磨未完成。该页同时是 7 个胖组件之一（341 行），两个问题可在同一次触碰中一并处理 | 读 `apps/admin/src/routes/(admin)/dicts/+page.svelte` 的类型列表与工具栏区块在窄屏下的布局 | 触碰该页时必须顺带处理，不得再次遗留；不得以「已记录在提交信息」替代债务登记 |
+| 债务 | 所属分册 | 红线（一句话） |
+|---|---|---|
+| service/middleware/router import repository | [`debt/architecture.md`](./debt/architecture.md) 第 1 条 | 只减不增 |
+| router 重复定义 handler 接口 + `interface{}` 断言 | [`debt/architecture.md`](./debt/architecture.md) 第 2 条 | 禁止重新引入 |
+| `RBACService` 生产实例化 | [`debt/architecture.md`](./debt/architecture.md) 第 3 条 | 禁止新增实例化点 |
+| 双 User 模型同写 users 表 | [`debt/architecture.md`](./debt/architecture.md) 第 4 条 | 新字段只加 `domain.User` |
+| 应用层影子类型层 | [`debt/architecture.md`](./debt/architecture.md) 第 5 条 | 禁止重新引入，类型一律来自 `@myblog/api` |
+| follow 模块仅后端 | [`debt/architecture.md`](./debt/architecture.md) 第 6 条 | 关注数据仅经 service 域端点读写 |
+| 两 app 基础设施逐字重复 | [`debt/frontend.md`](./debt/frontend.md) 第 1 条 | 修改任一必须同步另一份 |
+| admin 认证工具三轨并行 | [`debt/frontend.md`](./debt/frontend.md) 第 2 条 | 禁止新增认证工具文件与双轨回退 |
+| admin 胖组件 + onMount 取数 | [`debt/frontend.md`](./debt/frontend.md) 第 3 条 | 新页面禁用 onMount 取数，缺口推回后端 |
+| web 首页 load 死代码 | [`debt/frontend.md`](./debt/frontend.md) 第 4 条 | 新页面禁用 load 调认证接口 |
+| 401 文案匹配 | [`debt/frontend.md`](./debt/frontend.md) 第 5 条 | 禁止回退文案匹配 |
+| admin 重写 `$ui` 已有组件（含 web 分页例外） | [`debt/frontend.md`](./debt/frontend.md) 第 6 条 | 新分页一律 `$ui`，禁止新增第三处实现 |
+| web 界面多语言局部接入 | [`debt/frontend.md`](./debt/frontend.md) 第 7 条 | 已接入文件禁止回退硬编码 |
+| 字典页窄屏交互与工具栏布局遗留 | [`debt/frontend.md`](./debt/frontend.md) 第 8 条 | 触碰该页必须顺带处理 |
+| 公开端点直出实体泄漏个人信息 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 1 条 | 个人信息须经窄化 DTO 或字段白名单 |
+| 文章响应泄漏作者审计字段 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 2 条 | 新增审计字段默认 `json:"-"` |
+| WAF 内容级黑名单的固有误伤面 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 3 条 | 阻止模式必须先红后绿并配两组用例 |
+| 令牌表为内存 map | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 单实例前提；持久化前保持锁 |
+| 测试替身内嵌空接口的运行时脆性 | [`debt/testing.md`](./debt/testing.md) 第 1 条 | 受影响 fake 必须显式覆写 |
 
 ---
 
 ## 9. 历史重构分期路线
 
 > 此处登记历史重构的分期内容与验收口径，供回顾时对照。
-> 每完成一项债务修复必须同步更新第 8 节基线数值与本节状态，保持登记表与代码一致。
+> 每完成一项债务修复必须同步更新 `docs/debt/` 对应条目与第 8 节索引，并更新本节状态，保持登记与代码一致。
 
 | 阶段 | 内容 | 完成的债务 | 验收口径 |
 |---|---|---|---|
-| 阶段一 结构归位与错误分档 | 删 router 重复接口与不可达代码；错误分档（哨兵错误→404/403/400）；令牌表加锁；web 死 load 清理；建立 `contracts/` 目录 | router 重复接口、web 死 load、401 判定均已修复；令牌表已加锁；`RBACService` 生产实例化点仅 1 处；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ 第 1 节自检命令全绿 |
+| 阶段一 结构归位与错误分档 | 删 router 重复接口与不可达代码；错误分档（哨兵错误→404/403/400）；令牌表加锁；web 死 load 清理；建立 `contracts/` 目录 | router 重复接口、web 死 load、401 判定均已修复；令牌表已加锁；`RBACService` 生产实例化点仅 1 处；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ `AGENTS.md` 第 2 节自检命令全绿 |
 | 阶段二 类型归位 | 建立 `internal/domain`，合并双 User，service/middleware/router 签名切换为 domain 类型；前端 auth 下沉共享包、影子类型清除 | 双 User 模型与影子类型层已修复；两 app 重复代码大幅减少（auth store 下沉）；service 层 repository 依赖由 12 降至 11 | ✅ 依赖方向基线下降；auth store diff 为零 |
 | 阶段三 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | 401 文案匹配与审计字段泄漏已修复；三把锁已落地（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
 | 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一 | 权限定义全栈唯一；认证工具单轨 ✅ |

@@ -6,14 +6,14 @@
 
 ## 内容多语言说明
 
-标签模块支持内容多语言，完整规则见 [`contracts/i18n-protocol.md`](../../../contracts/i18n-protocol.md)：请求头 `Accept-Language` 决定 `name`、`description` 输出语言，缺省中文，缺失翻译按字段回退；`Accept-Language: *` 时响应额外携带 `translations` 翻译行数组；创建与更新请求体可选 `i18n` 字段按语言提交翻译补丁（`{"en": {"name": "..."}}`），缺省语言键与白名单外语言键返回 400。
+标签模块支持内容多语言，完整规则见 [`contracts/i18n-protocol.md`](../../../contracts/i18n-protocol.md)：`name`、`description` 按 `Accept-Language` 输出本地化值，响应头 `Content-Language` 标注本次输出语言；`Accept-Language: *` 时响应额外携带 `translations` 翻译行数组；创建与更新请求体可选 `i18n` 字段按语言提交翻译补丁（`{"en": {"name": "..."}}`），缺省语言键与白名单外语言键返回 400。
 
 ## 权限说明
 
 | 操作 | 所需权限 | 角色要求 |
 |------|----------|----------|
 | 获取标签详情 / 热门标签 | 无 | 无 |
-| 全部标签列表（文章编辑选择） | `article:read` | 登录，editor及以上 |
+| 全部标签列表（文章编辑选择） | `article:read` | 登录，user及以上 |
 | 创建 / 更新 / 删除标签 | `tag:manage` | admin及以上 |
 | 标签列表 | `tag:manage` | admin及以上 |
 
@@ -86,7 +86,7 @@ curl -X POST http://localhost:3000/api/tags/get \
 
 ### 2. 获取热门标签
 
-获取使用次数最多的标签，按使用次数倒序排列。
+获取使用次数最多的启用状态标签，按使用次数倒序排列。
 
 #### 请求信息
 
@@ -197,7 +197,7 @@ curl -X POST http://localhost:3000/api/tags/list \
 | 字段名 | 类型 | 必填 | 说明 | 验证规则 |
 |--------|------|------|------|----------|
 | name | string | 是 | 标签名称，全局唯一 | 1-30字符 |
-| slug | string | 否 | URL友好标识，省略时按名称生成 | 最大30字符 |
+| slug | string | 否 | URL友好标识，省略时由服务端生成并保证唯一 | 最大30字符 |
 | color | string | 否 | 标签颜色，HEX格式 | 4-7字符，默认#808080 |
 | description | string | 否 | 标签描述 | 最大200字符 |
 | status | integer | 否 | 标签状态 | 0或1，默认1启用 |
@@ -236,7 +236,10 @@ curl -X POST http://localhost:3000/api/admin/tags/create \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 标签名称已存在 |
+| 400 | 请求参数错误（binding 校验或翻译语言键非法） |
+| 500 | 标签名称已存在 |
+
+> 名称重复校验错误当前归入未分类错误，实际响应码为 500。
 
 ### 5. 更新标签
 
@@ -277,8 +280,10 @@ curl -X POST http://localhost:3000/api/admin/tags/update \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 标签名称已存在 |
 | 404 | 标签不存在 |
+| 500 | 标签名称已存在 |
+
+> 名称重复校验错误当前归入未分类错误，实际响应码为 500。
 
 ### 6. 删除标签
 
@@ -330,7 +335,7 @@ curl -X POST http://localhost:3000/api/admin/tags/delete \
 |--------|------|------|------|----------|
 | page | integer | 否 | 页码 | 最小1，默认1 |
 | pageSize | integer | 否 | 每页数量 | 1-100，默认10 |
-| status | integer | 否 | 按状态过滤 | 0或1 |
+| status | integer | 否 | 按状态过滤 | 整数 |
 | isHot | boolean | 否 | 是否仅返回热门标签 | 布尔值 |
 | search | string | 否 | 名称或描述模糊搜索 | 字符串 |
 

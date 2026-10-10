@@ -18,8 +18,8 @@
 | 操作 | 所需权限 | 角色要求 |
 |------|----------|----------|
 | 查看展示中的友情链接 | 无 | 无 |
-| 创建 / 更新 / 删除 / 审核 | `system:config` | admin及以上 |
-| 友情链接列表 | `system:config` | admin及以上 |
+| 创建 / 更新 / 删除 / 审核 | `system:config` | superadmin |
+| 友情链接列表 | `system:config` | superadmin |
 
 ## 公开接口（无需认证）
 
@@ -59,6 +59,8 @@ curl -X POST http://localhost:3000/api/friendlyLinks/list \
 | data.links[].description | string | 否 | 站点简介 |
 | data.links[].sortOrder | integer | 是 | 展示排序权重 |
 
+> 当前实现直接输出友链实体，响应还包含 `contactEmail`、`isReciprocal`、`note`、`createdAt` 与 `updatedAt`。
+
 #### 响应示例
 
 ```json
@@ -80,7 +82,7 @@ curl -X POST http://localhost:3000/api/friendlyLinks/list \
 
 ## 管理接口（需要 system:config 权限）
 
-管理接口需在请求头携带 `Authorization: Bearer {accessToken}`，操作者角色为 admin 及以上。
+管理接口需在请求头携带 `Authorization: Bearer {accessToken}`，操作者需持有 `system:config` 权限（当前配置下仅超级管理员）。
 
 ### 2. 创建友情链接
 
@@ -90,7 +92,7 @@ curl -X POST http://localhost:3000/api/friendlyLinks/list \
 
 - **接口地址**: `/api/admin/friendlyLinks/create`
 - **请求方式**: `POST`
-- **权限要求**: `system:config`（admin及以上）
+- **权限要求**: `system:config`（superadmin）
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -138,7 +140,10 @@ curl -X POST http://localhost:3000/api/admin/friendlyLinks/create \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 该站点 URL 已存在 |
+| 400 | 请求参数错误（binding 校验） |
+| 500 | 该站点 URL 已存在 |
+
+> URL 重复校验错误当前归入未分类错误，实际响应码为 500。
 
 ### 3. 更新友情链接
 
@@ -146,7 +151,7 @@ curl -X POST http://localhost:3000/api/admin/friendlyLinks/create \
 
 - **接口地址**: `/api/admin/friendlyLinks/update`
 - **请求方式**: `POST`
-- **权限要求**: `system:config`（admin及以上）
+- **权限要求**: `system:config`（superadmin）
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -170,7 +175,7 @@ curl -X POST http://localhost:3000/api/admin/friendlyLinks/create \
 
 - **接口地址**: `/api/admin/friendlyLinks/delete`
 - **请求方式**: `POST`
-- **权限要求**: `system:config`（admin及以上）
+- **权限要求**: `system:config`（superadmin）
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -205,9 +210,11 @@ curl -X POST http://localhost:3000/api/admin/friendlyLinks/delete \
 
 | 接口地址 | 说明 |
 |----------|------|
-| `/api/admin/friendlyLinks/approve` | 审核通过，状态置为 active |
-| `/api/admin/friendlyLinks/hide` | 下架，状态置为 hidden |
-| `/api/admin/friendlyLinks/reject` | 拒绝，状态置为 rejected |
+| `/api/admin/friendlyLinks/approve` | 审核通过，状态置为 active，响应消息「审核通过」 |
+| `/api/admin/friendlyLinks/hide` | 下架，状态置为 hidden，响应消息「下架成功」 |
+| `/api/admin/friendlyLinks/reject` | 拒绝，状态置为 rejected，响应消息「已拒绝」 |
+
+> 状态流转不做前置状态校验，直接覆盖目标状态；目标链接不存在时返回 404。
 
 #### 请求参数（通用）
 
@@ -241,7 +248,7 @@ curl -X POST http://localhost:3000/api/admin/friendlyLinks/approve \
 
 - **接口地址**: `/api/admin/friendlyLinks/list`
 - **请求方式**: `POST`
-- **权限要求**: `system:config`（admin及以上）
+- **权限要求**: `system:config`（superadmin）
 - **Content-Type**: `application/json`
 
 #### 请求参数
@@ -328,4 +335,7 @@ curl -X POST http://localhost:3000/api/friendlyLinks/apply \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 参数错误或该站点已提交过申请 |
+| 400 | 请求参数错误（binding 校验） |
+| 500 | 该站点已提交过申请 |
+
+> 重复申请校验错误当前归入未分类错误，实际响应码为 500。

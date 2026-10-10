@@ -2,27 +2,27 @@
 
 ## 概述
 
-本文档定义 MyBlog 项目的完整数据库架构设计。采用 MySQL 8.0 作为主数据库，使用 GORM 作为 ORM 框架，覆盖用户管理、内容管理、评论系统、媒体管理、互动功能、系统监控等模块。完整 DDL 见 `docs/database/schema.sql`，实际表结构以 GORM 模型定义为准；生产环境经 golang-migrate 执行 `server/migrations/` 增量迁移，开发模式启动时通过 AutoMigrate 同步。
+本文档定义 MyBlog 项目的完整数据库架构设计。采用 MySQL 8.0 作为主数据库，使用 GORM 作为 ORM 框架，覆盖用户管理、内容管理（含多语言翻译）、评论系统、媒体管理、互动功能、字典管理、系统监控等模块。完整 DDL 见 `docs/database/schema.sql`，实际表结构以 GORM 模型定义为准；生产环境经 golang-migrate 执行 `server/migrations/` 增量迁移，开发模式启动时通过 AutoMigrate 同步。
 
-**数据库规模**：23 张业务表，按职责划分为 7 个模块。
+**数据库规模**：30 张业务表，按职责划分为 8 个模块。
 - 用户模块 4 张：users、user_sessions、user_activities、auth_tokens
-- 内容模块 7 张：categories、tags、articles、article_tags、article_categories、article_views、article_revisions
+- 内容模块 10 张：categories、tags、articles、article_tags、article_categories、article_views、article_revisions、article_translations、category_translations、tag_translations
 - 评论模块 2 张：comments、comment_likes
 - 互动模块 4 张：article_likes、article_bookmarks、user_follows、notifications
 - 媒体模块 1 张：media_files
 - 站点运营模块 2 张：settings、friendly_links
+- 字典模块 4 张：dict_types、dict_items、dict_type_translations、dict_item_translations
 - 统计日志模块 3 张：operation_logs、search_logs、content_stats
 
-**最后更新**：数据库表结构可持续演进重构完成。
+**最后更新**：表清单与模型层对齐（v3.1）。
 
 ## 设计原则
 
+表结构的生命周期与 comment 约定、唯一索引与普通索引、OnDelete 策略、时间字段精度、多段写库事务化已被根 `AGENTS.md` 第 5 节「后端约定」的数据库条文覆盖，本文档不再复述。本节仅保留该处未覆盖的三条本架构约定：
+
 1. **规范化设计**：遵循第三范式，多对多关系使用独立关联表，避免冗余存储。
-2. **表结构健康演进**：每张业务表都具备完整的生命周期字段、状态字段、业务字段与必要的扩展字段；每个字段均带 comment 说明业务含义；字段类型与长度贴合真实数据需求。
-3. **树形结构约定**：分类与评论等树形结构统一使用 parent_id、root_id、level 三件套，分类额外使用 path 物化路径支持整棵子树的一次查询。
-4. **数据一致性**：唯一性字段加唯一索引，外键与高频查询字段加普通索引；GORM 显式声明关联与 OnDelete 策略，互动关联表通过复合唯一索引杜绝重复入账。
-5. **性能优化**：针对高频查询设计复合索引与覆盖索引；时间字段统一 datetime(3) 精度，避免精度截断导致排序错乱。
-6. **可扩展性**：状态类字段使用命名常量枚举并预留合法取值，如用户状态预留 2-锁定，媒体文件预留 processing/failed 处理中状态。
+2. **树形结构**：分类与评论统一使用 parent_id、root_id、level 三件套，分类额外使用 path 物化路径支持整棵子树的一次查询。
+3. **状态取值与删除形态**：状态类字段使用命名常量枚举并预留合法取值，如用户状态预留 2-锁定、媒体文件预留 processing/failed；软删除列统一使用 deleted_at，字典等读多写少的配置表采用硬删除以避免与唯一索引的占位冲突。
 
 ## 模块与表结构
 
@@ -34,7 +34,7 @@
 - 资料字段：nickname、avatar、cover_image、bio、website、location、gender、birthday、timezone、locale。
 - 安全字段：failed_login_count、locked_until、password_changed_at、last_login_at、last_login_ip、login_count、email_verified_at、remark。
 - 状态：status 使用 tinyint 命名常量，1-正常 0-禁用 2-锁定；remark 与密码相关字段不对外输出。
-- 索引：username/email/phone 唯一索引，role/status/last_login_at/deleted_at 普通索引。
+- 索引：username/email/phone 唯一索引，role/status/nickname/last_login_at/deleted_at 普通索引。
 
 #### user_sessions（用户会话表）
 管理登录设备与令牌轮换。
@@ -78,6 +78,11 @@
 保存每次正文保存后的快照，支持版本回滚与差异对比。
 - (article_id, revision_no) 复合唯一索引保证版本号连续，is_autosave 区分手动保存与自动保存。
 
+#### article_translations / category_translations / tag_translations（内容翻译表）
+主表列恒为缺省语言内容，翻译行以 locale 区分其他语言，允许按字段部分填写，输出时缺失翻译的字段回退主列。
+- 均在 (主表 ID, locale) 上建立复合唯一索引，locale 单列索引支撑按语言批量查询。
+- 文章翻译行额外建 ngram 全文索引 ft_article_translations_search，与主表索引共同支撑多语言检索。
+
 ### 3. 评论系统模块
 
 #### comments（评论表）
@@ -120,7 +125,18 @@
 管理互链申请与展示的完整生命周期。
 - url 唯一索引防止重复收录，status 审核流：pending/active/hidden/rejected，is_reciprocal 记录回链状态。
 
-### 7. 统计和日志模块
+### 7. 字典管理模块
+
+#### dict_types / dict_items（字典类型与字典项表）
+字典为读多写少的配置数据，承载状态类枚举的动态配置维度。
+- dict_types.code 唯一索引作为业务侧定位标识；status 命名常量枚举 1-生效 0-停用，sort_order 控制排序，extra(json) 预留颜色图标等展示元数据。
+- dict_items 在 (type_id, value) 上建立复合唯一索引确保同类型内取值唯一，type_id 单列索引支撑按类型取项。
+- 两表均采用硬删除策略，不设 deleted_at，避免软删除与唯一索引的占位冲突；删除类型时经外键级联清理字典项与翻译行。
+
+#### dict_type_translations / dict_item_translations（字典翻译表）
+与内容翻译表同构，在 (type_id, locale)、(item_id, locale) 上建立复合唯一索引，locale 单列索引支撑按语言批量查询。
+
+### 8. 统计和日志模块
 
 #### operation_logs（操作日志表）
 安全审计与问题追踪。
@@ -141,7 +157,8 @@
 - categories：slug；tags：name、slug；articles：slug
 - media_files：stored_name
 - settings：key_name；friendly_links：url
-- 复合唯一：article_tags(article_id, tag_id)、article_categories(article_id, category_id)、article_views(article_id, visitor_id, view_date)、article_revisions(article_id, revision_no)、article_likes(article_id, user_id)、comment_likes(comment_id, user_id)、article_bookmarks(article_id, user_id)、user_follows(follower_id, following_id)、content_stats(content_type, content_id, stat_type, stat_date)
+- dict_types：code
+- 复合唯一：article_tags(article_id, tag_id)、article_categories(article_id, category_id)、article_views(article_id, visitor_id, view_date)、article_revisions(article_id, revision_no)、article_translations(article_id, locale)、category_translations(category_id, locale)、tag_translations(tag_id, locale)、article_likes(article_id, user_id)、comment_likes(comment_id, user_id)、article_bookmarks(article_id, user_id)、user_follows(follower_id, following_id)、dict_items(type_id, value)、dict_type_translations(type_id, locale)、dict_item_translations(item_id, locale)、content_stats(content_type, content_id, stat_type, stat_date)
 
 ### 复合索引（高频查询）
 - user_sessions(user_id, is_active)：活跃会话列表
@@ -151,17 +168,20 @@
 - comments(article_id, status, created_at)：文章评论分页
 - notifications(user_id, is_read)：未读通知统计
 
+### 全文索引（多语言检索）
+- articles(title, content, summary)：ft_articles_search，ngram 分词，支撑中文按双字切分匹配
+- article_translations(title, content, summary)：ft_article_translations_search，覆盖非默认语言的检索
+
 ## 约束与删除策略
 
-- 级联删除：文章删除级联清理标签关联、浏览记录、修订历史、评论、点赞、收藏；用户删除级联清理会话、令牌、点赞、收藏、关注与通知。
-- 置空删除：用户删除后其活动日志、操作日志、搜索日志、评论与媒体保留记录但外键置空。
+- 级联删除：文章删除级联清理标签关联、分类关联、浏览记录、修订历史、翻译行、评论、点赞与收藏；用户删除级联清理会话、令牌、其文章、文章点赞、评论点赞、收藏、关注与通知；字典类型删除级联清理字典项与翻译行。
+- 置空删除：用户删除后其活动日志、操作日志、搜索日志与评论保留记录但外键置空；文章修订的 editor_id、通知的 sender_id、设置的 updated_by 同样声明 SET NULL。
+- 无删除策略声明：media_files.uploader_id 未声明 OnDelete，按数据库默认 RESTRICT 处理，删除用户前须先处理其媒体记录。
 - 检查约束：user_follows 禁止自我关注。
 
 ## 数据一致性约定
 
-- 冗余计数字段如 view_count、like_count、comment_count、article_count、usage_count 在业务写入时同步维护，必要时以事务保证一致性。
-- 状态类字段一律使用命名常量枚举，禁止在代码中直接使用魔法数字与字符串。
-- 所有表时间字段统一 datetime(3) 精度，软删除统一使用 deleted_at。
+状态类字段的命名常量枚举与软删除列以 `internal/model` 的常量定义与实体 tag 为准，时间字段精度与多段写库事务口径以根 `AGENTS.md` 第 5 节「后端约定」为准，本文档不再复述。本架构的实现结果：冗余计数字段为 view_count、like_count、bookmark_count、comment_count、reply_count、article_count、usage_count，在业务写入时同步维护。
 
 ## 演进与运维约定
 
@@ -175,10 +195,10 @@
 2. **修改表结构**：修改 GORM 模型后开发环境由 AutoMigrate 自动同步；生产环境以手写增量迁移执行，新增字段与索引对既有数据无影响。
 3. **新字段约束**：新增字段必须携带 comment、贴合真实数据长度，并考虑是否补充索引。
 4. **数据清理**：定期清理过期会话、过期认证令牌、软删除数据与历史日志。
-5. **备份策略**：每日全量备份 mysqldump，结合 binlog 实现增量恢复。
+5. **备份策略**：每日全量 `mysqldump` 并打包上传目录；当前链路不归档 binlog，故 RPO 为 24 小时。基于 binlog 的时间点恢复属可选增强，方案见 `docs/operations/backup-restore.md` 第 7 节。
 
 ## 文档版本
 
-**文档版本**：v3.0
-**最后更新**：数据库表结构可持续演进重构完成
-**更新内容**：补齐全部表注释、生命周期与状态字段；为互动关联表补充复合唯一索引与检查约束；新增 auth_tokens、article_revisions、friendly_links 三张支撑长期演进的表；明确演进与运维约定。
+**文档版本**：v3.1
+**最后更新**：表清单与模型层对齐
+**更新内容**：表数量由 23 张校正为 30 张，补入内容翻译表 3 张与字典模块 4 张；补齐全文索引、字典与翻译表的索引清单；按模型层修正删除策略（媒体上传者外键无 OnDelete 声明）；设计原则与数据一致性约定中与根 `AGENTS.md` 重复的条文压缩为指针，仅保留规范化、树形结构与状态/删除形态约定。
