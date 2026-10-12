@@ -180,14 +180,9 @@ func TestArticleDetailMatchesFixture(t *testing.T) {
 }
 
 // TestFixtureFilesParse 验证全部契约金样本为合法 JSON，防止手工修订引入语法错误。
+// 清单自目录扫描得出，新增金样本无需同步维护测试内的文件名列表。
 func TestFixtureFilesParse(t *testing.T) {
-	fixtureNames := []string{
-		"login.success.json",
-		"login.wrong-password.json",
-		"users.list.json",
-		"article.detail.json",
-	}
-	for _, name := range fixtureNames {
+	for name := range scanFixtureFiles(t) {
 		fixtureBytes, err := os.ReadFile(fixtureContractPath + "/" + name)
 		if err != nil {
 			t.Fatalf("读取金样本 %s 失败: %v", name, err)

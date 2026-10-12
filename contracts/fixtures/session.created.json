@@ -1,0 +1,7 @@
+{
+  "code": 200,
+  "message": "会话已建立",
+  "data": {
+    "expiresIn": 900
+  }
+}
