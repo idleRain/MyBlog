@@ -210,12 +210,26 @@ pnpm run seed:admin
 
 # 自定义用户名、密码、邮箱
 pnpm run seed:admin --username root --password Root@2025 --email root@myblog.local
+
+# 同时写入可浏览的演示数据：分类、标签、文章与评论
+pnpm run seed:admin --demo
 ```
 
 - **默认账户**：用户名 `admin`，密码 `Admin@123456`，邮箱 `admin@myblog.local`
 - 密码规则：经服务层创建或修改用户时要求 6 至 100 位且同时包含字母和数字，并拒绝常见弱口令（`service/user.go` 的 `validatePasswordStrength`）；种子命令直连 `database.EnsureSuperAdmin`，不经该校验
 - 命令幂等：账户已存在且为超级管理员时不重复创建；已存在但角色非超级管理员时自动提升为超级管理员
 - 相关实现：`server/cmd/seed/main.go`（命令行入口）、`server/internal/database/seed.go`（核心逻辑）
+
+#### 演示数据（`--demo`）
+
+`--demo` 以超级管理员为作者写入固定数据集：3 个分类、5 个标签、6 篇文章（4 篇已发布跨 3 个月份、1 篇草稿、1 篇私有）与 5 条评论（含 1 条回复与 1 条待审核），用于本地浏览、后台界面演示与冒烟验证。
+
+- **幂等键**：分类与文章按 `slug`、标签按名称、评论按「文章 + 作者名」复用既有记录，重复执行不产生重复内容；派生计数（文章评论数、回复数、分类文章数、标签使用数）按关联实数重算而非累加
+- **运行模式闸门**：`server.mode` 为 `release` 时默认拒绝写入，确认无误后加 `--force` 放行
+- **写入范围**：种子命令只迁移种子数据涉及的表，不经 `model.Models()` 全量迁移
+- **数据集自洽性**：写入前校验幂等键唯一、关联存在、slug 非空且形态合法；数据集由代码常量定义，不自洽即为程序缺陷，在写入前失败而不是留下半套数据
+- 相关实现：`server/internal/database/demo.go`（类型、校验与写入）、`demo_dataset.go`（数据集内容）
+
 - 登录接口：`POST /api/users/login`
 
 ## 开发工作流

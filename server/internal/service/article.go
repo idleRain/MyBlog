@@ -1011,20 +1011,30 @@ func (s *ArticleService) CanDelete(article *model.Article, userID uint) bool {
 
 // 私有辅助方法
 
-// 阅读速度常量：每分钟阅读字数，用于由字数估算阅读时间。
-const wordsPerMinute = 200
-
 // 自动摘要的截取长度，超出部分截断并追加省略号。
 const summaryMaxLength = 200
 
 // processContent 处理文章内容：统计字数、渲染 HTML 缓存并提取默认摘要。
 func (s *ArticleService) processContent(article *model.Article) error {
+	if err := ApplyContentDerivedFields(article); err != nil {
+		return err
+	}
+
+	// 如果没有摘要，从 Markdown 源文本中提取。
+	if article.Summary == "" {
+		article.Summary = s.extractSummary(article.Content, summaryMaxLength)
+	}
+
+	return nil
+}
+
+// ApplyContentDerivedFields 按正文重算字数、阅读时间与渲染缓存。
+// 该函数是文章正文派生字段的唯一实现，服务层写入路径与种子数据写入路径共用，
+// 避免两处各自维护统计口径。
+func ApplyContentDerivedFields(article *model.Article) error {
 	// 按 Unicode 字符数统计字数，中文按单字计数，避免空白分词导致的中文统计偏低。
 	article.WordCount = uint(utf8.RuneCountInString(article.Content))
-	article.ReadingTime = article.WordCount / wordsPerMinute
-	if article.ReadingTime == 0 {
-		article.ReadingTime = 1
-	}
+	article.ReadingTime = article.CalculateReadingTime()
 
 	// 渲染 Markdown 为 HTML 缓存，Unsafe 关闭时原始脚本标签不会进入输出。
 	rendered, err := markdown.Render(article.Content)
@@ -1032,12 +1042,6 @@ func (s *ArticleService) processContent(article *model.Article) error {
 		return err
 	}
 	article.ContentHTML = rendered
-
-	// 如果没有摘要，从 Markdown 源文本中提取。
-	if article.Summary == "" {
-		article.Summary = s.extractSummary(article.Content, summaryMaxLength)
-	}
-
 	return nil
 }
 

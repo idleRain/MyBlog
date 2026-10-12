@@ -2,7 +2,8 @@
 
 /**
  * 数据库种子数据管理工具
- * 用于初始化默认超级管理员账户，支持自定义用户名、密码和邮箱
+ * 用于初始化默认超级管理员账户，支持自定义用户名、密码和邮箱；
+ * 加 --demo 时同时写入可浏览的演示数据（分类、标签、文章与评论）
  */
 
 import { runCommand } from './lib/run-command'
@@ -24,15 +25,20 @@ function showHelp(): void {
   console.log(colors.bold('\n📚 数据库种子数据工具'))
   console.log('\n用法:')
   console.log(
-    colors.green('  pnpm run seed:admin [--username <用户>] [--password <密码>] [--email <邮箱>]')
+    colors.green(
+      '  pnpm run seed:admin [--username <用户>] [--password <密码>] [--email <邮箱>] [--demo] [--force]'
+    )
   )
   console.log('\n参数:')
   console.log(colors.green('  --username    超级管理员用户名（默认 admin）'))
   console.log(colors.green('  --password    超级管理员密码（默认 Admin@123456）'))
   console.log(colors.green('  --email       超级管理员邮箱（默认 admin@myblog.local）'))
+  console.log(colors.green('  --demo        同时写入演示数据：分类、标签、文章与评论'))
+  console.log(colors.green('  --force       允许在 release 模式下写入演示数据'))
   console.log('\n示例:')
   console.log(colors.cyan('  pnpm run seed:admin'))
   console.log(colors.cyan('  pnpm run seed:admin --username root --password Root@2025'))
+  console.log(colors.cyan('  pnpm run seed:admin --demo'))
 }
 
 // 主函数
@@ -51,7 +57,11 @@ async function main(): Promise<void> {
 
   try {
     await runSeed(args)
-    console.log(colors.green('✅ 超级管理员初始化完成'))
+    console.log(
+      colors.green(
+        args.includes('--demo') ? '✅ 超级管理员与演示数据初始化完成' : '✅ 超级管理员初始化完成'
+      )
+    )
   } catch (error) {
     console.error(colors.red('❌ 初始化失败:'), error)
     process.exit(1)
