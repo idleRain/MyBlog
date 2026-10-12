@@ -12,7 +12,7 @@ COPY server/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /out/myblog ./cmd/myblog
 
 # 阶段二：运行镜像
-FROM alpine:3.21
+FROM alpine:3.24
 # ca-certificates 供 Go 程序访问 HTTPS 依赖，tzdata 保证本地时区解析正确
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
