@@ -10,16 +10,21 @@ import type {
   ArticleArchiveYear,
   ArticleListData
 } from '../modules/article/types'
+import type { AdminCommentListData, Comment, CommentListData } from '../modules/comment/types'
 import loginWrongPassword from '../../../../contracts/fixtures/login.wrong-password.json'
+import commentAdminList from '../../../../contracts/fixtures/comment.admin-list.json'
 import articleNotFound from '../../../../contracts/fixtures/article.not-found.json'
+import commentApproved from '../../../../contracts/fixtures/comment.approved.json'
 import articleArchives from '../../../../contracts/fixtures/article.archives.json'
 import type { LoginData, SessionData, UserListData } from '../modules/user/types'
 import sessionCreated from '../../../../contracts/fixtures/session.created.json'
+import commentCreated from '../../../../contracts/fixtures/comment.created.json'
 import articleDeleted from '../../../../contracts/fixtures/article.deleted.json'
 import articleCreated from '../../../../contracts/fixtures/article.created.json'
 import logoutSuccess from '../../../../contracts/fixtures/logout.success.json'
 import articleDetail from '../../../../contracts/fixtures/article.detail.json'
 import loginSuccess from '../../../../contracts/fixtures/login.success.json'
+import commentList from '../../../../contracts/fixtures/comment.list.json'
 import articleList from '../../../../contracts/fixtures/article.list.json'
 import usersList from '../../../../contracts/fixtures/users.list.json'
 import { describe, expect, expectTypeOf, it } from 'vitest'
@@ -96,5 +101,31 @@ describe('契约金样本类型锚定', () => {
 
   it('文章删除响应的 data 与 ArticleActionData 结构精确一致', () => {
     expectTypeOf(articleDeleted.data).toExtend<WidenLiteral<ArticleActionData>>()
+  })
+
+  it('游客评论提交响应的 data 与 Comment 结构精确一致', () => {
+    expectTypeOf(commentCreated.data).toExtend<WidenLiteral<Comment>>()
+    // 游客评论无评论者公开信息，后端带 omitempty 整体缺省该键。
+    expect(commentCreated.data).not.toHaveProperty('user')
+    // 文章归属属管理端字段，公开评论契约不输出。
+    expect(commentCreated.data).not.toHaveProperty('article')
+  })
+
+  it('文章评论列表响应的 data 与 CommentListData 结构精确一致', () => {
+    expectTypeOf(commentList.data).toExtend<WidenLiteral<CommentListData>>()
+    expect(commentList.data.comments).toHaveLength(1)
+    expect(commentList.data.comments[0]).not.toHaveProperty('article')
+  })
+
+  it('评论审核通过响应为无 data 字段的信封', () => {
+    expectTypeOf(commentApproved).toExtend<WidenLiteral<EnvelopeWithoutData>>()
+    expect(commentApproved).not.toHaveProperty('data')
+  })
+
+  it('管理端评论列表响应的 data 与 AdminCommentListData 结构精确一致', () => {
+    expectTypeOf(commentAdminList.data).toExtend<WidenLiteral<AdminCommentListData>>()
+    // 管理端在公开契约之上恢复审计字段与文章归属。
+    expect(commentAdminList.data.comments[0].authorEmail).toBeTypeOf('string')
+    expect(commentAdminList.data.comments[0].article?.title).toBeTypeOf('string')
   })
 })

@@ -1,0 +1,25 @@
+{
+  "code": 200,
+  "message": "评论提交成功",
+  "data": {
+    "id": 1,
+    "articleId": 1,
+    "userId": null,
+    "parentId": null,
+    "rootId": null,
+    "level": 1,
+    "authorName": "访客",
+    "authorWebsite": "",
+    "content": "示例评论内容",
+    "contentHtml": "",
+    "status": "pending",
+    "likeCount": 0,
+    "replyCount": 0,
+    "reportedCount": 0,
+    "isAuthor": false,
+    "isPinned": false,
+    "editedAt": null,
+    "createdAt": "2026-01-01T00:00:00+08:00",
+    "updatedAt": "2026-01-01T00:00:00+08:00"
+  }
+}

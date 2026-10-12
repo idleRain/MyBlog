@@ -1,0 +1,32 @@
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "comments": [
+      {
+        "id": 1,
+        "articleId": 1,
+        "userId": null,
+        "parentId": null,
+        "rootId": null,
+        "level": 1,
+        "authorName": "访客",
+        "authorWebsite": "",
+        "content": "示例评论内容",
+        "contentHtml": "",
+        "status": "approved",
+        "likeCount": 0,
+        "replyCount": 0,
+        "reportedCount": 0,
+        "isAuthor": false,
+        "isPinned": false,
+        "editedAt": null,
+        "createdAt": "2026-01-01T00:00:00+08:00",
+        "updatedAt": "2026-01-01T00:00:00+08:00"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "pageSize": 10
+  }
+}
