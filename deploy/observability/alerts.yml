@@ -1,0 +1,100 @@
+# MyBlog 告警规则
+#
+# 指标定义见 server/internal/metrics/README.md，阈值来源与处置动作见
+# docs/operations/observability.md。数值为经验初值，无压测数据支撑，
+# 需在真实负载下观测后调整。
+#
+# 部署形态为单实例（AGENTS.md 结构红线第 7 条）：故障即停站，无故障转移，
+# 因此可用性与重启类告警的处置动作是人工介入而非自动切换。
+
+groups:
+  - name: myblog-availability
+    rules:
+      - alert: MyBlogTargetDown
+        # 抓取失败即指标监听或进程不可达，二者在单实例下都意味着停站。
+        expr: up{job="myblog"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'MyBlog 指标抓取失败'
+          description: '目标 {{ $labels.instance }} 连续 2 分钟不可达。检查 server 容器状态与 MYBLOG_METRICS_ENABLED 是否生效。'
+
+      - alert: MyBlogReadinessFailing
+        # 就绪探针由容器健康检查每 15s 调用一次，503 计数即真实未就绪次数。
+        expr: sum(rate(myblog_http_requests_total{route="/api/health/ready",status="503"}[5m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'MyBlog 就绪探针持续失败'
+          description: '数据库不可连或上传目录不可写。原因码与故障细节在服务日志中，按 requestId 检索 /api/health/ready 的 ERROR 记录。'
+
+      - alert: MyBlogProcessRestarted
+        # 进程重启会使全体用户登出且令牌表清空，属单实例部署的已知后果，需人工确认。
+        expr: resets(process_start_time_seconds{job="myblog"}[1h]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: 'MyBlog 后端进程发生重启'
+          description: '进程启动时间在 1 小时内被重置。发布或崩溃重启都会使全体用户登出，确认是否为计划内发布。'
+
+  - name: myblog-errors
+    rules:
+      - alert: MyBlogHighServerErrorRate
+        # 分母设下限，避免低流量时段的分母趋零把单次 5xx 放大成高错误率。
+        expr: |
+          sum(rate(myblog_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(myblog_http_requests_total[5m])), 0.001) > 0.05
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: 'MyBlog 服务端错误率超过 5%'
+          description: '按 route 标签定位集中出错的路由，再按 5xx 访问日志的 requestId 检索未分类的服务错误记录。'
+
+      - alert: MyBlogServerErrorBurst
+        # 低流量下的绝对量告警，覆盖错误率被分母稀释的情形。
+        expr: sum(increase(myblog_http_requests_total{status=~"5.."}[10m])) > 20
+        labels:
+          severity: warning
+        annotations:
+          summary: 'MyBlog 10 分钟内 5xx 超过 20 次'
+          description: '检查最近一次发布与数据库连接状态。'
+
+      - alert: MyBlogRateLimitTriggered
+        # 429 说明限流阈值被触及，可能是爬虫也可能是真实流量增长。
+        expr: sum(rate(myblog_http_requests_total{status="429"}[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'MyBlog 持续触发限流'
+          description: '按 clientIp 与 route 检索访问日志判定来源；限流为进程内计数，多实例扩容前必须外置（见架构约束第 7 条）。'
+
+  - name: myblog-latency
+    rules:
+      - alert: MyBlogSlowResponses
+        # 按 route 分组的 P95，便于直接定位到具体接口而非只看整体。
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, route) (rate(myblog_http_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'MyBlog 路由 {{ $labels.route }} 的 P95 超过 1 秒'
+          description: '结合访问日志的 latencyMs 与数据库慢查询定位；前台 SSR 路由的慢响应优先检查 markdown 渲染与文章查询。'
+
+  - name: myblog-resources
+    rules:
+      - alert: MyBlogMemoryNearContainerLimit
+        # 阈值取 docker-compose.yml 中 server 服务 512 MiB 内存上限的 90%。
+        # 触顶会被内核 OOM 终止，表现为进程重启与全体用户登出。
+        expr: process_resident_memory_bytes{job="myblog"} > 0.9 * 512 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: 'MyBlog 常驻内存接近容器上限'
+          description: '当前值 {{ $value | humanize1024 }}B。确认是否存在大请求体或媒体上传堆积，必要时调整 compose 内存上限。'

@@ -8,11 +8,13 @@
 |---|---|---|
 | `nginx` | `deploy/Dockerfile.nginx` | 网关：托管 admin 静态、反代前台 SSR、后端 API 与 /uploads，对外暴露 `${HTTP_PORT:-80}` |
 | `web` | `deploy/Dockerfile.web` | 前台 SvelteKit SSR，adapter-node 产物，`node build` 运行，仅容器网络内暴露 3000 |
-| `server` | `deploy/Dockerfile.server` | Go 后端，release 模式启动时执行 golang-migrate 迁移，仅容器网络内暴露 3000 |
+| `server` | `deploy/Dockerfile.server` | Go 后端，release 模式启动时执行 golang-migrate 迁移，容器网络内暴露 3000 与指标端口 9090 |
 | `mysql` | `mysql:8.0` | 业务数据库，数据与上传文件分别落命名卷 |
 | `backup` | `mysql:8.0` | 一次性备份任务，归 `backup` profile，`docker compose up` 默认不拉起 |
 
 访问路径：`http://<主机>/` 前台，`http://<主机>/admin/` 后台，`/api/*` 与 `/uploads/*` 由 nginx 反代到后端。
+
+指标端口 9090 只在容器网络内可达，未发布到宿主机；抓取端须加入同一网络，配置与告警规则见 `deploy/observability/`，处置流程见 `docs/operations/observability.md`。
 
 ### 部署形态：单实例
 
@@ -89,6 +91,9 @@ curl -I http://localhost/admin/            # 后台 SPA 入口
 - 升级：`git pull` 后 `docker compose up -d --build` 重建受影响镜像；重启导致全体用户登出，需提前预告。
 - 备份：经 `docker compose run --rm backup` 显式触发，退出码即结果，调度交回宿主机 cron；
   命令细节与恢复流程见 `docs/operations/backup-restore.md`。
+- 观测：`server` 以 `MYBLOG_METRICS_ENABLED=true` 与 `MYBLOG_METRICS_ADDR=0.0.0.0:9090` 启动指标监听，
+  抓取端与告警规则的接入方式见 `docs/operations/observability.md`；日志为 JSON 行，
+  级别与输出目标取自 `logger` 配置节，未内置轮转，需由采集端负责。
 
 ## 已知边界
 

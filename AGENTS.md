@@ -122,6 +122,7 @@ pnpm run go:lint-install / go:quality / go:vulncheck / audit:deps
 - `docs/database-architecture.md` 与 `docs/database/schema.sql`：数据库设计说明与参考 DDL（仅供设计参考，实际结构以 GORM 模型为准，生产经 `server/migrations/` 增量迁移）。
 - `docs/ui-design-system.md`：视觉、动效与可访问性准则。
 - `docs/operations/backup-restore.md`：备份与恢复流程、RPO 口径。
+- `docs/operations/observability.md`：指标抓取与告警规则、结构化日志字段与处置流程。
 - `contracts/`：认证协议、i18n 协议、错误码口径与契约金样本。
 - `server/docs/api/`：接口总数口径与逐模块接口说明。
 - `scripts/README.md`：脚本用途、参数与 pnpm 入口对照。

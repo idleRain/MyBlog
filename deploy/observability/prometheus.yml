@@ -1,0 +1,20 @@
+# MyBlog 指标抓取配置
+#
+# 抓取端必须与 server 服务处于同一 Docker 网络（本编排的默认网络为 myblog_default），
+# 指标端口只在 compose 网络内可达，未发布到宿主机，公网不可达。
+# 使用方式与告警处置流程见 docs/operations/observability.md。
+
+global:
+  # 与容器健康检查的 15s 间隔一致，抓取密度足够刻画单实例博客的请求与延迟分布。
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: myblog
+    # 目标为 compose 服务名与容器内指标端口；
+    # 容器内 metrics.addr 必须为 0.0.0.0:9090，见 docker-compose.yml 的 MYBLOG_METRICS_* 注入。
+    static_configs:
+      - targets: ['server:9090']
