@@ -3,6 +3,8 @@ import type {
   CreateFriendlyLinkRequest,
   FriendlyLinkActionResponse,
   FriendlyLinkListResponse,
+  FriendlyLinkPublicListResponse,
+  FriendlyLinkPublicResponse,
   FriendlyLinkResponse,
   ListFriendlyLinksRequest,
   UpdateFriendlyLinkRequest
@@ -14,13 +16,13 @@ import type { KyInstance } from 'ky'
  */
 export function createFriendlyLinkAPI(request: KyInstance) {
   return {
-    // 展示中的友链列表，无需登录。
-    list(): Promise<FriendlyLinkListResponse> {
+    // 展示中的友链列表，无需登录；公开端点输出窄化视图，不含联系邮箱与备注。
+    list(): Promise<FriendlyLinkPublicListResponse> {
       return request.post('friendlyLinks/list', { json: {} }).json()
     },
 
-    // 访客提交友链申请，进入待审核状态，无需登录。
-    apply(params: ApplyFriendlyLinkRequest): Promise<FriendlyLinkResponse> {
+    // 访客提交友链申请，进入待审核状态，无需登录；响应同样为窄化视图。
+    apply(params: ApplyFriendlyLinkRequest): Promise<FriendlyLinkPublicResponse> {
       return request.post('friendlyLinks/apply', { json: params }).json()
     },
 
@@ -68,6 +70,8 @@ export type {
   CreateFriendlyLinkRequest,
   FriendlyLinkActionResponse,
   FriendlyLinkListResponse,
+  FriendlyLinkPublicListResponse,
+  FriendlyLinkPublicResponse,
   FriendlyLinkResponse,
   ListFriendlyLinksRequest,
   UpdateFriendlyLinkRequest

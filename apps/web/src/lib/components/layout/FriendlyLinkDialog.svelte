@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
+import type { FriendlyLinkPublic } from '@myblog/api/modules/friendlyLink/types'
 import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { ExternalLink } from '@lucide/svelte'
 import { FriendlyLinkAPI } from '$lib/api'
@@ -16,7 +16,7 @@ const APPLY_EMAIL_MAX_LENGTH = 100
 // 展示中的友情链接，由根布局的全站数据提供；错误页等无数据场景降级为空列表。
 // open 为受控开关：触发入口由调用方承载，本组件只负责弹窗内容。
 interface Props {
-  friendlyLinks?: FriendlyLink[]
+  friendlyLinks?: FriendlyLinkPublic[]
   open?: boolean
 }
 

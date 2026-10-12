@@ -1,4 +1,4 @@
-import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
+import type { FriendlyLinkPublic } from '@myblog/api/modules/friendlyLink/types'
 import type { CategoryTreeNode } from '@myblog/api/modules/category/types'
 import { CategoryAPI, FriendlyLinkAPI } from '$lib/api'
 import type { LayoutLoad } from './$types'
@@ -13,7 +13,7 @@ export const load: LayoutLoad = async () => {
     CategoryAPI.getTree()
   ])
 
-  const friendlyLinks: FriendlyLink[] =
+  const friendlyLinks: FriendlyLinkPublic[] =
     linksResult.status === 'fulfilled' && linksResult.value.code === SUCCESS_CODE
       ? (linksResult.value.data?.links ?? [])
       : []

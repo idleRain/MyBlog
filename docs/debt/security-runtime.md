@@ -5,13 +5,13 @@
 
 ## 1. 公开端点直出实体泄漏个人信息
 
-- **状态**：存量，多个域已收紧，红线持续适用。
+- **状态**：已修复。
 - **基线**：
   - 评论域与作者域：`model.Comment` 的游客邮箱、IP、UserAgent 改为 `json:"-"`；评论 `user` 与文章 `author` 经 `domain.AuthorPublic` 窄化视图输出；管理端审计走 `AdminCommentView`。
   - 用户域：`/users/get` 由仅挂基础认证改为挂 `user:list` 权限，仅限管理端访问；普通用户查看他人资料走窄化的 `publicProfile` 端点；回归测试在 `internal/router/user_rbac_test.go`。
   - 媒体域：上传者经 `domain.UploaderPublic` 窄化视图输出，`uploadIP` 审计字段改 `json:"-"`；媒体详情补齐水平越权校验（与列表归属规则对称）；回归测试在 `model/media_public_test.go` 与 `service/media_test.go`。
-  - 尚未收敛：友链公开列表仍直出 `model.FriendlyLink`，包含站长 `contactEmail` 与管理员 `note`。
-- **验证命令**：读 `model/comment.go`、`model/article.go`、`model/media.go` 的 json tag 与 `domain/author.go`；service 层测试断言公开响应无审计字段；`go test ./internal/router/ -run TestUsersGetRequiresUserListPermission -count=1`。
+  - 友链域：公开列表与访客申请响应改经 `service.FriendlyLinkPublic` 窄化视图，只输出 `id`、`name`、`url`、`logo`、`description`、`sortOrder`、`isReciprocal`；站长 `contactEmail` 与管理员 `note` 不再随公开接口输出，管理端列表仍输出完整实体供审核；回归测试在 `internal/service/friendly_link_test.go` 的 `TestListVisibleLinksHidesContactFields` 与 `TestListLinksKeepsAdminAuditFields`。
+- **验证命令**：读 `model/comment.go`、`model/article.go`、`model/media.go` 的 json tag 与 `domain/author.go`；service 层测试断言公开响应不含联系邮箱与备注（`go test ./internal/service/ -run "FriendlyLink|HidesContact" -count=1`）；`go test ./internal/router/ -run TestUsersGetRequiresUserListPermission -count=1`。
 - **红线**：公开端点输出个人信息前必须经窄化 DTO 或字段白名单；实体新增隐私/审计字段默认 `json:"-"`。
 
 ## 2. 文章响应泄漏作者审计字段

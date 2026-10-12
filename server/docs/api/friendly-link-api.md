@@ -58,8 +58,9 @@ curl -X POST http://localhost:3000/api/friendlyLinks/list \
 | data.links[].logo | string | 否 | 站点图标URL |
 | data.links[].description | string | 否 | 站点简介 |
 | data.links[].sortOrder | integer | 是 | 展示排序权重 |
+| data.links[].isReciprocal | boolean | 是 | 是否已确认对方回链 |
 
-> 当前实现直接输出友链实体，响应还包含 `contactEmail`、`isReciprocal`、`note`、`createdAt` 与 `updatedAt`。
+> 列表输出经 `service.FriendlyLinkPublic` 窄化视图，只含上表字段。站长联系邮箱 `contactEmail` 与管理员备注 `note` 属个人信息与内部信息，不随公开接口输出；管理端列表接口不受此限制。
 
 #### 响应示例
 
@@ -316,6 +317,10 @@ curl -X POST http://localhost:3000/api/friendlyLinks/apply \
   }'
 ```
 
+#### 响应参数
+
+返回体为公开窄化视图，与展示列表同字段口径。提交的联系邮箱不回显。
+
 #### 响应示例
 
 ```json
@@ -326,7 +331,10 @@ curl -X POST http://localhost:3000/api/friendlyLinks/apply \
     "id": 1,
     "name": "朋友的博客",
     "url": "https://friend.example.com",
-    "status": "pending"
+    "logo": "",
+    "description": "一个朋友的站点",
+    "sortOrder": 0,
+    "isReciprocal": false
   }
 }
 ```

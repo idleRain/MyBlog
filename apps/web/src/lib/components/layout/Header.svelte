@@ -1,8 +1,8 @@
 <script lang="ts">
 import { Globe, User, ExternalLink, Menu, LogIn, Settings, Ellipsis } from '@lucide/svelte'
 import FriendlyLinkDialog from '$lib/components/layout/FriendlyLinkDialog.svelte'
+import type { FriendlyLinkPublic } from '@myblog/api/modules/friendlyLink/types'
 import NotificationBell from '$lib/components/layout/NotificationBell.svelte'
-import type { FriendlyLink } from '@myblog/api/modules/friendlyLink/types'
 import type { User as UserType } from '@myblog/api/modules/user/types'
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
 import ThemeToggle from '$lib/components/theme-toggle.svelte'
@@ -17,7 +17,7 @@ import { m } from '$i18n'
 
 // 展示中的友情链接，由根布局的全站数据提供；错误页等无数据场景降级为空列表。
 interface Props {
-  friendlyLinks?: FriendlyLink[]
+  friendlyLinks?: FriendlyLinkPublic[]
 }
 
 let { friendlyLinks = [] }: Props = $props()

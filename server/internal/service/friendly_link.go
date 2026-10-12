@@ -23,10 +23,10 @@ type FriendlyLinkServiceInterface interface {
 
 	// 查询操作
 	ListLinks(req *ListFriendlyLinksRequest) (*FriendlyLinkListResponse, error)
-	ListVisibleLinks() ([]*model.FriendlyLink, error)
+	ListVisibleLinks() ([]*FriendlyLinkPublic, error)
 
 	// 访客申请
-	ApplyLink(req *ApplyFriendlyLinkRequest) (*model.FriendlyLink, error)
+	ApplyLink(req *ApplyFriendlyLinkRequest) (*FriendlyLinkPublic, error)
 }
 
 // ApplyFriendlyLinkRequest 访客提交友链申请的请求。
@@ -73,6 +73,44 @@ type FriendlyLinkListResponse struct {
 	Total    int64                 `json:"total"`
 	Page     int                   `json:"page"`
 	PageSize int                   `json:"pageSize"`
+}
+
+// FriendlyLinkPublic 友情链接公开信息窄化视图。
+// 公开端点不得直接序列化 FriendlyLink 实体，须经本视图输出白名单字段，
+// 防止站长联系邮箱与管理员备注随公开友链列表泄露。
+type FriendlyLinkPublic struct {
+	ID           uint   `json:"id"`
+	Name         string `json:"name"`
+	URL          string `json:"url"`
+	Logo         string `json:"logo"`
+	Description  string `json:"description"`
+	SortOrder    int    `json:"sortOrder"`
+	IsReciprocal bool   `json:"isReciprocal"`
+}
+
+// newFriendlyLinkPublic 从友情链接实体构建公开视图，入参为空时返回空值。
+func newFriendlyLinkPublic(link *model.FriendlyLink) *FriendlyLinkPublic {
+	if link == nil {
+		return nil
+	}
+	return &FriendlyLinkPublic{
+		ID:           link.ID,
+		Name:         link.Name,
+		URL:          link.URL,
+		Logo:         link.Logo,
+		Description:  link.Description,
+		SortOrder:    link.SortOrder,
+		IsReciprocal: link.IsReciprocal,
+	}
+}
+
+// newFriendlyLinkPublicList 批量构建友情链接公开视图，保持入参顺序。
+func newFriendlyLinkPublicList(links []*model.FriendlyLink) []*FriendlyLinkPublic {
+	views := make([]*FriendlyLinkPublic, 0, len(links))
+	for _, link := range links {
+		views = append(views, newFriendlyLinkPublic(link))
+	}
+	return views
 }
 
 // FriendlyLinkService 友情链接服务实现
@@ -122,7 +160,7 @@ func (s *FriendlyLinkService) CreateLink(req *CreateFriendlyLinkRequest) (*model
 }
 
 // ApplyLink 访客提交友链申请，记录进入待审核状态等待管理员审核。
-func (s *FriendlyLinkService) ApplyLink(req *ApplyFriendlyLinkRequest) (*model.FriendlyLink, error) {
+func (s *FriendlyLinkService) ApplyLink(req *ApplyFriendlyLinkRequest) (*FriendlyLinkPublic, error) {
 	// 同一站点 URL 不论处于何种状态均不重复申请。
 	if existing, err := s.linkRepo.GetByURL(req.URL); err == nil && existing != nil {
 		return nil, errors.New("该站点已提交过申请，请等待审核")
@@ -139,7 +177,7 @@ func (s *FriendlyLinkService) ApplyLink(req *ApplyFriendlyLinkRequest) (*model.F
 	if err := s.linkRepo.Create(link); err != nil {
 		return nil, fmt.Errorf("提交友链申请失败: %w", err)
 	}
-	return link, nil
+	return newFriendlyLinkPublic(link), nil
 }
 
 // UpdateLink 更新友情链接。
@@ -230,9 +268,13 @@ func (s *FriendlyLinkService) ListLinks(req *ListFriendlyLinksRequest) (*Friendl
 	}, nil
 }
 
-// ListVisibleLinks 获取对外展示的友情链接。
-func (s *FriendlyLinkService) ListVisibleLinks() ([]*model.FriendlyLink, error) {
-	return s.linkRepo.ListVisible()
+// ListVisibleLinks 获取对外展示的友情链接，输出经公开视图窄化。
+func (s *FriendlyLinkService) ListVisibleLinks() ([]*FriendlyLinkPublic, error) {
+	links, err := s.linkRepo.ListVisible()
+	if err != nil {
+		return nil, err
+	}
+	return newFriendlyLinkPublicList(links), nil
 }
 
 // transitionStatus 执行友情链接状态流转。
