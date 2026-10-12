@@ -3,6 +3,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strings"
 	"sync"
@@ -22,6 +23,13 @@ type Config struct {
 	Media    MediaConfig    `mapstructure:"media"`
 	RBAC     RBACConfig     `mapstructure:"rbac"`
 	I18N     I18NConfig     `mapstructure:"i18n"`
+	Metrics  MetricsConfig  `mapstructure:"metrics"`
+}
+
+// MetricsConfig 指标暴露配置，指标监听独立于业务端口，不占用业务路由。
+type MetricsConfig struct {
+	Enabled bool   `mapstructure:"enabled"` // 是否启动指标监听
+	Addr    string `mapstructure:"addr"`    // 指标监听地址，容器内需绑定全部网卡才能被同网络抓取
 }
 
 // I18NConfig 多语言配置，受支持语言白名单与缺省语言的唯一权威。
@@ -279,6 +287,11 @@ func setDefaults() {
 	// 多语言默认配置：缺省语言必须始终在白名单内，为白名单外请求提供明确回退目标。
 	viper.SetDefault("i18n.default_language", "zh")
 	viper.SetDefault("i18n.supported_languages", []string{"zh", "en"})
+
+	// 指标默认关闭并绑定回环地址，本地开发不暴露端口；
+	// 容器内需经 MYBLOG_METRICS_ADDR 覆盖为 0.0.0.0:9090 才能被同网络的抓取端访问。
+	viper.SetDefault("metrics.enabled", false)
+	viper.SetDefault("metrics.addr", "127.0.0.1:9090")
 }
 
 // applyEnvOverrides 使用环境变量覆盖标量配置项，环境变量优先级高于 YAML 与代码默认值。
@@ -366,6 +379,13 @@ func validateConfig(cfg *Config) error {
 	}
 	if !defaultSupported {
 		return fmt.Errorf("i18n缺省语言 %s 必须在受支持语言列表内", cfg.I18N.DefaultLanguage)
+	}
+
+	// 指标监听地址必须可解析为主机与端口，否则启动期才能暴露的监听错误会推迟到运行期。
+	if cfg.Metrics.Enabled {
+		if _, _, err := net.SplitHostPort(cfg.Metrics.Addr); err != nil {
+			return fmt.Errorf("无效的指标监听地址 %q: %w", cfg.Metrics.Addr, err)
+		}
 	}
 
 	return nil

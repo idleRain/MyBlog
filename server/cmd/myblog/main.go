@@ -13,6 +13,7 @@ import (
 
 	"MyBlog/internal/config"
 	"MyBlog/internal/database"
+	"MyBlog/internal/metrics"
 	"MyBlog/internal/router"
 
 	"github.com/gin-gonic/gin"
@@ -43,8 +44,15 @@ func main() {
 
 	// 按业务域装配依赖并注册路由
 	deps := newDependencies(cfg, db)
-	routerManager := router.NewRouter(cfg)
+	metricsRegistry := metrics.New()
+	routerManager := router.NewRouter(cfg, metricsRegistry.Middleware())
 	routerManager.SetupRoutes(deps)
+
+	// 指标监听独立于业务端口，未启用时返回空句柄。
+	metricsServer, err := startMetricsServer(cfg, metricsRegistry)
+	if err != nil {
+		log.Fatal("指标监听启动失败:", err)
+	}
 
 	// 以结构化 HTTP 服务启动，支持优雅关停，四项超时防止连接资源泄漏。
 	server := &http.Server{
@@ -75,6 +83,11 @@ func main() {
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("服务器关停异常: %v", err)
+	}
+	if metricsServer != nil {
+		if err := metricsServer.Shutdown(ctx); err != nil {
+			log.Printf("指标监听关停异常: %v", err)
+		}
 	}
 
 	// 关闭数据库连接

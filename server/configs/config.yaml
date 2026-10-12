@@ -25,6 +25,11 @@ logger:
   output: "stdout"  # stdout, file
   file_path: "logs/app.log"
 
+# 指标暴露配置：指标监听独立于业务端口，不进入业务路由也不经网关转发
+metrics:
+  enabled: false
+  addr: "127.0.0.1:9090"
+
 # API配置
 api:
   version: "v1"

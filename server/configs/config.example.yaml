@@ -24,11 +24,18 @@ database:
   max_idle_conns: 10
   max_open_conns: 100
 
-# 日志配置
+# 日志配置：输出为结构化 JSON，level 控制最低级别，output 为 file 时写入 file_path
 logger:
   level: "info"        # debug, info, warn, error
   output: "stdout"     # stdout, file
   file_path: "logs/app.log"
+
+# 指标暴露配置：指标监听独立于业务端口，不进入业务路由也不经网关转发
+# 容器内需经 MYBLOG_METRICS_ENABLED=true 与 MYBLOG_METRICS_ADDR=0.0.0.0:9090 覆盖，
+# 抓取端必须加入同一 compose 网络才能访问，公网不可达。
+metrics:
+  enabled: false
+  addr: "127.0.0.1:9090"
 
 # API配置
 api:

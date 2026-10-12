@@ -18,12 +18,14 @@ type Router struct {
 	cfg    *config.Config
 }
 
-// NewRouter 创建新的路由管理器
-func NewRouter(cfg *config.Config) *Router {
+// NewRouter 创建新的路由管理器。
+// requestMetrics 为指标记录中间件，由组合根注入，路由层不依赖具体指标实现。
+func NewRouter(cfg *config.Config, requestMetrics gin.HandlerFunc) *Router {
 	engine := gin.New()
 
 	// 设置全局中间件
 	engine.Use(middleware.Logger())                               // 自定义日志中间件
+	engine.Use(requestMetrics)                                    // 指标记录中间件，覆盖安全与业务处理的完整耗时
 	engine.Use(gin.Recovery())                                    // 恢复中间件
 	engine.Use(middleware.RequestID())                            // 请求ID中间件
 	engine.Use(corsMiddlewareFromConfig(cfg))                     // CORS 中间件，白名单来自配置

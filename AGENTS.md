@@ -57,7 +57,7 @@ MyBlog/
 ```
 
 - 版本：Go 以 `server/go.mod` 的 `go` 指令为唯一来源（当前 `1.26.9`）；Node 以根 `.nvmrc` 为唯一来源（当前 `22`，`engines.node` 为 `>=22`）。包管理 pnpm（catalog 统一版本），脚本运行时 Node.js + tsx。
-- 端口：前台 8899、后台 9988、后端 3000；健康探针 `GET /api/health`（存活）与 `GET /api/health/ready`（就绪，探测数据库连通性与上传目录可写性，未就绪返回 503 与原因码）。
+- 端口：前台 8899、后台 9988、后端 3000、指标 9090（`metrics.addr`，独立监听，不经网关转发）；健康探针 `GET /api/health`（存活）与 `GET /api/health/ready`（就绪，探测数据库连通性与上传目录可写性，未就绪返回 503 与原因码）。
 - 后端业务模块 12 个：user / article / category / tag / comment / media / setting / friendlyLink / stats / notification / follow / dict；路由注册 104 条 = `/api` 业务接口 102 + 健康探针 2，逐条清单见 `server/docs/api/README.md`。
 
 ## 4. 常用命令
@@ -91,7 +91,7 @@ pnpm run go:lint-install / go:quality / go:vulncheck / audit:deps
 - **命名与接口位置**：Go 字段与 json tag 用小驼峰；接口与实现同包声明，统一 `XxxInterface` 后缀（存量 `UserService`、`RBACService`、`UserRepository` 未带后缀，触碰时统一）；各层依赖接口而非实现，`router` 不得重复定义接口。
 - **数据库**：MySQL 单库 + GORM；开发模式 `AutoMigrate`、生产 golang-migrate，由 `internal/database/migrate.go` 与 `pnpm run migrate` 管理。表设计须含生命周期字段、状态字段与字段级 `comment`，唯一字段加唯一索引、外键与高频查询加普通索引，显式声明 GORM 关联与删除策略（`OnDelete:CASCADE` / `OnDelete:SET NULL`），时间字段统一 `datetime(3)`；多段写库必须事务化（`CreateArticle`、`UpdateArticle`、`ViewArticle` 为先例，事务内统一走事务句柄）。
 - **认证与密码**：bcrypt 成本 `BcryptCost = 12`（`service/user.go`）；令牌为服务端签发的不透明随机串，内存令牌表是身份唯一权威（单实例前提），刷新即旋转、登出撤销令牌对、改密撤销该用户全部令牌。
-- **配置与中间件**：`internal/config` 经 Viper 读 `configs/config.yaml`（YAML 为唯一来源，含 `server`、`database`、`logger`、`api`、`token`、`security`、`cors`、`media`、`rbac`、`i18n` 节）；中间件含 logger（含 RequestID）、cors、security、auth、rbac、ratelimit、language 与 identity，认证/权限中间件只依赖 `IdentityProvider` 抽象。
+- **配置与中间件**：`internal/config` 经 Viper 读 `configs/config.yaml`（YAML 为唯一来源，含 `server`、`database`、`logger`、`api`、`token`、`security`、`cors`、`media`、`rbac`、`i18n`、`metrics` 节）；中间件含 logger（含 RequestID）、cors、security、auth、rbac、ratelimit、language 与 identity，认证/权限中间件只依赖 `IdentityProvider` 抽象。
 - **入口与工具包**：服务入口 `cmd/myblog/`，种子入口 `cmd/seed/`（逻辑 `internal/database/seed.go`）；通用包 `pkg/response`、`pkg/datetime`、`pkg/slug`、`pkg/markdown`、`pkg/storage`。
 
 ## 6. 前端约定（apps/ + packages/）

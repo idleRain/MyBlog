@@ -139,6 +139,26 @@ func TestValidateConfigRejectsI18NDefaultOutsideWhitelist(t *testing.T) {
 	}
 }
 
+// TestValidateConfigRejectsInvalidMetricsAddr 验证启用指标时非法监听地址即拒绝启动。
+func TestValidateConfigRejectsInvalidMetricsAddr(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Metrics.Enabled = true
+	cfg.Metrics.Addr = "127.0.0.1"
+	if err := validateConfig(cfg); err == nil {
+		t.Error("缺少端口的指标监听地址应返回错误")
+	}
+}
+
+// TestValidateConfigIgnoresMetricsAddrWhenDisabled 验证未启用指标时不校验监听地址。
+func TestValidateConfigIgnoresMetricsAddrWhenDisabled(t *testing.T) {
+	cfg := validTestConfig()
+	cfg.Metrics.Enabled = false
+	cfg.Metrics.Addr = ""
+	if err := validateConfig(cfg); err != nil {
+		t.Errorf("未启用指标时不应校验监听地址: %v", err)
+	}
+}
+
 // TestLoadParsesConfigSections 验证 config.yaml 的 rbac、i18n 与 token 节可被正确解析并通过校验。
 func TestLoadParsesConfigSections(t *testing.T) {
 	cfg, err := Load("../../configs/config.yaml")

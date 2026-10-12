@@ -55,6 +55,8 @@ MyBlog 后端 API 提供完整的博客系统功能，覆盖用户管理、文�
 | **总计** | **104** | 含健康探针 2 条，**业务接口 102 条**（全部 `POST`） |
 
 > 统计口径为 `internal/router/*.go` 的路由注册数（`RegisterRoutes` 内的 `POST`/`GET` 调用），修改路由后必须同步本节数字。
+>
+> 指标端点 `GET /metrics` **不计入本节口径**：它由组合根以独立监听启动（`metrics.addr`，默认关闭），既不挂在 `gin.Engine` 上也不经网关转发，属基础设施端点。
 > 业务路由模块共 **12** 个，与上表对应关系为：`article`、`category`、`tag`、`comment`、`media`、`setting`、`friendly_link`、`stats`、`notification`、`user_follow`、`dict` 各占一个路由文件，`user` 模块的 `user.go` 同时注册 `/api/users/*` 与 `/api/auth/*`，即上表的「用户管理」与「认证与会话」两行；`health.go` 为基础设施探针，不计入业务模块。
 
 ## 内容多语言说明
