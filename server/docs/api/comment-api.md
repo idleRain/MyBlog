@@ -84,7 +84,6 @@ curl -X POST http://localhost:3000/api/comments/list \
 | data.comments[].createdAt | string | 是 | 创建时间 |
 | data.comments[].updatedAt | string | 是 | 更新时间 |
 | data.comments[].user | object | 否 | 评论者窄化视图，仅游客评论省略 |
-| data.comments[].article | object | 是 | 文章关联对象；公开列表未预加载该关联，实际为零值对象 |
 | data.comments[].parent / .root / .children | object | 否 | 树形关联，未预加载时省略 |
 | data.total | integer | 是 | 总记录数 |
 | data.page | integer | 是 | 当前页码，默认1 |
@@ -92,6 +91,7 @@ curl -X POST http://localhost:3000/api/comments/list \
 
 > `data.comments[].user` 为 `domain.AuthorPublic` 窄化视图，仅含 `id`、`username`、`nickname`、`avatar`、`bio`、`website`。
 > 评论实体的游客邮箱 `authorEmail`、评论者 IP `authorIP`、`userAgent` 与 `deletedAt` 均为 `json:"-"`，任何响应都不输出。
+> 文章归属 `article` 同属隐藏面：公开链路未预加载该关联，输出实体零值只会得到与文章无关的空对象，故一律不输出；管理端经 `AdminCommentView` 恢复。
 
 #### 响应示例
 
@@ -144,7 +144,7 @@ curl -X POST http://localhost:3000/api/comments/list \
 | authorEmail | string | 否 | 游客邮箱，登录提交时被服务层清空 | 邮箱格式，最大100字符 |
 | authorWebsite | string | 否 | 游客网站，登录提交时被服务层清空 | 最大255字符 |
 
-> 创建成功返回的评论实体经 `GetByID` 重新查询输出，字段集合与公开列表一致；`article` 关联未预加载，为零值对象。
+> 创建成功返回的评论实体经 `GetByID` 重新查询输出，字段集合与公开列表一致；文章归属与树形关联均不输出。
 
 #### 请求示例（游客）
 
@@ -363,7 +363,7 @@ curl -X POST http://localhost:3000/api/admin/comments/list \
 | code | integer | 是 | 状态码，200表示成功 |
 | data.comments | array | 是 | 评论列表（含全量状态），按 `createdAt DESC` 排序 |
 | data.comments[].status | string | 是 | 评论状态 |
-| data.comments[].article | object | 是 | 关联文章对象，管理端已预加载真实数据 |
+| data.comments[].article | object | 否 | 文章归属对象，管理端已预加载真实文章本体；未预加载时整体省略 |
 | data.comments[].user | object | 否 | 评论者窄化视图，游客评论省略 |
 | data.comments[].authorEmail | string | 是 | 游客邮箱，仅管理端恢复输出 |
 | data.comments[].authorIP | string | 是 | 评论者 IP，仅管理端恢复输出 |
@@ -372,5 +372,5 @@ curl -X POST http://localhost:3000/api/admin/comments/list \
 | data.page | integer | 是 | 当前页码 |
 | data.pageSize | integer | 是 | 每页数量 |
 
-> 管理端列表经 `service.AdminCommentView` 输出，字段集合为评论实体全部字段加 `authorEmail`、`authorIP`、`userAgent` 三个审计字段；
-> 评论者仍只经 `user` 键以 `domain.AuthorPublic` 白名单输出；内嵌 `article` 未预加载作者关联，其 `author` 键省略。
+> 管理端列表经 `service.AdminCommentView` 输出，字段集合为评论实体全部字段加 `article`、`authorEmail`、`authorIP`、`userAgent` 四项恢复字段；
+> 评论者仍只经 `user` 键以 `domain.AuthorPublic` 白名单输出；`article` 仅预加载文章本体，其 `author`、`category`、`categories`、`tags` 关联不随评论加载，故这几个键省略。

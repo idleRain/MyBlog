@@ -9,7 +9,7 @@ import {
   type CommentAction
 } from '$lib/constants/comment'
 import type {
-  Comment,
+  AdminComment,
   CommentStatus,
   CommentActionResponse
 } from '@myblog/api/modules/comment/types'
@@ -28,7 +28,8 @@ import { Badge } from '$ui/badge'
 import * as Card from '$ui/card'
 import { onMount } from 'svelte'
 
-let comments = $state<Comment[]>([])
+// 管理端列表在公开契约之上携带审计字段与文章归属，页面状态按 AdminComment 声明。
+let comments = $state<AdminComment[]>([])
 let isLoading = $state(true)
 let total = $state(0)
 let currentPage = $state(1)
@@ -46,7 +47,7 @@ const ACTION_METHODS: Record<
   trash: CommentAPI.trash
 }
 
-let deleteTarget = $state<Comment | null>(null)
+let deleteTarget = $state<AdminComment | null>(null)
 let isDeleting = $state(false)
 
 // 搜索输入停顿时长，避免每次按键都触发请求。
@@ -111,7 +112,7 @@ function resetAndReload() {
 /**
  * 执行评论审核动作，删除操作走确认对话框。
  */
-async function handleAction(comment: Comment, action: CommentAction) {
+async function handleAction(comment: AdminComment, action: CommentAction) {
   if (action === 'delete') {
     deleteTarget = comment
     return
@@ -156,7 +157,7 @@ async function handleDelete() {
 /**
  * 提取评论者展示名称，注册用户优先使用昵称。
  */
-function getAuthorName(comment: Comment): string {
+function getAuthorName(comment: AdminComment): string {
   return comment.user?.nickname || comment.user?.username || comment.authorName || '匿名'
 }
 

@@ -6,7 +6,7 @@ import type { ApiResponse } from '@myblog/shared'
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'spam' | 'trash'
 
 // 评论信息接口，字段与后端 model.Comment 的公开 JSON 契约一致；
-// 游客邮箱、IP 与 UserAgent 属审计字段，公开响应不含这些字段。
+// 游客邮箱、IP 与 UserAgent 属审计字段，文章归属属管理端字段，公开响应均不含。
 export interface Comment {
   id: number
   articleId: number
@@ -27,15 +27,21 @@ export interface Comment {
   editedAt: string | null
   createdAt: string
   updatedAt: string
-  article: Article | null
-  user: AuthorPublic | null
-  parent: Comment | null
-  root: Comment | null
-  children: Comment[]
+  // 评论者公开信息仅注册用户评论携带，游客评论在后端带 omitempty 整体缺省。
+  user?: AuthorPublic | null
+  // 回复关系仅在装配评论树时输出，公开列表为扁平结构故整体缺省。
+  parent?: Comment | null
+  root?: Comment | null
+  children?: Comment[]
 }
 
-// 管理端评论视图，与后端 service.AdminCommentView 一致，恢复审计字段供审核使用。
+// 评论归属文章引用，管理端列表用于展示归属。
+// 后端仅预加载文章本体，不含作者与分类标签等关联，故以窄化视图描述而非完整 Article。
+export type CommentArticleRef = Omit<Article, 'author' | 'category' | 'categories' | 'tags'>
+
+// 管理端评论视图，与后端 service.AdminCommentView 一致，恢复审计字段与文章归属供审核使用。
 export interface AdminComment extends Comment {
+  article?: CommentArticleRef
   authorEmail: string
   authorIP: string
   userAgent: string

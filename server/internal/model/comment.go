@@ -10,7 +10,7 @@ import (
 
 // Comment 评论模型，采用 parent_id、root_id、level 构建两级展开的评论树。
 // 游客邮箱、IP 与 UserAgent 属反垃圾审计字段，公开契约一律隐藏；
-// 管理端需要时经 service 层的 AdminCommentView 视图恢复输出。
+// 文章关联同属隐藏面，管理端需要时经 service 层的 AdminCommentView 视图恢复输出。
 type Comment struct {
 	ID            uint           `json:"id" gorm:"primaryKey;comment:评论ID"`
 	ArticleID     uint           `json:"articleId" gorm:"not null;index;index:idx_article_status_created,priority:1;comment:文章ID"`
@@ -37,7 +37,9 @@ type Comment struct {
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index;comment:软删除时间"`
 
 	// 关联关系
-	Article  Article       `json:"article" gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE"`
+	// Article 文章关联仅供服务端校验与计数维护，公开契约不输出该关联：
+	// 关联未预加载时输出的是与文章无关的实体零值，管理端确需文章归属时经 AdminCommentView 恢复。
+	Article  Article       `json:"-" gorm:"foreignKey:ArticleID;constraint:OnDelete:CASCADE"`
 	User     *User         `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:SET NULL"`
 	Parent   *Comment      `json:"parent,omitempty" gorm:"foreignKey:ParentID;constraint:OnDelete:CASCADE"`
 	Root     *Comment      `json:"root,omitempty" gorm:"foreignKey:RootID;constraint:OnDelete:CASCADE"`

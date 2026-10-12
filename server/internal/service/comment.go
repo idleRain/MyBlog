@@ -57,13 +57,16 @@ type CommentListResponse struct {
 	PageSize int              `json:"pageSize"`
 }
 
-// AdminCommentView 管理端评论视图，在公开契约之上恢复反垃圾审计字段供审核使用。
+// AdminCommentView 管理端评论视图，在公开契约之上恢复反垃圾审计字段与文章归属供审核使用。
 // 外层字段遮蔽内嵌实体的同名隐藏字段，是管理端恢复输出的唯一入口。
 type AdminCommentView struct {
 	model.Comment
-	AuthorEmail string `json:"authorEmail"`
-	AuthorIP    string `json:"authorIP"`
-	UserAgent   string `json:"userAgent"`
+	// Article 恢复被公开契约隐藏的文章关联，审核时需要文章标题核对归属；
+	// 关联未预加载时置空，使 article 键整体省略而非输出实体零值。
+	Article     *model.Article `json:"article,omitempty"`
+	AuthorEmail string         `json:"authorEmail"`
+	AuthorIP    string         `json:"authorIP"`
+	UserAgent   string         `json:"userAgent"`
 }
 
 // AdminCommentListResponse 管理端评论列表响应
@@ -74,14 +77,20 @@ type AdminCommentListResponse struct {
 	PageSize int                 `json:"pageSize"`
 }
 
-// newAdminCommentView 从评论实体构建管理端视图，恢复被公开契约隐藏的审计字段。
+// newAdminCommentView 从评论实体构建管理端视图，恢复被公开契约隐藏的审计字段与文章归属。
 func newAdminCommentView(comment *model.Comment) *AdminCommentView {
-	return &AdminCommentView{
+	view := &AdminCommentView{
 		Comment:     *comment,
 		AuthorEmail: comment.AuthorEmail,
 		AuthorIP:    comment.AuthorIP,
 		UserAgent:   comment.UserAgent,
 	}
+
+	// 文章关联未预加载时零值视图无意义，置空使 article 键整体省略。
+	if comment.Article.ID != 0 {
+		view.Article = &comment.Article
+	}
+	return view
 }
 
 // CommentService 评论服务实现
