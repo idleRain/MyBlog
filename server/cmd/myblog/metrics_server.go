@@ -5,11 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 
 	"MyBlog/internal/config"
+	"MyBlog/internal/logger"
 	"MyBlog/internal/metrics"
 )
 
@@ -43,9 +44,9 @@ func startMetricsServer(cfg *config.Config, registry *metrics.Registry) (*metric
 	}
 
 	go func() {
-		log.Printf("指标监听启动，监听地址: %s", listener.Addr())
+		logger.L().Info("指标监听启动", slog.String("addr", listener.Addr().String()))
 		if err := server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("指标监听异常退出: %v", err)
+			logger.L().Error("指标监听异常退出", slog.Any(logger.FieldError, err))
 		}
 	}()
 

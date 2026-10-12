@@ -1,9 +1,10 @@
 package router
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 
+	"MyBlog/internal/logger"
 	"MyBlog/pkg/response"
 
 	"github.com/gin-gonic/gin"
@@ -67,7 +68,10 @@ func (hr *HealthRoutes) readinessCheck(c *gin.Context) {
 
 	for _, item := range probes {
 		if err := item.probe(); err != nil {
-			log.Printf("[ERROR] 就绪探针检查失败：检查项=%s err=%v", item.name, err)
+			logger.FromGin(c).Error("就绪探针检查失败",
+				slog.String("check", item.name),
+				slog.Any(logger.FieldError, err),
+			)
 			hr.respondUnready(c, item.reason)
 			return
 		}

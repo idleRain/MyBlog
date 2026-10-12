@@ -91,7 +91,7 @@ pnpm run go:lint-install / go:quality / go:vulncheck / audit:deps
 - **命名与接口位置**：Go 字段与 json tag 用小驼峰；接口与实现同包声明，统一 `XxxInterface` 后缀（存量 `UserService`、`RBACService`、`UserRepository` 未带后缀，触碰时统一）；各层依赖接口而非实现，`router` 不得重复定义接口。
 - **数据库**：MySQL 单库 + GORM；开发模式 `AutoMigrate`、生产 golang-migrate，由 `internal/database/migrate.go` 与 `pnpm run migrate` 管理。表设计须含生命周期字段、状态字段与字段级 `comment`，唯一字段加唯一索引、外键与高频查询加普通索引，显式声明 GORM 关联与删除策略（`OnDelete:CASCADE` / `OnDelete:SET NULL`），时间字段统一 `datetime(3)`；多段写库必须事务化（`CreateArticle`、`UpdateArticle`、`ViewArticle` 为先例，事务内统一走事务句柄）。
 - **认证与密码**：bcrypt 成本 `BcryptCost = 12`（`service/user.go`）；令牌为服务端签发的不透明随机串，内存令牌表是身份唯一权威（单实例前提），刷新即旋转、登出撤销令牌对、改密撤销该用户全部令牌。
-- **配置与中间件**：`internal/config` 经 Viper 读 `configs/config.yaml`（YAML 为唯一来源，含 `server`、`database`、`logger`、`api`、`token`、`security`、`cors`、`media`、`rbac`、`i18n`、`metrics` 节）；中间件含 logger（含 RequestID）、cors、security、auth、rbac、ratelimit、language 与 identity，认证/权限中间件只依赖 `IdentityProvider` 抽象。
+- **配置与中间件**：`internal/config` 经 Viper 读 `configs/config.yaml`（YAML 为唯一来源，含 `server`、`database`、`logger`、`api`、`token`、`security`、`cors`、`media`、`rbac`、`i18n`、`metrics` 节）；中间件含 logger（结构化 JSON 访问日志与 RequestID）、recovery（panic 结构化记录）、cors、security、auth、rbac、ratelimit、language 与 identity，认证/权限中间件只依赖 `IdentityProvider` 抽象。
 - **入口与工具包**：服务入口 `cmd/myblog/`，种子入口 `cmd/seed/`（逻辑 `internal/database/seed.go`）；通用包 `pkg/response`、`pkg/datetime`、`pkg/slug`、`pkg/markdown`、`pkg/storage`。
 
 ## 6. 前端约定（apps/ + packages/）

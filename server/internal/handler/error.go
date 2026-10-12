@@ -2,10 +2,12 @@
 package handler
 
 import (
+	"context"
 	"errors"
-	"log"
+	"log/slog"
 
 	"MyBlog/internal/domain"
+	"MyBlog/internal/logger"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -43,7 +45,14 @@ func HandleServiceError(c *gin.Context, err error) {
 		response.BadRequest(c, err.Error())
 	default:
 		// 非哨兵错误统一脱敏，原始信息落日志供排障，防止内部细节经响应体泄漏。
-		log.Printf("[ERROR] 未分类的服务错误：%v", err)
+		// 日志带请求标识与用户标识，运维可据此定位到具体请求。
+		attributes := []slog.Attr{slog.Any(logger.FieldError, err)}
+		if operatorID, ok := getOperatorID(c); ok {
+			attributes = append(attributes, slog.Any(logger.FieldUserID, operatorID))
+		}
+		logger.FromGin(c).LogAttrs(
+			context.Background(), slog.LevelError, "未分类的服务错误", attributes...,
+		)
 		response.InternalError(c, unclassifiedErrorText)
 	}
 }

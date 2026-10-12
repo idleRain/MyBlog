@@ -23,11 +23,12 @@ type Router struct {
 func NewRouter(cfg *config.Config, requestMetrics gin.HandlerFunc) *Router {
 	engine := gin.New()
 
-	// 设置全局中间件
-	engine.Use(middleware.Logger())                               // 自定义日志中间件
-	engine.Use(requestMetrics)                                    // 指标记录中间件，覆盖安全与业务处理的完整耗时
-	engine.Use(gin.Recovery())                                    // 恢复中间件
+	// 设置全局中间件。
+	// 请求标识最先写入，访问日志与指标记录均以它为关联字段。
 	engine.Use(middleware.RequestID())                            // 请求ID中间件
+	engine.Use(requestMetrics)                                    // 指标记录中间件，覆盖安全与业务处理的完整耗时
+	engine.Use(middleware.Logger())                               // 结构化访问日志中间件
+	engine.Use(middleware.Recovery())                             // panic 恢复中间件，输出结构化记录
 	engine.Use(corsMiddlewareFromConfig(cfg))                     // CORS 中间件，白名单来自配置
 	engine.Use(middleware.SecurityMiddlewareFromConfig(cfg))      // 综合安全中间件，规则与 config.yaml 保持一致
 	engine.Use(middleware.LanguageMiddlewareFromConfig(cfg.I18N)) // 语言协商中间件，解析 Accept-Language 写入请求上下文

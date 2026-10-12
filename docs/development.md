@@ -588,6 +588,15 @@ pnpm run build:web     # 构建前端静态文件
 - **隐私告知同步**: 后端新增或启用的数据收集场景（如评论 IP/UA 写入、新增埋点）必须先同步更新 web 端 `/privacy` 隐私政策页告知再上线，隐私页已写明"新增收集场景前先更新本页"
 - **设置键有效登记**: 后端业务新消费某个设置键时，必须同步补录 admin `lib/constants/setting.ts` 的 `EFFECTIVE_SETTING_KEYS`（未登记项在设置中心显示"未生效"角标）；安全分组的真实生效渠道为 `config.yaml` 与安全中间件
 
+### 4.1 日志与指标
+
+- **结构化日志**: 新增日志一律经 `internal/logger` 的 `slog` 写入，输出为 JSON 行；`logger` 配置节的 `level`、`output`、`file_path` 为唯一来源，非法取值在启动期报错。禁止新增 `log.Printf` 调用点，存量调用点经标准库桥接仍输出 JSON，级别由 `[ERROR]`、`[WARN]`、`[DEBUG]` 前缀恢复
+- **请求标识关联**: 请求级日志统一经 `logger.FromGin(c)` 取日志器，`requestId` 字段串联同一次请求的全部记录（含 panic 记录与错误日志）。标识由 `middleware.RequestID` 写入 gin 上下文与响应头 `X-Request-ID`；调用方传入值仅在长度不超过 64 且只含 `[A-Za-z0-9._-]` 时复用，其余一律替换为服务端生成的 UUID v4，避免请求头注入污染日志
+- **日志字段键**: 取自 `logger.Field*` 常量，禁止在调用处另写字面量；字段键是抓取端查询表达式的契约，拼写漂移会让告警静默失效
+- **指标**: `internal/metrics` 集中声明并暴露，监听独立于业务端口（`metrics.enabled` / `metrics.addr`），不进业务路由也不经网关转发。路由标签取路由注册模式，新增路由无需改指标代码；**禁止把原始路径写入标签**，否则标签基数会随扫描流量无界增长
+- **panic 恢复**: 经 `middleware.Recovery()` 输出结构化记录并返回 500；其写入目标传 nil 以关闭 gin 自带的明文转储，避免同一次 panic 产生两条记录且其中一条不带请求标识
+- **抓取与告警**: 抓取配置与告警规则见 `deploy/observability/`，处置流程见 [`operations/observability.md`](./operations/observability.md)
+
 ### 5. 测试纪律
 
 - **先红后绿**: 修复类任务先写失败测试再改实现，确保用例真实锚定缺陷而非实现细节
