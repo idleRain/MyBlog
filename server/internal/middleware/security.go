@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"MyBlog/internal/config"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -264,12 +265,11 @@ func validateRequest(c *gin.Context, patterns []*regexp.Regexp) error {
 				return errRequestTooLarge
 			}
 			if len(body) > 0 {
-				bodyStr := string(body)
-				if containsMaliciousContent(bodyStr, patterns) {
-					return fmt.Errorf("malicious content in JSON body")
+				if err := checkJSONBody(body, patterns); err != nil {
+					return err
 				}
 				// 重新设置请求体，以便后续处理器可以读取
-				c.Request.Body = io.NopCloser(strings.NewReader(bodyStr))
+				c.Request.Body = io.NopCloser(strings.NewReader(string(body)))
 			}
 		} else if strings.Contains(contentType, "application/x-www-form-urlencoded") ||
 			strings.Contains(contentType, "multipart/form-data") {
@@ -308,6 +308,109 @@ func validateRequest(c *gin.Context, patterns []*regexp.Regexp) error {
 func containsMaliciousContent(content string, patterns []*regexp.Regexp) bool {
 	for _, pattern := range patterns {
 		if pattern.MatchString(content) {
+			return true
+		}
+	}
+	return false
+}
+
+// wildcardJSONPathSegment 匹配字段路径中任意单层键，用于按语言标识组织的翻译正文。
+const wildcardJSONPathSegment = "*"
+
+// jsonRootPathLabel 顶层非对象取值在路径标签中的占位，避免空标签与「未命中」混淆。
+const jsonRootPathLabel = "$"
+
+// richContentJSONPaths 免于恶意模式扫描的 JSON 字段路径。
+// 这些字段的取值是 Markdown 正文，技术文章里的 SQL 与 HTML 代码示例会命中攻击特征模式，
+// 而该字段的最终输出必经消毒渲染：服务端 pkg/markdown 关闭 goldmark 的 Unsafe，
+// 前台 lib/markdown/render 丢弃原始 HTML，两处都有独立用例锚定。
+// 标题、摘要、SEO 字段、URL 参数、请求头与表单参数均不在清单内，保持全量扫描。
+var richContentJSONPaths = [][]string{
+	{"content"},
+	{"i18n", wildcardJSONPathSegment, "content"},
+}
+
+// checkJSONBody 按字段路径检查 JSON 请求体中的恶意模式。
+// 结构无法解析时退化为整段扫描，避免借畸形结构绕过字段判定；
+// 这类请求体会被后续绑定校验拒绝，保守判定不引入误伤。
+func checkJSONBody(body []byte, patterns []*regexp.Regexp) error {
+	var parsed any
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		if containsMaliciousContent(string(body), patterns) {
+			return fmt.Errorf("malicious content in JSON body")
+		}
+		return nil
+	}
+
+	// 按解码后的取值扫描，JSON 转义序列不再遮蔽模式中的词边界。
+	if field := findMaliciousJSONField(parsed, nil, false, patterns); field != "" {
+		return fmt.Errorf("malicious content in JSON field %s", field)
+	}
+	return nil
+}
+
+// findMaliciousJSONField 递归扫描 JSON 节点，返回首个命中恶意模式的字段路径标签。
+// 字段名本身也属于取值面，同样接受扫描。位于数组内部的取值不参与路径豁免，
+// 避免 {"content":["<script>"]} 这类类型不符的取值借道正文清单。
+func findMaliciousJSONField(node any, path []string, inArray bool, patterns []*regexp.Regexp) string {
+	switch typed := node.(type) {
+	case map[string]any:
+		for key, child := range typed {
+			if containsMaliciousContent(key, patterns) {
+				return jsonPathLabel(appendJSONPath(path, key))
+			}
+			childPath := appendJSONPath(path, key)
+			if hit := findMaliciousJSONField(child, childPath, inArray, patterns); hit != "" {
+				return hit
+			}
+		}
+	case []any:
+		for _, child := range typed {
+			if hit := findMaliciousJSONField(child, path, true, patterns); hit != "" {
+				return hit
+			}
+		}
+	case string:
+		if !inArray && isRichContentJSONPath(path) {
+			return ""
+		}
+		if containsMaliciousContent(typed, patterns) {
+			return jsonPathLabel(path)
+		}
+	}
+	return ""
+}
+
+// appendJSONPath 返回追加一层键后的新路径，避免共享底层数组造成路径串扰。
+func appendJSONPath(path []string, key string) []string {
+	extended := make([]string, len(path)+1)
+	copy(extended, path)
+	extended[len(path)] = key
+	return extended
+}
+
+// jsonPathLabel 将字段路径渲染为错误信息中的标签。
+func jsonPathLabel(path []string) string {
+	if len(path) == 0 {
+		return jsonRootPathLabel
+	}
+	return strings.Join(path, ".")
+}
+
+// isRichContentJSONPath 判定字段路径是否落在免扫描的正文清单内。
+func isRichContentJSONPath(path []string) bool {
+	for _, exempt := range richContentJSONPaths {
+		if len(exempt) != len(path) {
+			continue
+		}
+		matched := true
+		for index, segment := range exempt {
+			if segment != wildcardJSONPathSegment && segment != path[index] {
+				matched = false
+				break
+			}
+		}
+		if matched {
 			return true
 		}
 	}

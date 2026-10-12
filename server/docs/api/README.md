@@ -290,6 +290,7 @@ curl http://localhost:3000/api/health/ready
 - ✅ 浏览上报事务化：计数、访客明细与日统计合并单事务，中断不再产生统计漂移
 - ✅ CORS 白名单化：仅白名单内 Origin 回显 CORS 头，方法表收窄为 POST/OPTIONS（`config.yaml` cors 节）
 - ✅ WAF 模式收紧：XSS/SQL 注入正则加词首边界与取值上下文，`content =`、`for i = 1` 等正常正文不再被误拦
+- ✅ WAF 正文豁免：JSON 请求体按字段路径扫描，`content` 与 `i18n.*.content` 中的 SQL 与 HTML 代码示例不再被拦；标题、摘要、SEO 字段、URL 参数与请求头保持全量扫描，按解码后的取值扫描使转义序列不再遮蔽词首边界
 - ♻️ 路由路径命名归一：`users/change-password`、`notifications/unread-count`、`notifications/read-all`、`friendly-links/*` 统一改为小驼峰，与 `getBySlug`、`isLiked`、`publicProfile` 等既有路径风格对齐，旧路径不再保留
 
 ### v1.3.0

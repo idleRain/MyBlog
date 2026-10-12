@@ -50,11 +50,14 @@ func TestProcessContentMixedWordCount(t *testing.T) {
 }
 
 // TestProcessContentRendersSafeHTML 验证内容按原文存储并渲染不含脚本的安全 HTML。
+// 该用例是 WAF 正文豁免的补偿控制：正文不再经恶意模式扫描，可执行标记必须止步于渲染层。
 func TestProcessContentRendersSafeHTML(t *testing.T) {
 	svc := newArticleTestService(&fakeArticleRepo{})
 	article := &model.Article{
-		Title:   "渲染测试",
-		Content: "<script>alert(1)</script>\n\n# 标题\n\n正文段落",
+		Title: "渲染测试",
+		Content: "<script>alert(1)</script>\n\n# 标题\n\n正文段落\n\n" +
+			"<img src=x onerror=\"alert(2)\">\n\n`INSERT INTO users VALUES (1);`\n\n" +
+			"../../assets/logo.png",
 	}
 
 	if err := svc.processContent(article); err != nil {
@@ -62,14 +65,26 @@ func TestProcessContentRendersSafeHTML(t *testing.T) {
 	}
 
 	// 内容按 Markdown 源文本原样存储，编辑回显不受转义影响。
-	wantContent := "<script>alert(1)</script>\n\n# 标题\n\n正文段落"
+	wantContent := "<script>alert(1)</script>\n\n# 标题\n\n正文段落\n\n" +
+		"<img src=x onerror=\"alert(2)\">\n\n`INSERT INTO users VALUES (1);`\n\n" +
+		"../../assets/logo.png"
 	if article.Content != wantContent {
 		t.Errorf("内容应保持原样存储: %q", article.Content)
 	}
 
-	// 原始脚本标签在渲染层被移除，标题正常渲染为标题元素。
-	if strings.Contains(article.ContentHTML, "<script") {
-		t.Errorf("渲染缓存不应包含脚本标签: %q", article.ContentHTML)
+	// 原始脚本标签与事件属性在渲染层被移除，标题正常渲染为标题元素。
+	forbidden := []string{"<script", "onerror=", "<img"}
+	for _, marker := range forbidden {
+		if strings.Contains(article.ContentHTML, marker) {
+			t.Errorf("渲染缓存不应包含可执行标记 %q: %q", marker, article.ContentHTML)
+		}
+	}
+	// 正文中被豁免扫描的 SQL 文本落为转义后的行内代码，不参与标记结构。
+	if !strings.Contains(article.ContentHTML, "<code>INSERT INTO users VALUES (1);</code>") {
+		t.Errorf("行内代码应转义保留 SQL 文本: %q", article.ContentHTML)
+	}
+	if !strings.Contains(article.ContentHTML, "raw HTML omitted") {
+		t.Errorf("原始 HTML 应被替换为省略占位: %q", article.ContentHTML)
 	}
 	if !strings.Contains(article.ContentHTML, "<h1") {
 		t.Errorf("渲染缓存应包含标题元素: %q", article.ContentHTML)

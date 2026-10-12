@@ -4,6 +4,7 @@ import (
 	"MyBlog/internal/config"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -73,8 +74,14 @@ func TestDefaultBlockedPatternsAllowNormalContent(t *testing.T) {
 	}
 }
 
-// serveWithMiddleware 将中间件挂到最小路由上执行请求，返回响应记录。
-func serveWithMiddleware(handler gin.HandlerFunc, body string) *httptest.ResponseRecorder {
+// serveRequestWithMiddleware 将中间件挂到文章创建路由上执行请求，返回响应记录。
+// target 允许携带查询串，headers 用于覆盖需要检查的请求头。
+func serveRequestWithMiddleware(
+	handler gin.HandlerFunc,
+	target string,
+	body string,
+	headers map[string]string,
+) *httptest.ResponseRecorder {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.Use(handler)
@@ -82,11 +89,19 @@ func serveWithMiddleware(handler gin.HandlerFunc, body string) *httptest.Respons
 		c.Status(http.StatusOK)
 	})
 
-	request := httptest.NewRequest(http.MethodPost, "/api/articles/create", strings.NewReader(body))
+	request := httptest.NewRequest(http.MethodPost, target, strings.NewReader(body))
 	request.Header.Set("Content-Type", "application/json")
+	for key, value := range headers {
+		request.Header.Set(key, value)
+	}
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, request)
 	return recorder
+}
+
+// serveWithMiddleware 以默认安全配置对文章创建请求执行一次中间件链。
+func serveWithMiddleware(handler gin.HandlerFunc, body string) *httptest.ResponseRecorder {
+	return serveRequestWithMiddleware(handler, "/api/articles/create", body, nil)
 }
 
 // TestSecurityMiddlewareAllowsNormalArticleBody 通过完整中间件链验证
@@ -102,14 +117,15 @@ func TestSecurityMiddlewareAllowsNormalArticleBody(t *testing.T) {
 	}
 }
 
-// TestSecurityMiddlewareBlocksXSSBody 通过完整中间件链验证攻击载荷仍被拦截。
+// TestSecurityMiddlewareBlocksXSSBody 通过完整中间件链验证参数位置的攻击载荷仍被拦截。
+// 正文以外的字段不参与字段级豁免，攻击载荷放在标题时整条请求必须被拒绝。
 func TestSecurityMiddlewareBlocksXSSBody(t *testing.T) {
-	body := `{"title":"test","content":"<img src=x onerror=\"alert(1)\">"}`
+	body := `{"title":"<img src=x onerror=\"alert(1)\">","content":"正常正文"}`
 
 	recorder := serveWithMiddleware(SecurityMiddleware(DefaultSecurityConfig()), body)
 
 	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("XSS 载荷应被拦截，实际状态码 %d", recorder.Code)
+		t.Fatalf("参数位置的 XSS 载荷应被拦截，实际状态码 %d", recorder.Code)
 	}
 }
 
@@ -181,5 +197,121 @@ func TestAdminSecurityDisabledDoesNotTighten(t *testing.T) {
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("开关关闭时请求应放行，实际状态码 %d", recorder.Code)
+	}
+}
+
+// TestSecurityMiddlewareAllowsMarkdownBody 验证技术文章正文中的 SQL 与 HTML 示例不再被 WAF 拦截。
+// 正文限定为富文本字段，其最终输出必经消毒渲染：服务端 pkg/markdown 关闭 goldmark 的 Unsafe，
+// 前台 lib/markdown/render 丢弃原始 HTML，两处均有独立用例锚定。参数位置不参与豁免。
+func TestSecurityMiddlewareAllowsMarkdownBody(t *testing.T) {
+	handler := SecurityMiddleware(DefaultSecurityConfig())
+
+	cases := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "正文含 SQL 与相对路径示例",
+			body: "{\"title\":\"用 SQL 做数据迁移\",\"content\":\"迁移脚本会执行 INSERT INTO users 语句，" +
+				"清理时使用 DELETE FROM sessions，必要时才 DROP TABLE tmp_cache。" +
+				"```sql\\nSELECT 1;\\n```\\n\\n引用图片可写作 ../../assets/logo.png。\"}",
+		},
+		{
+			name: "正文含脚本标签示例",
+			body: "{\"title\":\"脚本加载顺序\",\"content\":\"把 <script src=\\\"app.js\\\"></script> 放在正文末尾之前。\"}",
+		},
+		{
+			name: "正文含事件属性示例",
+			body: "{\"title\":\"事件属性写法\",\"content\":\"旧写法 onerror=\\\"handle()\\\" 已不再推荐。\"}",
+		},
+		{
+			name: "翻译正文含脚本标签示例",
+			body: "{\"title\":\"Migration\",\"content\":\"正文\",\"i18n\":{\"en\":{\"title\":\"Migration\"," +
+				"\"content\":\"示例：<script src=\\\"app.js\\\"></script>\"}}}",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			recorder := serveWithMiddleware(handler, testCase.body)
+			if recorder.Code != http.StatusOK {
+				t.Errorf("富文本正文被 WAF 误拦，状态码 %d，响应 %s",
+					recorder.Code, recorder.Body.String())
+			}
+		})
+	}
+}
+
+// TestSecurityMiddlewareBlocksAttacksOutsideMarkdownBody 验证正文以外的攻击面保持全量扫描。
+// 标题、摘要、slug、翻译的非正文字段、URL 参数、请求头与字段名本身都不参与字段级豁免，
+// 结构无法解析的请求体退化为整段扫描，避免借畸形结构绕过字段判定。
+func TestSecurityMiddlewareBlocksAttacksOutsideMarkdownBody(t *testing.T) {
+	handler := SecurityMiddleware(DefaultSecurityConfig())
+
+	cases := []struct {
+		name    string
+		target  string
+		body    string
+		headers map[string]string
+	}{
+		{
+			name: "标题含脚本标签",
+			body: "{\"title\":\"<script>alert(1)</script>\",\"content\":\"正常正文\"}",
+		},
+		{
+			name: "摘要含事件属性",
+			body: "{\"title\":\"正常标题\",\"content\":\"正常正文\",\"summary\":\"<img src=x onerror=alert(1)>\"}",
+		},
+		{
+			name: "slug 含 SQL 恒真式",
+			body: "{\"title\":\"正常标题\",\"content\":\"正常正文\",\"slug\":\"' OR 1=1 --\"}",
+		},
+		{
+			name: "翻译 SEO 字段含删表语句",
+			body: "{\"title\":\"正常标题\",\"content\":\"正常正文\",\"i18n\":{\"en\":{\"seoTitle\":\"DROP TABLE users\"}}}",
+		},
+		{
+			name:   "URL 查询参数含 SQL 恒真式",
+			target: "/api/articles/create?keyword=" + url.QueryEscape("' OR 1=1 --"),
+			body:   "{\"title\":\"正常标题\",\"content\":\"正常正文\"}",
+		},
+		{
+			name:    "请求头含脚本标签",
+			body:    "{\"title\":\"正常标题\",\"content\":\"正常正文\"}",
+			headers: map[string]string{"Referer": "<script>alert(1)</script>"},
+		},
+		{
+			name: "字段名含脚本标签",
+			body: "{\"<script>alert(1)</script>\":\"取值\"}",
+		},
+		{
+			name: "正文取值为数组时按类型不符处理",
+			body: "{\"title\":\"正常标题\",\"content\":[\"<script>alert(1)</script>\"]}",
+		},
+		{
+			name: "结构无法解析时回退整段扫描",
+			body: "{\"title\":\"<script>alert(1)</script>\"",
+		},
+		{
+			// JSON 转义序列在原始字节里以 n 收尾，会遮蔽 \b 词边界；
+			// 按解码后的取值扫描后，行首的 SQL 特征重新进入检测范围。
+			name: "换行转义不再遮蔽 SQL 特征",
+			body: "{\"title\":\"示例\\nINSERT INTO users (name) VALUES ('a');\",\"content\":\"正常正文\"}",
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			target := testCase.target
+			if target == "" {
+				target = "/api/articles/create"
+			}
+
+			recorder := serveRequestWithMiddleware(handler, target, testCase.body, testCase.headers)
+			if recorder.Code != http.StatusBadRequest {
+				t.Errorf("参数位置载荷应被拦截，实际状态码 %d，响应 %s",
+					recorder.Code, recorder.Body.String())
+			}
+		})
 	}
 }
