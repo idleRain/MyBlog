@@ -106,9 +106,11 @@ git grep -n "interface BaseApiResponse" -- apps
 
 | 锁 | 机制 | 落地状态 |
 |---|---|---|
-| ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/fixture_locks_test.go` + `login_fixture_test.go`（**4/4 金样本**：login.success、login.wrong-password、users.list、article.detail） |
-| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/fixtures.test.ts`（4 用例） |
+| ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/{fixture_locks,login_fixture,session_fixture,article_fixture,comment_fixture}_test.go`（**15/15 金样本**，覆盖认证会话、文章、评论三条核心链路） |
+| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/fixtures.test.ts`（15 用例，与 ① 一一对应） |
 | ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | ✅ `apps/admin` 与 `apps/web` 双侧 eslint.config.js |
+
+**覆盖对齐**：`TestFixtureCoverage` 以目录扫描为准，校验每个金样本都同时被 Go 侧断言与 TS 侧锚定引用，且引用的金样本确实存在；新增金样本却漏写任一端锚点即变红，金样本清单不依赖人工登记表维护。
 
 **锁②的语义**：JSON 导入值在 TS 中推导为宽类型，与手写联合类型无法精确相等（`toEqualTypeOf` 对 `string|null` 等 nullable 联合字段必然失败）。因此引入 `WidenLiteral`（字面量与联合放宽为基础类型）后，以 `toExtend` 单向断言"金样本为手写契约类型的合法实例"：金样本缺字段、字段类型不符或手写类型收窄即编译失败。**已知弱项**：单向断言不检测"金样本多字段而类型未声明"（多余属性在 assignability 中允许），此类漂移由锁①逐字节校验覆盖。
 
