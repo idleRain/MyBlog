@@ -4,15 +4,25 @@
 // 金样本缺字段或字段类型不符、手写类型收窄时，tsc 类型检查即失败。
 // 本文件经 packages/api 的 typecheck 脚本挂入 contract:check，不再是无自动化覆盖的编译期断言。
 // 每个金样本都须在此有锚点，Go 侧 TestFixtureCoverage 会校验本文件的引用清单与目录一致。
+import type {
+  Article,
+  ArticleActionData,
+  ArticleArchiveYear,
+  ArticleListData
+} from '../modules/article/types'
 import loginWrongPassword from '../../../../contracts/fixtures/login.wrong-password.json'
+import articleNotFound from '../../../../contracts/fixtures/article.not-found.json'
+import articleArchives from '../../../../contracts/fixtures/article.archives.json'
 import type { LoginData, SessionData, UserListData } from '../modules/user/types'
 import sessionCreated from '../../../../contracts/fixtures/session.created.json'
+import articleDeleted from '../../../../contracts/fixtures/article.deleted.json'
+import articleCreated from '../../../../contracts/fixtures/article.created.json'
 import logoutSuccess from '../../../../contracts/fixtures/logout.success.json'
 import articleDetail from '../../../../contracts/fixtures/article.detail.json'
 import loginSuccess from '../../../../contracts/fixtures/login.success.json'
+import articleList from '../../../../contracts/fixtures/article.list.json'
 import usersList from '../../../../contracts/fixtures/users.list.json'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import type { Article } from '../modules/article/types'
 
 // 将字面量与联合类型放宽为对应基础类型，用于与 JSON 导入值的推导类型做精确比对。
 type WidenLiteral<T> = T extends string
@@ -60,5 +70,31 @@ describe('契约金样本类型锚定', () => {
     // 空数据成功响应与错误响应同形，锁定 data 键的省略语义。
     expectTypeOf(logoutSuccess).toExtend<WidenLiteral<EnvelopeWithoutData>>()
     expect(logoutSuccess).not.toHaveProperty('data')
+  })
+
+  it('文章列表响应的 data 与 ArticleListData 结构精确一致', () => {
+    expectTypeOf(articleList.data).toExtend<WidenLiteral<ArticleListData>>()
+    expect(articleList.data.articles).toHaveLength(1)
+  })
+
+  it('文章归档响应的 data 与 ArticleArchiveYear 数组结构精确一致', () => {
+    expectTypeOf(articleArchives.data).toExtend<WidenLiteral<ArticleArchiveYear[]>>()
+    expect(articleArchives.data[0].months[0].articles).toHaveLength(1)
+  })
+
+  it('文章草稿创建响应的 data 与 Article 结构精确一致', () => {
+    expectTypeOf(articleCreated.data).toExtend<WidenLiteral<Article>>()
+    // 未指定状态时创建为草稿，且不带发布时间。
+    expect(articleCreated.data.status).toBe('draft')
+    expect(articleCreated.data.publishedAt).toBeNull()
+  })
+
+  it('文章不存在响应为 404 错误信封', () => {
+    expectTypeOf(articleNotFound).toExtend<WidenLiteral<EnvelopeWithoutData>>()
+    expect(articleNotFound.code).toBe(404)
+  })
+
+  it('文章删除响应的 data 与 ArticleActionData 结构精确一致', () => {
+    expectTypeOf(articleDeleted.data).toExtend<WidenLiteral<ArticleActionData>>()
   })
 })
