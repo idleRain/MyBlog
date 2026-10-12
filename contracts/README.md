@@ -7,7 +7,7 @@
 | 契约 | 文件 | 权威方 | 状态 |
 |---|---|---|---|
 | API 形状 | 后端 `pkg/response` + `@myblog/shared` 的 `ApiResponse` | 后端 | ✅ 已固化 |
-| 错误码 | `errors.yaml` | 本文件（唯一编辑点） | 🟡 传输层码已固化，业务码细分待落地 |
+| 错误码 | `errors.yaml` | 本文件（唯一编辑点） | ✅ 传输层码与哨兵映射已固化并双端锚定；业务码细分未启用（决策见文件内注释） |
 | 认证协议 | `auth-protocol.md` | 本文档 | ✅ 已文档化（不透明令牌 + Cookie 会话） |
 | 权限下发 | 后端 RBAC，登录响应 `permissions[]` | `server/configs/config.yaml` 的 `rbac` 节 | ✅ 已落地 |
 | 类型生成 | 三把锁方案（见 `docs/architecture-rules.md` §3.4） | 后端 DTO / fixtures | ✅ 已落地 |
@@ -27,5 +27,8 @@
 - wire 格式变更流程（影响面声明 → 双端同窗口变更 → 错误语义与认证协议同步）见
   `docs/architecture-rules.md` §4.1，改认证协议须先改 `auth-protocol.md`。
 - 新增业务模块必须先登记模块对齐表（见 `docs/architecture-rules.md` §4.2）。
-- 新增 not-found 哨兵错误须同步扩展 `handler/error.go` 的映射集合与 `errors.yaml`。
+- 新增 not-found 哨兵错误须同步扩展 `handler/error.go` 的映射注册表与 `errors.yaml`，
+  两侧由 `TestErrorMappingMatchesContract` 双向锚定，任一侧漏登记即变红。
+- 响应码常量新增或改值须同步 `server/pkg/response`、`packages/shared/src/constants/api.ts`
+  与 `errors.yaml` 的 `transport` 节，并登记 `packages/api/src/contracts/errors.test.ts` 的名称对应表。
 - 前端不新增权限/类型/刷新的手写副本，一律消费后端下发值或 `@myblog/api` 类型。

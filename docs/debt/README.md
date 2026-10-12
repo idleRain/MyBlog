@@ -6,14 +6,14 @@
 
 | 分册 | 覆盖范围 | 条目数 |
 |---|---|---|
-| [`architecture.md`](./architecture.md) | 依赖方向、结构归位、类型真相源、模块对齐 | 6 |
+| [`architecture.md`](./architecture.md) | 依赖方向、结构归位、类型真相源、模块对齐、错误语义归位 | 7 |
 | [`frontend.md`](./frontend.md) | 两应用复用、认证工具、页面结构与取数、分页、i18n、UI 遗留 | 8 |
 | [`security-runtime.md`](./security-runtime.md) | 公开端点隐私、审计字段、WAF、会话令牌运行时 | 4 |
 | [`testing.md`](./testing.md) | 测试替身与测试纪律 | 1 |
 
-合计 19 条，与 `docs/architecture-rules.md` 第 8 节的索引表一一对应。
+合计 20 条，与 `docs/architecture-rules.md` 第 8 节的索引表一一对应。
 
-> 相邻登记：契约与实现之间的已知偏差（错误码映射、哨兵包装缺失）不在本目录，登记在 `contracts/errors.yaml` 的「实现偏差」节，修复后由该节自行删除。
+> 相邻登记：契约与实现之间仍存在的映射冲突登记在 `contracts/errors.yaml` 的「实现偏差」节，该节清除后自行删除；业务错误未归哨兵的存量清单登记在本目录 `architecture.md` 第 7 条。
 
 ## 条目格式
 

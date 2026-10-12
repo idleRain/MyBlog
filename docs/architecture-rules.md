@@ -118,6 +118,11 @@ git grep -n "interface BaseApiResponse" -- apps
 
 **门禁**：`pnpm run contract:check`（Go fixture 测试 + `@myblog/api` 的 `tsc --noEmit` + vitest 类型锚定）。
 
+**错误码契约的同类锚定**：`contracts/errors.yaml` 同样不引入 codegen 生成物，改用双向锚定：
+Go 侧 `internal/handler/error_contract_test.go` 的 `TestErrorMappingMatchesContract` 校验 `transport` 节与 `pkg/response` 常量一致、
+`mapping` 节与 `handler` 分档注册表双向一致；前端侧 `packages/api/src/contracts/errors.test.ts` 校验 `@myblog/shared` 的响应码常量与 `pkg/response` 逐值一致。
+两侧任一方单独改动即变红，门禁入口同上。
+
 **升级触发器**（命中任一则改用 codegen 方案）：
 1. 接口总数 > 80–100；
 2. 出现第二客户端（移动端 / 第三方）；
@@ -271,6 +276,7 @@ git grep -n "replicas" -- docker-compose.yml
 | 双 User 模型同写 users 表 | [`debt/architecture.md`](./debt/architecture.md) 第 4 条 | 新字段只加 `domain.User` |
 | 应用层影子类型层 | [`debt/architecture.md`](./debt/architecture.md) 第 5 条 | 禁止重新引入，类型一律来自 `@myblog/api` |
 | follow 模块仅后端 | [`debt/architecture.md`](./debt/architecture.md) 第 6 条 | 关注数据仅经 service 域端点读写 |
+| 业务错误未归哨兵导致分档退化为 500 | [`debt/architecture.md`](./debt/architecture.md) 第 7 条 | 新增业务错误必须包装哨兵并同步登记契约 |
 | 两 app 基础设施逐字重复 | [`debt/frontend.md`](./debt/frontend.md) 第 1 条 | 修改任一必须同步另一份 |
 | admin 认证工具三轨并行 | [`debt/frontend.md`](./debt/frontend.md) 第 2 条 | 禁止新增认证工具文件与双轨回退 |
 | admin 胖组件 + onMount 取数 | [`debt/frontend.md`](./debt/frontend.md) 第 3 条 | 新页面禁用 onMount 取数，缺口推回后端 |

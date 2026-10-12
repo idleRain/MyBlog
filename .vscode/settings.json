@@ -24,7 +24,7 @@
 
   // Go（编辑器内诊断与格式化交给 gopls，lint 由 lint:server 的 golangci-lint 负责）
   "go.formatTool": "default",
-  "go.toolsManagement.autoUpdate": true,
+  "go.toolsManagement.autoUpdate": false,
 
   // 文件关联
   "files.associations": {

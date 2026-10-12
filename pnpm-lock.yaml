@@ -33,6 +33,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: 4.3.3
       version: 4.3.3
+    '@types/node':
+      specifier: 24.13.3
+      version: 24.13.3
     bits-ui:
       specifier: 2.19.0
       version: 2.19.0
@@ -159,7 +162,7 @@ importers:
         specifier: 'catalog:'
         version: 4.3.3(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
       '@types/node':
-        specifier: ^24.0.13
+        specifier: 'catalog:'
         version: 24.13.3
       cross-env:
         specifier: ^7.0.3
@@ -389,6 +392,9 @@ importers:
         specifier: 'catalog:'
         version: 1.14.3
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
       expect-type:
         specifier: ^1.2.1
         version: 1.4.0
@@ -1109,11 +1115,6 @@ packages:
   '@lix-js/sdk-linux-arm64@0.12.3':
     resolution: {integrity: sha512-jtmfNg6jLW61l1QvsU3W184l3hGtYUyPGzZrQyekk0vsMF1hxsP++7ONEGNI19PE7ldwSnGCB8Q6OzRKX87abQ==}
     cpu: [arm64]
-    os: [linux]
-
-  '@lix-js/sdk-linux-x64@0.12.3':
-    resolution: {integrity: sha512-PiQL4h1FJXbxnZx/PgenI5grgpFtYlS/ZtPtTYh638YHVu+6J0cqGY/pLVqP8CKv1dWAKsZ2YgftLd+1j2+WKA==}
-    cpu: [x64]
     os: [linux]
 
   '@lix-js/sdk-win32-x64@0.12.3':
@@ -1962,10 +1963,6 @@ packages:
 
   ansi-styles@4.1.0:
     resolution: {integrity: sha512-Qts4KCLKG+waHc9C4m07weIY8qyeixoS0h6RnbsNVD6Fw+pEZGW3vTyObL3WXpE09Mq4Oi7/lBEyLmOiLtlYWQ==}
-    engines: {node: '>=8'}
-
-  ansi-styles@4.3.0:
-    resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
 
   ansi-styles@6.2.3:
@@ -5039,9 +5036,6 @@ snapshots:
   '@lix-js/sdk-linux-arm64@0.12.3':
     optional: true
 
-  '@lix-js/sdk-linux-x64@0.12.3':
-    optional: true
-
   '@lix-js/sdk-win32-x64@0.12.3':
     optional: true
 
@@ -5051,7 +5045,6 @@ snapshots:
     optionalDependencies:
       '@lix-js/sdk-darwin-arm64': 0.12.3
       '@lix-js/sdk-linux-arm64': 0.12.3
-      '@lix-js/sdk-linux-x64': 0.12.3
       '@lix-js/sdk-win32-x64': 0.12.3
 
   '@lucide/svelte@1.34.0(svelte@5.56.10(@typescript-eslint/types@8.68.0))':
@@ -6068,10 +6061,6 @@ snapshots:
   ansi-regex@6.4.0: {}
 
   ansi-styles@4.1.0:
-    dependencies:
-      color-convert: 2.0.1
-
-  ansi-styles@4.3.0:
     dependencies:
       color-convert: 2.0.1
 
@@ -8484,7 +8473,7 @@ snapshots:
 
   wrap-ansi@7.0.0:
     dependencies:
-      ansi-styles: 4.3.0
+      ansi-styles: 4.1.0
       string-width: 4.2.3
       strip-ansi: 6.0.1
 

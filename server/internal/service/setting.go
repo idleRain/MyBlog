@@ -69,13 +69,13 @@ func (s *SettingService) UpdateSettings(items []UpdateSettingItem, operatorID ui
 		setting, err := s.settingRepo.GetByKey(item.KeyName)
 		if err != nil {
 			if errors.Is(err, domain.ErrSettingNotFound) {
-				return nil, fmt.Errorf("设置项 %s 不存在", item.KeyName)
+				return nil, fmt.Errorf("%w：%s", domain.ErrSettingNotFound, item.KeyName)
 			}
 			return nil, err
 		}
 
 		if setting.IsReadonly {
-			return nil, fmt.Errorf("设置项 %s 为只读，不可修改", item.KeyName)
+			return nil, fmt.Errorf("%w：设置项 %s 为只读，不可修改", ErrInvalidRequest, item.KeyName)
 		}
 
 		setting.Value = item.Value

@@ -280,8 +280,6 @@ func TestLoginTokenGenerationFailure(t *testing.T) {
 
 // TestValidatePasswordStrength 表驱动验证密码强度边界。
 func TestValidatePasswordStrength(t *testing.T) {
-	svc := &userService{}
-
 	testCases := []struct {
 		name      string
 		password  string
@@ -298,9 +296,13 @@ func TestValidatePasswordStrength(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := svc.validatePasswordStrength(tc.password)
+			err := ValidatePasswordStrength(tc.password)
 			if (err != nil) != tc.expectErr {
 				t.Errorf("校验结果 = %v，期望报错 = %v", err, tc.expectErr)
+			}
+			// 强度校验失败必须包装 ErrInvalidRequest，否则 handler 分档会退化为 500。
+			if tc.expectErr && !errors.Is(err, ErrInvalidRequest) {
+				t.Errorf("校验错误 = %v，期望包装 ErrInvalidRequest", err)
 			}
 		})
 	}

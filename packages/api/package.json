@@ -20,6 +20,7 @@
     "ky": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "expect-type": "^1.2.1",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -51,7 +51,7 @@
     "migrate:down": "tsx scripts/migrate.ts down",
     "migrate:version": "tsx scripts/migrate.ts version",
     "seed:admin": "tsx scripts/seed.ts",
-    "contract:check": "cd server && go test ./internal/handler/ -run Fixture -count=1 && cd .. && pnpm --filter @myblog/api run typecheck && pnpm --filter @myblog/api run test",
+    "contract:check": "cd server && go test ./internal/handler/ -run Fixture -count=1 && go test ./internal/handler/ -run ErrorMapping -count=1 && cd .. && pnpm --filter @myblog/api run typecheck && pnpm --filter @myblog/api run test",
     "prepare": "husky install",
     "lint-staged": "lint-staged"
   },
@@ -70,7 +70,7 @@
     "@tailwindcss/forms": "catalog:",
     "@tailwindcss/typography": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "@types/node": "^24.0.13",
+    "@types/node": "catalog:",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "eslint": "^9.18.0",

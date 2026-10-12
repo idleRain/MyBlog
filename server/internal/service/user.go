@@ -6,7 +6,6 @@ import (
 	"MyBlog/internal/model"
 	"MyBlog/internal/repository"
 	"fmt"
-	"regexp"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -128,11 +127,11 @@ func (s *userService) CreateUser(req *domain.CreateUserRequest) (*domain.User, e
 
 	// 检查邮箱是否已存在
 	if existUser, _ := s.userRepo.GetByEmail(req.Email); existUser != nil {
-		return nil, fmt.Errorf("邮箱已存在")
+		return nil, ErrEmailTaken
 	}
 
 	// 验证密码强度
-	if err := s.validatePasswordStrength(req.Password); err != nil {
+	if err := ValidatePasswordStrength(req.Password); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +185,7 @@ func (s *userService) UpdateUser(req *domain.UpdateUserRequest) (*domain.User, e
 
 	// 检查用户名是否被其他用户占用
 	if userByName, _ := s.userRepo.GetByUsername(req.Username); userByName != nil && userByName.ID != req.ID {
-		return nil, fmt.Errorf("用户名已被其他用户使用")
+		return nil, ErrUsernameTaken
 	}
 
 	// 检查邮箱是否被其他用户占用
@@ -224,7 +223,7 @@ func (s *userService) UpdateUser(req *domain.UpdateUserRequest) (*domain.User, e
 	// 如果提供了新密码，则更新密码
 	if req.Password != "" {
 		// 验证密码强度
-		if err := s.validatePasswordStrength(req.Password); err != nil {
+		if err := ValidatePasswordStrength(req.Password); err != nil {
 			return nil, err
 		}
 
@@ -407,7 +406,7 @@ func (s *userService) ChangePassword(userID uint, req *ChangePasswordRequest) er
 		return fmt.Errorf("旧密码不正确")
 	}
 
-	if err := s.validatePasswordStrength(req.NewPassword); err != nil {
+	if err := ValidatePasswordStrength(req.NewPassword); err != nil {
 		return err
 	}
 
@@ -439,44 +438,6 @@ func (s *userService) hashPassword(password string) (string, error) {
 func (s *userService) verifyPassword(password, hashedPassword string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
-}
-
-// validatePasswordStrength 验证密码强度
-func (s *userService) validatePasswordStrength(password string) error {
-	// 最小长度检查
-	if len(password) < 6 {
-		return fmt.Errorf("密码长度不能少于6位")
-	}
-
-	// 最大长度检查
-	if len(password) > 100 {
-		return fmt.Errorf("密码长度不能超过100位")
-	}
-
-	// 检查是否包含数字
-	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
-	// 检查是否包含字母
-	hasLetter := regexp.MustCompile(`[a-zA-Z]`).MatchString(password)
-
-	// 要求至少包含数字和字母
-	if !hasNumber || !hasLetter {
-		return fmt.Errorf("密码必须包含字母和数字")
-	}
-
-	// 检查常见弱密码
-	weakPasswords := []string{
-		"123456", "password", "123456789", "12345678", "12345",
-		"1234567", "1234567890", "qwerty", "abc123", "admin",
-		"root", "guest", "test", "user", "demo", "login",
-	}
-
-	for _, weak := range weakPasswords {
-		if password == weak {
-			return fmt.Errorf("密码过于简单，请使用更复杂的密码")
-		}
-	}
-
-	return nil
 }
 
 // Login 用户登录

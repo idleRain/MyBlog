@@ -44,3 +44,12 @@
 - **基线**：`@myblog/api/modules/follow` 与两应用注册均已落地；web 作者页 `components/user/FollowButton.svelte` 已消费 follow 与 isFollowing 接口。
 - **验证命令**：`git grep -ln "FollowAPI" -- apps/web/src`（非空即已消费）。
 - **红线**：关注数据仅经 service 域端点读写，不得由前端拼装或旁路。
+
+## 7. 业务错误未归哨兵导致分档退化为 500
+
+- **状态**：存量，只减不增。
+- **基线**：以裸 `errors.New` 或 `fmt.Errorf`（不含 `%w`）表达的业务错误共 **30 处**，分布于 **7** 个文件：`internal/service/user.go` 16、`internal/service/token.go` 4、`internal/service/category.go` 3、`internal/service/friendly_link.go` 2、`internal/service/media.go` 2、`internal/service/tag.go` 2、`internal/service/article.go` 1。`*_test.go` 与 `internal/service/errors.go` 的哨兵定义不计入。这些错误未归入 `service` 或 `domain` 哨兵，经 `HandleServiceError` 落入兜底分支，响应退化为 500「服务器内部错误」并丢失可修正提示。其中登录与刷新失败当前依赖 `handler/user.go` 的私有 `response.Unauthorized` 分支才返回 401，构成第二套映射权威，已在 `contracts/errors.yaml` 的实现偏差节登记。
+- **验证命令**：在 `server/` 目录下执行
+  `{ git grep -n 'fmt.Errorf(' -- internal/service ':(exclude)*_test.go' | grep -v '%w'; git grep -n 'errors.New(' -- internal/service ':(exclude)*_test.go' ':(exclude)internal/service/errors.go'; } | wc -l`
+  应输出 30；需要单文件分布时去掉 `| wc -l` 后按路径归并核对。
+- **红线**：新增业务校验失败、认证失败与资源未找到必须包装对应哨兵（`service.ErrInvalidRequest`、`domain.ErrXxxNotFound` 等），并同步登记 `contracts/errors.yaml` 的 mapping 节与 `handler` 分档注册表；禁止以裸错误表达同类语义，禁止在模块内新增私有映射分支。

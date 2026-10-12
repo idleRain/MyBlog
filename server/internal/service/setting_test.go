@@ -98,7 +98,7 @@ func TestMaskSensitiveSettings(t *testing.T) {
 	}
 }
 
-// TestUpdateSettingsRejectsReadonly 验证只读设置项禁止更新。
+// TestUpdateSettingsRejectsReadonly 验证只读设置项禁止更新，且分档为 400 而非 500。
 func TestUpdateSettingsRejectsReadonly(t *testing.T) {
 	repo := &fakeSettingRepo{
 		settings: []*model.Setting{
@@ -114,9 +114,13 @@ func TestUpdateSettingsRejectsReadonly(t *testing.T) {
 	if err == nil {
 		t.Fatal("更新只读设置项应返回错误")
 	}
+	// 只读拒绝属业务校验失败，必须包装 ErrInvalidRequest，否则 handler 分档退化为 500。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("只读拒绝错误 = %v，期望包装 ErrInvalidRequest", err)
+	}
 }
 
-// TestUpdateSettingsMissingKey 验证更新不存在的设置项返回错误。
+// TestUpdateSettingsMissingKey 验证更新不存在的设置项返回 404 哨兵而非裸错误。
 func TestUpdateSettingsMissingKey(t *testing.T) {
 	repo := &fakeSettingRepo{settings: []*model.Setting{}}
 	svc := NewSettingService(repo)
@@ -127,6 +131,9 @@ func TestUpdateSettingsMissingKey(t *testing.T) {
 	_, err := svc.UpdateSettings(items, 1)
 	if err == nil {
 		t.Fatal("更新不存在的设置项应返回错误")
+	}
+	if !errors.Is(err, domain.ErrSettingNotFound) {
+		t.Errorf("设置项不存在错误 = %v，期望保留 domain.ErrSettingNotFound 哨兵链", err)
 	}
 }
 
