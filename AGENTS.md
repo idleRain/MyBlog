@@ -17,7 +17,7 @@
    验证：`git grep -n "NewRBACService()" -- server` 的生产命中应仅 `cmd/myblog/deps.go` 一处。
 5. **禁止复制粘贴式共享**。两 app 间禁止新增逐字或近似重复文件，公共逻辑下沉 packages；存量逐字重复仅 `src/lib/stores/auth.ts`（15 行 ×2）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2），改任一份必须同步另一份。
    验证：`git diff --no-index` 上述两份文件应零差异。
-6. **数据加载归位**。`apps/web` 新页面禁止 `onMount` 取数，用 `+page.server.ts` / `+page.ts` 的 load；`apps/admin` 新页面优先 load + 页面状态模块（`.svelte.ts`）；API 调用不得深入叶子组件。
+6. **数据加载归位**。`apps/web` 新页面禁止 `onMount` 取数，用 `+page.server.ts` / `+page.ts` 的 load；`apps/admin` 新页面同样禁止 `onMount` 取数，含客户端读写操作的页面配 load + 页面状态模块（`.svelte.ts`），只读页由 load 直出 page data，load 内禁止调用认证接口；API 调用不得深入叶子组件。
 7. **部署形态为单实例**（有意取舍，非待修缺陷）。应用进程、MySQL、网关各一份，无副本与故障转移；会话令牌表与限流计数均为进程内存结构，服务重启或发布将导致全体用户登出，发布窗口需提前预告；故障即停站，无 RTO 承诺，RPO 为 24 小时。扩容前必须完成令牌表持久化、限流器外置、补 `SetTrustedProxies` 三项改造。
    验证：`git grep -n "SetTrustedProxies" -- server` 与 `git grep -n "replicas" -- docker-compose.yml` 均应为空。
 8. **先确认产品定位**。单作者个人博客，不开放注册、无找回密码通道：账号由管理员创建（首次部署 `pnpm run seed:admin`，之后在后台用户管理页新增），忘记密码由超级管理员经 `POST /api/users/update` 重置；游客可浏览并提交评论（受审核设置约束），点赞/收藏/关注需登录。功能提案前先确认是否与之冲突；新增数据收集场景须先同步 `apps/web` 的 `/privacy` 页告知。

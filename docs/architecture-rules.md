@@ -214,7 +214,9 @@ git grep -n "NewRBACService()" -- server
 | 应用 | 新页面强制模式 | 存量处理 |
 |---|---|---|
 | web（SSR 路线） | `+page.server.ts`（需 SEO/会话）或 `+page.ts` load | 死 load 已清理，按此模式接入业务 |
-| admin（SPA 路线） | 优先 load + `.svelte.ts` 页面状态模块 | 7 个胖组件不强制迁移，触碰时拆分 |
+| admin（SPA 路线） | 优先 load + `.svelte.ts` 页面状态模块 | 胖组件 7→0 已清零；13 个页面取数已归位 load |
+
+`admin` 侧再分两档：含客户端读写操作（列表筛选、分页、增删改）的页面必须配 `<domain>-page-state.svelte.ts` 及配套单测；只读页（无客户端读写）由 `+page.ts` 的 load 直出 page data，不建仅转发数据的空转模块。权限裁剪读 `@myblog/auth` 的本地认证状态，load 内禁止调用认证接口。
 
 胖组件判定标准（任一命中即应拆分）：单文件 > 300 行；`$state` 声明 > 8 个；组件内直接调用 API 且含增删改多个 handler；组件内含权限判定逻辑。
 
@@ -279,7 +281,7 @@ git grep -n "replicas" -- docker-compose.yml
 | 业务错误未归哨兵导致分档退化为 500 | [`debt/architecture.md`](./debt/architecture.md) 第 7 条 | 新增业务错误必须包装哨兵并同步登记契约 |
 | 两 app 基础设施逐字重复 | [`debt/frontend.md`](./debt/frontend.md) 第 1 条 | 修改任一必须同步另一份 |
 | admin 认证工具三轨并行 | [`debt/frontend.md`](./debt/frontend.md) 第 2 条 | 禁止新增认证工具文件与双轨回退 |
-| admin 胖组件 + onMount 取数 | [`debt/frontend.md`](./debt/frontend.md) 第 3 条 | 新页面禁用 onMount 取数；行数口径已清零，constants 不得引入图标库 |
+| admin 胖组件 + onMount 取数 | [`debt/frontend.md`](./debt/frontend.md) 第 3 条 | 新页面禁用 onMount 取数；行数与取数口径均已清零，constants 不得引入图标库 |
 | web 首页 load 死代码 | [`debt/frontend.md`](./debt/frontend.md) 第 4 条 | 新页面禁用 load 调认证接口 |
 | 401 文案匹配 | [`debt/frontend.md`](./debt/frontend.md) 第 5 条 | 禁止回退文案匹配 |
 | admin 重写 `$ui` 已有组件（含 web 分页例外） | [`debt/frontend.md`](./debt/frontend.md) 第 6 条 | 新分页一律 `$ui`，禁止新增第三处实现 |
@@ -303,7 +305,7 @@ git grep -n "replicas" -- docker-compose.yml
 | 阶段一 结构归位与错误分档 | 删 router 重复接口与不可达代码；错误分档（哨兵错误→404/403/400）；令牌表加锁；web 死 load 清理；建立 `contracts/` 目录 | router 重复接口、web 死 load、401 判定均已修复；令牌表已加锁；`RBACService` 生产实例化点仅 1 处；not-found 哨兵→404 已落地，403/400 随错误码契约落地；全部业务错误归哨兵完成，认证失败经 `ErrUnauthenticated`→401，handler 私有映射分支清零 | ✅ 项目自检命令（后端 build/vet/test、两应用类型检查、lint 与 format）全绿 |
 | 阶段二 类型归位 | 建立 `internal/domain`，合并双 User，service/middleware/router 签名切换为 domain 类型；前端 auth 下沉共享包、影子类型清除 | 双 User 模型与影子类型层已修复；两 app 重复代码大幅减少（auth store 下沉）；service 层 repository 依赖由 12 降至 11 | ✅ 依赖方向基线下降；auth store diff 为零 |
 | 阶段三 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | 401 文案匹配与审计字段泄漏已修复；三把锁已落地（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
-| 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一；admin 胖组件行数口径 7→0，7 个页面取数归位到 load + 页面状态模块 | 权限定义全栈唯一；认证工具单轨 ✅ |
+| 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一；admin 胖组件行数口径 7→0，13 个页面取数归位到 load（含 11 个页面状态模块与配套单测），取数口径 6→0，`onMount` 仅余鉴权 2 处 | 权限定义全栈唯一；认证工具单轨 ✅；admin 行数与取数两条基线均归零 ✅ |
 | 阶段五 扩展点 | 后端 ContentRenderer 内容策略接口（当前 `pkg/markdown` 已直接承接 Markdown 渲染，策略接口化待做）；web 业务页面已按"公开数据 SSR + 个性化数据客户端补拉"现状接入，token 迁 cookie 已完成 | — | 新文章类型 = 插入实现，非逐层打洞 |
 
 ---

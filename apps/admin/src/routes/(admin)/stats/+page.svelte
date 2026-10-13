@@ -1,13 +1,14 @@
 <script lang="ts">
 import { FileText, Eye, Heart, MessageSquare, Users, FolderTree, Tags, Send } from '@lucide/svelte'
 import ViewsTrendChart from '$lib/components/admin/stats/views-trend-chart.svelte'
-import type { StatsOverview } from '@myblog/api/modules/stats/types'
+import { statsPageState, emptyStatsPageData } from './stats-page-state.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
+import { TREND_DAY_OPTIONS } from '$lib/constants/stats'
 import * as ToggleGroup from '$ui/toggle-group'
 import { SITE_NAME_ZH } from '@myblog/shared'
-import { StatsAPI } from '$lib/api'
+import type { PageProps } from './$types'
+import { Spinner } from '$ui/spinner'
 import * as Card from '$ui/card'
-import { onMount } from 'svelte'
 
 // 概览卡片配置，统一图标与语义色。
 const OVERVIEW_CARDS = [
@@ -21,46 +22,15 @@ const OVERVIEW_CARDS = [
   { key: 'tagCount', label: '标签数', icon: Tags }
 ] as const
 
-let overview = $state<StatsOverview | null>(null)
-let isLoading = $state(true)
-// 趋势天数以字符串承载，适配 ToggleGroup 的字符串值约束。
-let trendDays = $state('7')
-let trendDates = $state<string[]>([])
-let trendValues = $state<number[]>([])
+let { data }: PageProps = $props()
 
-/**
- * 加载统计概览与浏览量趋势。
- */
-async function loadStats() {
-  isLoading = true
-  try {
-    const [overviewResult, trendResult] = await Promise.all([
-      StatsAPI.getOverview(),
-      StatsAPI.getArticleViewsTrend(Number(trendDays))
-    ])
-    if (overviewResult.code === 200 && overviewResult.data) {
-      overview = overviewResult.data
-    }
-    if (trendResult.code === 200 && trendResult.data) {
-      trendDates = trendResult.data.dates ?? []
-      trendValues = trendResult.data.values ?? []
-    }
-  } catch (error) {
-    console.error('加载统计数据失败:', error)
-    toast.error('网络错误，请稍后重试')
-  } finally {
-    isLoading = false
-  }
-}
-
-/**
- * 切换趋势天数后重新加载。
- */
-function handleDaysChange() {
-  loadStats()
-}
-
-onMount(loadStats)
+// 初始数据经 load 注入后交给页面状态模块接管，组件只做渲染与交互分发。
+let initialized = false
+$effect(() => {
+  if (initialized) return
+  initialized = true
+  statsPageState.initialize(data ?? emptyStatsPageData())
+})
 </script>
 
 <svelte:head>
@@ -68,10 +38,9 @@ onMount(loadStats)
 </svelte:head>
 
 <PageHeader title="站点统计" description="运营数据分析与文章浏览量趋势" crumb="站点统计">
-  {#if isLoading && !overview}
+  {#if statsPageState.isLoading && !statsPageState.overview}
     <div class="flex h-48 items-center justify-center">
-      <span class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-      ></span>
+      <Spinner class="size-6" aria-label="正在加载统计数据" />
     </div>
   {:else}
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -84,7 +53,7 @@ onMount(loadStats)
           </Card.Header>
           <Card.Content>
             <div class="text-2xl font-bold tabular-nums">
-              {overview ? overview[card.key] : '—'}
+              {statsPageState.overview ? statsPageState.overview[card.key] : '—'}
             </div>
           </Card.Content>
         </Card.Root>
@@ -100,19 +69,19 @@ onMount(loadStats)
           </div>
           <ToggleGroup.Root
             type="single"
-            bind:value={trendDays}
-            onValueChange={handleDaysChange}
+            value={statsPageState.trendDays}
+            onValueChange={value => statsPageState.setTrendDays(value)}
             variant="outline"
             size="sm"
           >
-            <ToggleGroup.Item value="7">7 天</ToggleGroup.Item>
-            <ToggleGroup.Item value="14">14 天</ToggleGroup.Item>
-            <ToggleGroup.Item value="30">30 天</ToggleGroup.Item>
+            {#each TREND_DAY_OPTIONS as days (days)}
+              <ToggleGroup.Item value={days}>{days} 天</ToggleGroup.Item>
+            {/each}
           </ToggleGroup.Root>
         </div>
       </Card.Header>
       <Card.Content>
-        <ViewsTrendChart dates={trendDates} values={trendValues} />
+        <ViewsTrendChart dates={statsPageState.trendDates} values={statsPageState.trendValues} />
       </Card.Content>
     </Card.Root>
   {/if}

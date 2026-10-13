@@ -19,13 +19,15 @@
 
 ## 3. admin 胖组件 + onMount 取数
 
-- **状态**：存量，行数口径已清零，仅余非胖页面的 onMount 取数。
+- **状态**：已修复，行数口径与取数口径均已清零。
 - **基线**：
   - 行数口径：`apps/admin/src/routes` 下单文件 > 300 行的页面为 **0** 个；修复前为 7 个，降序为 tags 454 / links 405 / users 404 / dicts 344 / comments 332 / media 323 / categories 322。路由 svelte 文件仍为 19 个，新增的 7 个展示组件下沉在 `lib/components/admin/<domain>/`，不进入该口径。
-  - 取数口径：`onMount` 命中 **8** 个路由文件，其中 2 个属鉴权重定向而非取数，不计入：`(admin)/+layout.svelte`、`(auth)/login/+page.svelte`；剩余取数 **6** 个页面为存量：`(admin)/+page.svelte`（仪表盘）、notifications、posts、`posts/[id]`、settings、stats。修复前取数命中 12 个页面。
-  - 已按「`+page.ts` 的 load 取首屏 → `<domain>-page-state.svelte.ts` 持有列表与全部读写操作 → `+page.svelte` 只做渲染」重构 7 个原胖页面，页面状态模块 7 个（含 dicts 原有）与配套单测 7 个，合计 146 个用例经 `pnpm run test:apps` 门禁。
-- **验证命令**：`git grep -ln "onMount" -- "apps/admin/src/routes"`（应为 8 个文件，鉴权 2 + 取数 6）；行数按「`apps/admin/src/routes` 下单文件 > 300 行」统计；在 `apps/admin` 下执行 `pnpm run check && pnpm run test`。
-- **红线**：新页面禁用 onMount 取数，一律 load + 页面状态模块；禁止复制 300 行以上胖组件；后端能力缺口推回后端修复；`lib/constants/*.ts` 不得引入 `@lucide/svelte`，图标映射随其唯一消费者组件声明，否则页面状态模块与单测的编译图会带入图标桶（comments 单测实测由 126 秒降至 5 秒）。
+  - 取数口径：`onMount` 命中 **2** 个路由文件，均属鉴权重定向而非取数：`(admin)/+layout.svelte`、`(auth)/login/+page.svelte`。取数命中已归零；修复前为 12 个页面，本轮前余 6 个（仪表盘、notifications、posts、`posts/[id]`、settings、stats）。
+  - 已按「`+page.ts` 的 load 取首屏 → `<domain>-page-state.svelte.ts` 持有列表与全部读写操作 → `+page.svelte` 只做渲染」重构 13 个页面：7 个原胖页面（tags / links / users / dicts / comments / media / categories），加本轮 6 个（仪表盘、notifications、posts、`posts/[id]`、settings、stats）。页面状态模块 **11** 个与配套单测 **11** 个，模块用例 **196** 个；`pnpm run test:apps` 下 admin 全量 13 个测试文件、203 个用例通过。
+  - 本轮 6 页合计由 996 行降至 596 行。其中仪表盘与 `posts/[id]` 为只读页，无客户端读写操作，由 load 直出 page data，不建空转状态模块；`stats` 页趋势天数与选项新增 `lib/constants/stats.ts` 承载，不再散落字面量。
+  - 权限裁剪依赖的登录态在 `@myblog/auth` 的 store 创建时同步水合，故 `+page.ts` 可读 `authStore.getCurrentState()` 裁决区块可见性，load 内不调用认证接口。
+- **验证命令**：`git grep -ln "onMount" -- "apps/admin/src/routes"`（应为 2 个文件，均属鉴权）；行数按「`apps/admin/src/routes` 下单文件 > 300 行」统计；状态模块与单测按 `*-page-state.svelte.ts` / `*-page-state.test.ts` 计数（应各 11 个）；在 `apps/admin` 下执行 `pnpm run check && pnpm run test`。
+- **红线**：新页面禁用 onMount 取数，一律 load 取首屏；含客户端读写操作的页面配 `<domain>-page-state.svelte.ts` 与配套单测，只读页可 load 直出 page data；load 内禁止调用认证接口，权限裁剪只读本地认证状态；禁止复制 300 行以上胖组件；后端能力缺口推回后端修复；`lib/constants/*.ts` 不得引入 `@lucide/svelte`，图标映射随其唯一消费者组件声明，否则页面状态模块与单测的编译图会带入图标桶（comments 单测实测由 126 秒降至 5 秒）。
 
 ## 4. web 首页 load 死代码
 
