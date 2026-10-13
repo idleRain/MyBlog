@@ -19,10 +19,13 @@
 
 ## 3. admin 胖组件 + onMount 取数
 
-- **状态**：存量。
-- **基线**：口径为「`apps/admin/src/routes` 下单文件 > 300 行」，当前 **7 个**，降序为 tags 454 / links 405 / users 404 / dicts 344 / comments 331 / media 323 / categories 322；路由 svelte 文件共 19 个。`onMount` 取数命中 14 个路由文件。users 跨页补偿已移除，`users/list` 支持 keyword。
-- **验证命令**：`git grep -ln "onMount" -- "apps/admin/src/routes"`；行数按上述口径统计。
-- **红线**：新页面禁用 onMount 取数，优先 load + 页面状态模块（`.svelte.ts`）；禁止复制 300 行以上胖组件；后端能力缺口推回后端修复。
+- **状态**：存量，行数口径已清零，仅余非胖页面的 onMount 取数。
+- **基线**：
+  - 行数口径：`apps/admin/src/routes` 下单文件 > 300 行的页面为 **0** 个；修复前为 7 个，降序为 tags 454 / links 405 / users 404 / dicts 344 / comments 332 / media 323 / categories 322。路由 svelte 文件仍为 19 个，新增的 7 个展示组件下沉在 `lib/components/admin/<domain>/`，不进入该口径。
+  - 取数口径：`onMount` 命中 **8** 个路由文件，其中 2 个属鉴权重定向而非取数，不计入：`(admin)/+layout.svelte`、`(auth)/login/+page.svelte`；剩余取数 **6** 个页面为存量：`(admin)/+page.svelte`（仪表盘）、notifications、posts、`posts/[id]`、settings、stats。修复前取数命中 12 个页面。
+  - 已按「`+page.ts` 的 load 取首屏 → `<domain>-page-state.svelte.ts` 持有列表与全部读写操作 → `+page.svelte` 只做渲染」重构 7 个原胖页面，页面状态模块 7 个（含 dicts 原有）与配套单测 7 个，合计 146 个用例经 `pnpm run test:apps` 门禁。
+- **验证命令**：`git grep -ln "onMount" -- "apps/admin/src/routes"`（应为 8 个文件，鉴权 2 + 取数 6）；行数按「`apps/admin/src/routes` 下单文件 > 300 行」统计；在 `apps/admin` 下执行 `pnpm run check && pnpm run test`。
+- **红线**：新页面禁用 onMount 取数，一律 load + 页面状态模块；禁止复制 300 行以上胖组件；后端能力缺口推回后端修复；`lib/constants/*.ts` 不得引入 `@lucide/svelte`，图标映射随其唯一消费者组件声明，否则页面状态模块与单测的编译图会带入图标桶（comments 单测实测由 126 秒降至 5 秒）。
 
 ## 4. web 首页 load 死代码
 
@@ -54,7 +57,7 @@
 
 ## 8. 字典页窄屏交互与工具栏布局遗留
 
-- **状态**：存量。
-- **基线**：`apps/admin/src/routes/(admin)/dicts/+page.svelte` 的类型列表窄屏交互与工具栏布局打磨未完成。该页同时是 7 个胖组件之一（344 行），两个问题可在同一次触碰中一并处理。
-- **验证命令**：读该页的类型列表与工具栏区块在窄屏下的布局。
-- **红线**：触碰该页时必须顺带处理，不得再次遗留；不得以「已记录在提交信息」替代债务登记。
+- **状态**：已修复。
+- **基线**：`apps/admin/src/routes/(admin)/dicts/+page.svelte` 由 344 行收敛至 174 行，类型列表与字典项表格分别下沉 `lib/components/admin/dict/dict-type-list.svelte` 与 `dict-item-table.svelte`，状态展示配置下沉 `lib/constants/dict.ts`。窄屏交互修复项：类型列表行原先把编辑与删除按钮嵌在选择行按钮内部，构成非法的按钮嵌套并导致窄屏点击区域争抢，现改为选择区按钮与行内操作按钮并列；操作按钮统一 `size="icon"` 并带含字典类型名的 `aria-label`；选择区补 `focus-visible` 焦点环与 `aria-current`。工具栏与表格修复项：字典项卡片头部改 `flex-wrap` 避免窄屏挤压，描述列在窄屏并入显示名列副行并按 `md` 断点恢复独立列，排序列在 `sm` 以下折叠；加载态改用 `$ui/spinner`，空态改用 `$ui/empty`，替换原先手写的旋转圆环与空态容器。
+- **验证命令**：读 `lib/components/admin/dict/dict-type-list.svelte` 确认选择区与操作区为并列元素；`get-childitem "apps/admin/src/routes/(admin)/dicts/+page.svelte"` 行数应低于 300；在 `apps/admin` 下执行 `pnpm run check` 与 `pnpm run test`。
+- **红线**：触碰该页时必须顺带处理，不得再次遗留；列表行的选择与操作不得回退为嵌套交互元素。

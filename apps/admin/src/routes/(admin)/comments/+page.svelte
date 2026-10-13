@@ -1,172 +1,56 @@
 <script lang="ts">
 import {
-  COMMENT_ACTION_ICONS,
-  COMMENT_ACTION_LABELS,
-  COMMENT_ACTIONS,
   COMMENT_PAGE_SIZE,
-  COMMENT_STATUS_CONFIG,
   COMMENT_STATUS_OPTIONS,
   type CommentAction
 } from '$lib/constants/comment'
-import type {
-  AdminComment,
-  CommentStatus,
-  CommentActionResponse
-} from '@myblog/api/modules/comment/types'
-import { Search, MessageSquare, MoreHorizontal, RotateCcw } from '@lucide/svelte'
+import { commentPageState, emptyCommentPageData } from './comment-page-state.svelte'
+import CommentTable from '$lib/components/admin/comment/comment-table.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
+import type { AdminComment } from '@myblog/api/modules/comment/types'
 import PageHeader from '$lib/components/admin/page-header.svelte'
-import { SITE_NAME_ZH, debounce } from '@myblog/shared'
-import * as DropdownMenu from '$ui/dropdown-menu'
+import { MessageSquare, RotateCcw, Search } from '@lucide/svelte'
 import * as ToggleGroup from '$ui/toggle-group'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import * as Pagination from '$ui/pagination'
-import { CommentAPI } from '$lib/api'
+import type { PageProps } from './$types'
+import { Spinner } from '$ui/spinner'
 import { Button } from '$ui/button'
-import * as Table from '$ui/table'
+import * as Empty from '$ui/empty'
 import { Input } from '$ui/input'
-import { Badge } from '$ui/badge'
 import * as Card from '$ui/card'
-import { onMount } from 'svelte'
 
-// 管理端列表在公开契约之上携带审计字段与文章归属，页面状态按 AdminComment 声明。
-let comments = $state<AdminComment[]>([])
-let isLoading = $state(true)
-let total = $state(0)
-let currentPage = $state(1)
-let keyword = $state('')
-let statusFilter = $state<CommentStatus | ''>('')
+let { data }: PageProps = $props()
 
-// 审核动作到接口方法的映射，spam 对应 markSpam 方法名。
-const ACTION_METHODS: Record<
-  Exclude<CommentAction, 'delete'>,
-  (id: number) => Promise<CommentActionResponse>
-> = {
-  approve: CommentAPI.approve,
-  reject: CommentAPI.reject,
-  spam: CommentAPI.markSpam,
-  trash: CommentAPI.trash
-}
+// 初始数据经 load 注入后交给页面状态模块接管，组件只做渲染与交互分发。
+let initialized = false
+$effect(() => {
+  if (initialized) return
+  initialized = true
+  commentPageState.initialize(data ?? emptyCommentPageData())
+})
 
+// 删除确认状态，deleteTarget 非空表示对话框已打开。
 let deleteTarget = $state<AdminComment | null>(null)
 let isDeleting = $state(false)
 
-// 搜索输入停顿时长，避免每次按键都触发请求。
-const SEARCH_DEBOUNCE_MS = 300
-
-// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
-const hasActiveFilters = $derived(keyword.trim() !== '' || statusFilter !== '')
-
-/**
- * 加载评论列表，携带状态与关键词筛选。
- */
-async function loadComments() {
-  isLoading = true
-  try {
-    const response = await CommentAPI.adminList({
-      page: currentPage,
-      pageSize: COMMENT_PAGE_SIZE,
-      ...(statusFilter ? { status: statusFilter } : {}),
-      ...(keyword.trim() ? { keyword: keyword.trim() } : {})
-    })
-    if (response.code === 200 && response.data) {
-      comments = response.data.comments ?? []
-      total = response.data.total ?? 0
-    } else {
-      toast.error(response.message || '加载评论失败')
-    }
-  } catch (error) {
-    console.error('加载评论失败:', error)
-    toast.error('网络错误，请稍后重试')
-  } finally {
-    isLoading = false
-  }
-}
-
-/**
- * 防抖应用搜索关键词，连续输入只在停顿后请求一次。
- */
-const applyKeywordDebounced = debounce(() => {
-  currentPage = 1
-  loadComments()
-}, SEARCH_DEBOUNCE_MS)
-
-/**
- * 状态筛选变更后立即回到第一页并重新加载。
- */
-function handleStatusFilterChange(value: string) {
-  statusFilter = value as CommentStatus | ''
-  currentPage = 1
-  loadComments()
-}
-
-/**
- * 重置筛选并回到第一页。
- */
-function resetAndReload() {
-  keyword = ''
-  statusFilter = ''
-  currentPage = 1
-  loadComments()
-}
-
-/**
- * 执行评论审核动作，删除操作走确认对话框。
- */
-async function handleAction(comment: AdminComment, action: CommentAction) {
+// 审核动作分发，永久删除需经确认对话框，其余动作立即提交。
+function handleAction(comment: AdminComment, action: CommentAction) {
   if (action === 'delete') {
     deleteTarget = comment
     return
   }
-  try {
-    const response = await ACTION_METHODS[action](comment.id)
-    if (response.code === 200) {
-      toast.success(`${COMMENT_ACTION_LABELS[action]}成功`)
-      loadComments()
-    } else {
-      toast.error(response.message || '操作失败')
-    }
-  } catch (error) {
-    console.error('评论操作失败:', error)
-    toast.error('网络错误，请稍后重试')
-  }
+  void commentPageState.runAction(comment, action)
 }
 
-/**
- * 永久删除评论（回收站内）。
- */
+// 确认后永久删除目标评论，失败时保留对话框以便重试。
 async function handleDelete() {
   if (!deleteTarget || isDeleting) return
   isDeleting = true
-  try {
-    const response = await CommentAPI.delete(deleteTarget.id)
-    if (response.code === 200) {
-      toast.success('评论删除成功')
-      deleteTarget = null
-      loadComments()
-    } else {
-      toast.error(response.message || '删除评论失败')
-    }
-  } catch (error) {
-    console.error('删除评论失败:', error)
-    toast.error('网络错误，请稍后重试')
-  } finally {
-    isDeleting = false
-  }
+  const success = await commentPageState.deleteComment(deleteTarget.id)
+  isDeleting = false
+  if (success) deleteTarget = null
 }
-
-/**
- * 提取评论者展示名称，注册用户优先使用昵称。
- */
-function getAuthorName(comment: AdminComment): string {
-  return comment.user?.nickname || comment.user?.username || comment.authorName || '匿名'
-}
-
-function handlePageChange(page: number) {
-  currentPage = page
-  loadComments()
-}
-
-onMount(loadComments)
 </script>
 
 <svelte:head>
@@ -176,14 +60,15 @@ onMount(loadComments)
 <PageHeader title="评论管理" description="审核与管理文章评论，覆盖完整审核状态机" crumb="评论管理">
   <Card.Root class="overflow-hidden">
     <Card.Content class="p-0">
+      <!-- 工具栏：搜索即输即搜，状态筛选即点即用，仅保留重置作为整体撤销入口 -->
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <div class="relative min-w-52 flex-1">
           <Search class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             class="pl-9"
             placeholder="搜索评论内容或评论者..."
-            bind:value={keyword}
-            oninput={applyKeywordDebounced}
+            bind:value={commentPageState.keyword}
+            oninput={commentPageState.applyKeywordDebounced}
           />
         </div>
 
@@ -191,123 +76,69 @@ onMount(loadComments)
           type="single"
           variant="outline"
           size="sm"
-          value={statusFilter}
-          onValueChange={handleStatusFilterChange}
+          value={commentPageState.statusFilter}
+          onValueChange={value => commentPageState.setStatusFilter(value)}
         >
           {#each COMMENT_STATUS_OPTIONS as option (option.label)}
             <ToggleGroup.Item value={option.value}>{option.label}</ToggleGroup.Item>
           {/each}
         </ToggleGroup.Root>
 
-        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="ml-auto"
+          onclick={() => commentPageState.resetFilters()}
+        >
           <RotateCcw data-icon="inline-start" />
           重置
         </Button>
       </div>
 
-      {#if isLoading}
+      {#if commentPageState.isLoading}
         <div class="flex h-48 items-center justify-center">
-          <span
-            class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-          ></span>
+          <Spinner class="size-6" aria-label="正在加载评论" />
         </div>
-      {:else if comments.length === 0}
-        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
-          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
-            <MessageSquare class="size-6 text-muted-foreground" />
-          </div>
-          <div class="space-y-1">
-            <h3 class="text-base font-medium">
-              {hasActiveFilters ? '没有匹配的评论' : '暂无评论'}
-            </h3>
-            <p class="text-sm text-muted-foreground">
-              {hasActiveFilters ? '调整或重置筛选条件后再试' : '文章收到评论后会展示在这里'}
-            </p>
-          </div>
-          {#if hasActiveFilters}
-            <Button variant="outline" size="sm" onclick={resetAndReload}>
-              <RotateCcw data-icon="inline-start" />
-              重置筛选
-            </Button>
+      {:else if commentPageState.comments.length === 0}
+        <Empty.Root class="h-64 border-0">
+          <Empty.Header>
+            <Empty.Media variant="icon">
+              <MessageSquare />
+            </Empty.Media>
+            <Empty.Title>
+              {commentPageState.hasActiveFilters ? '没有匹配的评论' : '暂无评论'}
+            </Empty.Title>
+            <Empty.Description>
+              {commentPageState.hasActiveFilters
+                ? '调整或重置筛选条件后再试'
+                : '文章收到评论后会展示在这里'}
+            </Empty.Description>
+          </Empty.Header>
+          {#if commentPageState.hasActiveFilters}
+            <Empty.Content>
+              <Button variant="outline" size="sm" onclick={() => commentPageState.resetFilters()}>
+                <RotateCcw data-icon="inline-start" />
+                重置筛选
+              </Button>
+            </Empty.Content>
           {/if}
-        </div>
+        </Empty.Root>
       {:else}
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head class="min-w-64">评论内容</Table.Head>
-              <Table.Head>评论者</Table.Head>
-              <Table.Head>所属文章</Table.Head>
-              <Table.Head>状态</Table.Head>
-              <Table.Head class="hidden md:table-cell">评论时间</Table.Head>
-              <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {#each comments as comment (comment.id)}
-              <Table.Row>
-                <Table.Cell>
-                  <p class="line-clamp-2 max-w-64 text-sm">{comment.content}</p>
-                </Table.Cell>
-                <Table.Cell>
-                  <span class="text-sm">{getAuthorName(comment)}</span>
-                </Table.Cell>
-                <Table.Cell>
-                  <span class="line-clamp-1 max-w-40 text-sm text-muted-foreground">
-                    {comment.article?.title ?? `#${comment.articleId}`}
-                  </span>
-                </Table.Cell>
-                <Table.Cell>
-                  <Badge variant={COMMENT_STATUS_CONFIG[comment.status].variant}>
-                    {COMMENT_STATUS_CONFIG[comment.status].label}
-                  </Badge>
-                </Table.Cell>
-                <Table.Cell class="hidden md:table-cell">
-                  <span class="text-sm text-muted-foreground tabular-nums">
-                    {new Date(comment.createdAt).toLocaleDateString('zh-CN')}
-                  </span>
-                </Table.Cell>
-                <Table.Cell>
-                  <div class="flex items-center justify-center gap-1">
-                    <DropdownMenu.Root>
-                      <DropdownMenu.Trigger>
-                        <Button variant="ghost" size="sm" aria-label="评论操作">
-                          <MoreHorizontal />
-                        </Button>
-                      </DropdownMenu.Trigger>
-                      <DropdownMenu.Content align="end">
-                        {#each COMMENT_ACTIONS[comment.status] as action (action)}
-                          {@const ActionIcon = COMMENT_ACTION_ICONS[action]}
-                          <DropdownMenu.Item
-                            variant={action === 'delete' ? 'destructive' : 'default'}
-                            onSelect={() => handleAction(comment, action)}
-                          >
-                            <ActionIcon data-icon="inline-start" />
-                            {COMMENT_ACTION_LABELS[action]}
-                          </DropdownMenu.Item>
-                        {/each}
-                      </DropdownMenu.Content>
-                    </DropdownMenu.Root>
-                  </div>
-                </Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
+        <CommentTable comments={commentPageState.comments} onAction={handleAction} />
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
-          <p class="text-sm text-muted-foreground">共 {total} 条评论</p>
+          <p class="text-sm text-muted-foreground">共 {commentPageState.total} 条评论</p>
           <Pagination.Root
             class="mx-0 w-auto"
-            count={total}
+            count={commentPageState.total}
             perPage={COMMENT_PAGE_SIZE}
-            page={currentPage}
-            onPageChange={handlePageChange}
+            page={commentPageState.currentPage}
+            onPageChange={page => commentPageState.changePage(page)}
           >
             <Pagination.Content>
               <Pagination.PrevButton />
               <span class="px-2 text-sm text-muted-foreground tabular-nums">
-                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / COMMENT_PAGE_SIZE))} 页
+                第 {commentPageState.currentPage} 页，共 {commentPageState.totalPages} 页
               </span>
               <Pagination.NextButton />
             </Pagination.Content>

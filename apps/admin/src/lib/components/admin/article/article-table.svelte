@@ -1,15 +1,25 @@
 <script lang="ts">
 import {
-  ARTICLE_ACTION_ICONS,
+  Archive,
+  Edit,
+  Eye,
+  Lock,
+  MessageSquare,
+  MoreHorizontal,
+  Send,
+  Trash2,
+  Undo2
+} from '@lucide/svelte'
+import {
   ARTICLE_ACTION_LABELS,
   ARTICLE_ACTIONS,
   type ArticleStatusAction
 } from '$lib/constants/article'
 import ArticleStatusBadge from '$lib/components/admin/article/article-status-badge.svelte'
-import { Edit, Eye, MessageSquare, MoreHorizontal, Trash2 } from '@lucide/svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import type { Article } from '@myblog/api/modules/article/types'
 import * as DropdownMenu from '$ui/dropdown-menu'
+import type { LucideIcon } from '@lucide/svelte'
 import { goto } from '$lib/utils/navigation'
 import { Button } from '$ui/button'
 import * as Table from '$ui/table'
@@ -21,6 +31,15 @@ interface Props {
 }
 
 let { articles, onStatusAction, onDelete }: Props = $props()
+
+// 状态操作的图标映射，与 ARTICLE_ACTION_LABELS 一一对应。
+// 图标只随本组件引入，避免图标桶经常量模块进入页面状态模块与单测的编译图。
+const ARTICLE_ACTION_ICONS: Record<ArticleStatusAction, LucideIcon> = {
+  publish: Send,
+  unpublish: Undo2,
+  archive: Archive,
+  private: Lock
+}
 
 // 待删除文章，用于确认对话框；为空时隐藏对话框。
 let deleteTarget = $state<Article | null>(null)

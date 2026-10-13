@@ -1,170 +1,60 @@
 <script lang="ts">
-import { Upload, Image, Film, FileText, Copy, Trash2, Loader2, RotateCcw } from '@lucide/svelte'
+import { MEDIA_FILE_ACCEPT, MEDIA_PAGE_SIZE, MEDIA_TYPE_FILTERS } from '$lib/constants/media'
+import { mediaPageState, emptyMediaPageData } from './media-page-state.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
+import MediaGrid from '$lib/components/admin/media/media-grid.svelte'
+import { Image, Loader2, RotateCcw, Upload } from '@lucide/svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { MediaFile } from '@myblog/api/modules/media/types'
-import { SITE_NAME_ZH, getFileSize } from '@myblog/shared'
 import * as ToggleGroup from '$ui/toggle-group'
+import { SITE_NAME_ZH } from '@myblog/shared'
 import * as Pagination from '$ui/pagination'
+import type { PageProps } from './$types'
+import { Spinner } from '$ui/spinner'
 import { Button } from '$ui/button'
-import { MediaAPI } from '$lib/api'
+import * as Empty from '$ui/empty'
 import * as Card from '$ui/card'
-import { onMount } from 'svelte'
 
-// 媒体类型筛选选项，mimeType 为前缀过滤值。
-const TYPE_FILTERS: Array<{ value: string; label: string }> = [
-  { value: '', label: '全部' },
-  { value: 'image/', label: '图片' },
-  { value: 'video/', label: '视频' },
-  { value: 'application/', label: '文档' }
-]
+let { data }: PageProps = $props()
 
-// 媒体库网格每页加载数量，与分页组件取值保持一致。
-const MEDIA_PAGE_SIZE = 12
+// 初始数据经 load 注入后交给页面状态模块接管，组件只做渲染与交互分发。
+let initialized = false
+$effect(() => {
+  if (initialized) return
+  initialized = true
+  mediaPageState.initialize(data ?? emptyMediaPageData())
+})
 
-let media = $state<MediaFile[]>([])
-let isLoading = $state(true)
-let total = $state(0)
-let currentPage = $state(1)
-let mimeTypeFilter = $state('')
-let isUploading = $state(false)
+// 隐藏文件输入框与删除确认状态
 let fileInput: HTMLInputElement | undefined = $state()
-
 let deleteTarget = $state<MediaFile | null>(null)
 let isDeleting = $state(false)
 
-// 是否存在生效中的筛选条件，用于空态区分「无数据」与「无匹配」。
-const hasActiveFilters = $derived(mimeTypeFilter !== '')
-
-/**
- * 加载媒体列表，携带类型筛选与分页参数。
- */
-async function loadMedia() {
-  isLoading = true
-  try {
-    const response = await MediaAPI.list({
-      page: currentPage,
-      pageSize: MEDIA_PAGE_SIZE,
-      ...(mimeTypeFilter ? { mimeType: mimeTypeFilter } : {})
-    })
-    if (response.code === 200 && response.data) {
-      media = response.data.media ?? []
-      total = response.data.total ?? 0
-    } else {
-      toast.error(response.message || '加载媒体失败')
-    }
-  } catch (error) {
-    console.error('加载媒体失败:', error)
-    toast.error('网络错误，请稍后重试')
-  } finally {
-    isLoading = false
-  }
-}
-
-/**
- * 类型筛选变更后立即回到第一页并重新加载。
- */
-function handleTypeFilterChange(value: string) {
-  mimeTypeFilter = value
-  currentPage = 1
-  loadMedia()
-}
-
-/**
- * 重置筛选并回到第一页。
- */
-function resetAndReload() {
-  mimeTypeFilter = ''
-  currentPage = 1
-  loadMedia()
-}
-
-/**
- * 触发隐藏文件输入框，打开系统选择文件对话框。
- */
+// 触发隐藏文件输入框，打开系统选择文件对话框。
 function openFilePicker() {
   fileInput?.click()
 }
 
-/**
- * 上传单个文件，完成后刷新列表。
- */
+// 上传单个文件，无论成功与否都清空输入以允许重复选择同一文件。
 async function handleUpload(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
-  if (!file || isUploading) return
-
-  isUploading = true
+  if (!file || mediaPageState.isUploading) return
   try {
-    const response = await MediaAPI.upload(file)
-    if (response.code === 200 && response.data) {
-      toast.success('文件上传成功')
-      currentPage = 1
-      loadMedia()
-    } else {
-      toast.error(response.message || '上传失败')
-    }
-  } catch (error) {
-    console.error('上传失败:', error)
-    toast.error('网络错误，请稍后重试')
+    await mediaPageState.uploadFile(file)
   } finally {
-    isUploading = false
-    // 清空文件输入以允许重复选择同一文件。
     input.value = ''
   }
 }
 
-/**
- * 复制文件 URL 到剪贴板并提示结果。
- */
-async function copyUrl(file: MediaFile) {
-  try {
-    await navigator.clipboard.writeText(file.fileUrl)
-    toast.success('链接已复制')
-  } catch (error) {
-    console.error('复制链接失败:', error)
-    toast.error('复制失败，请手动复制')
-  }
-}
-
-/**
- * 删除媒体文件。
- */
+// 确认后删除目标文件，成功后关闭确认弹窗。
 async function handleDelete() {
   if (!deleteTarget || isDeleting) return
   isDeleting = true
-  try {
-    const response = await MediaAPI.delete(deleteTarget.id)
-    if (response.code === 200) {
-      toast.success('文件删除成功')
-      deleteTarget = null
-      loadMedia()
-    } else {
-      toast.error(response.message || '删除失败')
-    }
-  } catch (error) {
-    console.error('删除失败:', error)
-    toast.error('网络错误，请稍后重试')
-  } finally {
-    isDeleting = false
-  }
+  const success = await mediaPageState.removeMedia(deleteTarget.id)
+  isDeleting = false
+  if (success) deleteTarget = null
 }
-
-/**
- * 根据 MIME 类型返回文件类型图标组件。
- */
-function typeIcon(file: MediaFile) {
-  if (file.mimeType.startsWith('image/')) return Image
-  if (file.mimeType.startsWith('video/')) return Film
-  return FileText
-}
-
-function handlePageChange(page: number) {
-  currentPage = page
-  loadMedia()
-}
-
-onMount(loadMedia)
 </script>
 
 <svelte:head>
@@ -177,11 +67,11 @@ onMount(loadMedia)
       bind:this={fileInput}
       type="file"
       class="hidden"
-      accept="image/*,video/*,audio/*,application/pdf,text/*"
+      accept={MEDIA_FILE_ACCEPT}
       onchange={handleUpload}
     />
-    <Button onclick={openFilePicker} disabled={isUploading}>
-      {#if isUploading}
+    <Button onclick={openFilePicker} disabled={mediaPageState.isUploading}>
+      {#if mediaPageState.isUploading}
         <Loader2 data-icon="inline-start" class="animate-spin" />
         上传中...
       {:else}
@@ -193,112 +83,84 @@ onMount(loadMedia)
 
   <Card.Root class="overflow-hidden">
     <Card.Content class="p-0">
+      <!-- 工具栏：类型筛选即点即用，仅保留重置作为整体撤销入口 -->
       <div class="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <ToggleGroup.Root
           type="single"
           variant="outline"
           size="sm"
-          value={mimeTypeFilter}
-          onValueChange={handleTypeFilterChange}
+          value={mediaPageState.typeFilter}
+          onValueChange={value => mediaPageState.setTypeFilter(value)}
         >
-          {#each TYPE_FILTERS as filter (filter.value)}
+          {#each MEDIA_TYPE_FILTERS as filter (filter.value)}
             <ToggleGroup.Item value={filter.value}>{filter.label}</ToggleGroup.Item>
           {/each}
         </ToggleGroup.Root>
 
-        <Button variant="ghost" size="sm" class="ml-auto" onclick={resetAndReload}>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="ml-auto"
+          onclick={() => mediaPageState.resetFilters()}
+        >
           <RotateCcw data-icon="inline-start" />
           重置
         </Button>
       </div>
 
-      {#if isLoading}
+      {#if mediaPageState.isLoading}
         <div class="flex h-48 items-center justify-center">
-          <span
-            class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-          ></span>
+          <Spinner class="size-6" aria-label="正在加载媒体" />
         </div>
-      {:else if media.length === 0}
-        <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
-          <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
-            <Image class="size-6 text-muted-foreground" />
-          </div>
-          <div class="space-y-1">
-            <h3 class="text-base font-medium">
-              {hasActiveFilters ? '没有匹配的文件' : '暂无媒体文件'}
-            </h3>
-            <p class="text-sm text-muted-foreground">
-              {hasActiveFilters
+      {:else if mediaPageState.media.length === 0}
+        <Empty.Root class="h-64 border-0">
+          <Empty.Header>
+            <Empty.Media variant="icon">
+              <Image />
+            </Empty.Media>
+            <Empty.Title>
+              {mediaPageState.hasActiveFilters ? '没有匹配的文件' : '暂无媒体文件'}
+            </Empty.Title>
+            <Empty.Description>
+              {mediaPageState.hasActiveFilters
                 ? '调整或重置筛选条件后再试'
                 : '上传第一个文件，丰富博客的图片与素材'}
-            </p>
-          </div>
-          {#if hasActiveFilters}
-            <Button variant="outline" size="sm" onclick={resetAndReload}>
-              <RotateCcw data-icon="inline-start" />
-              重置筛选
-            </Button>
-          {:else}
-            <Button size="sm" onclick={openFilePicker} disabled={isUploading}>
-              <Upload data-icon="inline-start" />
-              上传文件
-            </Button>
-          {/if}
-        </div>
+            </Empty.Description>
+          </Empty.Header>
+          <Empty.Content>
+            {#if mediaPageState.hasActiveFilters}
+              <Button variant="outline" size="sm" onclick={() => mediaPageState.resetFilters()}>
+                <RotateCcw data-icon="inline-start" />
+                重置筛选
+              </Button>
+            {:else}
+              <Button size="sm" onclick={openFilePicker} disabled={mediaPageState.isUploading}>
+                <Upload data-icon="inline-start" />
+                上传文件
+              </Button>
+            {/if}
+          </Empty.Content>
+        </Empty.Root>
       {:else}
-        <div class="grid grid-cols-2 gap-4 p-4 lg:grid-cols-3 xl:grid-cols-4">
-          {#each media as file (file.id)}
-            <div class="overflow-hidden rounded-lg border bg-card">
-              <div class="flex h-36 items-center justify-center border-b bg-muted/40">
-                {#if file.mimeType.startsWith('image/')}
-                  <img
-                    src={file.thumbnailUrl || file.fileUrl}
-                    alt={file.filename}
-                    class="h-full w-full object-cover"
-                  />
-                {:else}
-                  {@const IconComponent = typeIcon(file)}
-                  <IconComponent class="size-10 text-muted-foreground" />
-                {/if}
-              </div>
-              <div class="space-y-2 p-3">
-                <p class="truncate text-sm font-medium" title={file.filename}>{file.filename}</p>
-                <p class="truncate text-xs text-muted-foreground">
-                  {getFileSize(file.fileSize)} · {file.mimeType}
-                </p>
-                <div class="flex gap-2">
-                  <Button variant="outline" size="sm" class="flex-1" onclick={() => copyUrl(file)}>
-                    <Copy data-icon="inline-start" />
-                    复制链接
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    aria-label="删除文件"
-                    class="text-destructive hover:text-destructive"
-                    onclick={() => (deleteTarget = file)}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
+        <MediaGrid
+          media={mediaPageState.media}
+          onCopy={file => void mediaPageState.copyFileUrl(file)}
+          onDelete={file => (deleteTarget = file)}
+        />
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
-          <p class="text-sm text-muted-foreground">共 {total} 个文件</p>
+          <p class="text-sm text-muted-foreground">共 {mediaPageState.total} 个文件</p>
           <Pagination.Root
             class="mx-0 w-auto"
-            count={total}
+            count={mediaPageState.total}
             perPage={MEDIA_PAGE_SIZE}
-            page={currentPage}
-            onPageChange={handlePageChange}
+            page={mediaPageState.currentPage}
+            onPageChange={page => mediaPageState.changePage(page)}
           >
             <Pagination.Content>
               <Pagination.PrevButton />
               <span class="px-2 text-sm text-muted-foreground tabular-nums">
-                第 {currentPage} 页，共 {Math.max(1, Math.ceil(total / MEDIA_PAGE_SIZE))} 页
+                第 {mediaPageState.currentPage} 页，共 {mediaPageState.totalPages} 页
               </span>
               <Pagination.NextButton />
             </Pagination.Content>
