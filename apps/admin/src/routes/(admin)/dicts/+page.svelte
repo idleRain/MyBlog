@@ -7,19 +7,21 @@ import type {
   UpdateDictItemRequest,
   UpdateDictTypeRequest
 } from '@myblog/api/modules/dict/types'
-import { BookText, ListTree, Pencil, Plus, Trash2 } from '@lucide/svelte'
 import { SITE_NAME_ZH } from '@myblog/shared'
+import { Plus } from '@lucide/svelte'
 import { Button } from '$ui/button'
-import * as Table from '$ui/table'
-import { Badge } from '$ui/badge'
-import * as Card from '$ui/card'
 
 import DictTypeFormDialog from '$lib/components/admin/dict/dict-type-form-dialog.svelte'
 import DictItemFormDialog from '$lib/components/admin/dict/dict-item-form-dialog.svelte'
+import DictItemTable from '$lib/components/admin/dict/dict-item-table.svelte'
+import DictTypeList from '$lib/components/admin/dict/dict-type-list.svelte'
 import { dictPageState, emptyDictPageData } from './dict-page-state.svelte'
 import ConfirmDialog from '$lib/components/admin/confirm-dialog.svelte'
 import PageHeader from '$lib/components/admin/page-header.svelte'
 import type { PageProps } from './$types'
+
+// 删除确认的目标，种类决定分发到类型删除还是字典项删除。
+type DeleteTarget = { kind: 'type' | 'item'; id: number; name: string }
 
 let { data }: PageProps = $props()
 
@@ -31,27 +33,30 @@ $effect(() => {
   dictPageState.initialize(data ?? emptyDictPageData())
 })
 
-// 字典生效状态的展示配置，本页为字典体系自身的管理界面，直接使用其内置枚举。
-const DICT_STATUS_CONFIG: Record<number, { label: string; variant: 'default' | 'secondary' }> = {
-  1: { label: '生效', variant: 'default' },
-  0: { label: '停用', variant: 'secondary' }
-}
-
 // 弹窗与删除确认状态
 let isTypeDialogOpen = $state(false)
 let typeDialogTarget = $state<DictType | null>(null)
 let isItemDialogOpen = $state(false)
 let itemDialogTarget = $state<DictItem | null>(null)
 let isSubmitting = $state(false)
-let deleteTarget = $state<{ kind: 'type' | 'item'; id: number; name: string } | null>(null)
+let deleteTarget = $state<DeleteTarget | null>(null)
 
-// 新建字典项前必须选中一个字典类型。
-function openCreateItem() {
-  if (!dictPageState.selectedType) {
-    return
-  }
-  itemDialogTarget = null
+// 打开字典类型弹窗，目标为空表示新建。
+function openTypeDialog(target: DictType | null) {
+  typeDialogTarget = target
+  isTypeDialogOpen = true
+}
+
+// 打开字典项弹窗，新建前必须已选中字典类型。
+function openItemDialog(target: DictItem | null) {
+  if (!target && !dictPageState.selectedType) return
+  itemDialogTarget = target
   isItemDialogOpen = true
+}
+
+// 记录待删除目标，弹窗提交后按种类分发。
+function openDeleteDialog(kind: 'type' | 'item', id: number, name: string) {
+  deleteTarget = { kind, id, name }
 }
 
 // 提交字典类型表单，新建与编辑分别调用对应写操作。
@@ -109,206 +114,31 @@ async function handleDelete() {
   crumb="字典管理"
 >
   {#snippet actions()}
-    <Button
-      onclick={() => {
-        typeDialogTarget = null
-        isTypeDialogOpen = true
-      }}
-    >
+    <Button onclick={() => openTypeDialog(null)}>
       <Plus data-icon="inline-start" />
       新建字典类型
     </Button>
   {/snippet}
 
   <div class="grid gap-4 lg:grid-cols-3">
-    <Card.Root class="lg:col-span-1">
-      <Card.Header class="pb-3">
-        <Card.Title class="flex items-center gap-2 text-base">
-          <ListTree class="size-4" />
-          字典类型
-        </Card.Title>
-      </Card.Header>
-      <Card.Content class="p-0">
-        {#if dictPageState.isLoadingTypes}
-          <div class="flex h-64 items-center justify-center">
-            <span
-              class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-            ></span>
-          </div>
-        {:else if dictPageState.types.length === 0}
-          <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
-            <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
-              <BookText class="size-6 text-muted-foreground" />
-            </div>
-            <div class="space-y-1">
-              <h3 class="text-base font-medium">暂无字典类型</h3>
-              <p class="text-sm text-muted-foreground">创建第一个字典类型开始使用</p>
-            </div>
-            <Button size="sm" onclick={() => (isTypeDialogOpen = true)}>
-              <Plus data-icon="inline-start" />
-              新建字典类型
-            </Button>
-          </div>
-        {:else}
-          <ul class="max-h-[32rem] divide-y overflow-y-auto">
-            {#each dictPageState.types as type (type.id)}
-              <li>
-                <button
-                  type="button"
-                  class="w-full px-4 py-3 text-left transition-colors hover:bg-muted/60 {type.id ===
-                  dictPageState.selectedTypeId
-                    ? 'bg-muted'
-                    : ''}"
-                  onclick={() => dictPageState.selectType(type.id)}
-                >
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-medium">{type.name}</span>
-                    <Badge variant={DICT_STATUS_CONFIG[type.status]?.variant ?? 'secondary'}>
-                      {DICT_STATUS_CONFIG[type.status]?.label ?? '未知'}
-                    </Badge>
-                  </div>
-                  <div class="mt-1 flex items-center justify-between gap-2">
-                    <span class="font-mono text-xs text-muted-foreground">{type.code}</span>
-                    <span class="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label="编辑字典类型"
-                        onclick={() => {
-                          typeDialogTarget = type
-                          isTypeDialogOpen = true
-                        }}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label="删除字典类型"
-                        class="text-destructive hover:text-destructive"
-                        onclick={() =>
-                          (deleteTarget = { kind: 'type', id: type.id, name: type.name })}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </span>
-                  </div>
-                </button>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </Card.Content>
-    </Card.Root>
+    <DictTypeList
+      types={dictPageState.types}
+      selectedTypeId={dictPageState.selectedTypeId}
+      isLoading={dictPageState.isLoadingTypes}
+      onSelect={id => void dictPageState.selectType(id)}
+      onEdit={type => openTypeDialog(type)}
+      onDelete={type => openDeleteDialog('type', type.id, type.name)}
+      onCreate={() => openTypeDialog(null)}
+    />
 
-    <Card.Root class="lg:col-span-2">
-      <Card.Header class="flex flex-row items-center justify-between pb-3">
-        <Card.Title class="flex items-center gap-2 text-base">
-          字典项
-          {#if dictPageState.selectedType}
-            <span class="font-mono text-xs text-muted-foreground">
-              {dictPageState.selectedType.code}
-            </span>
-          {/if}
-        </Card.Title>
-        <Button size="sm" onclick={openCreateItem} disabled={!dictPageState.selectedType}>
-          <Plus data-icon="inline-start" />
-          新建字典项
-        </Button>
-      </Card.Header>
-      <Card.Content class="p-0">
-        {#if !dictPageState.selectedType}
-          <div class="flex h-64 items-center justify-center">
-            <p class="text-sm text-muted-foreground">请先选择字典类型</p>
-          </div>
-        {:else if dictPageState.isLoadingItems}
-          <div class="flex h-64 items-center justify-center">
-            <span
-              class="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-            ></span>
-          </div>
-        {:else if dictPageState.items.length === 0}
-          <div class="flex h-64 flex-col items-center justify-center gap-4 px-6 text-center">
-            <div class="flex size-12 items-center justify-center rounded-xl border bg-muted/50">
-              <ListTree class="size-6 text-muted-foreground" />
-            </div>
-            <div class="space-y-1">
-              <h3 class="text-base font-medium">暂无字典项</h3>
-              <p class="text-sm text-muted-foreground">为当前字典类型添加可选值</p>
-            </div>
-            <Button size="sm" onclick={openCreateItem}>
-              <Plus data-icon="inline-start" />
-              新建字典项
-            </Button>
-          </div>
-        {:else}
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head>值</Table.Head>
-                <Table.Head>显示名</Table.Head>
-                <Table.Head class="hidden md:table-cell">描述</Table.Head>
-                <Table.Head>排序</Table.Head>
-                <Table.Head>状态</Table.Head>
-                <Table.Head class="w-px text-center whitespace-nowrap">操作</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each dictPageState.items as item (item.id)}
-                <Table.Row>
-                  <Table.Cell>
-                    <code
-                      class="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
-                    >
-                      {item.value}
-                    </code>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span class="font-medium">{item.label}</span>
-                  </Table.Cell>
-                  <Table.Cell class="hidden md:table-cell">
-                    <span class="text-sm text-muted-foreground">{item.description || '—'}</span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <span class="text-sm tabular-nums">{item.sortOrder}</span>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Badge variant={DICT_STATUS_CONFIG[item.status]?.variant ?? 'secondary'}>
-                      {DICT_STATUS_CONFIG[item.status]?.label ?? '未知'}
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div class="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label="编辑字典项"
-                        onclick={() => {
-                          itemDialogTarget = item
-                          isItemDialogOpen = true
-                        }}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label="删除字典项"
-                        class="text-destructive hover:text-destructive"
-                        onclick={() =>
-                          (deleteTarget = { kind: 'item', id: item.id, name: item.label })}
-                      >
-                        <Trash2 />
-                      </Button>
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        {/if}
-      </Card.Content>
-    </Card.Root>
+    <DictItemTable
+      type={dictPageState.selectedType}
+      items={dictPageState.items}
+      isLoading={dictPageState.isLoadingItems}
+      onCreate={() => openItemDialog(null)}
+      onEdit={item => openItemDialog(item)}
+      onDelete={item => openDeleteDialog('item', item.id, item.label)}
+    />
   </div>
 
   <DictTypeFormDialog

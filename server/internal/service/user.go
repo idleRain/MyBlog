@@ -164,7 +164,7 @@ func (s *userService) CreateUser(req *domain.CreateUserRequest) (*domain.User, e
 
 	// 验证角色是否有效
 	if !s.rbacService.IsValidRole(user.Role) {
-		return nil, fmt.Errorf("无效的用户角色: %s", user.Role)
+		return nil, fmt.Errorf("%w：无效的用户角色 %s", ErrInvalidRequest, user.Role)
 	}
 
 	// 创建用户
@@ -217,7 +217,7 @@ func (s *userService) UpdateUser(req *domain.UpdateUserRequest) (*domain.User, e
 
 	// 验证角色是否有效
 	if !s.rbacService.IsValidRole(existingUser.Role) {
-		return nil, fmt.Errorf("无效的用户角色: %s", existingUser.Role)
+		return nil, fmt.Errorf("%w：无效的用户角色 %s", ErrInvalidRequest, existingUser.Role)
 	}
 
 	// 如果提供了新密码，则更新密码
@@ -403,7 +403,7 @@ func (s *userService) ChangePassword(userID uint, req *ChangePasswordRequest) er
 	}
 
 	if !s.verifyPassword(req.OldPassword, user.Password) {
-		return fmt.Errorf("旧密码不正确")
+		return fmt.Errorf("%w：旧密码不正确", ErrInvalidRequest)
 	}
 
 	if err := ValidatePasswordStrength(req.NewPassword); err != nil {
@@ -448,13 +448,13 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 		// 如果用户名未找到，尝试通过邮箱查找
 		user, err = s.userRepo.GetByEmail(username)
 		if err != nil {
-			return nil, fmt.Errorf("用户不存在")
+			return nil, fmt.Errorf("%w：用户不存在", ErrUnauthenticated)
 		}
 	}
 
 	// 锁定检查先于密码校验，锁定期间即使密码正确也拒绝，阻断持续爆破。
 	if user.IsLocked() {
-		return nil, fmt.Errorf("账户已被锁定，请稍后再试")
+		return nil, fmt.Errorf("%w：账户已被锁定，请稍后再试", ErrUnauthenticated)
 	}
 
 	// 验证密码
@@ -464,7 +464,7 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 
 	// 检查用户状态
 	if user.Status != model.UserStatusActive {
-		return nil, fmt.Errorf("用户已被禁用")
+		return nil, fmt.Errorf("%w：用户已被禁用", ErrUnauthenticated)
 	}
 
 	// 登录成功后清零失败计数并解除历史锁定标记。
@@ -491,7 +491,7 @@ func (s *userService) Login(username, password string) (*LoginResponse, error) {
 // 落库失败不掩盖原始的密码错误结果，仅代表本次计数未持久化。
 func (s *userService) recordLoginFailure(user *domain.User) error {
 	if err := s.userRepo.IncrementLoginFailures(user.ID); err != nil {
-		return fmt.Errorf("密码错误")
+		return fmt.Errorf("%w：密码错误", ErrUnauthenticated)
 	}
 
 	// 阈值判断由条件更新自身完成，返回落库成功标记用于选择响应文案。
@@ -499,16 +499,16 @@ func (s *userService) recordLoginFailure(user *domain.User) error {
 		lockedUntil := time.Now().Add(s.lockoutPolicy.LockDuration)
 		locked, err := s.userRepo.LockUserAfterFailures(user.ID, s.lockoutPolicy.MaxFailedLogins, lockedUntil)
 		if err != nil {
-			return fmt.Errorf("密码错误")
+			return fmt.Errorf("%w：密码错误", ErrUnauthenticated)
 		}
 		if locked {
 			// 同步内存实体，保证登录失败响应与库中状态一致，不写回其他字段。
 			user.LockedUntil = &lockedUntil
-			return fmt.Errorf("密码错误，失败次数过多，账户已被锁定，请稍后再试")
+			return fmt.Errorf("%w：密码错误，失败次数过多，账户已被锁定，请稍后再试", ErrUnauthenticated)
 		}
 	}
 
-	return fmt.Errorf("密码错误")
+	return fmt.Errorf("%w：密码错误", ErrUnauthenticated)
 }
 
 // resetLoginFailure 登录成功后清零失败计数并清除锁定截止时间。
@@ -541,11 +541,11 @@ func (s *userService) RefreshToken(refreshToken string) (*TokenPair, error) {
 	user, err := s.userRepo.GetByID(identity.UserID)
 	if err != nil {
 		// 不透出仓储层原始错误，避免数据库细节经响应体泄漏。
-		return nil, fmt.Errorf("用户不存在或已失效")
+		return nil, fmt.Errorf("%w：用户不存在或已失效", ErrUnauthenticated)
 	}
 
 	if user.Status != model.UserStatusActive {
-		return nil, fmt.Errorf("用户已被禁用")
+		return nil, fmt.Errorf("%w：用户已被禁用", ErrUnauthenticated)
 	}
 
 	return s.tokenService.RefreshAccessToken(refreshToken)
@@ -574,22 +574,22 @@ func (s *userService) CanUserManageRole(managerRole, targetRole string) bool {
 func (s *userService) ValidateRoleTransition(currentRole, newRole string) error {
 	// 检查新角色是否有效
 	if !s.rbacService.IsValidRole(newRole) {
-		return fmt.Errorf("无效的目标角色: %s", newRole)
+		return fmt.Errorf("%w：无效的目标角色 %s", ErrInvalidRequest, newRole)
 	}
 
 	// 检查当前角色是否有效
 	if !s.rbacService.IsValidRole(currentRole) {
-		return fmt.Errorf("无效的当前角色: %s", currentRole)
+		return fmt.Errorf("%w：无效的当前角色 %s", ErrInvalidRequest, currentRole)
 	}
 
 	// 超级管理员角色只能由系统设置，不能通过API变更
 	if newRole == string(RoleSuperAdmin) {
-		return fmt.Errorf("超级管理员角色只能通过系统管理员设置")
+		return fmt.Errorf("%w：超级管理员角色只能通过系统管理员设置", ErrInvalidRequest)
 	}
 
 	// 从超级管理员降级需要特殊处理
 	if currentRole == string(RoleSuperAdmin) {
-		return fmt.Errorf("超级管理员角色不能被降级")
+		return fmt.Errorf("%w：超级管理员角色不能被降级", ErrInvalidRequest)
 	}
 
 	return nil

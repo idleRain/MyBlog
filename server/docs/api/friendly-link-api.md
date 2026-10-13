@@ -142,9 +142,9 @@ curl -X POST http://localhost:3000/api/admin/friendlyLinks/create \
 | 状态码 | 说明 |
 |--------|------|
 | 400 | 请求参数错误（binding 校验） |
-| 500 | 该站点 URL 已存在 |
+| 400 | 请求参数不合法：该站点 URL 已存在 |
 
-> URL 重复校验错误当前归入未分类错误，实际响应码为 500。
+> URL 重复经 `ErrInvalidRequest` 哨兵映射为 400。
 
 ### 3. 更新友情链接
 
@@ -344,6 +344,6 @@ curl -X POST http://localhost:3000/api/friendlyLinks/apply \
 | 状态码 | 说明 |
 |--------|------|
 | 400 | 请求参数错误（binding 校验） |
-| 500 | 该站点已提交过申请 |
+| 400 | 请求参数不合法：该站点已提交过申请，请等待审核 |
 
-> 重复申请校验错误当前归入未分类错误，实际响应码为 500。
+> 重复申请经 `ErrInvalidRequest` 哨兵映射为 400。

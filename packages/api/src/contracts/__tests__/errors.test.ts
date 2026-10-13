@@ -7,7 +7,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
 
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..')
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..')
 const goResponsePath = resolve(repositoryRoot, 'server/pkg/response/response.go')
 const sharedConstantsPath = resolve(repositoryRoot, 'packages/shared/src/constants/api.ts')
 

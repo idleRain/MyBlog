@@ -1,6 +1,6 @@
 // 认证 store 的登录持久化、单飞续期调度与跨标签页同步单元测试。
-import { installFakeBrowserEnv, AUTH_USER_KEY, UNRELATED_KEY } from './test-fixtures'
-import { createAuthStore, type AuthStoreDeps } from './auth-store'
+import { installFakeBrowserEnv, AUTH_USER_KEY, UNRELATED_KEY } from '../test/fixtures'
+import { createAuthStore, type AuthStoreDeps } from '../auth-store'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '@myblog/api/modules/user/types'
 import { get } from 'svelte/store'

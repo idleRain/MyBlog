@@ -22,7 +22,7 @@ vi.mock('$lib/api', () => ({ DictAPI: apiMock }))
 vi.mock('svelte-sonner', () => ({ toast: toastMock }))
 
 const { DICT_PAGE_SIZE, emptyDictPageData, dictPageState } =
-  await import('./dict-page-state.svelte')
+  await import('../dict-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200

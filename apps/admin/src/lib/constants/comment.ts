@@ -1,6 +1,6 @@
 // 评论模块常量：状态配置、筛选选项与审核动作映射。
+// 本文件不得引入图标库：状态模块与单元测试都会引用它，图标桶进入编译图会把测试启动代价放大两个数量级。
 
-import { ArchiveX, Ban, CircleCheck, CircleX, Trash2, type LucideIcon } from '@lucide/svelte'
 import type { CommentStatus } from '@myblog/api/modules/comment/types'
 import type { BadgeVariant } from '$ui/badge'
 
@@ -45,15 +45,6 @@ export const COMMENT_ACTION_LABELS: Record<CommentAction, string> = {
   spam: '标记垃圾',
   trash: '移入回收站',
   delete: '删除'
-}
-
-// 审核动作的图标映射，与 COMMENT_ACTION_LABELS 一一对应，供下拉菜单渲染。
-export const COMMENT_ACTION_ICONS: Record<CommentAction, LucideIcon> = {
-  approve: CircleCheck,
-  reject: CircleX,
-  spam: Ban,
-  trash: ArchiveX,
-  delete: Trash2
 }
 
 // 评论默认分页大小

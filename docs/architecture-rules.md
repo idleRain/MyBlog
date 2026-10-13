@@ -1,10 +1,10 @@
 # MyBlog 架构铁律与纪律手册
 
-> 本手册是 `AGENTS.md` 第 1 节「结构红线」的完整裁决细则，效力高于普通文档。
+> 本手册是项目结构红线（依赖方向、类型真相源、契约先行、单一权威、复用纪律、数据加载）的完整裁决细则，效力高于普通文档。
 > 本项目的抽象设计基本正确（分层骨架、packages 单向依赖、工厂注入），但历史上被长期系统性绕行，
 > 形成了若干结构性顽疾。本手册的使命是让"绕行"在代码评审与自检命令层面被拦截。
 >
-> **裁决顺序**：`~/.dsh/AGENTS.md`（全局）< `AGENTS.md`（项目）< 本手册（细则）。冲突时以更具体者为准。
+> **效力**：本手册效力高于普通文档；与更具体的细则冲突时以更具体者为准。
 >
 > **分册**：第 1 至 7 节为规则本体，第 8 节为债务索引，第 9 至 10 节为历史登记；债务的完整条目（状态、基线数值、验证命令、完整红线）按关注域分册在 [`debt/`](./debt/README.md)。
 
@@ -107,7 +107,7 @@ git grep -n "interface BaseApiResponse" -- apps
 | 锁 | 机制 | 落地状态 |
 |---|---|---|
 | ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/{fixture_locks,login_fixture,session_fixture,article_fixture,comment_fixture}_test.go`（**15/15 金样本**，覆盖认证会话、文章、评论三条核心链路） |
-| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/fixtures.test.ts`（15 用例，与 ① 一一对应） |
+| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/__tests__/fixtures.test.ts`（15 用例，与 ① 一一对应） |
 | ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | ✅ `apps/admin` 与 `apps/web` 双侧 eslint.config.js |
 
 **覆盖对齐**：`TestFixtureCoverage` 以目录扫描为准，校验每个金样本都同时被 Go 侧断言与 TS 侧锚定引用，且引用的金样本确实存在；新增金样本却漏写任一端锚点即变红，金样本清单不依赖人工登记表维护。
@@ -120,7 +120,7 @@ git grep -n "interface BaseApiResponse" -- apps
 
 **错误码契约的同类锚定**：`contracts/errors.yaml` 同样不引入 codegen 生成物，改用双向锚定：
 Go 侧 `internal/handler/error_contract_test.go` 的 `TestErrorMappingMatchesContract` 校验 `transport` 节与 `pkg/response` 常量一致、
-`mapping` 节与 `handler` 分档注册表双向一致；前端侧 `packages/api/src/contracts/errors.test.ts` 校验 `@myblog/shared` 的响应码常量与 `pkg/response` 逐值一致。
+`mapping` 节与 `handler` 分档注册表双向一致；前端侧 `packages/api/src/contracts/__tests__/errors.test.ts` 校验 `@myblog/shared` 的响应码常量与 `pkg/response` 逐值一致。
 两侧任一方单独改动即变红，门禁入口同上。
 
 **升级触发器**（命中任一则改用 codegen 方案）：
@@ -214,7 +214,9 @@ git grep -n "NewRBACService()" -- server
 | 应用 | 新页面强制模式 | 存量处理 |
 |---|---|---|
 | web（SSR 路线） | `+page.server.ts`（需 SEO/会话）或 `+page.ts` load | 死 load 已清理，按此模式接入业务 |
-| admin（SPA 路线） | 优先 load + `.svelte.ts` 页面状态模块 | 7 个胖组件不强制迁移，触碰时拆分 |
+| admin（SPA 路线） | 优先 load + `.svelte.ts` 页面状态模块 | 胖组件 7→0 已清零；13 个页面取数已归位 load |
+
+`admin` 侧再分两档：含客户端读写操作（列表筛选、分页、增删改）的页面必须配 `<domain>-page-state.svelte.ts` 及配套单测；只读页（无客户端读写）由 `+page.ts` 的 load 直出 page data，不建仅转发数据的空转模块。权限裁剪读 `@myblog/auth` 的本地认证状态，load 内禁止调用认证接口。
 
 胖组件判定标准（任一命中即应拆分）：单文件 > 300 行；`$state` 声明 > 8 个；组件内直接调用 API 且含增删改多个 handler；组件内含权限判定逻辑。
 
@@ -279,12 +281,12 @@ git grep -n "replicas" -- docker-compose.yml
 | 业务错误未归哨兵导致分档退化为 500 | [`debt/architecture.md`](./debt/architecture.md) 第 7 条 | 新增业务错误必须包装哨兵并同步登记契约 |
 | 两 app 基础设施逐字重复 | [`debt/frontend.md`](./debt/frontend.md) 第 1 条 | 修改任一必须同步另一份 |
 | admin 认证工具三轨并行 | [`debt/frontend.md`](./debt/frontend.md) 第 2 条 | 禁止新增认证工具文件与双轨回退 |
-| admin 胖组件 + onMount 取数 | [`debt/frontend.md`](./debt/frontend.md) 第 3 条 | 新页面禁用 onMount 取数，缺口推回后端 |
+| admin 胖组件 + onMount 取数 | [`debt/frontend.md`](./debt/frontend.md) 第 3 条 | 新页面禁用 onMount 取数；行数与取数口径均已清零，constants 不得引入图标库 |
 | web 首页 load 死代码 | [`debt/frontend.md`](./debt/frontend.md) 第 4 条 | 新页面禁用 load 调认证接口 |
 | 401 文案匹配 | [`debt/frontend.md`](./debt/frontend.md) 第 5 条 | 禁止回退文案匹配 |
 | admin 重写 `$ui` 已有组件（含 web 分页例外） | [`debt/frontend.md`](./debt/frontend.md) 第 6 条 | 新分页一律 `$ui`，禁止新增第三处实现 |
 | web 界面多语言局部接入 | [`debt/frontend.md`](./debt/frontend.md) 第 7 条 | 已接入文件禁止回退硬编码 |
-| 字典页窄屏交互与工具栏布局遗留 | [`debt/frontend.md`](./debt/frontend.md) 第 8 条 | 触碰该页必须顺带处理 |
+| 字典页窄屏交互与工具栏布局遗留 | [`debt/frontend.md`](./debt/frontend.md) 第 8 条 | 禁止回退为嵌套交互元素，窄屏列折叠与焦点环不得移除 |
 | 公开端点直出实体泄漏个人信息 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 1 条 | 个人信息须经窄化 DTO 或字段白名单 |
 | 文章响应泄漏作者审计字段 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 2 条 | 新增审计字段默认 `json:"-"` |
 | WAF 内容级黑名单的固有误伤面 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 3 条 | 阻止模式必须先红后绿并配两组用例 |
@@ -300,10 +302,10 @@ git grep -n "replicas" -- docker-compose.yml
 
 | 阶段 | 内容 | 完成的债务 | 验收口径 |
 |---|---|---|---|
-| 阶段一 结构归位与错误分档 | 删 router 重复接口与不可达代码；错误分档（哨兵错误→404/403/400）；令牌表加锁；web 死 load 清理；建立 `contracts/` 目录 | router 重复接口、web 死 load、401 判定均已修复；令牌表已加锁；`RBACService` 生产实例化点仅 1 处；not-found 哨兵→404 已落地，403/400 随错误码契约落地 | ✅ `AGENTS.md` 第 2 节自检命令全绿 |
+| 阶段一 结构归位与错误分档 | 删 router 重复接口与不可达代码；错误分档（哨兵错误→404/403/400）；令牌表加锁；web 死 load 清理；建立 `contracts/` 目录 | router 重复接口、web 死 load、401 判定均已修复；令牌表已加锁；`RBACService` 生产实例化点仅 1 处；not-found 哨兵→404 已落地，403/400 随错误码契约落地；全部业务错误归哨兵完成，认证失败经 `ErrUnauthenticated`→401，handler 私有映射分支清零 | ✅ 项目自检命令（后端 build/vet/test、两应用类型检查、lint 与 format）全绿 |
 | 阶段二 类型归位 | 建立 `internal/domain`，合并双 User，service/middleware/router 签名切换为 domain 类型；前端 auth 下沉共享包、影子类型清除 | 双 User 模型与影子类型层已修复；两 app 重复代码大幅减少（auth store 下沉）；service 层 repository 依赖由 12 降至 11 | ✅ 依赖方向基线下降；auth store diff 为零 |
 | 阶段三 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | 401 文案匹配与审计字段泄漏已修复；三把锁已落地（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
-| 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一 | 权限定义全栈唯一；认证工具单轨 ✅ |
+| 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一；admin 胖组件行数口径 7→0，13 个页面取数归位到 load（含 11 个页面状态模块与配套单测），取数口径 6→0，`onMount` 仅余鉴权 2 处 | 权限定义全栈唯一；认证工具单轨 ✅；admin 行数与取数两条基线均归零 ✅ |
 | 阶段五 扩展点 | 后端 ContentRenderer 内容策略接口（当前 `pkg/markdown` 已直接承接 Markdown 渲染，策略接口化待做）；web 业务页面已按"公开数据 SSR + 个性化数据客户端补拉"现状接入，token 迁 cookie 已完成 | — | 新文章类型 = 插入实现，非逐层打洞 |
 
 ---

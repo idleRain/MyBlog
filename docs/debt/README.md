@@ -13,7 +13,7 @@
 
 合计 20 条，与 `docs/architecture-rules.md` 第 8 节的索引表一一对应。
 
-> 相邻登记：契约与实现之间仍存在的映射冲突登记在 `contracts/errors.yaml` 的「实现偏差」节，该节清除后自行删除；业务错误未归哨兵的存量清单登记在本目录 `architecture.md` 第 7 条。
+> 相邻登记：契约与实现之间若再现映射冲突，登记在 `contracts/errors.yaml` 的「实现偏差」节，该节清除后自行删除；历史偏差（登录与刷新的私有 401 分支）已随 `architecture.md` 第 7 条修复一并清除。
 
 ## 条目格式
 

@@ -2,7 +2,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 
 	"MyBlog/internal/domain"
@@ -276,7 +275,7 @@ func (s *CategoryService) DeleteCategory(id uint, operatorID uint) error {
 		return err
 	}
 	if childCount > 0 {
-		return errors.New("存在子分类，无法删除")
+		return fmt.Errorf("%w：存在子分类，无法删除", ErrInvalidRequest)
 	}
 
 	return s.categoryRepo.Delete(id)
@@ -339,7 +338,7 @@ func (s *CategoryService) resolveParent(parentID *uint) (*model.Category, error)
 
 	parent, err := s.categoryRepo.GetByID(*parentID)
 	if err != nil {
-		return nil, errors.New("父分类不存在")
+		return nil, fmt.Errorf("%w：父分类不存在", domain.ErrCategoryNotFound)
 	}
 	return parent, nil
 }
@@ -350,7 +349,7 @@ func (s *CategoryService) updateCategoryPath(category *model.Category) error {
 	if category.ParentID != nil {
 		parent, err := s.categoryRepo.GetByID(*category.ParentID)
 		if err != nil {
-			return errors.New("父分类不存在")
+			return fmt.Errorf("%w：父分类不存在", domain.ErrCategoryNotFound)
 		}
 		path = parent.Path + fmt.Sprintf("/%d", category.ID)
 	}

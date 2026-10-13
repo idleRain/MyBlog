@@ -1,6 +1,6 @@
 // HTTP 请求器会话续期与重放行为的单元测试。
 // 覆盖 401 之后"续期一次、重放一次、再失败即判定认证失效"的完整语义。
-import { createHttpClient, type HttpClientAuthHooks } from './client'
+import { createHttpClient, type HttpClientAuthHooks } from '../client'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AfterResponseHook } from 'ky'
 

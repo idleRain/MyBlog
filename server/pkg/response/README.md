@@ -23,4 +23,4 @@
 
 - 具体错误信息放在 `message` 字段，前端直接展示；`Response` 无 `error` 字段。
 - handler 不把内部错误原文写入 `message`：service 错误统一经 `handler.HandleServiceError` 分档，未分类错误脱敏为「服务器内部错误」。
-- 前端响应类型唯一来源为 `@myblog/shared` 的 `ApiResponse`；响应码常量见 `AGENTS.md` 第 5 节「统一响应」。
+- 前端响应类型唯一来源为 `@myblog/shared` 的 `ApiResponse`；响应码常量以上表为唯一口径，与 `contracts/errors.yaml` 的 `transport` 节逐值一致。

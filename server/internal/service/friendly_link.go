@@ -2,7 +2,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 
 	"MyBlog/internal/model"
@@ -129,7 +128,7 @@ func NewFriendlyLinkService(linkRepo repository.FriendlyLinkRepositoryInterface)
 func (s *FriendlyLinkService) CreateLink(req *CreateFriendlyLinkRequest) (*model.FriendlyLink, error) {
 	// 校验站点 URL 唯一。
 	if existing, err := s.linkRepo.GetByURL(req.URL); err == nil && existing != nil {
-		return nil, errors.New("该站点 URL 已存在")
+		return nil, fmt.Errorf("%w：该站点 URL 已存在", ErrInvalidRequest)
 	}
 
 	sortOrder := 0
@@ -163,7 +162,7 @@ func (s *FriendlyLinkService) CreateLink(req *CreateFriendlyLinkRequest) (*model
 func (s *FriendlyLinkService) ApplyLink(req *ApplyFriendlyLinkRequest) (*FriendlyLinkPublic, error) {
 	// 同一站点 URL 不论处于何种状态均不重复申请。
 	if existing, err := s.linkRepo.GetByURL(req.URL); err == nil && existing != nil {
-		return nil, errors.New("该站点已提交过申请，请等待审核")
+		return nil, fmt.Errorf("%w：该站点已提交过申请，请等待审核", ErrInvalidRequest)
 	}
 
 	link := &model.FriendlyLink{

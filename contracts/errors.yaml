@@ -4,7 +4,7 @@
 # 锚定方式复用 docs/architecture-rules.md §3.4 的双向锚定，不引入 codegen：
 #   - 后端：internal/handler/error_contract_test.go 的 TestErrorMappingMatchesContract，
 #     校验本文件 transport 节与 pkg/response 常量一致、mapping 节与 handler 分档注册表双向一致；
-#   - 前端：packages/api/src/contracts/errors.test.ts，
+#   - 前端：packages/api/src/contracts/__tests__/errors.test.ts，
 #     校验 @myblog/shared 的响应码常量与 pkg/response 逐值一致。
 # 任一侧单独改动即变红，门禁入口为 pnpm run contract:check。
 
@@ -24,6 +24,10 @@ transport:
 # 禁止模块私有映射出现第二套权威；handler 层的 binding 校验失败与中间件权限判定不经此处，
 # 直接经 pkg/response 返回 400 / 401 / 403。
 mapping:
+  '401':
+    # 登录凭据错误、账号状态异常与令牌校验失败统一包装该哨兵，
+    # 登录、刷新与会话建立三个入口均经 HandleServiceError 分档，不再有 handler 私有 401 分支
+    - service.ErrUnauthenticated
   '403':
     - service.ErrPermissionDenied
   '404':
@@ -48,13 +52,6 @@ mapping:
     # 未命中以上哨兵的错误统一归入此类，响应文案固定为「服务器内部错误」，
     # 原始错误仅写入日志，防止表名、列名与 SQL 片段经响应体泄漏。
     []
-
-# 实现偏差：以下路径与上表冲突，契约口径以上表为准，修复方向是让这些路径改走唯一映射点，
-# 不要按现状修改契约；偏差清除后删除本节。
-#   - 登录与刷新失败的 401 由 handler 私有分支产生：handler/user.go 的 Login 与 RefreshToken
-#     直接调用 response.Unauthorized(c, err.Error()) 返回，绕过 HandleServiceError，
-#     构成第二套映射权威。修复方向是为认证失败定义哨兵并在本表增补 '401' 分类；
-#     对应的 service 侧裸错误清单见 docs/debt/architecture.md 第 7 条。
 
 # 业务错误码命名空间（目标态，本轮不启用）
 # 决策：响应体不新增 bizCode 字段，code 语义维持传输层码；命名空间与业务码

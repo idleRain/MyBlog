@@ -23,7 +23,7 @@
 
 ### 1.2 `packages/ui` 边界（stock 原则）
 
-- 组件归属、stock 原则与「禁止在应用内重写」见根 `AGENTS.md` 第 6 节，本节不重复；组件源码**禁止硬编码业务色与业务样式**，外观一律通过各应用 `src/styles/tokens.css` 的语义 token 与调用处 `className` prop 定制，前后台的外观差异全部落在该文件，**不得**通过修改 `packages/ui` 组件源码实现。
+- 基础组件统一归属 `packages/ui` 并保持 stock，应用内**禁止重写 `$ui` 已有组件**；组件源码**禁止硬编码业务色与业务样式**，外观一律通过各应用 `src/styles/tokens.css` 的语义 token 与调用处 `className` prop 定制，前后台的外观差异全部落在该文件，**不得**通过修改 `packages/ui` 组件源码实现。
 - 组件库内仅使用标准 shadcn token（`--background` / `--foreground` / `--card` / `--primary` / `--muted` / `--border` / `--ring` / `--destructive` / `--radius` 等）。
 - 组件库**只提供逐组件子路径入口**，不提供包级聚合入口：`@myblog/ui` 的 `exports` 仅保留 `./*`，原 `packages/ui/src/index.ts` 聚合文件已删除，两个应用的 eslint 对 `$ui` 与 `@myblog/ui` 裸导入设为 error。
 - 聚合入口的代价是可量化的：包内 `packages/ui/src` 共 394 个文件，其中 334 个是 `.svelte`，类型检查需要逐个转换 `.svelte`；按两个应用实际引用的 24 个组件入口做静态可达分析，可达文件为 166 个（其中 `.svelte` 142 个）。

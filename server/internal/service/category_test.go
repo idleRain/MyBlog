@@ -147,6 +147,27 @@ func TestDeleteCategoryWithChildren(t *testing.T) {
 	if err == nil {
 		t.Fatal("存在子分类时删除应返回错误")
 	}
+	// 子分类冲突属业务校验失败，handler 据此分档为 400 而非内部错误。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("存在子分类应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+}
+
+// TestCreateCategoryWithMissingParent 父分类不存在时归入 not-found 哨兵，
+// 避免降级为内部错误而丢失可修正提示。
+func TestCreateCategoryWithMissingParent(t *testing.T) {
+	missingParentID := uint(404)
+	repo := &fakeCategoryRepo{
+		getByID: func(id uint) (*model.Category, error) {
+			return nil, domain.ErrCategoryNotFound
+		},
+	}
+	svc := NewCategoryService(repo)
+
+	_, err := svc.CreateCategory(&CreateCategoryRequest{Name: "后端开发", ParentID: &missingParentID}, 1)
+	if !errors.Is(err, domain.ErrCategoryNotFound) {
+		t.Errorf("父分类不存在应返回 ErrCategoryNotFound，实际为 %v", err)
+	}
 }
 
 // TestDeleteCategoryNotFound 验证删除不存在的分类返回哨兵错误。

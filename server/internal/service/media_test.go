@@ -87,6 +87,10 @@ func TestUploadFileOversize(t *testing.T) {
 	if !strings.Contains(err.Error(), "大小超过限制") {
 		t.Errorf("错误信息不符合预期: %v", err)
 	}
+	// 超限属业务校验失败，handler 据此分档为 400 而非内部错误。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("超限上传应包装 ErrInvalidRequest，实际为 %v", err)
+	}
 }
 
 // TestUploadFileDeduplicates 验证相同内容文件通过哈希去重复用已有记录。
@@ -198,6 +202,10 @@ func TestUploadFileRejectsDisallowedType(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "不支持的文件类型") {
 		t.Errorf("错误信息不符合预期: %v", err)
+	}
+	// 类型不在白名单属业务校验失败，handler 据此分档为 400 而非内部错误。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("非白名单类型应包装 ErrInvalidRequest，实际为 %v", err)
 	}
 	if len(repo.media) != 0 {
 		t.Error("被拒绝的文件不应落库")

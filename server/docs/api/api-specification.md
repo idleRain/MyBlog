@@ -188,8 +188,10 @@ Content-Type: application/json
 ### 常见错误信息
 
 - `"请求参数错误: {具体错误信息}"`（`binding` 校验失败）
-- `"用户名已存在"` / `"邮箱已存在"` / `"邮箱已被其他用户使用"`
-- `"用户不存在"`
+- `"用户名已存在"` / `"邮箱已被其他用户使用"`
+- `"认证失败：{具体原因}"`（登录凭据、账号状态与令牌校验失败，业务码 401）
+- `"请求参数不合法：{具体原因}"`（业务规则校验失败，业务码 400）
+- `"用户不存在"`（资源未找到，业务码 404）
 - `"没有执行此操作的权限"` / `"权限不足，无法访问该资源"`
 - `"服务器内部错误"`（未分类错误的脱敏文案，原始错误只写入服务日志）
 
@@ -233,7 +235,7 @@ POST /api/{模块}/{操作}
 
 ## 服务端实现约定
 
-- 请求 DTO 统一定义在 `internal/domain/dto.go`；`binding` tag 只出现在请求 DTO 上，GORM 实体只携带 `json` 与 `gorm` tag。
+- 请求 DTO 以所属业务域的 service 包内定义为常态（如 `service.CreateArticleRequest`），用户域的 `CreateUserRequest`/`UpdateUserRequest` 在 `internal/domain/dto.go`，短参数 DTO 可就地声明在 handler；`binding` tag 只出现在请求 DTO 上，GORM 实体只携带 `json` 与 `gorm` tag。
 - 响应统一经 `pkg/response` 构建：成功用 `response.Success`，错误经 `handler.HandleServiceError` 分档，不把内部错误原文写入 `message`。
 - Go 结构体命名、注释与代码风格示例见 [`docs/development.md`](../../../docs/development.md) 「代码规范」。
 

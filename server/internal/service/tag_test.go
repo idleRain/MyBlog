@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"MyBlog/internal/domain"
@@ -70,6 +71,10 @@ func TestCreateTagUniqueName(t *testing.T) {
 	_, err := svc.CreateTag(req, 1)
 	if err == nil {
 		t.Fatal("重复标签名称应返回错误")
+	}
+	// 名称冲突属业务校验失败，handler 据此分档为 400 而非内部错误。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("重复标签名称应包装 ErrInvalidRequest，实际为 %v", err)
 	}
 }
 

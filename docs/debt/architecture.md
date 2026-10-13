@@ -47,9 +47,9 @@
 
 ## 7. 业务错误未归哨兵导致分档退化为 500
 
-- **状态**：存量，只减不增。
-- **基线**：以裸 `errors.New` 或 `fmt.Errorf`（不含 `%w`）表达的业务错误共 **30 处**，分布于 **7** 个文件：`internal/service/user.go` 16、`internal/service/token.go` 4、`internal/service/category.go` 3、`internal/service/friendly_link.go` 2、`internal/service/media.go` 2、`internal/service/tag.go` 2、`internal/service/article.go` 1。`*_test.go` 与 `internal/service/errors.go` 的哨兵定义不计入。这些错误未归入 `service` 或 `domain` 哨兵，经 `HandleServiceError` 落入兜底分支，响应退化为 500「服务器内部错误」并丢失可修正提示。其中登录与刷新失败当前依赖 `handler/user.go` 的私有 `response.Unauthorized` 分支才返回 401，构成第二套映射权威，已在 `contracts/errors.yaml` 的实现偏差节登记。
+- **状态**：已修复。
+- **基线**：以裸 `errors.New` 或 `fmt.Errorf`（不含 `%w`）表达的业务错误共 **0 处**。修复前基线为 30 处、分布于 7 个文件（`internal/service/user.go` 16、`token.go` 4、`category.go` 3、`friendly_link.go` 2、`media.go` 2、`tag.go` 2、`article.go` 1）；现全部改为包装哨兵：认证失败包装新增的 `service.ErrUnauthenticated`（映射 401）、业务规则校验失败包装 `service.ErrInvalidRequest`（400）、资源未找到包装 `domain.ErrUserNotFound` 与 `domain.ErrCategoryNotFound`（404）。`contracts/errors.yaml` 增补 `'401'` 分类，其「实现偏差」节随之清空删除；`handler/user.go` 的 Login 与 RefreshToken 私有 401 分支、`handler/session.go` 的 CreateSession 私有 401 分支、`handler/media.go` 的上传私有 400 分支与 `handler/user.go` 的角色转换私有 400 分支均改走 `HandleServiceError` 唯一映射点。
 - **验证命令**：在 `server/` 目录下执行
   `{ git grep -n 'fmt.Errorf(' -- internal/service ':(exclude)*_test.go' | grep -v '%w'; git grep -n 'errors.New(' -- internal/service ':(exclude)*_test.go' ':(exclude)internal/service/errors.go'; } | wc -l`
-  应输出 30；需要单文件分布时去掉 `| wc -l` 后按路径归并核对。
-- **红线**：新增业务校验失败、认证失败与资源未找到必须包装对应哨兵（`service.ErrInvalidRequest`、`domain.ErrXxxNotFound` 等），并同步登记 `contracts/errors.yaml` 的 mapping 节与 `handler` 分档注册表；禁止以裸错误表达同类语义，禁止在模块内新增私有映射分支。
+  应输出 0；分档一致性由 `go test ./internal/handler/ -run TestErrorMappingMatchesContract -count=1` 与 `pnpm run contract:check` 锚定。
+- **红线**：新增业务校验失败、认证失败与资源未找到必须包装对应哨兵（`service.ErrUnauthenticated`、`service.ErrInvalidRequest`、`domain.ErrXxxNotFound` 等），并同步登记 `contracts/errors.yaml` 的 mapping 节与 `handler` 分档注册表；禁止以裸错误表达同类语义，禁止在模块内新增私有映射分支。

@@ -1,6 +1,6 @@
 # 开发指南
 
-本文档提供 MyBlog Monorepo 的环境设置、开发工作流、工具陷阱与代码风格示例；架构层面的结构性规则与裁决细则见根 `AGENTS.md` 与 [`architecture-rules.md`](./architecture-rules.md)。
+本文档提供 MyBlog Monorepo 的环境设置、开发工作流、工具陷阱与代码风格示例；架构层面的结构性规则与裁决细则见 [`architecture-rules.md`](./architecture-rules.md)。
 
 ## 目录
 
@@ -16,7 +16,7 @@
 
 ### Monorepo 结构
 
-MyBlog 采用 Monorepo 架构，将前后端代码统一管理在一个仓库中。仓库目录树与各包职责见根 `AGENTS.md` 第 3 节「仓库概览」，本节不复述。
+MyBlog 采用 Monorepo 架构，将前后端代码统一管理在一个仓库中：`apps/` 放两个可部署前端应用，`packages/` 放被应用消费的共享前端包，`server/` 放 Go 后端，`contracts/` 承载跨端契约，`scripts/` 承载构建与开发脚本。各分区内部职责见本文件「后端架构」「前端架构」两节。
 
 ### 后端架构 (server/)
 
@@ -80,7 +80,7 @@ MyBlog 采用 Monorepo 架构，将前后端代码统一管理在一个仓库中
 
 #### 依赖注入
 
-依赖一律由组合根 `cmd/myblog/`（`main.go` 管生命周期、`deps.go` 按域装配）构造，再经 `router.Dependencies` 逐层注入，禁止在 service / router / middleware 内私自 `New`；规则原文与验证命令见根 `AGENTS.md` 第 1 节第 4 条与 [`architecture-rules.md`](./architecture-rules.md) §5.2。
+依赖一律由组合根 `cmd/myblog/`（`main.go` 管生命周期、`deps.go` 按域装配）构造，再经 `router.Dependencies` 逐层注入，禁止在 service / router / middleware 内私自 `New`；规则原文与验证命令见 [`architecture-rules.md`](./architecture-rules.md) §5.2。
 
 ### 前端架构（apps/ + packages/）
 
@@ -349,7 +349,7 @@ git diff --cached --name-only   # 核对清单后再执行 git commit
 
 ## 代码规范
 
-> 本节仅覆盖风格约定。**架构层面的硬性规则（依赖方向、类型唯一真相源、契约先行、单一权威、禁止复制、数据加载）见 [`architecture-rules.md`](./architecture-rules.md) 与根目录 `AGENTS.md` 第 1 节，违反必须返工。**
+> 本节仅覆盖风格约定。**架构层面的硬性规则（依赖方向、类型唯一真相源、契约先行、单一权威、禁止复制、数据加载）见 [`architecture-rules.md`](./architecture-rules.md)，违反必须返工。**
 
 ### Go 代码规范
 
@@ -404,7 +404,7 @@ func NewUserService(userRepo repository.UserRepository, tokenService TokenServic
 
 ```go
 // 错误映射唯一权威：统一经 handler/error.go 的 HandleServiceError 映射——
-// not-found 哨兵集合 → 404、ErrPermissionDenied → 403、
+// ErrUnauthenticated → 401、not-found 哨兵集合 → 404、ErrPermissionDenied → 403、
 // service.ErrInvalidRequest / ErrUsernameTaken / ErrEmailTaken → 400、
 // 其余 → 500 且响应体脱敏为固定文案（原始错误仅入日志）。
 // 禁止在模块内新增私有映射函数产生第二套权威。
@@ -447,7 +447,7 @@ type User struct {
   UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// 请求 DTO（internal/domain/dto.go）：承载校验，禁止 gorm tag
+// 请求 DTO（用户域在 internal/domain/dto.go，其余按业务域就近定义）：承载校验，禁止 gorm tag
 type CreateUserRequest struct {
   Username string `json:"username" binding:"required,min=1,max=50"`
   Email    string `json:"email" binding:"required,email"`
@@ -576,13 +576,13 @@ pnpm run build:web     # 构建前端静态文件
 
 ### 1. 代码组织
 
-- **架构铁律**: 依赖方向、类型唯一真相源等结构性约束见 [`architecture-rules.md`](./architecture-rules.md) 与根 `AGENTS.md` 第 1 节
+- **架构铁律**: 依赖方向、类型唯一真相源等结构性约束见 [`architecture-rules.md`](./architecture-rules.md)
 - **事务化模式**: 多段写库必须包裹单事务；repository 提取 `xxxTx(db *gorm.DB, ...)` 私有方法供事务与独立公开方法复用（`createTx`/`syncTagsTx`/`syncCategoriesTx`/`updateTx`/`recordArticleView` 先例，事务内所有查询与写入均走事务句柄，禁止混用 `r.db`），跨仓储共享的写逻辑下沉为包内共享 helper（`upsertContentStat` 先例），不引入仓储间依赖
 - **安全配置默认值双源对齐**: `security.login_lockout` 的 viper 默认值与 service 层 `defaultLoginLockoutPolicy` 必须一致（5 次 / 15 分钟），修改任一处必须同步另一处
 
 ### 2. 错误处理
 
-- **错误分档与统一响应**: 哨兵错误到响应码的映射口径与响应信封结构见根 `AGENTS.md` 第 5 节，唯一映射点为 `internal/handler/error.go`，本节不复述。
+- **错误分档与统一响应**: 哨兵错误到响应码的映射口径见 `server/internal/handler/README.md`，响应信封与响应码常量见 `server/pkg/response/README.md`，唯一映射点为 `internal/handler/error.go`，本节不复述。
 
 ### 3. 性能优化
 
@@ -592,7 +592,7 @@ pnpm run build:web     # 构建前端静态文件
 
 ### 4. 安全考虑
 
-- **输入验证与注入防护**: 入参经 `binding` tag 完成必填、长度、格式与枚举校验（口径见根 `AGENTS.md` 第 5 节「校验」）；数据访问一律经 GORM 参数化查询，禁止字符串拼接 SQL
+- **输入验证与注入防护**: 入参经 `binding` tag 完成必填、长度、格式与枚举校验（口径见 `server/internal/handler/README.md`）；数据访问一律经 GORM 参数化查询，禁止字符串拼接 SQL
 - **跨域配置**: 跨域来源一律改 `server/configs/config.yaml` 的 `cors` 节白名单（精确匹配），禁止代码内硬编码 Origin 或恢复全放行；生产同源网关形态白名单保持为空
 - **WAF 阻止模式**: 新增或修改 `getDefaultBlockedPatterns()` 模式必须先红后绿配"攻击拦截 + 误伤回归"两组用例，模式经词首边界或取值上下文锚定，禁止回退宽匹配
 - **WAF 正文豁免**: JSON 请求体按字段路径扫描，正文（`content` 与 `i18n.*.content`）不参与模式扫描，标题/摘要/SEO/URL 参数/请求头/表单参数保持全量扫描；豁免以渲染层消毒为前提，扩大豁免清单前必须确认该字段的每处输出都经消毒渲染或转义输出，放宽渲染层消毒时必须同步收回豁免
@@ -629,7 +629,8 @@ pnpm run build:web     # 构建前端静态文件
 ### 6. 可维护性
 
 - **文档更新**: 架构规则变更时按 [`architecture-rules.md`](./architecture-rules.md) 同步规则本体与第 8 节债务索引；债务条目的状态与基线数值按 [`debt/README.md`](./debt/README.md) 的维护纪律更新对应分册，历史分期状态更新第 9 节
-- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫、日期格式化与服务端会话 Cookie 转发，`@myblog/admin` 覆盖字典页状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
+- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫、日期格式化与服务端会话 Cookie 转发，`@myblog/admin` 覆盖 11 个页面状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
+- **测试文件位置**: 前端测试文件不与业务文件同级，一律置于被测模块同级的 `__tests__/` 目录（例如 `apps/admin/src/lib/utils/__tests__/tag-display.test.ts`）；跨用例共享的测试替身与夹具置于包内 `src/test/`（例如 `packages/auth/src/test/fixtures.ts`），不放入 `__tests__/`。移动测试文件后须同步修正其相对导入层级，并检查写死测试文件路径的外部锚点（如 `server/internal/handler/fixture_coverage_test.go` 的 TS 锚点常量）。
 
 ## 更多资源
 

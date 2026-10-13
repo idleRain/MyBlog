@@ -10,6 +10,11 @@ export const USER_STATUS_CONFIG: Record<UserStatus, { label: string; variant: Ba
   2: { label: '锁定', variant: 'destructive' }
 }
 
+// 用户可切换的状态取值，单条状态切换与批量状态切换共用同一口径。
+// 状态 2 为锁定，不属于可切换目标，故不在此声明。
+export const USER_STATUS_DISABLED = 0
+export const USER_STATUS_ENABLED = 1
+
 // 角色中文名称映射
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   superadmin: '超级管理员',

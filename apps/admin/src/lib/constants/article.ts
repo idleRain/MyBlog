@@ -1,6 +1,6 @@
 // 文章模块常量：状态配置、筛选选项与排序选项，供列表与编辑页共用。
 
-import { Archive, Lock, Send, Undo2, type LucideIcon } from '@lucide/svelte'
+// 本文件不得引入图标库：页面状态模块与单元测试都会引用它，图标桶进入编译图会把测试启动代价放大两个数量级。
 import type { ArticleStatus } from '@myblog/api/modules/article/types'
 import type { BadgeVariant } from '$ui/badge'
 
@@ -58,12 +58,4 @@ export const ARTICLE_ACTION_LABELS: Record<ArticleStatusAction, string> = {
   unpublish: '取消发布',
   archive: '归档',
   private: '设为私有'
-}
-
-// 状态操作的图标映射，与 ARTICLE_ACTION_LABELS 一一对应，供下拉菜单渲染。
-export const ARTICLE_ACTION_ICONS: Record<ArticleStatusAction, LucideIcon> = {
-  publish: Send,
-  unpublish: Undo2,
-  archive: Archive,
-  private: Lock
 }

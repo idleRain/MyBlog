@@ -155,7 +155,7 @@ func (s *tokenService) ValidateRefreshToken(tokenString string) (*TokenIdentity,
 // validateToken 查表校验令牌并核对类型，访问令牌与刷新令牌不可互换使用。
 func (s *tokenService) validateToken(tokenString string, tokenType TokenType) (*TokenIdentity, error) {
 	if tokenString == "" {
-		return nil, fmt.Errorf("令牌为空")
+		return nil, fmt.Errorf("%w：令牌为空", ErrUnauthenticated)
 	}
 
 	s.mu.RLock()
@@ -163,13 +163,13 @@ func (s *tokenService) validateToken(tokenString string, tokenType TokenType) (*
 	s.mu.RUnlock()
 
 	if !exists {
-		return nil, fmt.Errorf("令牌无效或已失效")
+		return nil, fmt.Errorf("%w：令牌无效或已失效", ErrUnauthenticated)
 	}
 	if record.tokenType != tokenType {
-		return nil, fmt.Errorf("令牌类型不符")
+		return nil, fmt.Errorf("%w：令牌类型不符", ErrUnauthenticated)
 	}
 	if !record.expiresAt.After(time.Now()) {
-		return nil, fmt.Errorf("令牌已过期")
+		return nil, fmt.Errorf("%w：令牌已过期", ErrUnauthenticated)
 	}
 
 	return &TokenIdentity{UserID: record.userID, ExpiresAt: record.expiresAt}, nil

@@ -95,7 +95,7 @@ func NewTagService(tagRepo repository.TagRepositoryInterface, options ...TagServ
 func (s *TagService) CreateTag(req *CreateTagRequest, operatorID uint) (*model.Tag, error) {
 	// 校验标签名称唯一。
 	if _, err := s.tagRepo.GetByName(req.Name); err == nil {
-		return nil, fmt.Errorf("标签名称已存在")
+		return nil, fmt.Errorf("%w：标签名称已存在", ErrInvalidRequest)
 	}
 
 	// 默认状态为启用。
@@ -150,7 +150,7 @@ func (s *TagService) UpdateTag(req *UpdateTagRequest, operatorID uint) (*model.T
 	// 名称变更时校验唯一性。
 	if req.Name != nil && *req.Name != tag.Name {
 		if existing, err := s.tagRepo.GetByName(*req.Name); err == nil && existing.ID != req.ID {
-			return nil, fmt.Errorf("标签名称已存在")
+			return nil, fmt.Errorf("%w：标签名称已存在", ErrInvalidRequest)
 		}
 	}
 
