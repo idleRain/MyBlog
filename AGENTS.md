@@ -111,6 +111,7 @@ pnpm run go:lint-install / go:quality / go:vulncheck / audit:deps
 - **导入排序**：prettier 挂载 `prettier-plugin-sort-imports`，排序依据是单条 import 语句的字符长度，语句越长越靠前，既不看模块名字母序也不区分外部依赖与相对路径。这是既定规范，导入块看似错乱时不要手工调整，手工修改会被下次格式化还原。
 - **格式化覆盖范围**：lint-staged 仅对 `apps/**/src/**` 运行 prettier，对 `server/**/*.go` 运行 gofmt 与 goimports；`packages/**` 不在任何 format 门禁覆盖内，新增或改动 packages 文件须手动执行 `npx prettier --write <file>`。
 - **注释**：只解释代码无法直接表达的意图、业务规则、约束、原因、风险与副作用，不复述代码；具体要求遵循全局规范。
+- **测试文件位置**：前端测试文件不与业务文件同级，一律置于被测模块同级的 `__tests__/` 目录；跨用例共享的测试替身与夹具置于包内 `src/test/`，不放入 `__tests__/`。vitest 的 `include` 与各 tsconfig 的 `src/**/*.ts` 已覆盖这两类目录。
 - **测试现状**：后端 `service`、`repository`、`handler`、`middleware`、`router`、`config`、`database`、`pkg/*` 均有 `*_test.go`，新增后端关键逻辑必须配套同目录测试。`packages/api`、`packages/auth`、`packages/http` 均已有 `typecheck` 与 vitest 单测，并经 `pnpm run test:packages` 串联纳入门禁；两应用单测经 `pnpm run test:apps`（admin 覆盖 `dict-page-state.svelte.ts`，web 覆盖 `render.ts` 的原始 HTML 丢弃守卫与目录日期格式化）。新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）须配套 `*.test.ts`，并为所在 package 补 `typecheck`、`test` 脚本且登记进根 `test:packages`。`pnpm run check` 与 `typecheck:web` 只做类型检查，不是单元测试。
 - **提交**：提交信息用简体中文、符合 commitlint 的 conventional commits（type 枚举见 `commitlint.config.js`）；单次提交跨度过大时补充正文说明。
 

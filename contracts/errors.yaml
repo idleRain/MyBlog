@@ -4,7 +4,7 @@
 # 锚定方式复用 docs/architecture-rules.md §3.4 的双向锚定，不引入 codegen：
 #   - 后端：internal/handler/error_contract_test.go 的 TestErrorMappingMatchesContract，
 #     校验本文件 transport 节与 pkg/response 常量一致、mapping 节与 handler 分档注册表双向一致；
-#   - 前端：packages/api/src/contracts/errors.test.ts，
+#   - 前端：packages/api/src/contracts/__tests__/errors.test.ts，
 #     校验 @myblog/shared 的响应码常量与 pkg/response 逐值一致。
 # 任一侧单独改动即变红，门禁入口为 pnpm run contract:check。
 

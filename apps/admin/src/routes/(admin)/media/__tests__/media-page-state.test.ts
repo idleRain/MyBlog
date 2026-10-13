@@ -26,7 +26,7 @@ const clipboardMock = {
 vi.mock('$lib/api', () => ({ MediaAPI: mediaApiMock }))
 vi.mock('svelte-sonner', () => ({ toast: toastMock }))
 
-const { emptyMediaPageData, mediaPageState } = await import('./media-page-state.svelte')
+const { emptyMediaPageData, mediaPageState } = await import('../media-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200

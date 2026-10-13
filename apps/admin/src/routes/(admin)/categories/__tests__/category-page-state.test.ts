@@ -19,7 +19,7 @@ const toastMock = {
 vi.mock('$lib/api', () => ({ CategoryAPI: categoryApiMock }))
 vi.mock('svelte-sonner', () => ({ toast: toastMock }))
 
-const { emptyCategoryPageData, categoryPageState } = await import('./category-page-state.svelte')
+const { emptyCategoryPageData, categoryPageState } = await import('../category-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200

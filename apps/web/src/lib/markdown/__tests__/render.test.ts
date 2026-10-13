@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { renderMarkdown } from './render'
+import { renderMarkdown } from '../render'
 
 // 正文渲染是存储型注入的唯一入口：文章源文本由作者提供，渲染结果经 {@html} 挂载。
 // 当前纵深防御完全依赖两条配置常数——remark-rehype 未开启 allowDangerousHtml，

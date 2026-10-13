@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DICT_STATUS_DISABLED, DICT_STATUS_ENABLED, dictStatusOf } from './dict'
+import { DICT_STATUS_DISABLED, DICT_STATUS_ENABLED, dictStatusOf } from '../dict'
 
 describe('字典状态展示配置', () => {
   it('生效状态返回主色样式与生效文案', () => {

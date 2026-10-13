@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate } from './format-date'
+import { formatDate } from '../format-date'
 
 describe('目录日期格式化', () => {
   it('截取 ISO 字符串的日期段，输出 YYYY-MM-DD', () => {

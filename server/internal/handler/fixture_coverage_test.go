@@ -13,7 +13,7 @@ import (
 var fixtureAssertCallPattern = regexp.MustCompile(`assertResponseMatchesFixture\([^)]*"([^"]+\.json)"\)`)
 
 // fixtureTSAnchorPath TS 侧契约锚定文件路径，用于校验金样本在双端均有锚点。
-const fixtureTSAnchorPath = "../../../packages/api/src/contracts/fixtures.test.ts"
+const fixtureTSAnchorPath = "../../../packages/api/src/contracts/__tests__/fixtures.test.ts"
 
 // fixtureTSAnchorPattern 匹配 TS 锚定文件中对金样本的引用路径，捕获金样本文件名。
 var fixtureTSAnchorPattern = regexp.MustCompile(`contracts/fixtures/([A-Za-z0-9._-]+\.json)`)

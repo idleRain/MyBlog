@@ -30,5 +30,5 @@
 - 新增 not-found 哨兵错误须同步扩展 `handler/error.go` 的映射注册表与 `errors.yaml`，
   两侧由 `TestErrorMappingMatchesContract` 双向锚定，任一侧漏登记即变红。
 - 响应码常量新增或改值须同步 `server/pkg/response`、`packages/shared/src/constants/api.ts`
-  与 `errors.yaml` 的 `transport` 节，并登记 `packages/api/src/contracts/errors.test.ts` 的名称对应表。
+  与 `errors.yaml` 的 `transport` 节，并登记 `packages/api/src/contracts/__tests__/errors.test.ts` 的名称对应表。
 - 前端不新增权限/类型/刷新的手写副本，一律消费后端下发值或 `@myblog/api` 类型。

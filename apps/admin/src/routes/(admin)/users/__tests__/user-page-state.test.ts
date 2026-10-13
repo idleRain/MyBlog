@@ -27,7 +27,7 @@ vi.mock('$lib/stores/auth', () => ({
   authStore: { getCurrentState: () => authState }
 }))
 
-const { emptyUserPageData, userPageState } = await import('./user-page-state.svelte')
+const { emptyUserPageData, userPageState } = await import('../user-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { dictItemLabel, findDictItem } from './helpers.ts'
-import type { EnabledDictGroup } from './types.ts'
+import { dictItemLabel, findDictItem } from '../helpers.ts'
+import type { EnabledDictGroup } from '../types.ts'
 
 // 构造标签状态字典分组的测试夹具。
 function buildTagStatusGroup(): EnabledDictGroup {

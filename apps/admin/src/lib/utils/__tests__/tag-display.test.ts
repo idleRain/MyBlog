@@ -1,7 +1,7 @@
 import type { EnabledDictGroup } from '@myblog/api/modules/dict/types'
 import { describe, expect, it } from 'vitest'
 
-import { resolveTagStatusLabel, resolveTagStatusVariant } from './tag-display'
+import { resolveTagStatusLabel, resolveTagStatusVariant } from '../tag-display'
 
 // 构造最小可用的状态字典分组，仅覆盖解析所需的字段。
 function statusDictWithVariant(variant: string, label: string): EnabledDictGroup {

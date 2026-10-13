@@ -107,7 +107,7 @@ git grep -n "interface BaseApiResponse" -- apps
 | 锁 | 机制 | 落地状态 |
 |---|---|---|
 | ① | Go handler 测试断言响应与 `contracts/fixtures/` 语义逐字节一致 | ✅ `handler/{fixture_locks,login_fixture,session_fixture,article_fixture,comment_fixture}_test.go`（**15/15 金样本**，覆盖认证会话、文章、评论三条核心链路） |
-| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/fixtures.test.ts`（15 用例，与 ① 一一对应） |
+| ② | TS 侧 `tsc --noEmit`（挂入 contract:check）+ `expectTypeOf(fixture).toExtend<WidenLiteral<手写类型>>` 单向合法实例校验 | ✅ `packages/api/src/contracts/__tests__/fixtures.test.ts`（15 用例，与 ① 一一对应） |
 | ③ | eslint `no-restricted-imports` 禁止应用层定义同构类型 | ✅ `apps/admin` 与 `apps/web` 双侧 eslint.config.js |
 
 **覆盖对齐**：`TestFixtureCoverage` 以目录扫描为准，校验每个金样本都同时被 Go 侧断言与 TS 侧锚定引用，且引用的金样本确实存在；新增金样本却漏写任一端锚点即变红，金样本清单不依赖人工登记表维护。
@@ -120,7 +120,7 @@ git grep -n "interface BaseApiResponse" -- apps
 
 **错误码契约的同类锚定**：`contracts/errors.yaml` 同样不引入 codegen 生成物，改用双向锚定：
 Go 侧 `internal/handler/error_contract_test.go` 的 `TestErrorMappingMatchesContract` 校验 `transport` 节与 `pkg/response` 常量一致、
-`mapping` 节与 `handler` 分档注册表双向一致；前端侧 `packages/api/src/contracts/errors.test.ts` 校验 `@myblog/shared` 的响应码常量与 `pkg/response` 逐值一致。
+`mapping` 节与 `handler` 分档注册表双向一致；前端侧 `packages/api/src/contracts/__tests__/errors.test.ts` 校验 `@myblog/shared` 的响应码常量与 `pkg/response` 逐值一致。
 两侧任一方单独改动即变红，门禁入口同上。
 
 **升级触发器**（命中任一则改用 codegen 方案）：

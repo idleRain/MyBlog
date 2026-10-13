@@ -24,7 +24,7 @@ const toastMock = {
 vi.mock('$lib/api', () => ({ TagAPI: tagApiMock, DictAPI: dictApiMock }))
 vi.mock('svelte-sonner', () => ({ toast: toastMock }))
 
-const { emptyTagPageData, tagPageState } = await import('./tag-page-state.svelte')
+const { emptyTagPageData, tagPageState } = await import('../tag-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200

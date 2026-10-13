@@ -21,7 +21,7 @@ const toastMock = {
 vi.mock('$lib/api', () => ({ CommentAPI: commentApiMock }))
 vi.mock('svelte-sonner', () => ({ toast: toastMock }))
 
-const { emptyCommentPageData, commentPageState } = await import('./comment-page-state.svelte')
+const { emptyCommentPageData, commentPageState } = await import('../comment-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200

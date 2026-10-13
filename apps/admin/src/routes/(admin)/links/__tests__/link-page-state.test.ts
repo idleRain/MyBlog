@@ -22,7 +22,7 @@ const toastMock = {
 vi.mock('$lib/api', () => ({ FriendlyLinkAPI: friendlyLinkApiMock }))
 vi.mock('svelte-sonner', () => ({ toast: toastMock }))
 
-const { emptyLinkPageData, linkPageState } = await import('./link-page-state.svelte')
+const { emptyLinkPageData, linkPageState } = await import('../link-page-state.svelte')
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200
