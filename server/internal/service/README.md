@@ -16,4 +16,4 @@
 - 密码使用 bcrypt，成本常量 `BcryptCost = 12`；强度校验 `ValidatePasswordStrength`（`password.go`）要求 6 至 100 位、同时含字母与数字、拒绝常见弱密码，校验失败统一包装 `ErrInvalidRequest` 供 handler 分档为 400。
 - 刷新令牌换取新令牌对前查库校验用户存在且状态正常；改密成功后经 `RevokeUserTokens` 撤销该用户全部既有令牌。
 
-方法与字段清单以各 `service/*.go` 的接口声明为准。相关约束见 `AGENTS.md` 第 5 节与 `docs/architecture-rules.md` 第 5 节。
+方法与字段清单以各 `service/*.go` 的接口声明为准。相关约束见 `docs/architecture-rules.md` 第 5 节。

@@ -12,4 +12,4 @@
 
 方法签名（含分页与过滤参数，如用户仓库的 `List(offset, limit int, keyword string)`）以各 `repository/*.go` 的接口声明为准。
 
-相关约束见 `AGENTS.md` 第 5 节「类型归属」「数据库」。
+表结构设计的硬性约定见 `docs/database-architecture.md`「设计原则」，本包只在实体 tag 层面声明索引与删除策略。

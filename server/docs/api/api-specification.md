@@ -235,7 +235,7 @@ POST /api/{模块}/{操作}
 
 ## 服务端实现约定
 
-- 请求 DTO 统一定义在 `internal/domain/dto.go`；`binding` tag 只出现在请求 DTO 上，GORM 实体只携带 `json` 与 `gorm` tag。
+- 请求 DTO 以所属业务域的 service 包内定义为常态（如 `service.CreateArticleRequest`），用户域的 `CreateUserRequest`/`UpdateUserRequest` 在 `internal/domain/dto.go`，短参数 DTO 可就地声明在 handler；`binding` tag 只出现在请求 DTO 上，GORM 实体只携带 `json` 与 `gorm` tag。
 - 响应统一经 `pkg/response` 构建：成功用 `response.Success`，错误经 `handler.HandleServiceError` 分档，不把内部错误原文写入 `message`。
 - Go 结构体命名、注释与代码风格示例见 [`docs/development.md`](../../../docs/development.md) 「代码规范」。
 

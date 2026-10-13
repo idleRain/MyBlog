@@ -20,5 +20,5 @@ HTTP 横切层。认证与权限中间件只依赖 `IdentityProvider` 抽象，�
 - 全局中间件顺序见 `internal/router/router.go`：RequestID、指标记录、Logger、Recovery、CORS、Security、Language；管理员分组额外挂 `AdminSecurityMiddlewareFromConfig`。
 - 日志输出为 JSON 行，初始化与请求标识读取见 `internal/logger`；请求级记录统一经 `logger.FromGin(c)` 取日志器，字段键取自 `logger.Field*` 常量。
 - 权限清单唯一权威为 `configs/config.yaml` 的 `rbac.role_permissions`，本文件不重复罗列。
-- 限流计数与令牌表均为进程内存结构，单实例部署前提下的取舍见 `AGENTS.md` 第 1.7 节。
-- 实例化纪律（依赖由组合根注入）见 `AGENTS.md` 第 1.4 节。
+- 限流计数与令牌表均为进程内存结构，单实例部署前提下的取舍与扩容前置改造见 `docs/architecture-rules.md` §7。
+- 实例化纪律（依赖由组合根注入）见 `docs/architecture-rules.md` §5.2。

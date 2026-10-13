@@ -24,4 +24,4 @@
 - 权限映射的生产环境唯一权威为 `rbac` 节，服务层经 `service.LoadRBACConfig` 读取，见 `cmd/myblog/deps.go`。
 - 各子配置节的字段含义以 `configs/config.yaml` 注释为准。
 
-相关约束见 `AGENTS.md` 第 5 节与 `docs/development.md`「核心模块」。
+相关约束见 `docs/development.md`「核心模块」。
