@@ -51,6 +51,10 @@ func TestRefreshTokenRejectsDisabledUser(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "禁用") {
 		t.Errorf("禁用用户的刷新请求应被拒绝，实际为 %v", err)
 	}
+	// 刷新失败同属认证失败，handler 据此分档为 401 而非内部错误。
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("禁用用户刷新应包装 ErrUnauthenticated，实际为 %v", err)
+	}
 	if tokenFake.refreshCalled {
 		t.Error("状态校验失败时不应执行令牌旋转")
 	}
@@ -66,6 +70,10 @@ func TestRefreshTokenRejectsMissingUser(t *testing.T) {
 	_, err := svc.RefreshToken("refresh-token")
 	if err == nil {
 		t.Fatal("用户不存在时刷新应被拒绝")
+	}
+	// 令牌指向的用户已失效时按认证失败返回，不透出仓储层错误。
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("用户失效应包装 ErrUnauthenticated，实际为 %v", err)
 	}
 	if tokenFake.refreshCalled {
 		t.Error("用户不存在时不应执行令牌旋转")

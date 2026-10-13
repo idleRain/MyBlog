@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -110,6 +111,10 @@ func TestCreateLinkDuplicateURL(t *testing.T) {
 	if err == nil {
 		t.Fatal("重复 URL 创建应返回错误")
 	}
+	// URL 冲突属业务校验失败，handler 据此分档为 400 而非内部错误。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("重复 URL 应包装 ErrInvalidRequest，实际为 %v", err)
+	}
 }
 
 // TestApproveLinkStatus 验证审核通过更新状态为 active。
@@ -177,6 +182,10 @@ func TestApplyLinkRejectsDuplicateURL(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("重复申请应返回错误")
+	}
+	// 重复申请属业务校验失败，handler 据此分档为 400 而非内部错误。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("重复申请应包装 ErrInvalidRequest，实际为 %v", err)
 	}
 }
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -79,6 +80,8 @@ func TestForgedTokenRejected(t *testing.T) {
 	for _, forged := range forgedTokens {
 		if _, err := svc.ValidateAccessToken(forged); err == nil {
 			t.Errorf("自造令牌通过了访问令牌校验: %q", forged)
+		} else if !errors.Is(err, ErrUnauthenticated) {
+			t.Errorf("令牌校验失败应包装 ErrUnauthenticated，实际为 %v", err)
 		}
 		if _, err := svc.ValidateRefreshToken(forged); err == nil {
 			t.Errorf("自造令牌通过了刷新令牌校验: %q", forged)
@@ -97,6 +100,8 @@ func TestTokenTypeNotInterchangeable(t *testing.T) {
 
 	if _, err := svc.ValidateRefreshToken(pair.AccessToken); err == nil {
 		t.Error("访问令牌通过了刷新令牌校验，令牌类型未被区分")
+	} else if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("类型不符应包装 ErrUnauthenticated，实际为 %v", err)
 	}
 	if _, err := svc.ValidateAccessToken(pair.RefreshToken); err == nil {
 		t.Error("刷新令牌通过了访问令牌校验，令牌类型未被区分")

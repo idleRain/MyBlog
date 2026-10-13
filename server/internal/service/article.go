@@ -1,8 +1,8 @@
 package service
 
 import (
-	"errors"
 	"fmt"
+
 	"regexp"
 	"time"
 	"unicode/utf8"
@@ -177,7 +177,7 @@ func (s *ArticleService) CreateArticle(req *CreateArticleRequest, authorID uint)
 	// 获取用户信息以检查角色权限
 	user, err := s.userRepo.GetByID(authorID)
 	if err != nil {
-		return nil, errors.New("用户不存在")
+		return nil, domain.ErrUserNotFound
 	}
 
 	// 权限检查

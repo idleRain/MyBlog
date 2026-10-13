@@ -42,6 +42,22 @@ func TestHandleServiceError(t *testing.T) {
 		})
 	}
 
+	t.Run("认证失败返回401", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		HandleServiceError(ctx, service.ErrUnauthenticated)
+
+		assertResponseCode(t, recorder, 401)
+	})
+
+	t.Run("包装后的认证失败经errors.Is识别返回401", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		ctx, _ := gin.CreateTestContext(recorder)
+		HandleServiceError(ctx, fmt.Errorf("%w：密码错误", service.ErrUnauthenticated))
+
+		assertResponseCode(t, recorder, 401)
+	})
+
 	t.Run("业务校验失败返回400", func(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		ctx, _ := gin.CreateTestContext(recorder)

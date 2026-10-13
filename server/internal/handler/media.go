@@ -58,7 +58,7 @@ func (h *MediaHandler) UploadFile(c *gin.Context) {
 		c.ClientIP(),
 	)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

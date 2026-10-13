@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -81,5 +82,12 @@ func TestChangePasswordRejectsWrongOldPassword(t *testing.T) {
 	err := svc.ChangePassword(1, &ChangePasswordRequest{OldPassword: "wrong-pass", NewPassword: "new12345678"})
 	if err == nil || !strings.Contains(err.Error(), "旧密码不正确") {
 		t.Errorf("旧密码错误应被拒绝, 实际为 %v", err)
+	}
+	// 归属业务校验哨兵而非认证哨兵，避免客户端把改密重试当作会话失效处理。
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("旧密码错误应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	if errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("旧密码错误不应包装 ErrUnauthenticated，实际为 %v", err)
 	}
 }

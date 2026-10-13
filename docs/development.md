@@ -404,7 +404,7 @@ func NewUserService(userRepo repository.UserRepository, tokenService TokenServic
 
 ```go
 // 错误映射唯一权威：统一经 handler/error.go 的 HandleServiceError 映射——
-// not-found 哨兵集合 → 404、ErrPermissionDenied → 403、
+// ErrUnauthenticated → 401、not-found 哨兵集合 → 404、ErrPermissionDenied → 403、
 // service.ErrInvalidRequest / ErrUsernameTaken / ErrEmailTaken → 400、
 // 其余 → 500 且响应体脱敏为固定文案（原始错误仅入日志）。
 // 禁止在模块内新增私有映射函数产生第二套权威。

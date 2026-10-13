@@ -48,7 +48,7 @@ func (h *UserHandler) CreateSession(c *gin.Context) {
 
 	tokenPair, err := h.userService.RefreshToken(refreshToken)
 	if err != nil {
-		response.Unauthorized(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

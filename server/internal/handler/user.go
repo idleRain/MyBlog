@@ -107,7 +107,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	// 如果要修改角色，需要验证角色转换
 	if req.Role != "" && req.Role != targetUser.Role {
 		if err := h.userService.ValidateRoleTransition(targetUser.Role, req.Role); err != nil {
-			response.BadRequest(c, err.Error())
+			HandleServiceError(c, err)
 			return
 		}
 
@@ -347,7 +347,7 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	loginResp, err := h.userService.Login(req.Username, req.Password)
 	if err != nil {
-		response.Unauthorized(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 
@@ -376,7 +376,7 @@ func (h *UserHandler) RefreshToken(c *gin.Context) {
 
 	tokenPair, err := h.userService.RefreshToken(req.RefreshToken)
 	if err != nil {
-		response.Unauthorized(c, err.Error())
+		HandleServiceError(c, err)
 		return
 	}
 

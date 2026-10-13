@@ -145,6 +145,10 @@ func TestLoginUserNotFound(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "用户不存在") {
 		t.Errorf("应返回用户不存在，实际为 %v", err)
 	}
+	// 登录失败必须归属认证哨兵，handler 据此分档为 401 而非内部错误。
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("登录失败应包装 ErrUnauthenticated，实际为 %v", err)
+	}
 }
 
 // TestLoginWrongPassword 验证密码错误时返回密码错误。
@@ -158,6 +162,10 @@ func TestLoginWrongPassword(t *testing.T) {
 	_, err := svc.Login("admin", "wrong-pass1")
 	if err == nil || !strings.Contains(err.Error(), "密码错误") {
 		t.Errorf("应返回密码错误，实际为 %v", err)
+	}
+	// 登录失败必须归属认证哨兵，handler 据此分档为 401 而非内部错误。
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("登录失败应包装 ErrUnauthenticated，实际为 %v", err)
 	}
 
 	// 失败计数必须经原子自增路径落库，未达到阈值时不应写锁定。
@@ -240,6 +248,10 @@ func TestLoginDisabledUser(t *testing.T) {
 	_, err := svc.Login("admin", "correct-pass1")
 	if err == nil || !strings.Contains(err.Error(), "禁用") {
 		t.Errorf("禁用用户应被拒绝，实际为 %v", err)
+	}
+	// 账号状态异常同属认证失败，不得退化为内部错误。
+	if !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("禁用用户登录应包装 ErrUnauthenticated，实际为 %v", err)
 	}
 }
 

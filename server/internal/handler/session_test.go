@@ -2,7 +2,7 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -211,7 +211,9 @@ func TestCreateSessionWithoutToken(t *testing.T) {
 
 // TestCreateSessionWithInvalidToken 刷新令牌无效时返回业务码 401 且不写入 Cookie。
 func TestCreateSessionWithInvalidToken(t *testing.T) {
-	fake := &sessionUserService{refreshErr: errors.New("刷新令牌验证失败")}
+	fake := &sessionUserService{
+		refreshErr: fmt.Errorf("%w：刷新令牌验证失败", service.ErrUnauthenticated),
+	}
 	handler := newSessionTestHandler(fake)
 
 	recorder := performSessionRequest(handler, `{"refreshToken":"revoked-token"}`)

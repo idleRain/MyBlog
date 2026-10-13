@@ -82,7 +82,7 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 	// 校验文件大小是否超限。
 	maxSize := int64(s.cfg.Media.MaxSizeMB) * 1024 * 1024
 	if maxSize > 0 && size > maxSize {
-		return nil, fmt.Errorf("文件大小超过限制 %dMB", s.cfg.Media.MaxSizeMB)
+		return nil, fmt.Errorf("%w：文件大小超过限制 %dMB", ErrInvalidRequest, s.cfg.Media.MaxSizeMB)
 	}
 
 	// 读取文件内容并计算哈希。
@@ -228,7 +228,7 @@ func (s *MediaService) validateUploadType(mimeType string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("不支持的文件类型 %s", mimeType)
+	return fmt.Errorf("%w：不支持的文件类型 %s", ErrInvalidRequest, mimeType)
 }
 
 // storedExtensionForMime 从白名单映射推导存储扩展名，映射缺失时回退原始扩展名。

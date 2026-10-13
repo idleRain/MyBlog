@@ -31,6 +31,7 @@ type serviceErrorMapping struct {
 // 新增哨兵错误必须同时登记本表与 contracts/errors.yaml 的 mapping 节，
 // 任一侧缺失由 TestErrorMappingMatchesContract 拦截，禁止在模块内另起私有映射分支。
 var serviceErrorMappings = []serviceErrorMapping{
+	{Name: "service.ErrUnauthenticated", Err: service.ErrUnauthenticated, Code: response.CodeAuth},
 	{Name: "service.ErrPermissionDenied", Err: service.ErrPermissionDenied, Code: response.CodeForbid},
 
 	{Name: "domain.ErrArticleNotFound", Err: domain.ErrArticleNotFound, Code: response.CodeNotFound},
@@ -52,7 +53,7 @@ var serviceErrorMappings = []serviceErrorMapping{
 }
 
 // HandleServiceError 将 service 层返回的错误按注册表映射为对应的 HTTP 响应。
-// 命中哨兵错误时分档返回 403 / 404 / 400；未命中时归入内部错误，
+// 命中哨兵错误时分档返回 401 / 403 / 404 / 400；未命中时归入内部错误，
 // 响应固定为脱敏文案，原始错误只写日志，避免内部细节经响应体泄漏。
 // 注册表由 contracts/errors.yaml 的 mapping 节锚定，契约变更须先改契约再改表。
 func HandleServiceError(c *gin.Context, err error) {

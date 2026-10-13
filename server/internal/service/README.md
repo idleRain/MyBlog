@@ -6,13 +6,13 @@
 
 - 各业务域接口声明在 service 包内，命名统一为 `XxxServiceInterface`（存量例外 `UserService`、`RBACService`），各层只依赖接口。
 - 依赖一律经构造函数注入，组合根为 `cmd/myblog/`（`main.go` 管生命周期、`deps.go` 按域装配）；可选依赖用选项函数注入，如 `NewUserService(userRepo, tokenService, rbacService, WithLoginLockoutPolicy(...))`。
-- 业务错误集中在 `errors.go` 的哨兵错误（`ErrPermissionDenied`、`ErrInvalidRequest`、`ErrUsernameTaken`、`ErrEmailTaken`），handler 经 `errors.Is` 分档映射，不得另起裸 `errors.New` 表达同类语义。
+- 业务错误集中在 `errors.go` 的哨兵错误（`ErrUnauthenticated`、`ErrPermissionDenied`、`ErrInvalidRequest`、`ErrUsernameTaken`、`ErrEmailTaken`）与 `domain` 的 not-found 哨兵，handler 经 `errors.Is` 分档映射，不得另起裸 `errors.New` 表达同类语义；业务侧原因以 `fmt.Errorf("%w：<原因>", 哨兵)` 追加。
 - 多段写库在 repository 的事务方法内完成，service 不自行拼装事务。
 - 权限判定经 `RBACService`，权限映射的生产环境唯一权威为 `configs/config.yaml` 的 `rbac` 节，由 `LoadRBACConfig` 加载（见 `cmd/myblog/deps.go`）。
 
 ## 认证与密码
 
-- 登录先按用户名查找，未命中回退邮箱；锁定检查先于密码校验；失败计数原子自增，达到 `security.login_lockout` 阈值写入 `locked_until`，登录成功清零。
+- 登录先按用户名查找，未命中回退邮箱；锁定检查先于密码校验；失败计数原子自增，达到 `security.login_lockout` 阈值写入 `locked_until`，登录成功清零。登录、令牌校验与刷新失败统一包装 `ErrUnauthenticated` 供 handler 分档为 401。
 - 密码使用 bcrypt，成本常量 `BcryptCost = 12`；强度校验 `ValidatePasswordStrength`（`password.go`）要求 6 至 100 位、同时含字母与数字、拒绝常见弱密码，校验失败统一包装 `ErrInvalidRequest` 供 handler 分档为 400。
 - 刷新令牌换取新令牌对前查库校验用户存在且状态正常；改密成功后经 `RevokeUserTokens` 撤销该用户全部既有令牌。
 
