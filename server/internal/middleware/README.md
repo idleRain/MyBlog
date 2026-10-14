@@ -21,5 +21,5 @@ HTTP 横切层。认证与权限中间件只依赖 `IdentityProvider` 抽象，�
 - 日志输出为 JSON 行，初始化与请求标识读取见 `internal/logger`；请求级记录统一经 `logger.FromGin(c)` 取日志器，字段键取自 `logger.Field*` 常量。
 - 权限清单唯一权威为 `configs/config.yaml` 的 `rbac.role_permissions`，本文件不重复罗列。
 - 限流计数与令牌表均为进程内存结构，属单实例终态下的已接受取舍，变更前提见 `docs/architecture-rules.md` §7.2。
-- `ClientIP()` 目前可被客户端 `X-Forwarded-For` 伪造（代理信任链未收敛），按其结果做的 IP 限流、审计落库与访客去重均为降级能力，处置见 `docs/debt/security-runtime.md` 第 4 条。
+- `ClientIP()` 的取值受 `security.trusted_proxies` 约束，仅受信来源携带的 `X-Forwarded-For` 参与解析，配置与默认值见 `internal/config/README.md`；漏配容器网段会让 IP 限流、审计落库与访客去重全部归并到网关一个键上。
 - 实例化纪律（依赖由组合根注入）见 `docs/architecture-rules.md` §5.2。

@@ -265,4 +265,4 @@ Domain Layer     → 领域实体与请求/响应 DTO（全系统唯一类型语
 - [x] 部署配置和 Docker 支持（MySQL + 后端 + 前台 + Nginx + 备份单实例编排）
 - [ ] 前端窄屏与响应式细节打磨（后台字典页工具栏窄屏遗留已按 `docs/debt/frontend.md` 第 8 条修复，其余页面按需跟进）
 - [x] 部署形态定型为单实例终态（确定不扩容；令牌表持久化与限流器外置降为变更前提，见 `docs/architecture-rules.md` §7.2）
-- [ ] 代理信任链收敛（`SetTrustedProxies` 未配置，`ClientIP()` 可被 `X-Forwarded-For` 伪造，见 `docs/debt/security-runtime.md` 第 4 条）
+- [x] 代理信任链收敛（受信来源由 `security.trusted_proxies` 白名单决定，容器编排经环境变量注入网段，伪造转发头不再生效，见 `docs/debt/security-runtime.md` 第 4 条）

@@ -255,20 +255,20 @@ git grep -n "NewRBACService()" -- server
 1. **令牌表持久化**：把 `service/token.go` 的内存表切换到共享存储，并保持「查表即唯一权威」的既有校验语义。`model.AuthToken` 的 `TokenHash`（SHA256 十六进制）通道已就绪，可沿用该存储口径。
 2. **限流器外置**：把 `middleware/ratelimit.go` 的进程内计数迁至共享存储，否则限流阈值随副本数成倍放大，防护形同失效。
 
-### 7.3 代理信任链未收敛（真实缺陷，与副本数无关）
+### 7.3 代理信任链（已收敛）
 
-这一项在单机 nginx 反代形态下即已成立，不因不扩容而消失，独立登记于 [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条：
+客户端 IP 的取值受 `security.trusted_proxies` 白名单约束，与副本数无关：
 
-- `internal/router/router.go` 以 `gin.New()` 建引擎且全仓未调用 `SetTrustedProxies`，gin v1.10.1 的 `New()` 默认信任全部代理。
-- 全信任判定下 `ClientIP()` 返回 `X-Forwarded-For` 的最左值，而 `deploy/nginx.conf` 用 `$proxy_add_x_forwarded_for` 把真实地址追加到最右，客户端自带的伪造值因此被原样采信。
-- 受影响面为 IP 级限流、审计 IP 落库、未登录访客去重键与管理员接口 IP 白名单；登录失败锁定按用户 ID 判定，不受影响。
+- `internal/router/router.go` 在构造引擎时调用 `SetTrustedProxies`，只有列表内来源携带的 `X-Forwarded-For` 才参与解析，非受信来源的该头部被忽略。
+- 默认只信任本机回环；容器编排经 `MYBLOG_SECURITY_TRUSTED_PROXIES` 注入容器网段，漏配会让客户端 IP 退化为网关地址。
+- 历史缺陷、订正后的影响面与回归用例见 [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条。
 
 ### 7.4 验证命令
 
 ```bash
 # 应为空，确认单实例形态事实
 git grep -n "replicas" -- docker-compose.yml
-# 输出为空表示 §7.3 的信任链缺陷仍在，收敛后应命中 internal/router
+# 应命中 internal/router/router.go，确认信任链已接线
 git grep -n "SetTrustedProxies" -- server
 ```
 
@@ -299,7 +299,7 @@ git grep -n "SetTrustedProxies" -- server
 | 公开端点直出实体泄漏个人信息 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 1 条 | 个人信息须经窄化 DTO 或字段白名单 |
 | 文章响应泄漏作者审计字段 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 2 条 | 新增审计字段默认 `json:"-"` |
 | WAF 内容级黑名单的固有误伤面 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 3 条 | 阻止模式必须先红后绿并配两组用例 |
-| 代理信任链未收敛导致 `ClientIP()` 可伪造 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 禁止新增以 `ClientIP()` 为唯一依据的安全判定 |
+| 代理信任链未收敛导致 `ClientIP()` 可伪造 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 仅 `security.trusted_proxies` 内来源可参与解析，禁止回退为信任全部来源 |
 | 测试替身内嵌空接口的运行时脆性 | [`debt/testing.md`](./debt/testing.md) 第 1 条 | 受影响 fake 必须显式覆写 |
 
 ---
@@ -316,6 +316,7 @@ git grep -n "SetTrustedProxies" -- server
 | 阶段三 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | 401 文案匹配与审计字段泄漏已修复；三把锁已落地（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
 | 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一；admin 胖组件行数口径 7→0，13 个页面取数归位到 load（含 11 个页面状态模块与配套单测），取数口径 6→0，`onMount` 仅余鉴权 2 处 | 权限定义全栈唯一；认证工具单轨 ✅；admin 行数与取数两条基线均归零 ✅ |
 | 阶段五 扩展点 | 后端 ContentRenderer 内容策略接口（当前 `pkg/markdown` 已直接承接 Markdown 渲染，策略接口化待做）；web 业务页面已按"公开数据 SSR + 个性化数据客户端补拉"现状接入，token 迁 cookie 已完成 | — | 新文章类型 = 插入实现，非逐层打洞 |
+| 阶段六 代理信任链收敛 | 引擎构造期接入信任链白名单；`NewRouter` 改为返回错误；配置校验拒绝覆盖全部地址的取值；补伪造转发头的四态用例 | 代理信任链未收敛导致 `ClientIP()` 可伪造（`docs/debt/security-runtime.md` 第 4 条） | ✅ 接线前实测三例失败且日志 `clientIp` 为伪造值；接线后伪造转发头不再影响 `ClientIP()` |
 
 ---
 

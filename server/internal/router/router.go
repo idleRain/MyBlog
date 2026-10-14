@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
 
 	"MyBlog/internal/config"
@@ -20,8 +21,15 @@ type Router struct {
 
 // NewRouter 创建新的路由管理器。
 // requestMetrics 为指标记录中间件，由组合根注入，路由层不依赖具体指标实现。
-func NewRouter(cfg *config.Config, requestMetrics gin.HandlerFunc) *Router {
+// 代理信任链取值非法时返回错误，由组合根在启动期终止进程。
+func NewRouter(cfg *config.Config, requestMetrics gin.HandlerFunc) (*Router, error) {
 	engine := gin.New()
+
+	// 收敛代理信任链：仅受信来源携带的转发头参与客户端 IP 解析。
+	// 缺此配置时引擎默认信任全部来源，客户端可伪造 X-Forwarded-For 绕过 IP 限流并污染审计记录。
+	if err := engine.SetTrustedProxies(cfg.Security.TrustedProxies); err != nil {
+		return nil, fmt.Errorf("设置代理信任链失败: %w", err)
+	}
 
 	// 设置全局中间件。
 	// 请求标识最先写入，访问日志与指标记录均以它为关联字段。
@@ -48,7 +56,7 @@ func NewRouter(cfg *config.Config, requestMetrics gin.HandlerFunc) *Router {
 	return &Router{
 		engine: engine,
 		cfg:    cfg,
-	}
+	}, nil
 }
 
 // GetEngine 获取 Gin 引擎实例

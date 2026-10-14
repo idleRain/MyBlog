@@ -33,11 +33,12 @@
 
 ## 4. 代理信任链未收敛导致 `ClientIP()` 可伪造
 
-- **状态**：存量（真实缺陷，与部署副本数无关）。
+- **状态**：已修复（信任链收敛为白名单，配置项 `security.trusted_proxies`）。
 - **基线**：
-  - `internal/router/router.go` 以 `gin.New()` 建引擎，全仓无 `SetTrustedProxies` 调用；gin v1.10.1 的 `New()` 默认 `trustedProxies` 为 `0.0.0.0/0` 与 `::/0`，即信任全部代理。
-  - 全信任判定下 `ClientIP()` 经 `validateHeader` 返回 `X-Forwarded-For` 的**最左值**（`i == 0` 分支），而 `deploy/nginx.conf` 的 `$proxy_add_x_forwarded_for` 把真实地址追加到最右，客户端自带的伪造值因此被原样采信。修复前的表述「经网关转发后 `ClientIP()` 恒为网关地址」与实测不符。
-  - 受影响面：IP 级限流（`middleware/ratelimit.go` 与 `middleware/security.go` 的 ipLimiter，默认 100 次/分钟，换一个伪造值即换一个计数桶）；审计 IP 落库（`handler/article.go` → `service/article.go` 的 `IPAddress`、`handler/media.go` → `service/media.go` 的 `UploadIP`）；未登录访客去重键（`service/article.go` 在无登录态时以 ipAddress 作 visitorKey，伪造值即可重复计入浏览）；管理员接口 IP 白名单（`middleware/security.go`，`admin_security.ip_whitelist` 当前为空故未启用）。
-  - 不受影响：登录失败锁定按 `user.ID` 落库（`service/user.go` 的 `IncrementLoginFailures` 与 `LockUserAfterFailures`），WAF 无 IP 黑名单，故早前登记的「影响限流、登录失败锁定、访问审计与 WAF 四项」表述不成立。
-- **验证命令**：`git grep -n "SetTrustedProxies" -- server`（输出为空表示信任链仍未收敛，收敛后应命中 `internal/router`）；`git grep -n "ClientIP()" -- server` 为现有 7 处判定点清单。
-- **红线**：收敛信任链前禁止新增以 `ClientIP()` 为唯一依据的安全判定（限流、白名单、封禁、审计）；不得以 `ClientIP()` 作为可信身份依据；修复须补「伪造 `X-Forwarded-For` 不影响 `ClientIP()`」的回归用例。
+  - `internal/router/router.go` 在构造引擎后立即调用 `engine.SetTrustedProxies(cfg.Security.TrustedProxies)`，取值非法时返回错误并由组合根在启动期终止；`NewRouter` 相应改为返回 `(*Router, error)`。
+  - 受信来源唯一权威为 `security.trusted_proxies`，代码默认只信任 `127.0.0.1/32` 与 `::1/128`；容器编排经 `MYBLOG_SECURITY_TRUSTED_PROXIES` 按逗号分隔注入容器网段，compose 默认注入 `172.16.0.0/12`。
+  - 配置校验拒绝空项、非法 IP 或 CIDR，以及 `0.0.0.0/0` 与 `::/0` 这类覆盖全部地址的取值，避免回退为信任全部来源。
+  - 回归用例：`internal/router/router_trusted_proxy_test.go` 覆盖四态——非受信来源携带伪造 `X-Forwarded-For` 时取连接来源地址、经受信代理转发时取最右侧非受信地址、受信代理单值转发被采信、信任列表为空时一律取连接来源地址；`internal/config/config_test.go` 覆盖非法项与覆盖全部地址的拒绝、环境变量注入与空值语义。接线前实测三例失败，日志字段 `clientIp` 为伪造值。
+  - 早前登记的表述已订正：既非「经网关转发后 `ClientIP()` 恒为网关地址」，也非「影响限流、登录失败锁定、访问审计与 WAF 四项」。实际受影响面为 IP 级限流、审计 IP 落库、未登录访客去重键与管理员接口 IP 白名单；登录失败锁定按用户 ID 落库，WAF 无 IP 黑名单，二者均不受影响。
+- **验证命令**：`git grep -n "SetTrustedProxies" -- server` 应恰好命中 `internal/router/router.go` 一处实现（README 说明性命中不计）；`go test ./internal/router/ ./internal/config/ -count=1`。
+- **红线**：仅 `security.trusted_proxies` 内的来源可参与 `ClientIP()` 解析；禁止回退为信任全部来源，禁止在配置校验中放行覆盖全部地址的取值；新增按 IP 的安全判定一律基于 `ClientIP()`，不得自行解析转发头。

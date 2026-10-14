@@ -109,6 +109,8 @@ type SecurityConfig struct {
 	InputValidation InputValidationConfig `mapstructure:"input_validation"`
 	AdminSecurity   AdminSecurityConfig   `mapstructure:"admin_security"`
 	LoginLockout    LoginLockoutConfig    `mapstructure:"login_lockout"`
+	// TrustedProxies 受信代理来源列表，仅列表内的来源所携带的转发头参与客户端 IP 解析。
+	TrustedProxies []string `mapstructure:"trusted_proxies"`
 }
 
 // LoginLockoutConfig 登录锁定配置，连续失败达到阈值后锁定账户一段时间。
@@ -160,6 +162,14 @@ var (
 // envKeyPrefix 环境变量统一前缀，完整变量名由该前缀与配置键转换拼接得到。
 const envKeyPrefix = "MYBLOG"
 
+// trustedProxiesEnvKey 代理信任链专用环境变量名。
+// 通用覆盖只处理标量，列表项无法经单个环境变量无损表达，故为该键单独提供逗号分隔的注入通道。
+const trustedProxiesEnvKey = envKeyPrefix + "_SECURITY_TRUSTED_PROXIES"
+
+// defaultTrustedProxies 未配置时的受信来源，只覆盖本机回环。
+// 默认收敛而非放开，避免漏配时退化为信任任何来源携带的转发头。
+var defaultTrustedProxies = []string{"127.0.0.1/32", "::1/128"}
+
 // Load 加载配置文件
 func Load(configPath string) (*Config, error) {
 	var err error
@@ -178,6 +188,9 @@ func Load(configPath string) (*Config, error) {
 
 		// 环境变量覆盖标量配置，敏感项在生产环境经环境注入，不再依赖 YAML 明文。
 		applyEnvOverrides(viper.GetViper())
+
+		// 代理信任链为列表，通用覆盖会跳过容器类型，此处按逗号分隔单独注入。
+		applyTrustedProxiesOverride(viper.GetViper())
 
 		// 解析配置到结构体
 		config = &Config{}
@@ -272,6 +285,10 @@ func setDefaults() {
 	viper.SetDefault("security.login_lockout.max_failed_attempts", 5)
 	viper.SetDefault("security.login_lockout.lock_minutes", 15)
 
+	// 代理信任链默认只信任本机回环，同机进程反代开箱可用；
+	// 容器编排另经 MYBLOG_SECURITY_TRUSTED_PROXIES 注入容器网络来源。
+	viper.SetDefault("security.trusted_proxies", defaultTrustedProxies)
+
 	// CORS 默认拒绝所有跨域，方法表遵循 POST-Only 规范仅保留 POST 与预检 OPTIONS，
 	// 需要跨域访问的部署在 config.yaml 白名单中补充具体 Origin。
 	viper.SetDefault("cors.allowed_origins", []string{})
@@ -314,10 +331,31 @@ func envVariableName(key string) string {
 	return envKeyPrefix + "_" + strings.ReplaceAll(upperKey, ".", "_")
 }
 
+// applyTrustedProxiesOverride 以逗号分隔的列表覆盖代理信任链配置。
+// 变量存在但取值为空串时解析为空列表，表示服务前方没有代理，客户端 IP 一律取连接来源地址。
+func applyTrustedProxiesOverride(v *viper.Viper) {
+	raw, ok := os.LookupEnv(trustedProxiesEnvKey)
+	if !ok {
+		return
+	}
+	v.Set("security.trusted_proxies", splitTrustedProxies(raw))
+}
+
+// splitTrustedProxies 按逗号切分代理信任链取值，丢弃其中的空白项。
+func splitTrustedProxies(raw string) []string {
+	entries := make([]string, 0, strings.Count(raw, ",")+1)
+	for _, item := range strings.Split(raw, ",") {
+		if entry := strings.TrimSpace(item); entry != "" {
+			entries = append(entries, entry)
+		}
+	}
+	return entries
+}
+
 // isScalarConfigValue 判断配置值是否为可经环境变量表达的标量，列表与映射等容器类型返回 false。
 func isScalarConfigValue(value any) bool {
 	switch value.(type) {
-	case map[string]any, map[any]any, []any:
+	case map[string]any, map[any]any, []any, []string:
 		return false
 	default:
 		return true
@@ -388,5 +426,33 @@ func validateConfig(cfg *Config) error {
 		}
 	}
 
+	// 代理信任链校验：非法来源会让引擎构造失败，而覆盖全部地址的取值等同于关闭信任链，
+	// 两者都必须在启动期拦截，不留到运行期才暴露。
+	for _, entry := range cfg.Security.TrustedProxies {
+		if err := validateTrustedProxy(entry); err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+// validateTrustedProxy 校验单个代理信任项，接受单个 IP 或 CIDR，拒绝覆盖全部地址的取值。
+func validateTrustedProxy(entry string) error {
+	if entry == "" {
+		return fmt.Errorf("代理信任项不能为空")
+	}
+
+	if _, network, err := net.ParseCIDR(entry); err == nil {
+		if ones, _ := network.Mask.Size(); ones == 0 {
+			return fmt.Errorf("代理信任项 %q 覆盖全部地址，等同于关闭信任链校验", entry)
+		}
+		return nil
+	}
+
+	if net.ParseIP(entry) != nil {
+		return nil
+	}
+
+	return fmt.Errorf("无效的代理信任项 %q：需为 IP 或 CIDR", entry)
 }

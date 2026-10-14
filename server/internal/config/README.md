@@ -6,7 +6,7 @@
 
 - `Load(configPath)` 经 `sync.Once` 单例加载，进程内只生效一次；`Get()` 在未初始化时 panic；`GetDSN()`、`GetServerAddress()` 提供派生值。
 - 代码默认值集中在 `setDefaults()`，YAML 缺项时按默认值生效。
-- 标量配置项可经 `MYBLOG_<SECTION>_<FIELD>` 环境变量覆盖，例如 `server.port` 对应 `MYBLOG_SERVER_PORT`；列表与映射无法经单个变量无损表达，保持 YAML 原值。
+- 标量配置项可经 `MYBLOG_<SECTION>_<FIELD>` 环境变量覆盖，例如 `server.port` 对应 `MYBLOG_SERVER_PORT`；列表与映射无法经单个变量无损表达，保持 YAML 原值。唯一例外是 `security.trusted_proxies`，其专用通道 `MYBLOG_SECURITY_TRUSTED_PROXIES` 按逗号分隔解析，取值为空串表示不信任任何代理。
 
 ## 校验规则
 
@@ -17,11 +17,13 @@
 - `token.access_expire` 或 `token.refresh_expire` 不为正数。
 - `rbac.role_hierarchy` 或 `rbac.role_permissions` 缺少 superadmin、admin、editor、user 任一类角色的定义。
 - `i18n.supported_languages` 为空，或 `i18n.default_language` 不在该列表内。
+- `security.trusted_proxies` 含空项、非法 IP 或 CIDR，或出现 `0.0.0.0/0` 与 `::/0` 这类覆盖全部地址的取值。
 
 ## 约定
 
 - 令牌为服务端签发的不透明随机串，不存在签名密钥与签发者配置；`token.cookie_secure` 控制会话 Cookie 是否仅经 HTTPS 传输，生产环境必须开启。
 - 权限映射的生产环境唯一权威为 `rbac` 节，服务层经 `service.LoadRBACConfig` 读取，见 `cmd/myblog/deps.go`。
 - 各子配置节的字段含义以 `configs/config.yaml` 注释为准。
+- `security.trusted_proxies` 默认只信任本机回环，`internal/router` 在构造引擎时据此调用 `SetTrustedProxies`；仅列表内来源携带的 `X-Forwarded-For` 参与 `ClientIP()` 解析，容器编排须经环境变量注入容器网段，漏配时客户端 IP 会退化为网关地址。
 
 相关约束见 `docs/development.md`「核心模块」。

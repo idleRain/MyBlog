@@ -579,6 +579,7 @@ pnpm run build:web     # 构建前端静态文件
 - **架构铁律**: 依赖方向、类型唯一真相源等结构性约束见 [`architecture-rules.md`](./architecture-rules.md)
 - **事务化模式**: 多段写库必须包裹单事务；repository 提取 `xxxTx(db *gorm.DB, ...)` 私有方法供事务与独立公开方法复用（`createTx`/`syncTagsTx`/`syncCategoriesTx`/`updateTx`/`recordArticleView` 先例，事务内所有查询与写入均走事务句柄，禁止混用 `r.db`），跨仓储共享的写逻辑下沉为包内共享 helper（`upsertContentStat` 先例），不引入仓储间依赖
 - **安全配置默认值双源对齐**: `security.login_lockout` 的 viper 默认值与 service 层 `defaultLoginLockoutPolicy` 必须一致（5 次 / 15 分钟），修改任一处必须同步另一处
+- **代理信任链取值三处一致**: `security.trusted_proxies` 的代码默认值（`defaultTrustedProxies`）、`configs/config.yaml` 与 `configs/config.example.yaml` 声明值必须一致（默认仅回环），容器编排的取值写在 `docker-compose.yml` 的 `MYBLOG_SECURITY_TRUSTED_PROXIES`，改动代理来源时必须三处同步，漏改会让客户端 IP 归并到网关地址
 
 ### 2. 错误处理
 

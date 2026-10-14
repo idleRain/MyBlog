@@ -19,8 +19,8 @@
    验证：`git diff --no-index` 上述两份文件应零差异。
 6. **数据加载归位**。`apps/web` 新页面禁止 `onMount` 取数，用 `+page.server.ts` / `+page.ts` 的 load；`apps/admin` 新页面同样禁止 `onMount` 取数，含客户端读写操作的页面配 load + 页面状态模块（`.svelte.ts`），只读页由 load 直出 page data，load 内禁止调用认证接口；API 调用不得深入叶子组件。
 7. **部署形态为单实例终态**（已接受，非待修缺陷）。应用进程、MySQL、网关各一份，全部部署于同一台服务器，由同一 nginx 实例按端口区分出入口，**确定不扩容**；会话令牌表与限流计数均为进程内存结构，服务重启或发布将导致全体用户登出，发布窗口需提前预告；故障即停站，无 RTO 承诺，RPO 为 24 小时。若未来改变该决定，扩容前必须先完成令牌表持久化与限流器外置两项改造。
-   验证：`git grep -n "replicas" -- docker-compose.yml` 应为空。
-   代理信任链未收敛导致 `ClientIP()` 可被 `X-Forwarded-For` 伪造，该缺陷与本形态无关，单独立项，见 `docs/debt/security-runtime.md` 第 4 条。
+   验证：`git grep -n "replicas" -- docker-compose.yml` 应为空；`git grep -n "SetTrustedProxies" -- server` 应命中 `internal/router/router.go`。
+   代理信任链与本形态无关，受信来源唯一权威为 `security.trusted_proxies`，容器编排须经 `MYBLOG_SECURITY_TRUSTED_PROXIES` 注入容器网段，见 `docs/debt/security-runtime.md` 第 4 条。
 8. **先确认产品定位**。单作者个人博客，不开放注册、无找回密码通道：账号由管理员创建（首次部署 `pnpm run seed:admin`，之后在后台用户管理页新增），忘记密码由超级管理员经 `POST /api/users/update` 重置；游客可浏览并提交评论（受审核设置约束），点赞/收藏/关注需登录。功能提案前先确认是否与之冲突；新增数据收集场景须先同步 `apps/web` 的 `/privacy` 页告知。
 
 ## 2. 完成前自检

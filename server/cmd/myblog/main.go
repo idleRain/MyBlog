@@ -58,7 +58,10 @@ func main() {
 	// 按业务域装配依赖并注册路由
 	deps := newDependencies(cfg, db)
 	metricsRegistry := metrics.New()
-	routerManager := router.NewRouter(cfg, metricsRegistry.Middleware())
+	routerManager, err := router.NewRouter(cfg, metricsRegistry.Middleware())
+	if err != nil {
+		exitWithError("路由初始化失败", err)
+	}
 	routerManager.SetupRoutes(deps)
 
 	// 指标监听独立于业务端口，未启用时返回空句柄。
