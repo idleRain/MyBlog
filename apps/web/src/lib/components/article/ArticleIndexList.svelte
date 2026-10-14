@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { Article } from '@myblog/api/modules/article/types'
 import { formatDate } from '$lib/utils/format-date'
+import { m } from '$i18n'
 
 // 目录行列表属性：articles 为当页文章，offset 用于跨页连续编号。
 interface Props {
@@ -22,7 +23,8 @@ const indexLabel = (position: number) => String(offset + position + 1).padStart(
         <div>
           <p class="mb-2 flex items-center gap-3 font-mono text-xs text-muted-foreground">
             <span class="post-index font-display text-lg font-black">{indexLabel(position)}</span>
-            {formatDate(article.publishedAt ?? article.createdAt)} · 阅读 {article.readingTime} 分钟
+            {formatDate(article.publishedAt ?? article.createdAt)} ·
+            {m['ui:meta.minutesRead']({ count: article.readingTime })}
           </p>
           <h2 class="font-display text-xl leading-snug font-bold">
             <a

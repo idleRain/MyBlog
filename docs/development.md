@@ -547,11 +547,12 @@ const updated = await UserAPI.updateUser({ id: user.id, username: 'new-name', em
 
 #### 5. 界面多语言（仅 apps/web）
 
-- 用户可见文案经 `$i18n` 的 `m['<namespace>:<key>']()` 取词；接入现状与红线见 [`debt/frontend.md`](./debt/frontend.md) 第 7 条（Header/Footer/错误页/首页已接入，其余页面待页面大变动后分批，已接入文件禁止回退硬编码）
-- **namespace 按面拆分**：`ui` 只承载跨面 chrome 与共享词（站名、作者身份、品牌名、通用元信息），页面文案进各自面的 namespace；新增 namespace 须在 `apps/web/project.inlang/settings.json` 的 `plugin.inlang.i18next.pathPattern` 注册，并在 `messages/zh` 与 `messages/en` 各建同名文件
-- **插值用双花括号**：`{{param}}` 是 i18next 语法，取词写作 `m['home:seo.title']({ site })`；写成单花括号 `{param}` 会被当作字面量原样输出，生成的取词函数也不会声明该入参。词条首尾的空格具有语义，英文词条常以词尾空格衔接相邻的强调节点，不手工去除
-- **计数词条用复数变体**：同一条目写 `count_one` 与 `count_other` 两个键，取值时参数名必须为 `count`，例如 `m['home:index.count']({ count: posts.length })`；变体缺失时取词回退为原始 key 字符串，故两个语言文件必须键集合一致
-- `messages/*.json5` 必须保持 **JSON 兼容写法**（双引号、无尾逗号、不写注释）：paraglide 编译器按严格 JSON 解析，无引号键/尾逗号/单引号会直接编译失败
+- 用户可见文案经 `$i18n` 的 `m['<namespace>:<key>']()` 取词；已接入面清单与红线见 [`debt/frontend.md`](./debt/frontend.md) 第 7 条（已接入文件禁止回退硬编码）
+- **namespace 按面拆分**：`ui` 只承载跨面 chrome 与共享词（站名、作者身份、品牌名、通用元信息、共享空状态），页面文案进各自面的 namespace；同一文案出现在两个面时必须上收到 `ui`，不在各面重复登记；新增 namespace 须在 `apps/web/project.inlang/settings.json` 的 `plugin.inlang.i18next.pathPattern` 注册，并在 `messages/zh` 与 `messages/en` 各建同名文件
+- **插值用双花括号**：`{{param}}` 是 i18next 语法，取词写作 `m['blog:list.title']({ site })`；写成单花括号 `{param}` 会被当作字面量原样输出，生成的取词函数也不会声明该入参。词条首尾的空格具有语义，英文词条常以词尾空格衔接相邻的强调节点，不手工去除
+- **计数词条用复数变体**：同一条目写 `count_one` 与 `count_other` 两个键，取值时参数名必须为 `count`，例如 `m['ui:meta.postCount']({ count: posts.length })`；变体缺失时取词回退为原始 key 字符串，故两个语言文件必须键集合一致
+- **句子被节点切开时按片段取词**：完整句子中间嵌链接或强调节点时，拆成 `…Before` / 链接文案 / `…After` 多条词条，语序由词条内容决定，不把 HTML 写进词条
+- `messages/*.json5` 必须保持 **JSON 兼容写法**（双引号、无尾逗号、不写注释）：paraglide 编译器按严格 JSON 解析，无引号键/尾逗号/单引号会直接编译失败；`apps/web/messages/` 已列入 `.prettierignore`，因为 prettier 的 json5 解析器会把键改写为无引号形式，直接导致编译失败
 - 修改词表后需重新编译生成 `src/lib/paraglide` 产物：`pnpm --filter @myblog/web exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`，等价入口为 `pnpm --filter @myblog/web run generate:i18n`（`vite dev`/`build` 亦会自动触发）
 
 ## 部署指南

@@ -3,6 +3,7 @@ import type { ArticleArchiveYear } from '@myblog/api/modules/article/types'
 import { gsap, MOTION } from '$lib/motion/gsap-setup'
 import { formatDate } from '$lib/utils/format-date'
 import { scrollReveal } from '$lib/motion/reveal'
+import { m } from '$i18n'
 
 // 归档时间线属性：groups 为按年份倒序的归档分组。
 interface Props {
@@ -54,7 +55,9 @@ $effect(() => {
       <!-- 年度标记：桌面端粘性跟随，滚动时固定在左栏。 -->
       <header class="self-start md:sticky md:top-28" use:scrollReveal={{ y: 18 }}>
         <p class="font-display text-5xl font-black text-foreground">{group.year}</p>
-        <p class="mt-2 font-mono text-xs text-muted-foreground">共 {group.total} 篇文章</p>
+        <p class="mt-2 font-mono text-xs text-muted-foreground">
+          {m['blog:archives.yearCount']({ count: group.total })}
+        </p>
       </header>
 
       <!-- 年度轨道：基线为线框色，进度线随滚动以朱红填充。 -->
@@ -75,7 +78,10 @@ $effect(() => {
                   aria-hidden="true"
                 ></span>
                 <p class="font-mono text-xs font-bold text-signal">
-                  {month.month} 月 · {formatDate(article.publishedAt ?? article.createdAt)}
+                  {m['blog:archives.monthLine']({
+                    month: month.month,
+                    date: formatDate(article.publishedAt ?? article.createdAt)
+                  })}
                 </p>
                 <h3 class="mt-1.5 font-display text-xl leading-snug font-bold">
                   <a

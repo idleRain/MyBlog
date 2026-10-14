@@ -16,7 +16,13 @@
     "minutesRead": "{{count}} min read",
     "minutesReadApprox": "about {{count}} min",
     "views_one": "{{count}} view",
-    "views_other": "{{count}} views"
+    "views_other": "{{count}} views",
+    "postCount_one": "{{count}} post · continuously updated",
+    "postCount_other": "{{count}} posts · continuously updated"
+  },
+  "empty": {
+    "inPreparation": "The inaugural issue is in preparation, posts will follow soon.",
+    "backHome": "You can head back to the home page to browse the layout and the site introduction."
   },
   "button": {
     "save": "Save",

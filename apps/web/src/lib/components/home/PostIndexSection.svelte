@@ -34,14 +34,14 @@ function handleSubscribe(event: SubmitEvent) {
       <div class="mb-8 flex items-end justify-between border-b border-line pb-4" use:scrollReveal>
         <h2 class="font-display text-3xl font-black">{m['home:index.title']()}</h2>
         <span class="font-mono text-sm text-muted-foreground">
-          {m['home:index.count']({ count: posts.length })}
+          {m['ui:meta.postCount']({ count: posts.length })}
         </span>
       </div>
 
       {#if posts.length === 0}
         <!-- 空状态：以编辑口吻说明现状并引导前往归档页。 -->
         <div class="border-l-2 border-signal py-4 pl-6" use:scrollReveal>
-          <p class="font-display text-xl font-medium">{m['home:index.emptyTitle']()}</p>
+          <p class="font-display text-xl font-medium">{m['ui:empty.inPreparation']()}</p>
           <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
             {m['home:index.emptyNote']()}
           </p>

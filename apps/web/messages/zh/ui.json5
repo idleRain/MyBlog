@@ -16,7 +16,13 @@
     "minutesRead": "阅读 {{count}} 分钟",
     "minutesReadApprox": "约 {{count}} 分钟",
     "views_one": "{{count}} 次浏览",
-    "views_other": "{{count}} 次浏览"
+    "views_other": "{{count}} 次浏览",
+    "postCount_one": "共 {{count}} 篇 · 持续更新",
+    "postCount_other": "共 {{count}} 篇 · 持续更新"
+  },
+  "empty": {
+    "inPreparation": "创刊号正在筹备中，文章即将发布。",
+    "backHome": "可以先回到首页浏览版面与站点介绍。"
   },
   "button": {
     "save": "保存",

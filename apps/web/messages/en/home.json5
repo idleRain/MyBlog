@@ -24,9 +24,6 @@
   },
   "index": {
     "title": "Recent posts",
-    "count_one": "{{count}} post · continuously updated",
-    "count_other": "{{count}} posts · continuously updated",
-    "emptyTitle": "The inaugural issue is in preparation, posts will follow soon.",
     "emptyNote": "You can browse the layout and the site introduction in the meantime, or wait for updates on the archive page.",
     "viewAll": "View all posts"
   },

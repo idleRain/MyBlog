@@ -24,9 +24,6 @@
   },
   "index": {
     "title": "近期文章",
-    "count_one": "共 {{count}} 篇 · 持续更新",
-    "count_other": "共 {{count}} 篇 · 持续更新",
-    "emptyTitle": "创刊号正在筹备中，文章即将发布。",
     "emptyNote": "可以先浏览版面与站点介绍，或前往归档页等待更新。",
     "viewAll": "查看全部文章"
   },
