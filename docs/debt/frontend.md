@@ -5,8 +5,8 @@
 
 ## 1. 两 app 基础设施逐字重复
 
-- **状态**：存量，只减不增（本轮由 2 文件 60 行收敛至 1 文件 10 行）。
-- **基线**：逐字重复仅 `src/lib/stores/auth.ts`（10 行 ×2，SHA256 一致）。它是纯注入接缝：`packages/auth` 的 `createAuthStore` 需要 `logoutApi`，而 `$lib/api` 是应用别名、包内无法解析，故接缝必须留在应用侧，**上限 10 行**，超出即按复制粘贴式共享返工。
+- **状态**：已接受。取舍已定，不构成债务：接缝必须留在应用侧，因为 `packages/auth` 内无法解析 `$lib/api`；上限 10 行，超出即按复制粘贴式共享返工。
+- **上限**：逐字重复仅 `src/lib/stores/auth.ts`（10 行 ×2，SHA256 一致）。它是纯注入接缝：`packages/auth` 的 `createAuthStore` 需要 `logoutApi`，而 `$lib/api` 是应用别名、包内无法解析，故接缝必须留在应用侧，**上限 10 行**，超出即按复制粘贴式共享返工。
   - 本轮收敛：`theme-toggle.svelte`（45 行 ×2）下沉至 `packages/components/src/theme-toggle`，两应用副本与 `lib/components/index.ts` 桶一并删除，消费点改为按包名 `@myblog/components/theme-toggle` 导入；应用侧 `isBrowser` 注入移除，环境判定改由包内复用 `@myblog/shared` 的 `isBrowser`。
   - 另有 3 文件职责同构但内容不同，不计入逐字重复：`service/index.ts`（69 / 67 行）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，两 app 版式已各自独立设计）。
 - **验证命令**：`git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应为零差异）；`git ls-files "*theme-toggle.svelte"` 应仅命中 `packages/components` 一处；形态解析用例经 `pnpm run test:packages` 覆盖。
@@ -47,14 +47,14 @@
 
 ## 6. admin 重写 `$ui` 已有组件（含 web 侧分页例外）
 
-- **状态**：admin 侧已修复；web 侧分页为受接受存量。
+- **状态**：admin 侧已修复；web 侧分页为已接受取舍。
 - **基线**：admin 本地 `pagination.svelte` 已删，7 页回归 `$ui`。web 侧保留 `apps/web/src/lib/components/article/PaginationNav.svelte` 的锚点版式，以产出可被爬虫与无 JavaScript 环境跟随的真实 `<a href>`。原登记的技术阻塞「`$ui` 包装层未透传 bits-ui 的 `child` 元素替换通道」经复核**不成立**：`pagination-link.svelte` 未解构 `child`，该属性随 `...restProps` 透传至 `PaginationPrimitive.Page`，且 bits-ui 的 Page/PrevButton/NextButton 类型均带 `WithChild`；若要统一，先实测确认后再迁移。
 - **验证命令**：读 `packages/ui/src/pagination/pagination-link.svelte` 的 `...restProps` 透传与 bits-ui 类型的 `WithChild`；`git grep -n "child" -- packages/ui/src/pagination` 的命中均为 `children` 通道，不能作为透传缺口的证据。
 - **红线**：admin 侧禁止仿效；新分页一律 `$ui`；web 侧在该项统一前不得新增第三处分页实现。
 
 ## 7. web 界面多语言局部接入
 
-- **状态**：存量，分批推进。
+- **状态**：推进中，分批接入。
 - **基线**：语言切换对 Header、Footer、错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件与 demo 页），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败）。
 - **验证命令**：`git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、`+error`、demo）。
 - **红线**：已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进。

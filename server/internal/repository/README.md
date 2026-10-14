@@ -10,6 +10,6 @@
 - 删除使用 GORM 软删除；唯一性与索引约束声明在实体的 `gorm` tag 上（用户名、邮箱为唯一索引，`domain.User` 见 `internal/domain/user.go`）。
 - 多段写库在同一事务内提交，沿用既有的 `xxxTx` 事务方法先例。
 
-方法签名（含分页与过滤参数，如用户仓库的 `List(offset, limit int, keyword string)`）以各 `repository/*.go` 的接口声明为准。
+方法签名（含分页与过滤参数，如用户仓库的 `List(offset, limit int, keyword string)`）以各 `repository/*.go` 的接口声明为准。查询参数与结果结构（如 `ArticleListParams`、`ArticleArchiveGroup`）随接口声明在本包，属接口签名的组成部分，不视作上文禁止的实体或 DTO 定义。
 
 表结构设计的硬性约定见 `docs/database-architecture.md`「设计原则」，本包只在实体 tag 层面声明索引与删除策略。

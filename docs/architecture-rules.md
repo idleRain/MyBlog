@@ -6,7 +6,7 @@
 >
 > **效力**：本手册效力高于普通文档；与更具体的细则冲突时以更具体者为准。
 >
-> **分册**：第 1 至 7 节为规则本体，第 8 节为债务索引，第 9 至 10 节为历史登记；债务的完整条目（状态、基线数值、验证命令、完整红线）按关注域分册在 [`debt/`](./debt/README.md)。
+> **分册**：第 1 至 7 节为规则本体，第 8 节为债务与取舍索引，第 9 至 10 节为历史登记；条目完整内容（状态、基线或上限、验证命令、红线）按关注域分册在 [`debt/`](./debt/README.md)。
 
 ---
 
@@ -18,7 +18,7 @@
 | 【约定】 | 命名、格式、注释等风格约束 | 应当修正 |
 | 【债务】 | 已存在的违例，登记基线与验证命令 | **基线只减不增**（条目分册见 [`debt/`](./debt/README.md)） |
 
-**基线只减不增是本手册的核心执行机制**：存量违规不要求立即修复，但任何改动使债务指标恶化，即新增违例文件、新增实例化点或新增重复代码时判定违规。每条债务附带验证命令，任务完成前 Agent 必须自检。
+**基线只减不增是本手册的核心执行机制**：登记为债务的违例不要求立即修复，但任何改动使债务指标恶化，即新增违例文件、新增实例化点或新增重复代码时判定违规。已接受取舍不设基线，改守其在登记条目中写明的上限与前提。每条债务附带验证命令，任务完成前 Agent 必须自检。
 
 ---
 
@@ -40,7 +40,7 @@ router → handler → service → repository → domain / model
 |---|---|---|
 | service → handler | 业务逻辑不得感知 HTTP | 已合规 |
 | repository → service / handler | 数据层不得承载业务 | 已合规 |
-| middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 仅 `identity.go` 实现 1 处 |
+| middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 已合规（`identity.go` 以包内窄接口 `userLookup` 收敛，见 `debt/architecture.md` 第 1 条） |
 | router → repository（仅为拼装中间件） | 路由层不应持有数据访问句柄 | router 依赖 repository 归零 |
 | 任何包 → `database.GetDB()` 全局单例 | 破坏可测试性 | 已合规（仅 `cmd/myblog` 与 `cmd/seed` 使用） |
 
@@ -65,8 +65,11 @@ apps/web, apps/admin（组合根：实例化与回调注入）
 
 ```bash
 # 在 server/ 目录下执行（路径相对当前目录解析，在仓库根执行会得到零命中的假绿）
-# 基线：service 12 + middleware 1（仅 identity.go）+ router 0 = 13 文件
-git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router ':(exclude)*_test.go'
+# 基线：0 文件。middleware 与 router 均不得 import repository；service 消费仓储接口属允许边，不在此命令统计
+git grep -ln "MyBlog/internal/repository" -- internal/middleware internal/router ':(exclude)*_test.go'
+
+# 仓储的具体实现 struct 与构造函数只允许出现在 repository 包与组合根，在 server/ 下执行（应为空）
+git grep -n "repository\.New" -- internal ':(exclude)*_test.go'
 
 # 前端：packages 反向依赖应用（应为空；在仓库根执行）
 git grep -ln "apps/web" -- packages
@@ -275,14 +278,14 @@ git grep -n "SetTrustedProxies" -- server
 
 ---
 
-## 8. 债务登记表（基线只减不增）
+## 8. 债务与取舍登记表（基线只减不增）
 
-> 完整条目（状态、基线数值、验证命令、完整红线）按关注域分册登记在 `docs/debt/`，机制与维护流程见 [`debt/README.md`](./debt/README.md)。
-> 本节只保留索引：触碰相关区域前先按「所属分册」读对应条目，任务自检时核对基线不恶化。
+> 完整条目（状态、基线或上限、验证命令、红线）按关注域分册登记在 `docs/debt/`，机制与维护流程见 [`debt/README.md`](./debt/README.md)。
+> 本节只保留索引：触碰相关区域前先按「所属分册」读对应条目，任务自检时核对债务基线不恶化、已接受取舍不逾越上限。
 
-| 债务 | 所属分册 | 红线（一句话） |
+| 条目 | 所属分册 | 红线（一句话） |
 |---|---|---|
-| service/middleware/router import repository | [`debt/architecture.md`](./debt/architecture.md) 第 1 条 | 只减不增 |
+| service/middleware/router import repository | [`debt/architecture.md`](./debt/architecture.md) 第 1 条 | middleware 与 router 不得 import repository；service 属允许边 |
 | router 重复定义 handler 接口 + `interface{}` 断言 | [`debt/architecture.md`](./debt/architecture.md) 第 2 条 | 禁止重新引入 |
 | `RBACService` 生产实例化 | [`debt/architecture.md`](./debt/architecture.md) 第 3 条 | 禁止新增实例化点 |
 | 双 User 模型同写 users 表 | [`debt/architecture.md`](./debt/architecture.md) 第 4 条 | 新字段只加 `domain.User` |
@@ -301,7 +304,6 @@ git grep -n "SetTrustedProxies" -- server
 | 文章响应泄漏作者审计字段 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 2 条 | 新增审计字段默认 `json:"-"` |
 | WAF 内容级黑名单的固有误伤面 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 3 条 | 阻止模式必须先红后绿并配两组用例 |
 | 代理信任链未收敛导致 `ClientIP()` 可伪造 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 仅 `security.trusted_proxies` 内来源可参与解析，禁止回退为信任全部来源 |
-| 测试替身内嵌空接口的运行时脆性 | [`debt/testing.md`](./debt/testing.md) 第 1 条 | 受影响 fake 必须显式覆写 |
 
 ---
 
@@ -318,6 +320,7 @@ git grep -n "SetTrustedProxies" -- server
 | 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一；admin 胖组件行数口径 7→0，13 个页面取数归位到 load（含 11 个页面状态模块与配套单测），取数口径 6→0，`onMount` 仅余鉴权 2 处 | 权限定义全栈唯一；认证工具单轨 ✅；admin 行数与取数两条基线均归零 ✅ |
 | 阶段五 扩展点 | 后端 ContentRenderer 内容策略接口（当前 `pkg/markdown` 已直接承接 Markdown 渲染，策略接口化待做）；web 业务页面已按"公开数据 SSR + 个性化数据客户端补拉"现状接入，token 迁 cookie 已完成 | — | 新文章类型 = 插入实现，非逐层打洞 |
 | 阶段六 代理信任链收敛 | 引擎构造期接入信任链白名单；`NewRouter` 改为返回错误；配置校验拒绝覆盖全部地址的取值；补伪造转发头的四态用例 | 代理信任链未收敛导致 `ClientIP()` 可伪造（`docs/debt/security-runtime.md` 第 4 条） | ✅ 接线前实测三例失败且日志 `clientIp` 为伪造值；接线后伪造转发头不再影响 `ClientIP()` |
+| 阶段七 依赖边口径订正 | 中间件在包内声明消费方窄接口，收敛对 repository 包的依赖；债务基线拆分为允许边与违例边，同步订正 §2.1、§2.3 与 CI 断言 | service/middleware/router import repository（`docs/debt/architecture.md` 第 1 条） | ✅ middleware 与 router 的违例 import 归零；查询参数留在 repository 经确认接受；CI 基线断言由 ≤13 改为 =0 |
 
 ---
 
