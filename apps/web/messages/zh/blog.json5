@@ -15,7 +15,6 @@
     "searchEmptyAfter": "浏览全部刊目。"
   },
   "detail": {
-    "title": "{{title}} - {{site}}",
     "eyebrow": "手记 · 文章",
     "commentsClosed": "这篇文章已关闭评论。",
     "backToIndex": "← 返回目录"
@@ -45,7 +44,6 @@
     "position": "第 {{current}} / {{total}} 页"
   },
   "error": {
-    "listFailed": "文章列表加载失败，请稍后重试",
     "archivesFailed": "归档数据加载失败，请稍后重试"
   }
 }

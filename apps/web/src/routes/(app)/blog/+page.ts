@@ -25,7 +25,7 @@ export const load: PageLoad = async ({ url }) => {
   })
 
   if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) {
-    throw error(503, m['blog:error.listFailed']())
+    throw error(503, m['ui:error.listFailed']())
   }
 
   return { list: response.data, currentPage, search }

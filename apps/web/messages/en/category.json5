@@ -1,0 +1,7 @@
+{
+  "title": "{{name}} - Category - {{site}}",
+  "eyebrow": "Category · {{slug}}",
+  "emptyTitle": "No published posts in this category yet.",
+  "emptyNote": "Browse the post index for other content.",
+  "notFound": "Category not found"
+}

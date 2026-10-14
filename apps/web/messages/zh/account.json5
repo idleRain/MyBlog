@@ -56,8 +56,6 @@
     "description": "当前登录用户收藏的文章列表。",
     "eyebrow": "收藏 · Bookmarks",
     "heading": "我的收藏",
-    "count_one": "共 {{count}} 篇",
-    "count_other": "共 {{count}} 篇",
     "emptyTitle": "还没有收藏任何文章。",
     "emptyNote": "在文章页点击收藏按钮，即可在这里找到它们。",
     "loadFailed": "收藏列表加载失败，请稍后重试"

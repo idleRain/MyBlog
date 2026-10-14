@@ -1,18 +1,26 @@
 <script lang="ts">
 import { ArticleIndexList, PaginationNav } from '$lib/components/article'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
+import { m } from '$i18n'
 
 let { data }: PageProps = $props()
 
 const category = $derived(data.category)
+
+// 标题与栏目标注随语言切换，站名取自词表。
+const pageTitle = $derived(
+  m['category:title']({
+    name: category.seoTitle || category.name,
+    site: m['ui:site.name']()
+  })
+)
 
 // 总页数向上取整，无文章时保持 1 以呈现完整导航骨架。
 const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pageSize)))
 </script>
 
 <svelte:head>
-  <title>{category.seoTitle || category.name} - 分类目录 - {SITE_NAME_ZH}</title>
+  <title>{pageTitle}</title>
   <meta name="description" content={category.seoDescription || category.description} />
 </svelte:head>
 
@@ -23,13 +31,13 @@ const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pa
       <p
         class="mb-3 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
       >
-        分类 · {category.slug}
+        {m['category:eyebrow']({ slug: category.slug })}
         <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
       </p>
       <div class="flex items-end justify-between gap-4">
         <h1 class="font-display text-3xl font-black">{category.name}</h1>
         <span class="shrink-0 font-mono text-sm text-muted-foreground">
-          共 {data.list.total} 篇
+          {m['ui:meta.postCount']({ count: data.list.total })}
         </span>
       </div>
       {#if category.description}
@@ -42,8 +50,8 @@ const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pa
     {#if data.list.articles.length === 0}
       <!-- 空状态：以编辑口吻说明现状并引导前往目录页。 -->
       <div class="border-l-2 border-signal py-4 pl-6">
-        <p class="font-display text-xl font-medium">该分类下暂无已发布的文章。</p>
-        <p class="mt-2 text-sm text-muted-foreground">可以去目录页看看其他内容。</p>
+        <p class="font-display text-xl font-medium">{m['category:emptyTitle']()}</p>
+        <p class="mt-2 text-sm text-muted-foreground">{m['category:emptyNote']()}</p>
       </div>
     {:else}
       <ArticleIndexList

@@ -50,7 +50,7 @@ const skeletonRows = $derived(Math.max(MIN_SKELETON_ROWS, articles.length))
         <h1 class="font-display text-3xl font-black">{m['account:favorites.heading']()}</h1>
       </div>
       <span class="shrink-0 font-mono text-sm text-muted-foreground">
-        {m['account:favorites.count']({ count: total })}
+        {m['ui:meta.postCount']({ count: total })}
       </span>
     </div>
 

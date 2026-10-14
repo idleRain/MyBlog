@@ -15,7 +15,6 @@
     "searchEmptyAfter": "to browse every issue."
   },
   "detail": {
-    "title": "{{title}} - {{site}}",
     "eyebrow": "Journal · Post",
     "commentsClosed": "Comments are closed for this post.",
     "backToIndex": "← Back to the index"
@@ -45,7 +44,6 @@
     "position": "Page {{current}} / {{total}}"
   },
   "error": {
-    "listFailed": "Failed to load the post list, please try again later",
     "archivesFailed": "Failed to load the archive data, please try again later"
   }
 }

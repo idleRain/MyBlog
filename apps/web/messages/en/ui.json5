@@ -17,8 +17,10 @@
     "minutesReadApprox": "about {{count}} min",
     "views_one": "{{count}} view",
     "views_other": "{{count}} views",
-    "postCount_one": "{{count}} post · continuously updated",
-    "postCount_other": "{{count}} posts · continuously updated"
+    "postCount_one": "{{count}} post",
+    "postCount_other": "{{count}} posts",
+    "ongoing": "continuously updated",
+    "pageTitle": "{{title}} - {{site}}"
   },
   "empty": {
     "inPreparation": "The inaugural issue is in preparation, posts will follow soon.",
@@ -26,10 +28,14 @@
   },
   "action": {
     "failed": "Something went wrong, please try again later",
-    "submitting": "Submitting…"
+    "submitting": "Submitting…",
+    "backHome": "Back home"
   },
   "session": {
     "expired": "Your session has expired, please sign in again"
+  },
+  "placeholder": {
+    "scheduleNote": "Layout in progress · this section will arrive in a later iteration"
   },
   "button": {
     "save": "Save",
@@ -109,6 +115,6 @@
     "serverErrorTitle": "The printing press broke down",
     "serverErrorSubtitle": "The server ran into an unexpected problem and the content is temporarily unavailable",
     "retry": "Retry",
-    "backHome": "Back home"
+    "listFailed": "Failed to load the post list, please try again later"
   }
 }

@@ -25,7 +25,7 @@ $effect(() => {
 
 <svelte:head>
   <title
-    >{m['blog:detail.title']({
+    >{m['ui:meta.pageTitle']({
       title: article.seoTitle || article.title,
       site: m['ui:site.name']()
     })}</title

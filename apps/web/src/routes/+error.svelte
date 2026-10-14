@@ -68,14 +68,14 @@ const errorSubtitle = $derived(
           href="/"
           class="inline-flex items-center gap-2 border border-border px-7 py-3.5 text-sm font-bold text-foreground transition-[border-color,color,transform] duration-200 ease-(--ease-out-strong) hover:border-signal hover:text-signal active:scale-[0.97]"
         >
-          {m['ui:error.backHome']()}
+          {m['ui:action.backHome']()}
         </a>
       {:else}
         <a
           href="/"
           class="group inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
         >
-          {m['ui:error.backHome']()}
+          {m['ui:action.backHome']()}
           <span
             class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:-translate-x-1"
             aria-hidden="true"

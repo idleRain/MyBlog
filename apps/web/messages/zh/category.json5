@@ -1,0 +1,7 @@
+{
+  "title": "{{name}} - 分类目录 - {{site}}",
+  "eyebrow": "分类 · {{slug}}",
+  "emptyTitle": "该分类下暂无已发布的文章。",
+  "emptyNote": "可以去目录页看看其他内容。",
+  "notFound": "分类不存在"
+}

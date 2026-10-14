@@ -56,8 +56,6 @@
     "description": "Posts saved by the signed-in user.",
     "eyebrow": "Favorites · Bookmarks",
     "heading": "Favorites",
-    "count_one": "{{count}} saved post",
-    "count_other": "{{count}} saved posts",
     "emptyTitle": "No saved posts yet.",
     "emptyNote": "Use the save button on a post to collect it here.",
     "loadFailed": "Failed to load the saved posts, please try again later"

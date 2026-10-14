@@ -34,7 +34,7 @@ function handleSubscribe(event: SubmitEvent) {
       <div class="mb-8 flex items-end justify-between border-b border-line pb-4" use:scrollReveal>
         <h2 class="font-display text-3xl font-black">{m['home:index.title']()}</h2>
         <span class="font-mono text-sm text-muted-foreground">
-          {m['ui:meta.postCount']({ count: posts.length })}
+          {m['ui:meta.postCount']({ count: posts.length })} · {m['ui:meta.ongoing']()}
         </span>
       </div>
 

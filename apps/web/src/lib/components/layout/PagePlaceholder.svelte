@@ -1,5 +1,5 @@
 <script lang="ts">
-import { SITE_NAME_ZH } from '@myblog/shared'
+import { m } from '$i18n'
 
 // 展位页属性：eyebrow 为栏目标注，ghostMark 为右下角幽灵字，title 与 description 构成版面主体并写入文档头。
 interface Props {
@@ -10,10 +10,13 @@ interface Props {
 }
 
 let { eyebrow, ghostMark, title, description }: Props = $props()
+
+// 标题中的站名取自词表，以随语言切换。
+const pageTitle = $derived(m['ui:meta.pageTitle']({ title, site: m['ui:site.name']() }))
 </script>
 
 <svelte:head>
-  <title>{title} - {SITE_NAME_ZH}</title>
+  <title>{pageTitle}</title>
   <meta name="description" content={description} />
 </svelte:head>
 
@@ -33,7 +36,9 @@ let { eyebrow, ghostMark, title, description }: Props = $props()
     </h1>
 
     <!-- 展位状态行：等宽标注说明当前版面尚未刊出。 -->
-    <p class="mt-6 font-mono text-xs text-muted-foreground">版面排期中 · 功能将在后续迭代接入</p>
+    <p class="mt-6 font-mono text-xs text-muted-foreground">
+      {m['ui:placeholder.scheduleNote']()}
+    </p>
 
     <!-- 简介引语：朱红竖线引出，延续编辑手记的引出方式。 -->
     <div class="mt-10 max-w-xl border-l-2 border-signal pl-6">
@@ -45,7 +50,7 @@ let { eyebrow, ghostMark, title, description }: Props = $props()
       href="/"
       class="group mt-12 inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
     >
-      返回首页
+      {m['ui:action.backHome']()}
       <span
         class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:-translate-x-1"
         aria-hidden="true"

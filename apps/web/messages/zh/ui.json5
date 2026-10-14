@@ -17,8 +17,10 @@
     "minutesReadApprox": "约 {{count}} 分钟",
     "views_one": "{{count}} 次浏览",
     "views_other": "{{count}} 次浏览",
-    "postCount_one": "共 {{count}} 篇 · 持续更新",
-    "postCount_other": "共 {{count}} 篇 · 持续更新"
+    "postCount_one": "共 {{count}} 篇",
+    "postCount_other": "共 {{count}} 篇",
+    "ongoing": "持续更新",
+    "pageTitle": "{{title}} - {{site}}"
   },
   "empty": {
     "inPreparation": "创刊号正在筹备中，文章即将发布。",
@@ -26,10 +28,14 @@
   },
   "action": {
     "failed": "操作失败，请稍后重试",
-    "submitting": "提交中…"
+    "submitting": "提交中…",
+    "backHome": "返回首页"
   },
   "session": {
     "expired": "登录已过期，请重新登录"
+  },
+  "placeholder": {
+    "scheduleNote": "版面排期中 · 功能将在后续迭代接入"
   },
   "button": {
     "save": "保存",
@@ -109,6 +115,6 @@
     "serverErrorTitle": "印刷机出了点故障",
     "serverErrorSubtitle": "服务器遇到了意外状况，内容暂时无法呈现",
     "retry": "重试加载",
-    "backHome": "返回首页"
+    "listFailed": "文章列表加载失败，请稍后重试"
   }
 }

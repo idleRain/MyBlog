@@ -12,7 +12,9 @@
       "home": "./messages/{locale}/home.json5",
       "blog": "./messages/{locale}/blog.json5",
       "account": "./messages/{locale}/account.json5",
-      "comment": "./messages/{locale}/comment.json5"
+      "comment": "./messages/{locale}/comment.json5",
+      "category": "./messages/{locale}/category.json5",
+      "author": "./messages/{locale}/author.json5"
     }
   },
   "baseLocale": "zh",

@@ -1,0 +1,13 @@
+{
+  "title": "{{name}} - Author - {{site}}",
+  "description": "All posts published by {{name}}",
+  "eyebrow": "Author · Profile",
+  "articleCount_one": "{{count}} article",
+  "articleCount_other": "{{count}} articles",
+  "followerCount_one": "{{count}} follower",
+  "followerCount_other": "{{count}} followers",
+  "followingCount": "{{count}} following",
+  "emptyTitle": "This author has no published posts yet.",
+  "emptyNote": "Browse the post index for other content.",
+  "notFound": "Author not found"
+}

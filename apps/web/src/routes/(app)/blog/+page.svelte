@@ -40,7 +40,7 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
         </span>
       {:else}
         <span class="shrink-0 font-mono text-sm text-muted-foreground">
-          {m['ui:meta.postCount']({ count: data.list.total })}
+          {m['ui:meta.postCount']({ count: data.list.total })} · {m['ui:meta.ongoing']()}
         </span>
       {/if}
     </div>
