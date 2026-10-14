@@ -16,7 +16,9 @@
       "category": "./messages/{locale}/category.json5",
       "author": "./messages/{locale}/author.json5",
       "contact": "./messages/{locale}/contact.json5",
-      "projects": "./messages/{locale}/projects.json5"
+      "projects": "./messages/{locale}/projects.json5",
+      "about": "./messages/{locale}/about.json5",
+      "privacy": "./messages/{locale}/privacy.json5"
     }
   },
   "baseLocale": "zh",

@@ -16,6 +16,7 @@
   },
   "detail": {
     "eyebrow": "Journal · Post",
+    "notFound": "This post does not exist or is not published yet",
     "commentsClosed": "Comments are closed for this post.",
     "backToIndex": "← Back to the index"
   },

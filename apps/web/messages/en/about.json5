@@ -1,0 +1,18 @@
+{
+  "heading": "About",
+  "description": "The origins of {{site}}, the writer behind it, and what it covers.",
+  "eyebrow": "Journal · About",
+  "issueTitle": "What kind of journal is this",
+  "issueParagraphOne": "{{site}} is a personal journal published as field notes. It records the trade-offs made in engineering practice, the details noticed in design, and the fragments of reading and daily life worth keeping. Posts are arranged as issues and can be browsed from the post index or the archive timeline.",
+  "issueParagraphTwo": "The site is itself one of the works: a full-stack monorepo built with Go and SvelteKit, where comments, favorites, notifications and full-text search are all real implementations. If the engineering interests you, its full entry lives in the project archive.",
+  "authorTitle": "The writer",
+  "columnsTitle": "What it covers",
+  "columns": {
+    "engineeringName": "Engineering notes",
+    "engineeringNote": "Records from frontend work and backend architecture",
+    "designName": "Design notes",
+    "designNote": "Observations on interfaces, typography and interaction",
+    "notesName": "Occasional thoughts",
+    "notesNote": "Fragments from reading and daily life worth keeping"
+  }
+}

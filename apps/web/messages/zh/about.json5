@@ -1,0 +1,18 @@
+{
+  "heading": "关于本站",
+  "description": "{{site}}的站点缘起、写作者介绍与写作方向。",
+  "eyebrow": "刊物 · About",
+  "issueTitle": "这是一份什么样的刊物",
+  "issueParagraphOne": "{{site}}是一份以手记形式更新的个人刊物，记录工程实践里的取舍、设计观察里的细节，以及阅读与生活里值得留下的片段。文章按刊目编排，可从博客目录或归档时间线翻阅。",
+  "issueParagraphTwo": "站点本身也是一份作品：以 Go 与 SvelteKit 构建的 Monorepo 全栈工程，评论、收藏、通知与全文检索均为真实实现。若你对工程结构感兴趣，可在项目档案中查看它的完整档案。",
+  "authorTitle": "写作者",
+  "columnsTitle": "写作方向",
+  "columns": {
+    "engineeringName": "工程手记",
+    "engineeringNote": "前端工程与后端架构的实践记录",
+    "designName": "设计札记",
+    "designNote": "界面、排版与交互的观察笔记",
+    "notesName": "随想",
+    "notesNote": "阅读与生活里值得留下的片段"
+  }
+}

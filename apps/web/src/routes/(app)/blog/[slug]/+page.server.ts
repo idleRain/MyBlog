@@ -4,6 +4,7 @@ import { renderMarkdown } from '$lib/markdown/render'
 import { ArticleAPI, CommentAPI } from '$lib/api'
 import type { PageServerLoad } from './$types'
 import { error } from '@sveltejs/kit'
+import { m } from '$i18n'
 
 // 评论首屏加载数量，客户端的追加加载沿用该值。
 const COMMENT_PAGE_SIZE = 20
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async ({ params }) => {
   const response = await ArticleAPI.getBySlug(params.slug)
 
   if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) {
-    throw error(404, '文章不存在或尚未发布')
+    throw error(404, m['blog:detail.notFound']())
   }
 
   const article = response.data

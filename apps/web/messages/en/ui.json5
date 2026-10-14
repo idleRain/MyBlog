@@ -13,7 +13,8 @@
     "role": "Full-stack engineer",
     "roleWithFields": "Full-stack engineer · programming and design",
     "tagline": "A maker passionate about programming and design, weaving ideas with code and changing the world with technology.",
-    "note": "Writing code by day, writing prose by night. I believe in slow and solid accumulation, and favour clean structures and honest writing."
+    "note": "Writing code by day, writing prose by night. I believe in slow and solid accumulation, and favour clean structures and honest writing.",
+    "approach": "Drawn to where engineering structure meets interface quality; I break complex problems into clear small pieces and fit them back into an elegant whole."
   },
   "meta": {
     "minutesRead": "{{count}} min read",
@@ -39,6 +40,13 @@
   },
   "placeholder": {
     "scheduleNote": "Layout in progress · this section will arrive in a later iteration"
+  },
+  "codeBlock": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "copyAria": "Copy code",
+    "plainText": "Text"
   },
   "button": {
     "save": "Save",

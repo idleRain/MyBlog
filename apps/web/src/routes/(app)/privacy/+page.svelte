@@ -1,53 +1,53 @@
 <script lang="ts">
-import { SITE_NAME_ZH } from '@myblog/shared'
+import { m } from '$i18n'
+
+// 幽灵字为版面前景装饰字形，不承载语义，不随语言切换，故不入词表。
+const GHOST_MARK = '隐'
 
 // 收集项按数据类别陈列，新增采集场景时在此追加类别并在描述中说明启用时点。
+// id 为列表键值，与语言无关；文案一律取自词表。
 const collectionItems = [
   {
-    title: '文章浏览数据',
-    items: [
-      '访问文章时记录来源 IP 地址，用于按访客与自然日去重统计浏览量；站点当前未启用浏览器指纹等额外访客标识。',
-      '浏览明细仅用于站内统计分析，聚合结果即文章页展示的浏览次数。'
-    ]
+    id: 'browsing',
+    title: m['privacy:collection.browsing.title'](),
+    items: [m['privacy:collection.browsing.item1'](), m['privacy:collection.browsing.item2']()]
   },
   {
-    title: '站内搜索记录',
-    items: [
-      '使用目录页检索时记录搜索关键词、结果数量与检索耗时，用于检索质量分析与热词优化。',
-      '搜索记录不与你的其他行为信息关联成画像。'
-    ]
+    id: 'search',
+    title: m['privacy:collection.search.title'](),
+    items: [m['privacy:collection.search.item1'](), m['privacy:collection.search.item2']()]
   },
   {
-    title: '评论信息',
-    items: [
-      '游客留言需填写昵称与邮箱，昵称随评论公开展示，邮箱不公开展示。',
-      '评论表预留的 IP 与浏览器标识字段当前未启用；如未来启用，会先在本页更新告知。'
-    ]
+    id: 'comment',
+    title: m['privacy:collection.comment.title'](),
+    items: [m['privacy:collection.comment.item1'](), m['privacy:collection.comment.item2']()]
   },
   {
-    title: '账户资料',
-    items: [
-      '本站不开放注册，账号由站点管理员创建；登录账户时收集用户名、邮箱与密码，密码以 bcrypt 单向哈希存储，任何人（包括管理员）无法看到原文。',
-      '自助资料页中的昵称、头像、简介与网站地址仅用于站内展示。'
-    ]
+    id: 'account',
+    title: m['privacy:collection.account.title'](),
+    items: [m['privacy:collection.account.item1'](), m['privacy:collection.account.item2']()]
   },
   {
-    title: '登录会话 Cookie',
+    id: 'session',
+    title: m['privacy:collection.session.title'](),
     items: [
-      '登录成功后向浏览器写入 mb_access_token 与 mb_refresh_token 两个 Cookie，仅用于维持登录会话；令牌为服务端签发的不透明随机串，Cookie 本身不携带身份信息。',
-      '两个 Cookie 均开启 HttpOnly 属性，页面脚本无法读取，且仅随 /api 路径的请求发送；同站策略为 SameSite=Lax，跨站请求不会携带。',
-      '访问令牌有效期默认 15 分钟，刷新令牌默认 7 天；登出或修改密码后服务端撤销对应会话，并通知浏览器移除本地 Cookie。'
+      m['privacy:collection.session.item1'](),
+      m['privacy:collection.session.item2'](),
+      m['privacy:collection.session.item3']()
     ]
   }
 ]
+
+// 标题与刊头共用同一条词条，站名取自词表。
+const pageTitle = m['ui:meta.pageTitle']({
+  title: m['privacy:heading'](),
+  site: m['ui:site.name']()
+})
 </script>
 
 <svelte:head>
-  <title>隐私政策 - {SITE_NAME_ZH}</title>
-  <meta
-    name="description"
-    content="闲雨小筑的隐私政策：说明本站收集哪些数据、用途、留存与脱敏策略。"
-  />
+  <title>{pageTitle}</title>
+  <meta name="description" content={m['privacy:description']({ site: m['ui:site.name']() })} />
 </svelte:head>
 
 <section class="texture-grid relative min-h-screen overflow-hidden pt-16">
@@ -56,28 +56,28 @@ const collectionItems = [
     <p
       class="mb-6 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
     >
-      合规 · Privacy
+      {m['privacy:eyebrow']()}
       <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
     </p>
 
     <!-- 刊头标题：衬线黑体大字，延续 Display 层级规格。 -->
     <h1 class="font-display text-4xl leading-[1.08] font-black tracking-tight sm:text-6xl">
-      隐私政策
+      {m['privacy:heading']()}
     </h1>
 
     <!-- 政策总纲引语：朱红竖线引出。 -->
     <div class="mt-10 max-w-xl border-l-2 border-signal pl-6">
       <p class="font-display text-xl leading-relaxed font-medium">
-        本站以最小必要原则处理访客数据，只收集维持功能运转所必需的信息，并在本页公开说明。
+        {m['privacy:lead']()}
       </p>
     </div>
 
     <!-- 收集项清单：按数据类别分节陈列。 -->
     <div class="mt-16 grid gap-12 md:grid-cols-3">
       <div class="md:col-span-2">
-        <h2 class="font-display text-2xl font-black">本站收集哪些数据</h2>
+        <h2 class="font-display text-2xl font-black">{m['privacy:collectionTitle']()}</h2>
         <div class="mt-8 space-y-10">
-          {#each collectionItems as section (section.title)}
+          {#each collectionItems as section (section.id)}
             <section>
               <h3 class="font-display text-lg font-bold">{section.title}</h3>
               <ul class="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
@@ -92,17 +92,17 @@ const collectionItems = [
 
       <!-- 侧栏承诺：与正文分栏对应，逐条列出边界承诺。 -->
       <aside class="h-fit border border-line bg-secondary p-6">
-        <h3 class="font-display text-lg font-black">本站的承诺</h3>
+        <h3 class="font-display text-lg font-black">{m['privacy:promiseTitle']()}</h3>
         <ul class="mt-4 space-y-3 text-sm leading-relaxed text-muted-foreground">
-          <li class="border-l-2 border-signal/40 pl-4">数据不向第三方出售，也不与第三方共享。</li>
-          <li class="border-l-2 border-signal/40 pl-4">站点无广告脚本与跨站追踪器。</li>
+          <li class="border-l-2 border-signal/40 pl-4">{m['privacy:promise1']()}</li>
+          <li class="border-l-2 border-signal/40 pl-4">{m['privacy:promise2']()}</li>
           <li class="border-l-2 border-signal/40 pl-4">
-            公开接口输出经脱敏处理，评论邮箱、来源 IP 等敏感字段不随公开接口返回。
+            {m['privacy:promise3']()}
           </li>
           <li class="border-l-2 border-signal/40 pl-4">
-            浏览与搜索明细长期保存且仅用于统计分析；如引入自动清理周期，会在本页更新说明。
+            {m['privacy:promise4']()}
           </li>
-          <li class="border-l-2 border-signal/40 pl-4">新增数据收集场景前，先更新本页告知。</li>
+          <li class="border-l-2 border-signal/40 pl-4">{m['privacy:promise5']()}</li>
         </ul>
       </aside>
     </div>
@@ -110,9 +110,11 @@ const collectionItems = [
     <!-- 更新说明：政策本身也是版面的一部分，标注生效口径。 -->
     <div class="mt-16 border-t border-line pt-6">
       <p class="text-sm leading-relaxed text-muted-foreground">
-        本政策描述当前站点的实际数据处理方式；内容如有变更，会在本页直接更新并保留最新版本。对政策或数据处理的疑问，可经
-        <a href="/contact" class="text-signal underline-offset-4 hover:underline">联系方式</a>
-        页面中的渠道提出。
+        {m['privacy:updateBefore']()}
+        <a href="/contact" class="text-signal underline-offset-4 hover:underline">
+          {m['contact:heading']()}
+        </a>
+        {m['privacy:updateAfter']()}
       </p>
     </div>
   </div>
@@ -122,6 +124,6 @@ const collectionItems = [
     class="pointer-events-none absolute right-8 bottom-14 hidden font-display text-[11rem] leading-none font-black text-foreground/[0.05] select-none lg:block"
     aria-hidden="true"
   >
-    隐
+    {GHOST_MARK}
   </div>
 </section>

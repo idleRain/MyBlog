@@ -16,6 +16,7 @@
   },
   "detail": {
     "eyebrow": "手记 · 文章",
+    "notFound": "文章不存在或尚未发布",
     "commentsClosed": "这篇文章已关闭评论。",
     "backToIndex": "← 返回目录"
   },
