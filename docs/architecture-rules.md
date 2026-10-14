@@ -227,40 +227,49 @@ git grep -n "NewRBACService()" -- server
 - token pair 形状：`{accessToken, refreshToken, expiresIn}`。
 - 线格式：**不透明令牌**（服务端签发 32 位十六进制随机串，身份与生命周期登记在服务端令牌表；令牌自身不携带任何可解码信息，校验以令牌表为唯一权威，不重构也不重新签名）。
 - 刷新：`POST /api/auth/refresh`，body `{refreshToken}`；刷新即旋转（旧 refresh token 撤销），旋转前查库校验用户存在且状态正常。
-- 撤销：令牌表为内存 map（单实例前提）；撤销即从表中移除记录，过期记录随签发惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
+- 撤销：令牌表为内存 map（单实例终态前提，不迁移）；撤销即从表中移除记录，过期记录随签发惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
 - access 链路取舍：信任短有效期，不逐请求查库；被禁用用户的存量 access 至多存活 `token.access_expire` 分钟，实时失效诉求由 Cookie 会话方案承接。
 - 前端 401 识别：以响应体业务码 `code === 401` 判定（`TOKEN_ERROR_MESSAGES` 文案匹配已移除，禁止回退）。
 
 ---
 
-## 7. 部署形态与可用性约束（单实例）
+## 7. 部署形态与可用性约束（单实例终态）
 
-> 本节的取舍是**有意接受**的架构决策，不是待修复的缺陷：它记录当前形态能做什么、不能做什么，以及扩容前必须先完成的改造。
-> 代码事实来源：`docker-compose.yml`（五个服务各一份，无副本与故障转移）、`service/token.go`（进程内令牌表）、`middleware/ratelimit.go`（进程内计数 map）。
+> 本项目**确定不扩容**：应用进程、MySQL、网关各一份，全部部署于同一台服务器，由同一 nginx 实例按端口区分出入口，全球仅此一份。
+> 单实例是**终态**而非过渡形态，因此本节登记形态事实与由此产生的可用性后果，不构成待改造清单。
+> 代码事实来源：`docker-compose.yml`（各服务一份，无副本与故障转移）、`service/token.go`（进程内令牌表）、`middleware/ratelimit.go`（进程内计数 map）。
 
-### 7.1 当前约束
+### 7.1 形态事实与后果
 
-| 维度 | 当前形态 | 后果 |
+| 维度 | 形态 | 后果 |
 |---|---|---|
-| 部署形态 | 应用进程、MySQL、网关各**单实例** | 无横向扩容能力，单副本容量即整站容量 |
-| 会话令牌 | 存于**进程内存**，不透明随机串，身份唯一权威在服务端令牌表 | **服务重启或发布导致全体用户登出**，发布窗口需提前预告用户 |
-| 请求限流 | 进程内计数 map，按客户端 IP 或用户维度计数 | 阈值是**单进程**口径，多副本会使实际阈值成倍放大 |
+| 部署形态 | 应用进程、MySQL、网关各一份，同一 nginx 实例按端口区分入口 | 无副本与故障转移，单份容量即整站容量 |
+| 会话令牌 | 不透明随机串存于进程内存，身份唯一权威在服务端令牌表 | **服务重启或发布导致全体用户登出**，发布窗口需提前预告用户；令牌不跨进程共享 |
+| 请求限流 | 进程内计数 map，按客户端 IP 或用户维度计数 | 阈值即**单进程**口径；进程重启后计数清零 |
 | 故障处理 | **无自动故障转移** | **故障即停站**，恢复依赖人工介入与重启；无 RTO 承诺，RPO 为 24 小时（见 `operations/backup-restore.md`） |
 
-### 7.2 扩容前置改造三项
+### 7.2 变更前提（当前不触发）
 
-三项须**全部完成**才能以增加副本的方式扩容，缺任一项即产生静默缺陷：
+若未来改变"不扩容"的决定、改以增加副本方式扩容，须先完成下列两项，缺任一项即产生静默缺陷；在当前终态下两项均**不做**，因此它们不是待还债务：
 
 1. **令牌表持久化**：把 `service/token.go` 的内存表切换到共享存储，并保持「查表即唯一权威」的既有校验语义。`model.AuthToken` 的 `TokenHash`（SHA256 十六进制）通道已就绪，可沿用该存储口径。
 2. **限流器外置**：把 `middleware/ratelimit.go` 的进程内计数迁至共享存储，否则限流阈值随副本数成倍放大，防护形同失效。
-3. **反向代理信任链**：为 `gin.Engine` 补 `SetTrustedProxies` 配置（当前零配置）。缺此配置时经网关转发后 `ClientIP()` 恒为网关地址，同时影响限流、登录失败锁定、访问审计与 WAF 四项能力；`ClientIP()` 现有 7 处调用。
 
-### 7.3 验证命令
+### 7.3 代理信任链未收敛（真实缺陷，与副本数无关）
+
+这一项在单机 nginx 反代形态下即已成立，不因不扩容而消失，独立登记于 [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条：
+
+- `internal/router/router.go` 以 `gin.New()` 建引擎且全仓未调用 `SetTrustedProxies`，gin v1.10.1 的 `New()` 默认信任全部代理。
+- 全信任判定下 `ClientIP()` 返回 `X-Forwarded-For` 的最左值，而 `deploy/nginx.conf` 用 `$proxy_add_x_forwarded_for` 把真实地址追加到最右，客户端自带的伪造值因此被原样采信。
+- 受影响面为 IP 级限流、审计 IP 落库、未登录访客去重键与管理员接口 IP 白名单；登录失败锁定按用户 ID 判定，不受影响。
+
+### 7.4 验证命令
 
 ```bash
-# 改造前两处均应为空
-git grep -n "SetTrustedProxies" -- server
+# 应为空，确认单实例形态事实
 git grep -n "replicas" -- docker-compose.yml
+# 输出为空表示 §7.3 的信任链缺陷仍在，收敛后应命中 internal/router
+git grep -n "SetTrustedProxies" -- server
 ```
 
 ---
@@ -290,7 +299,7 @@ git grep -n "replicas" -- docker-compose.yml
 | 公开端点直出实体泄漏个人信息 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 1 条 | 个人信息须经窄化 DTO 或字段白名单 |
 | 文章响应泄漏作者审计字段 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 2 条 | 新增审计字段默认 `json:"-"` |
 | WAF 内容级黑名单的固有误伤面 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 3 条 | 阻止模式必须先红后绿并配两组用例 |
-| 令牌表为内存 map | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 单实例前提；持久化前保持锁 |
+| 代理信任链未收敛导致 `ClientIP()` 可伪造 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 禁止新增以 `ClientIP()` 为唯一依据的安全判定 |
 | 测试替身内嵌空接口的运行时脆性 | [`debt/testing.md`](./debt/testing.md) 第 1 条 | 受影响 fake 必须显式覆写 |
 
 ---

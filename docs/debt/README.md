@@ -8,7 +8,7 @@
 |---|---|---|
 | [`architecture.md`](./architecture.md) | 依赖方向、结构归位、类型真相源、模块对齐、错误语义归位 | 7 |
 | [`frontend.md`](./frontend.md) | 两应用复用、认证工具、页面结构与取数、分页、i18n、UI 遗留 | 8 |
-| [`security-runtime.md`](./security-runtime.md) | 公开端点隐私、审计字段、WAF、会话令牌运行时 | 4 |
+| [`security-runtime.md`](./security-runtime.md) | 公开端点隐私、审计字段、WAF、代理信任链 | 4 |
 | [`testing.md`](./testing.md) | 测试替身与测试纪律 | 1 |
 
 合计 20 条，与 `docs/architecture-rules.md` 第 8 节的索引表一一对应。

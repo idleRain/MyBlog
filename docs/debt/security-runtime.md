@@ -31,9 +31,13 @@
   2. 正文豁免以渲染层消毒为前提，扩大豁免清单前必须确认该字段的每一处输出都经消毒渲染或转义输出；
   3. 删除或放宽渲染层消毒（`pkg/markdown` 的 `Unsafe`、`apps/web` 的 `renderMarkdown`）时，必须同步收回对应的正文豁免。
 
-## 4. 令牌表为内存 map
+## 4. 代理信任链未收敛导致 `ClientIP()` 可伪造
 
-- **状态**：存量，单实例部署前提。
-- **基线**：已加锁并支持过期惰性清理（`sync.RWMutex` 保护，过期记录随签发清理）；令牌为服务端签发的不透明随机串，身份唯一权威在服务端令牌表。
-- **验证命令**：`git grep -n "tokensByUser" -- server`。
-- **红线**：持久化前保持锁；服务重启即全部会话失效；多副本部署前必须先完成持久化改造（见 `docs/architecture-rules.md` §7.2）。
+- **状态**：存量（真实缺陷，与部署副本数无关）。
+- **基线**：
+  - `internal/router/router.go` 以 `gin.New()` 建引擎，全仓无 `SetTrustedProxies` 调用；gin v1.10.1 的 `New()` 默认 `trustedProxies` 为 `0.0.0.0/0` 与 `::/0`，即信任全部代理。
+  - 全信任判定下 `ClientIP()` 经 `validateHeader` 返回 `X-Forwarded-For` 的**最左值**（`i == 0` 分支），而 `deploy/nginx.conf` 的 `$proxy_add_x_forwarded_for` 把真实地址追加到最右，客户端自带的伪造值因此被原样采信。修复前的表述「经网关转发后 `ClientIP()` 恒为网关地址」与实测不符。
+  - 受影响面：IP 级限流（`middleware/ratelimit.go` 与 `middleware/security.go` 的 ipLimiter，默认 100 次/分钟，换一个伪造值即换一个计数桶）；审计 IP 落库（`handler/article.go` → `service/article.go` 的 `IPAddress`、`handler/media.go` → `service/media.go` 的 `UploadIP`）；未登录访客去重键（`service/article.go` 在无登录态时以 ipAddress 作 visitorKey，伪造值即可重复计入浏览）；管理员接口 IP 白名单（`middleware/security.go`，`admin_security.ip_whitelist` 当前为空故未启用）。
+  - 不受影响：登录失败锁定按 `user.ID` 落库（`service/user.go` 的 `IncrementLoginFailures` 与 `LockUserAfterFailures`），WAF 无 IP 黑名单，故早前登记的「影响限流、登录失败锁定、访问审计与 WAF 四项」表述不成立。
+- **验证命令**：`git grep -n "SetTrustedProxies" -- server`（输出为空表示信任链仍未收敛，收敛后应命中 `internal/router`）；`git grep -n "ClientIP()" -- server` 为现有 7 处判定点清单。
+- **红线**：收敛信任链前禁止新增以 `ClientIP()` 为唯一依据的安全判定（限流、白名单、封禁、审计）；不得以 `ClientIP()` 作为可信身份依据；修复须补「伪造 `X-Forwarded-For` 不影响 `ClientIP()`」的回归用例。

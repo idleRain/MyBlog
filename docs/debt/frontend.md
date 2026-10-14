@@ -13,7 +13,7 @@
 ## 2. admin 认证工具三轨并行
 
 - **状态**：已统一。
-- **基线**：`utils/jwt.ts`、`utils/auth.ts` 已删（约 488 行）；`lib/utils` 现仅 `auth-guard.ts`（路由守卫 `requireAuth`）、`logout.ts`（`performLogout`）、`navigation.ts`、`permissions.ts` 四个文件；刷新单轨在 `service/index.ts`。
+- **基线**：`utils/jwt.ts`、`utils/auth.ts` 已删（约 488 行）；`lib/utils` 现为 6 个文件：`auth-guard.ts`（路由守卫 `requireAuth`）、`logout.ts`（`performLogout`）、`navigation.ts`、`permissions.ts`、`tag-display.ts`（标签状态展示解析，列表与表格组件共用同一降级口径）与 `__tests__/tag-display.test.ts`；刷新单轨在 `service/index.ts`。
 - **验证命令**：`git ls-files apps/admin/src/lib/utils`（应无 `jwt.ts`、`auth.ts`）；`git grep -n "manualRefreshToken\|getAuthStatus" -- apps/admin/src`（应为空）。
 - **红线**：禁止新增认证工具文件；禁止双轨回退。
 

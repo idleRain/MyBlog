@@ -20,7 +20,8 @@
 
 - 编排中无副本声明与故障转移（`git grep -n "replicas" -- docker-compose.yml` 应为空），应用进程、MySQL、网关各一份，**不支持按多副本假设做设计与承诺**。
 - 会话令牌表与请求限流计数均为进程内存结构，`server` 容器重启或重新部署将导致**全体用户登出**，发布窗口需提前预告；任一组件故障即停站，恢复依赖人工介入，无 RTO 承诺，RPO 为 24 小时（`docs/operations/backup-restore.md`）。
-- 扩容前置改造三项见 `docs/architecture-rules.md` §7.2。
+- 单实例为**终态**，本项目确定不扩容；若未来改变该决定，扩容前须先完成令牌表持久化与限流器外置两项改造（见 `docs/architecture-rules.md` §7.2）。
+- 代理信任链未收敛，`ClientIP()` 可被客户端 `X-Forwarded-For` 伪造，此为独立缺陷，与副本数无关（见 `docs/debt/security-runtime.md` 第 4 条）。
 
 ### 健康探针
 

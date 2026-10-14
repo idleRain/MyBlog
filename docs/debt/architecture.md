@@ -7,7 +7,7 @@
 
 - **状态**：存量，只减不增。
 - **基线**：service **12** + middleware **1** + router **0**，合计 13 个文件。router 已归零，middleware 仅 `identity.go`；`*_test.go` 测试替身文件不计入。dict 模块接入曾使 service 层由 11 增至 12。
-- **验证命令**：见 `docs/architecture-rules.md` §2.3。必须在 `server/` 目录下执行（相对 pathspec 在仓库根执行会得到零命中的假绿），并带 `':(exclude)*_test.go'` 排除测试文件；不排除时命中数为 33。
+- **验证命令**：见 `docs/architecture-rules.md` §2.3。必须在 `server/` 目录下执行（相对 pathspec 在仓库根执行会得到零命中的假绿），并带 `':(exclude)*_test.go'` 排除测试文件；不排除时命中数为 35。
 - **红线**：只减不增。
 
 ## 2. router 重复定义 handler 接口与 `interface{}` 断言

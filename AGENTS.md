@@ -18,8 +18,9 @@
 5. **禁止复制粘贴式共享**。两 app 间禁止新增逐字或近似重复文件，公共逻辑下沉 packages；存量逐字重复仅 `src/lib/stores/auth.ts`（15 行 ×2）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2），改任一份必须同步另一份。
    验证：`git diff --no-index` 上述两份文件应零差异。
 6. **数据加载归位**。`apps/web` 新页面禁止 `onMount` 取数，用 `+page.server.ts` / `+page.ts` 的 load；`apps/admin` 新页面同样禁止 `onMount` 取数，含客户端读写操作的页面配 load + 页面状态模块（`.svelte.ts`），只读页由 load 直出 page data，load 内禁止调用认证接口；API 调用不得深入叶子组件。
-7. **部署形态为单实例**（有意取舍，非待修缺陷）。应用进程、MySQL、网关各一份，无副本与故障转移；会话令牌表与限流计数均为进程内存结构，服务重启或发布将导致全体用户登出，发布窗口需提前预告；故障即停站，无 RTO 承诺，RPO 为 24 小时。扩容前必须完成令牌表持久化、限流器外置、补 `SetTrustedProxies` 三项改造。
-   验证：`git grep -n "SetTrustedProxies" -- server` 与 `git grep -n "replicas" -- docker-compose.yml` 均应为空。
+7. **部署形态为单实例终态**（已接受，非待修缺陷）。应用进程、MySQL、网关各一份，全部部署于同一台服务器，由同一 nginx 实例按端口区分出入口，**确定不扩容**；会话令牌表与限流计数均为进程内存结构，服务重启或发布将导致全体用户登出，发布窗口需提前预告；故障即停站，无 RTO 承诺，RPO 为 24 小时。若未来改变该决定，扩容前必须先完成令牌表持久化与限流器外置两项改造。
+   验证：`git grep -n "replicas" -- docker-compose.yml` 应为空。
+   代理信任链未收敛导致 `ClientIP()` 可被 `X-Forwarded-For` 伪造，该缺陷与本形态无关，单独立项，见 `docs/debt/security-runtime.md` 第 4 条。
 8. **先确认产品定位**。单作者个人博客，不开放注册、无找回密码通道：账号由管理员创建（首次部署 `pnpm run seed:admin`，之后在后台用户管理页新增），忘记密码由超级管理员经 `POST /api/users/update` 重置；游客可浏览并提交评论（受审核设置约束），点赞/收藏/关注需登录。功能提案前先确认是否与之冲突；新增数据收集场景须先同步 `apps/web` 的 `/privacy` 页告知。
 
 ## 2. 完成前自检
@@ -80,7 +81,7 @@ pnpm run go:quality / go:vulncheck / audit:deps
 - **类型归属**：领域实体在 `internal/domain`，GORM 实体在 `internal/model`，`repository` 不得新增实体或 DTO，对外响应禁止直出 GORM 实体（存量违例见 `docs/debt/security-runtime.md` 第 1 条）；请求/响应 DTO 以所属业务域的 service 包内定义为常态（如 `service.CreateArticleRequest`），用户域的 `CreateUserRequest`/`UpdateUserRequest` 在 `internal/domain/dto.go`，短参数 DTO 可就地声明在 handler。
 - **命名与接口位置**：Go 字段与 json tag 用小驼峰；接口与实现同包声明并统一 `XxxInterface` 后缀（存量 `UserService`、`RBACService`、`UserRepository` 未带后缀，触碰时统一）；各层依赖接口而非实现，`router` 不得重复定义接口。
 - **数据库**：表结构硬性约定（生命周期与状态字段、字段级 `comment`、唯一索引与普通索引、删除策略、时间精度、多段写库事务化）与迁移双轨（开发 `AutoMigrate`、生产 golang-migrate）见 `docs/database-architecture.md`，迁移入口为 `internal/database/migrate.go` 与 `pnpm run migrate`。
-- **认证与密码**：bcrypt 成本 `BcryptCost = 12`；令牌为服务端签发的不透明随机串，内存令牌表是身份唯一权威（单实例前提），刷新即旋转、登出撤销令牌对、改密撤销该用户全部令牌。线格式与撤销语义见 `contracts/auth-protocol.md`，实现要点见 `internal/service/README.md`。
+- **认证与密码**：bcrypt 成本 `BcryptCost = 12`；令牌为服务端签发的不透明随机串，内存令牌表是身份唯一权威（单实例终态前提），刷新即旋转、登出撤销令牌对、改密撤销该用户全部令牌。线格式与撤销语义见 `contracts/auth-protocol.md`，实现要点见 `internal/service/README.md`。
 - **配置与中间件**：`internal/config` 经 Viper 读 `configs/config.yaml`（YAML 为唯一来源）；中间件覆盖访问日志与 panic 恢复及 RequestID、CORS、安全、认证、RBAC、限流、语言协商与身份解析，认证/权限中间件只依赖 `IdentityProvider` 抽象。配置项与中间件清单以 `internal/config/README.md`、`internal/middleware/README.md` 为准。
 - **入口与工具包**：服务入口 `cmd/myblog/`，种子入口 `cmd/seed/`（逻辑 `internal/database/seed.go`），通用包见 `server/pkg/`。
 
