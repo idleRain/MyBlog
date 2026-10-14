@@ -1,0 +1,18 @@
+{
+  "title": "Comments",
+  "count_one": "{{count}} comment",
+  "count_other": "{{count}} comments",
+  "nameLabel": "Name",
+  "namePlaceholder": "Name *",
+  "emailLabel": "Email",
+  "emailPlaceholder": "Email (not published)",
+  "contentLabel": "Comment",
+  "contentPlaceholder": "Say something",
+  "guestContentPlaceholder": "Say something as a guest",
+  "moderationNote": "Comments are published after review",
+  "submit": "Post comment",
+  "empty": "No comments yet. Be the first to say something.",
+  "loadMore": "Load more comments",
+  "submitFailed": "Failed to submit the comment, please try again later",
+  "submitSuccess": "Comment submitted, it will be published after review"
+}

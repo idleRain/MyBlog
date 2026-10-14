@@ -33,7 +33,6 @@
   },
   "actions": {
     "signInRequired": "Sign in to join the conversation",
-    "failed": "Something went wrong, please try again later",
     "liked": "Liked",
     "like": "Like",
     "bookmarked": "Saved",

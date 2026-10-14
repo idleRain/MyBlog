@@ -24,6 +24,13 @@
     "inPreparation": "The inaugural issue is in preparation, posts will follow soon.",
     "backHome": "You can head back to the home page to browse the layout and the site introduction."
   },
+  "action": {
+    "failed": "Something went wrong, please try again later",
+    "submitting": "Submitting…"
+  },
+  "session": {
+    "expired": "Your session has expired, please sign in again"
+  },
   "button": {
     "save": "Save",
     "cancel": "Cancel",
@@ -92,7 +99,6 @@
     "contactEmail": "Contact email",
     "contactEmailPlaceholder": "Used to receive the review result",
     "submit": "Submit application",
-    "submitting": "Submitting…",
     "applySubmitted": "Application submitted, awaiting review",
     "submitFailed": "Failed to submit the application, please try again later"
   },

@@ -56,9 +56,9 @@
   应输出 0；分档一致性由 `go test ./internal/handler/ -run TestErrorMappingMatchesContract -count=1` 与 `pnpm run contract:check` 锚定。
 - **红线**：新增业务校验失败、认证失败与资源未找到必须包装对应哨兵（`service.ErrUnauthenticated`、`service.ErrInvalidRequest`、`domain.ErrXxxNotFound` 等），并同步登记 `contracts/errors.yaml` 的 mapping 节与 `handler` 分档注册表；禁止以裸错误表达同类语义，禁止在模块内新增私有映射分支。
 
-## 8. 后端响应文案不随语言切换
+## 8. 响应与共享包文案不随语言切换
 
-- **状态**：推进中，随界面多语言分批接入推进。
-- **基线**：接口响应同时携带 `code` 与 `message`，前端 8 处以 `response.message || 后备文案` 直出后端字符串（`ArticleActions` 2、`CommentSection` 1、`FollowButton` 1、`login` 1、`profile` 2、`FriendlyLinkDialog` 1），其中 7 处后备仍为硬编码中文、仅 `FriendlyLinkDialog` 已接入词表。后端 `message` 是 service 与 domain 层哨兵错误的原始文本，经 `handler.HandleServiceError` 的 `response.Error(c, mapping.Code, err.Error())` 直出，无语言维度；`message` 命中时前端后备不生效，en 模式下提示仍为中文。`internal/middleware/language.go` 已把语言写入请求上下文，具备接入条件。
-- **验证命令**：`git grep -n "response.message" -- apps/web/src`（当前 9 处，含 `ssr.ts` 的管道传递）；`git grep -n "err.Error()" -- server/internal/handler/error.go`（后端文案直出点，应为 1 处且无本地化分支）。
-- **红线**：前端后备文案禁止回退硬编码；前端若改为按错误码取词，须与 `contracts/errors.yaml` 的 mapping 节在同一变更窗口内同步，禁止另建与契约脱钩的映射表。
+- **状态**：推进中，前端后备侧已接入词表，后端侧与共享包侧未接入。
+- **基线**：接口响应同时携带 `code` 与 `message`，前端 8 处 `response.message || 后备文案` 的后备已全部经词表取词（`ArticleActions` 2、`CommentSection` 1、`FollowButton` 1、`login` 1、`profile` 2、`FriendlyLinkDialog` 1），另 1 处 `ssr.ts` 只做管道传递不直出。后端 `message` 是 service 与 domain 层哨兵错误的原始文本，经 `handler.HandleServiceError` 的 `response.Error(c, mapping.Code, err.Error())` 直出，无语言维度；`message` 命中时前端后备不生效，en 模式下提示仍为中文。共享包侧另有 4 处内置中文文案，即 `packages/http/src/client.ts` 的会话失效、认证失败与请求失败提示，以及 `packages/http/src/response.ts` 的消息空值降级，经 `auth.onAuthFailure` 与 `onError` 回调直出为 toast；packages 无法解析 `$i18n` 别名，该侧文案不能直接取词。`internal/middleware/language.go` 已把语言写入请求上下文，后端具备接入条件。
+- **验证命令**：`git grep -n "response.message" -- apps/web/src`（前端 9 处，含 `ssr.ts` 的管道传递）；`git grep -n "err.Error()" -- server/internal/handler/error.go`（后端文案直出点，应为 1 处且无本地化分支）；`git grep -n "登录已过期\|认证失败\|请求失败" -- packages`（共享包内置文案，应命中 `client.ts` 三处与 `response.ts` 一处）。
+- **红线**：前端后备文案禁止回退硬编码；前端若改为按错误码取词，须与 `contracts/errors.yaml` 的 mapping 节在同一变更窗口内同步，禁止另建与契约脱钩的映射表；packages 不得新增内置的用户可见文案，需要展示的提示一律由应用侧经回调注入。

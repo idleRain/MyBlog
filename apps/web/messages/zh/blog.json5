@@ -33,7 +33,6 @@
   },
   "actions": {
     "signInRequired": "登录后即可参与互动",
-    "failed": "操作失败，请稍后重试",
     "liked": "已点赞",
     "like": "点赞",
     "bookmarked": "已收藏",

@@ -10,7 +10,9 @@
       "ui": "./messages/{locale}/ui.json5",
       "auth": "./messages/{locale}/auth.json5",
       "home": "./messages/{locale}/home.json5",
-      "blog": "./messages/{locale}/blog.json5"
+      "blog": "./messages/{locale}/blog.json5",
+      "account": "./messages/{locale}/account.json5",
+      "comment": "./messages/{locale}/comment.json5"
     }
   },
   "baseLocale": "zh",

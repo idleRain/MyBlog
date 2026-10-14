@@ -7,6 +7,7 @@ import { authStore } from '$lib/stores/auth'
 import { browser } from '$app/environment'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
+import { m } from '$i18n'
 import ky from 'ky'
 
 const prefixUrl = import.meta.env.SSR
@@ -54,7 +55,7 @@ const request = createHttpClient({
     onAuthFailure: async message => {
       authStore.clearLocalState()
       if (browser) {
-        toast.error(message || '登录已过期，请重新登录')
+        toast.error(message || m['ui:session.expired']())
         await goto('/login')
       }
     }

@@ -63,7 +63,7 @@ async function toggleLike() {
   try {
     const response = isLiked ? await ArticleAPI.unlike(articleId) : await ArticleAPI.like(articleId)
     if (response.code !== RESPONSE_CODE_SUCCESS) {
-      toast.error(response.message || m['blog:actions.failed']())
+      toast.error(response.message || m['ui:action.failed']())
       return
     }
     isLiked = !isLiked
@@ -86,7 +86,7 @@ async function toggleBookmark() {
       ? await ArticleAPI.unbookmark(articleId)
       : await ArticleAPI.bookmark(articleId)
     if (response.code !== RESPONSE_CODE_SUCCESS) {
-      toast.error(response.message || m['blog:actions.failed']())
+      toast.error(response.message || m['ui:action.failed']())
       return
     }
     isBookmarked = !isBookmarked

@@ -2,13 +2,13 @@
 import type { ProfileUser } from '@myblog/api/modules/user/types'
 import { ProfileFormSkeleton } from '$lib/components/user'
 import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import { authStore } from '$lib/stores/auth'
 import type { PageProps } from './$types'
 import { navigating } from '$app/state'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { UserAPI } from '$lib/api'
+import { m } from '$i18n'
 
 // 资料字段长度上限，与后端 UpdateProfileRequest 的 binding 规则一致。
 const NICKNAME_MAX_LENGTH = 50
@@ -22,6 +22,9 @@ const PASSWORD_MAX_LENGTH = 64
 
 // 数据由 +page.server.ts 的 load 在服务端取回，未登录时 load 已跳转登录页。
 let { data }: PageProps = $props()
+
+// 标题中的站名取自词表，以随语言切换。
+const pageTitle = m['account:profile.title']({ site: m['ui:site.name']() })
 
 // 资料展示口径取自 load 结果；保存成功后以响应体覆盖，使界面与后端一致。
 // 经函数读取而非直接引用 data，避免状态声明处只捕获 load 的初值而产生告警。
@@ -86,15 +89,15 @@ async function handleProfileSubmit(event: SubmitEvent) {
     })
 
     if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) {
-      toast.error(response.message || '资料保存失败，请稍后重试')
+      toast.error(response.message || m['account:profile.saveFailed']())
       return
     }
 
     applyProfile(response.data)
     authStore.updateUser(response.data)
-    toast.success('资料已保存')
+    toast.success(m['account:profile.saveSuccess']())
   } catch {
-    toast.error('资料保存失败，请稍后重试')
+    toast.error(m['account:profile.saveFailed']())
   } finally {
     savingProfile = false
   }
@@ -107,7 +110,7 @@ async function handlePasswordSubmit(event: SubmitEvent) {
   if (savingPassword) return
 
   if (newPassword !== confirmPassword) {
-    toast.error('两次输入的新密码不一致')
+    toast.error(m['account:profile.passwordMismatch']())
     return
   }
 
@@ -115,15 +118,15 @@ async function handlePasswordSubmit(event: SubmitEvent) {
   try {
     const response = await UserAPI.changePassword({ oldPassword, newPassword })
     if (response.code !== RESPONSE_CODE_SUCCESS) {
-      toast.error(response.message || '密码修改失败，请稍后重试')
+      toast.error(response.message || m['account:profile.passwordFailed']())
       return
     }
 
-    toast.success('密码修改成功，请使用新密码重新登录')
+    toast.success(m['account:profile.passwordSuccess']())
     await authStore.logout(true)
     void goto('/login')
   } catch {
-    toast.error('密码修改失败，请稍后重试')
+    toast.error(m['account:profile.passwordFailed']())
   } finally {
     savingPassword = false
   }
@@ -131,11 +134,8 @@ async function handlePasswordSubmit(event: SubmitEvent) {
 </script>
 
 <svelte:head>
-  <title>个人资料 - {SITE_NAME_ZH}</title>
-  <meta
-    name="description"
-    content="当前登录用户的资料维护页，支持修改昵称、头像、简介与登录密码。"
-  />
+  <title>{pageTitle}</title>
+  <meta name="description" content={m['account:profile.description']()} />
 </svelte:head>
 
 <section class="texture-grid min-h-screen pt-16">
@@ -145,10 +145,10 @@ async function handlePasswordSubmit(event: SubmitEvent) {
       <p
         class="mb-3 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
       >
-        资料 · Profile
+        {m['account:profile.eyebrow']()}
         <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
       </p>
-      <h1 class="font-display text-3xl font-black">个人资料</h1>
+      <h1 class="font-display text-3xl font-black">{m['account:profile.heading']()}</h1>
     </div>
 
     {#if isNavigatingHere}
@@ -161,50 +161,50 @@ async function handlePasswordSubmit(event: SubmitEvent) {
       <div class="grid gap-8 lg:grid-cols-2">
         <!-- 资料表单：纸深面卡片承载，沿用站内输入框样式。 -->
         <form onsubmit={handleProfileSubmit} class="border border-line bg-secondary p-6">
-          <h2 class="font-display text-xl font-black">基础资料</h2>
-          <p class="mt-1 text-xs text-muted-foreground">昵称与简介会展示在评论与作者主页。</p>
+          <h2 class="font-display text-xl font-black">{m['account:profile.basicsTitle']()}</h2>
+          <p class="mt-1 text-xs text-muted-foreground">{m['account:profile.basicsNote']()}</p>
 
           <label class="mt-6 block">
-            <span class="mb-2 block text-sm font-bold">昵称</span>
+            <span class="mb-2 block text-sm font-bold">{m['account:profile.nicknameLabel']()}</span>
             <input
               type="text"
               bind:value={nickname}
               required
               maxlength={NICKNAME_MAX_LENGTH}
-              placeholder="展示昵称"
+              placeholder={m['account:profile.nicknamePlaceholder']()}
               class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
           </label>
 
           <label class="mt-4 block">
-            <span class="mb-2 block text-sm font-bold">头像地址</span>
+            <span class="mb-2 block text-sm font-bold">{m['account:profile.avatarLabel']()}</span>
             <input
               type="url"
               bind:value={avatar}
               maxlength={AVATAR_MAX_LENGTH}
-              placeholder="https://…"
+              placeholder={m['account:profile.urlPlaceholder']()}
               class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
           </label>
 
           <label class="mt-4 block">
-            <span class="mb-2 block text-sm font-bold">个人简介</span>
+            <span class="mb-2 block text-sm font-bold">{m['account:profile.bioLabel']()}</span>
             <textarea
               bind:value={bio}
               maxlength={BIO_MAX_LENGTH}
               rows="4"
-              placeholder="一句话介绍自己"
+              placeholder={m['account:profile.bioPlaceholder']()}
               class="w-full resize-y border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             ></textarea>
           </label>
 
           <label class="mt-4 block">
-            <span class="mb-2 block text-sm font-bold">个人网站</span>
+            <span class="mb-2 block text-sm font-bold">{m['account:profile.websiteLabel']()}</span>
             <input
               type="url"
               bind:value={website}
               maxlength={WEBSITE_MAX_LENGTH}
-              placeholder="https://…"
+              placeholder={m['account:profile.urlPlaceholder']()}
               class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
           </label>
@@ -214,31 +214,40 @@ async function handlePasswordSubmit(event: SubmitEvent) {
             disabled={savingProfile}
             class="mt-6 inline-flex w-full items-center justify-center bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {savingProfile ? '保存中…' : '保存资料'}
+            {savingProfile
+              ? m['account:profile.saveSubmitting']()
+              : m['account:profile.saveSubmit']()}
           </button>
         </form>
 
         <!-- 改密码表单：独立于资料表单单独提交。 -->
         <form onsubmit={handlePasswordSubmit} class="h-fit border border-line bg-secondary p-6">
-          <h2 class="font-display text-xl font-black">修改密码</h2>
+          <h2 class="font-display text-xl font-black">{m['account:profile.passwordTitle']()}</h2>
           <p class="mt-1 text-xs text-muted-foreground">
-            长度 {PASSWORD_MIN_LENGTH}-{PASSWORD_MAX_LENGTH} 位，需同时包含字母和数字。
+            {m['account:profile.passwordRule']({
+              min: PASSWORD_MIN_LENGTH,
+              max: PASSWORD_MAX_LENGTH
+            })}
           </p>
 
           <label class="mt-6 block">
-            <span class="mb-2 block text-sm font-bold">当前密码</span>
+            <span class="mb-2 block text-sm font-bold"
+              >{m['account:profile.currentPasswordLabel']()}</span
+            >
             <input
               type="password"
               bind:value={oldPassword}
               required
               autocomplete="current-password"
-              placeholder="请输入当前密码"
+              placeholder={m['account:profile.currentPasswordPlaceholder']()}
               class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
           </label>
 
           <label class="mt-4 block">
-            <span class="mb-2 block text-sm font-bold">新密码</span>
+            <span class="mb-2 block text-sm font-bold"
+              >{m['account:profile.newPasswordLabel']()}</span
+            >
             <input
               type="password"
               bind:value={newPassword}
@@ -246,19 +255,21 @@ async function handlePasswordSubmit(event: SubmitEvent) {
               minlength={PASSWORD_MIN_LENGTH}
               maxlength={PASSWORD_MAX_LENGTH}
               autocomplete="new-password"
-              placeholder="请输入新密码"
+              placeholder={m['account:profile.newPasswordPlaceholder']()}
               class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
           </label>
 
           <label class="mt-4 block">
-            <span class="mb-2 block text-sm font-bold">确认新密码</span>
+            <span class="mb-2 block text-sm font-bold"
+              >{m['account:profile.confirmPasswordLabel']()}</span
+            >
             <input
               type="password"
               bind:value={confirmPassword}
               required
               autocomplete="new-password"
-              placeholder="请再次输入新密码"
+              placeholder={m['account:profile.confirmPasswordPlaceholder']()}
               class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
           </label>
@@ -268,7 +279,7 @@ async function handlePasswordSubmit(event: SubmitEvent) {
             disabled={savingPassword}
             class="mt-6 inline-flex w-full items-center justify-center bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {savingPassword ? '提交中…' : '修改密码'}
+            {savingPassword ? m['ui:action.submitting']() : m['account:profile.passwordSubmit']()}
           </button>
         </form>
       </div>

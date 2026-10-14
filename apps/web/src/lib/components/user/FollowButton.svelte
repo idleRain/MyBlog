@@ -3,6 +3,7 @@ import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { FollowAPI } from '$lib/api'
+import { m } from '$i18n'
 
 // 后端统一响应的成功业务码。
 const SUCCESS_CODE = 200
@@ -48,7 +49,7 @@ async function refreshFollowing() {
 
 // 未登录时引导前往登录页。
 function requireAuth() {
-  toast.info('登录后即可关注作者')
+  toast.info(m['account:follow.signInRequired']())
   void goto('/login')
 }
 
@@ -66,7 +67,7 @@ async function toggleFollow() {
       ? await FollowAPI.unfollow({ followingId: targetUserId })
       : await FollowAPI.follow({ followingId: targetUserId })
     if (response.code !== SUCCESS_CODE) {
-      toast.error(response.message || '操作失败，请稍后重试')
+      toast.error(response.message || m['ui:action.failed']())
       return
     }
     isFollowing = !isFollowing
@@ -85,10 +86,10 @@ async function toggleFollow() {
     : 'bg-primary text-primary-foreground hover:bg-signal hover:text-signal-foreground'}"
 >
   {#if busy}
-    处理中…
+    {m['account:follow.busy']()}
   {:else if isFollowing}
-    已关注
+    {m['account:follow.following']()}
   {:else}
-    关注
+    {m['account:follow.follow']()}
   {/if}
 </button>

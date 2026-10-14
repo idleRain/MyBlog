@@ -554,6 +554,8 @@ const updated = await UserAPI.updateUser({ id: user.id, username: 'new-name', em
 - **句子被节点切开时按片段取词**：完整句子中间嵌链接或强调节点时，拆成 `…Before` / 链接文案 / `…After` 多条词条，语序由词条内容决定，不把 HTML 写进词条
 - `messages/*.json5` 必须保持 **JSON 兼容写法**（双引号、无尾逗号、不写注释）：paraglide 编译器按严格 JSON 解析，无引号键/尾逗号/单引号会直接编译失败；`apps/web/messages/` 已列入 `.prettierignore`，因为 prettier 的 json5 解析器会把键改写为无引号形式，直接导致编译失败
 - 修改词表后需重新编译生成 `src/lib/paraglide` 产物：`pnpm --filter @myblog/web exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`，等价入口为 `pnpm --filter @myblog/web run generate:i18n`（`vite dev`/`build` 亦会自动触发）
+- `apps/web/vitest.config.ts` 已声明 `$i18n` 别名，单测可引用取词模块，但取词模块是编译产物，跑 `pnpm --filter @myblog/web run test` 前需先执行 `generate:i18n`
+- 后台 `apps/admin` 无 i18n，`packages/*` 无法解析 `$i18n` 别名：共享包不得内置用户可见文案，需要展示的提示一律经回调由应用侧注入（见 `docs/debt/architecture.md` 第 8 条）
 
 ## 部署指南
 

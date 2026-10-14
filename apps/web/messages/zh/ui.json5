@@ -24,6 +24,13 @@
     "inPreparation": "创刊号正在筹备中，文章即将发布。",
     "backHome": "可以先回到首页浏览版面与站点介绍。"
   },
+  "action": {
+    "failed": "操作失败，请稍后重试",
+    "submitting": "提交中…"
+  },
+  "session": {
+    "expired": "登录已过期，请重新登录"
+  },
   "button": {
     "save": "保存",
     "cancel": "取消",
@@ -92,7 +99,6 @@
     "contactEmail": "联系邮箱",
     "contactEmailPlaceholder": "用于接收审核结果",
     "submit": "提交申请",
-    "submitting": "提交中…",
     "applySubmitted": "申请已提交，等待站长审核",
     "submitFailed": "申请提交失败，请稍后重试"
   },

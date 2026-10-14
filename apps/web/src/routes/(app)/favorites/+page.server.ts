@@ -2,15 +2,13 @@ import { fetchAuthenticated } from '$lib/service/ssr'
 import { error, redirect } from '@sveltejs/kit'
 import { createArticleAPI } from '@myblog/api'
 import type { PageServerLoad } from './$types'
+import { m } from '$i18n'
 
 // 收藏列表每页数量，与其他目录页保持一致的版面节奏。
 const FAVORITES_PAGE_SIZE = 12
 
 // 未登录或会话缺失时统一跳转登录页，由登录页承接身份建立。
 const LOGIN_PATH = '/login'
-
-// 收藏读取失败时的页面级提示，与既有客户端补拉的文案保持一致。
-const LOAD_FAILURE_MESSAGE = '收藏列表加载失败，请稍后重试'
 
 /**
  * 收藏列表页在服务端取数。
@@ -33,7 +31,7 @@ export const load: PageServerLoad = async ({ request, url }) => {
     throw redirect(302, LOGIN_PATH)
   }
   if (result.status === 'failed') {
-    throw error(503, LOAD_FAILURE_MESSAGE)
+    throw error(503, m['account:favorites.loadFailed']())
   }
 
   return { list: result.data, currentPage }

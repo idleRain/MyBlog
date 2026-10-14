@@ -143,7 +143,7 @@ async function handleApply(event: SubmitEvent) {
         disabled={applying}
         class="mt-4 inline-flex w-full items-center justify-center bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-[background-color,color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {applying ? m['ui:linkDialog.submitting']() : m['ui:linkDialog.submit']()}
+        {applying ? m['ui:action.submitting']() : m['ui:linkDialog.submit']()}
       </button>
     </form>
   </Dialog.Content>
