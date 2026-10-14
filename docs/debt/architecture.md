@@ -55,3 +55,10 @@
   `{ git grep -n 'fmt.Errorf(' -- internal/service ':(exclude)*_test.go' | grep -v '%w'; git grep -n 'errors.New(' -- internal/service ':(exclude)*_test.go' ':(exclude)internal/service/errors.go'; } | wc -l`
   应输出 0；分档一致性由 `go test ./internal/handler/ -run TestErrorMappingMatchesContract -count=1` 与 `pnpm run contract:check` 锚定。
 - **红线**：新增业务校验失败、认证失败与资源未找到必须包装对应哨兵（`service.ErrUnauthenticated`、`service.ErrInvalidRequest`、`domain.ErrXxxNotFound` 等），并同步登记 `contracts/errors.yaml` 的 mapping 节与 `handler` 分档注册表；禁止以裸错误表达同类语义，禁止在模块内新增私有映射分支。
+
+## 8. 后端响应文案不随语言切换
+
+- **状态**：推进中，随界面多语言分批接入推进。
+- **基线**：接口响应同时携带 `code` 与 `message`，前端 8 处以 `response.message || 后备文案` 直出后端字符串（`ArticleActions` 2、`CommentSection` 1、`FollowButton` 1、`login` 1、`profile` 2、`FriendlyLinkDialog` 1），其中 7 处后备仍为硬编码中文、仅 `FriendlyLinkDialog` 已接入词表。后端 `message` 是 service 与 domain 层哨兵错误的原始文本，经 `handler.HandleServiceError` 的 `response.Error(c, mapping.Code, err.Error())` 直出，无语言维度；`message` 命中时前端后备不生效，en 模式下提示仍为中文。`internal/middleware/language.go` 已把语言写入请求上下文，具备接入条件。
+- **验证命令**：`git grep -n "response.message" -- apps/web/src`（当前 9 处，含 `ssr.ts` 的管道传递）；`git grep -n "err.Error()" -- server/internal/handler/error.go`（后端文案直出点，应为 1 处且无本地化分支）。
+- **红线**：前端后备文案禁止回退硬编码；前端若改为按错误码取词，须与 `contracts/errors.yaml` 的 mapping 节在同一变更窗口内同步，禁止另建与契约脱钩的映射表。

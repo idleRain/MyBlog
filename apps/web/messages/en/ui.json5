@@ -2,6 +2,22 @@
   "site": {
     "name": "IdleRain Blogs"
   },
+  "brand": {
+    "github": "GitHub"
+  },
+  "author": {
+    "name": "Developer",
+    "role": "Full-stack engineer",
+    "roleWithFields": "Full-stack engineer · programming and design",
+    "tagline": "A maker passionate about programming and design, weaving ideas with code and changing the world with technology.",
+    "note": "Writing code by day, writing prose by night. I believe in slow and solid accumulation, and favour clean structures and honest writing."
+  },
+  "meta": {
+    "minutesRead": "{{count}} min read",
+    "minutesReadApprox": "about {{count}} min",
+    "views_one": "{{count}} view",
+    "views_other": "{{count}} views"
+  },
   "button": {
     "save": "Save",
     "cancel": "Cancel",
@@ -39,9 +55,6 @@
     "githubHome": "GitHub home",
     "themeToggle": "Toggle theme",
     "aboutAuthor": "About the author",
-    "aboutAuthorDesc": "A maker passionate about programming and design, weaving ideas with code and changing the world with technology.",
-    "authorName": "Developer",
-    "authorTitle": "Full-stack engineer",
     "notifications": "Notifications",
     "markAllRead": "Mark all read",
     "noNotifications": "No notifications yet"

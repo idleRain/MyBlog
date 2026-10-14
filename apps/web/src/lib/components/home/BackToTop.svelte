@@ -1,6 +1,7 @@
 <script lang="ts">
 import { gsap, ScrollTrigger, MOTION } from '$lib/motion/gsap-setup'
 import { ArrowUp } from '@lucide/svelte'
+import { m } from '$i18n'
 
 // 滚动越过该阈值后显示回到顶部按钮，单位像素。
 const SHOW_THRESHOLD = 600
@@ -40,7 +41,7 @@ $effect(() => {
   bind:this={button}
   type="button"
   class="fixed right-6 bottom-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-[background-color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.95]"
-  aria-label="回到顶部"
+  aria-label={m['home:action.backToTop']()}
   onclick={scrollToTop}
 >
   <ArrowUp class="h-5 w-5" aria-hidden="true" />

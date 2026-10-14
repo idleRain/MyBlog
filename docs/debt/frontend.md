@@ -55,9 +55,10 @@
 ## 7. web 界面多语言局部接入
 
 - **状态**：推进中，分批接入。
-- **基线**：语言切换对 Header、Footer、错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件与 demo 页），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败）。
-- **验证命令**：`git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、`+error`、demo）。
-- **红线**：已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进。
+- **基线**：已接入面 **12** 个文件——Header、Footer、NotificationBell、FriendlyLinkDialog、`+error`、demo 页，以及**首页整面**：`(app)/+page.svelte`（SEO 与年轮预览）、`(app)/+page.ts`（加载失败文案）与 `lib/components/home/` 下 HeroSection、PostIndexSection、FeaturedStory、BackToTop 四个组件。Header 的站名与作者身份已并入 `ui` 共享词条（`ui:site.name`、`ui:author.*`、`ui:brand.github`、`ui:meta.*`），页面标题不再引用中文站名常量。其余页面文案仍硬编码中文，en 模式下界面为混合语言。
+- **词表约定**：按面拆分为独立 namespace 并在 `project.inlang/settings.json` 的 `pathPattern` 注册，`ui` 只承载跨面 chrome 与共享词；插值必须用 i18next 双花括号 `{{param}}`，单花括号会被当作字面量原样输出；计数词条写 `_one`/`_other` 两个变体，参数名必须为 `count` 才参与 `Intl.PluralRules` 选择，变体缺失时取词回退为原始 key 字符串；词表必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败）。
+- **验证命令**：`git grep -ln "\$i18n" -- apps/web/src`（当前 12 个文件，逐批递增）；`pnpm --filter @myblog/web run generate:i18n` 后核对 `messages/{zh,en}` 各 namespace 的键集合与条数一致（当前 ui 74 / home 40 / auth 7 / common 4）。
+- **红线**：已接入文件禁止回退硬编码，不得在已接入文件里新增中文字面量；新增用户可见文案优先经 `m.*` 取词，页面文案进本面 namespace 不塞回 `ui`；其余页面待页面大变动后分批推进。
 
 ## 8. 字典页窄屏交互与工具栏布局遗留
 

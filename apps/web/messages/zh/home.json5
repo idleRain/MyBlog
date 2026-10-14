@@ -1,0 +1,58 @@
+{
+  "seo": {
+    "title": "{{site}} - 把想法，编译成界面",
+    "description": "一个专注于技术分享和创意设计的个人博客，探索现代Web开发的无限可能。",
+    "descriptionShort": "一个专注于技术分享和创意设计的个人博客",
+    "keywords": "博客,技术,开发,设计,SvelteKit,Go,全栈开发"
+  },
+  "hero": {
+    "eyebrow": "手记 · 代码与生活",
+    "headlineLead": "把想法，",
+    "headlineTail": "编译成",
+    "headlineAccent": "界面",
+    "headlineNote": "// 工程 × 设计",
+    "intro": "记录工程实践的思考、城市漫游的见闻，以及那些深夜读完的书。相信缓慢而扎实的积累，偏爱干净的结构与诚实的文字。",
+    "ctaRead": "开始阅读",
+    "excerptLabel": "本月摘录",
+    "quote": "“把想清楚的事写下来，把写下来的事做出来。”",
+    "quoteAuthor": "—— 创刊编辑手记",
+    "specEngineering": "01 / 工程",
+    "specDesign": "02 / 设计",
+    "specLife": "03 / 生活",
+    "imprint": "{{site}} — EST. 2026",
+    "scrollHint": "Scroll"
+  },
+  "index": {
+    "title": "近期文章",
+    "count_one": "共 {{count}} 篇 · 持续更新",
+    "count_other": "共 {{count}} 篇 · 持续更新",
+    "emptyTitle": "创刊号正在筹备中，文章即将发布。",
+    "emptyNote": "可以先浏览版面与站点介绍，或前往归档页等待更新。",
+    "viewAll": "查看全部文章"
+  },
+  "featured": {
+    "badge": "精选",
+    "categoryFallback": "手记",
+    "readMore": "阅读全文"
+  },
+  "sidebar": {
+    "popular": "热门文章",
+    "tags": "标签",
+    "subscribeTitle": "订阅手记",
+    "subscribeNote": "邮件订阅正在筹备中，开放后将汇总当月文章与书单，不打扰。",
+    "subscribeEmailLabel": "邮箱地址",
+    "subscribeEmailPlaceholder": "you@example.com",
+    "subscribeSubmit": "订阅",
+    "subscribeNotice": "订阅功能暂未开放，开放后会在站内公告，感谢耐心等待。"
+  },
+  "archivePreview": {
+    "title": "创作年轮",
+    "viewAll": "完整归档 →"
+  },
+  "action": {
+    "backToTop": "回到顶部"
+  },
+  "error": {
+    "loadFailed": "首页数据加载失败，请稍后重试"
+  }
+}

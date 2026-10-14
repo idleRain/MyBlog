@@ -3,6 +3,7 @@ import type { Article } from '@myblog/api/modules/article/types'
 import { gsap, MOTION } from '$lib/motion/gsap-setup'
 import { formatDate } from '$lib/utils/format-date'
 import { scrollStagger } from '$lib/motion/reveal'
+import { m } from '$i18n'
 
 // 本期精选属性：article 为热门文章榜首，由首页 load 提供。
 interface Props {
@@ -19,7 +20,7 @@ const issueNo = $derived(
 )
 
 // 版面标注优先展示分类名，文章未归类时回退到手记栏目。
-const categoryLabel = $derived(article.category?.name ?? '手记')
+const categoryLabel = $derived(article.category?.name ?? m['home:featured.categoryFallback']())
 
 let root = $state<HTMLElement>()
 
@@ -87,8 +88,11 @@ $effect(() => {
     <!-- 文章信息区：元信息、标题、摘要与全文入口，进入视口后错峰浮现 -->
     <div class="flex flex-col justify-center gap-6 p-8 sm:p-10" use:scrollStagger>
       <p class="flex items-center gap-3 text-sm text-muted-foreground">
-        <span class="bg-signal px-2 py-0.5 text-xs font-bold text-signal-foreground">精选</span>
-        {formatDate(article.publishedAt ?? article.createdAt)} · 约 {article.readingTime} 分钟
+        <span class="bg-signal px-2 py-0.5 text-xs font-bold text-signal-foreground"
+          >{m['home:featured.badge']()}</span
+        >
+        {formatDate(article.publishedAt ?? article.createdAt)} ·
+        {m['ui:meta.minutesReadApprox']({ count: article.readingTime })}
       </p>
 
       <h2 class="font-display text-3xl leading-snug font-black">
@@ -103,7 +107,7 @@ $effect(() => {
         href={`/blog/${article.slug}`}
         class="group inline-flex w-fit items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
       >
-        阅读全文
+        {m['home:featured.readMore']()}
         <span
           class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:translate-x-1"
           aria-hidden="true"

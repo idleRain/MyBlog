@@ -5,13 +5,13 @@
 
 ## 分组
 
-| 分册 | 覆盖范围 | 条目数 |
-|---|---|---|
-| [`architecture.md`](./architecture.md) | 依赖方向、结构归位、类型真相源、模块对齐、错误语义归位 | 7 |
-| [`frontend.md`](./frontend.md) | 两应用复用、认证工具、页面结构与取数、分页、i18n、UI 交互 | 8 |
-| [`security-runtime.md`](./security-runtime.md) | 公开端点隐私、审计字段、WAF、代理信任链 | 4 |
+| 分册                                           | 覆盖范围                                                  | 条目数 |
+| ---------------------------------------------- | --------------------------------------------------------- | ------ |
+| [`architecture.md`](./architecture.md)         | 依赖方向、结构归位、类型真相源、模块对齐、错误语义归位    | 8      |
+| [`frontend.md`](./frontend.md)                 | 两应用复用、认证工具、页面结构与取数、分页、i18n、UI 交互 | 8      |
+| [`security-runtime.md`](./security-runtime.md) | 公开端点隐私、审计字段、WAF、代理信任链                   | 4      |
 
-合计 19 条，与 `docs/architecture-rules.md` 第 8 节的索引表一一对应。
+合计 20 条，与 `docs/architecture-rules.md` 第 8 节的索引表一一对应。
 
 > 相邻登记：契约与实现之间若再现映射冲突，登记在 `contracts/errors.yaml` 的「实现偏差」节，该节清除后自行删除；历史偏差（登录与刷新的私有 401 分支）已随 `architecture.md` 第 7 条修复一并清除。
 

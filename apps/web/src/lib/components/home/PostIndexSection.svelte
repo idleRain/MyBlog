@@ -3,6 +3,7 @@ import type { Article } from '@myblog/api/modules/article/types'
 import type { Tag } from '@myblog/api/modules/tag/types'
 import { formatDate } from '$lib/utils/format-date'
 import { scrollReveal } from '$lib/motion/reveal'
+import { m } from '$i18n'
 
 // 近期目录属性：posts 为近期文章，hotPosts 为热门侧栏，tags 为标签云。
 interface Props {
@@ -31,18 +32,18 @@ function handleSubscribe(event: SubmitEvent) {
     <!-- 文章目录列表：编号 + 日期 + 标题的索引行版式 -->
     <div class="lg:col-span-8">
       <div class="mb-8 flex items-end justify-between border-b border-line pb-4" use:scrollReveal>
-        <h2 class="font-display text-3xl font-black">近期文章</h2>
+        <h2 class="font-display text-3xl font-black">{m['home:index.title']()}</h2>
         <span class="font-mono text-sm text-muted-foreground">
-          共 {posts.length} 篇 · 持续更新
+          {m['home:index.count']({ count: posts.length })}
         </span>
       </div>
 
       {#if posts.length === 0}
         <!-- 空状态：以编辑口吻说明现状并引导前往归档页。 -->
         <div class="border-l-2 border-signal py-4 pl-6" use:scrollReveal>
-          <p class="font-display text-xl font-medium">创刊号正在筹备中，文章即将发布。</p>
+          <p class="font-display text-xl font-medium">{m['home:index.emptyTitle']()}</p>
           <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-            可以先浏览版面与站点介绍，或前往归档页等待更新。
+            {m['home:index.emptyNote']()}
           </p>
         </div>
       {:else}
@@ -57,7 +58,8 @@ function handleSubscribe(event: SubmitEvent) {
                     <span class="post-index font-display text-lg font-black">
                       {indexLabel(position)}
                     </span>
-                    {formatDate(post.publishedAt ?? post.createdAt)} · 阅读 {post.readingTime} 分钟
+                    {formatDate(post.publishedAt ?? post.createdAt)} ·
+                    {m['ui:meta.minutesRead']({ count: post.readingTime })}
                   </p>
                   <h3 class="font-display text-xl leading-snug font-bold">
                     <a
@@ -87,7 +89,7 @@ function handleSubscribe(event: SubmitEvent) {
           class="group mt-8 inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
           use:scrollReveal
         >
-          查看全部文章
+          {m['home:index.viewAll']()}
           <span
             class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:translate-x-1"
             aria-hidden="true"
@@ -110,12 +112,12 @@ function handleSubscribe(event: SubmitEvent) {
               M
             </div>
             <div>
-              <h3 class="font-display text-lg font-black">开发者</h3>
-              <p class="text-sm text-muted-foreground">全栈工程师 · 编程与设计</p>
+              <h3 class="font-display text-lg font-black">{m['ui:author.name']()}</h3>
+              <p class="text-sm text-muted-foreground">{m['ui:author.roleWithFields']()}</p>
             </div>
           </div>
           <p class="mt-4 text-sm leading-relaxed text-muted-foreground">
-            白天写代码，晚上写字。相信缓慢而扎实的积累，偏爱干净的结构与诚实的文字。
+            {m['ui:author.note']()}
           </p>
           <div class="mt-4 flex gap-3 text-sm font-bold">
             <a
@@ -124,20 +126,21 @@ function handleSubscribe(event: SubmitEvent) {
               rel="noopener noreferrer"
               class="text-signal hover:underline"
             >
-              GitHub
+              {m['ui:brand.github']()}
             </a>
           </div>
         </div>
 
         {#if hotPosts.length > 0}
           <div class="border border-line p-6" use:scrollReveal={{ x: 24, delay: 0.06 }}>
-            <h3 class="mb-4 font-display text-lg font-black">热门文章</h3>
+            <h3 class="mb-4 font-display text-lg font-black">{m['home:sidebar.popular']()}</h3>
             <ol class="flex flex-col gap-4">
               {#each hotPosts as post (post.id)}
                 <li>
                   <a href={`/blog/${post.slug}`} class="group block">
                     <span class="font-mono text-xs text-muted-foreground">
-                      {formatDate(post.publishedAt ?? post.createdAt)} · 阅读 {post.readingTime} 分钟
+                      {formatDate(post.publishedAt ?? post.createdAt)} ·
+                      {m['ui:meta.minutesRead']({ count: post.readingTime })}
                     </span>
                     <p
                       class="mt-1 text-sm leading-snug font-bold transition-colors duration-200 group-hover:text-signal"
@@ -153,7 +156,7 @@ function handleSubscribe(event: SubmitEvent) {
 
         {#if tags.length > 0}
           <div class="border border-line p-6" use:scrollReveal={{ x: 24, delay: 0.12 }}>
-            <h3 class="mb-4 font-display text-lg font-black">标签</h3>
+            <h3 class="mb-4 font-display text-lg font-black">{m['home:sidebar.tags']()}</h3>
             <div class="flex flex-wrap gap-2">
               {#each tags as tag (tag.id)}
                 <a
@@ -171,29 +174,31 @@ function handleSubscribe(event: SubmitEvent) {
           class="bg-primary p-6 text-primary-foreground"
           use:scrollReveal={{ x: 24, delay: 0.18 }}
         >
-          <h3 class="font-display text-xl font-black">订阅手记</h3>
+          <h3 class="font-display text-xl font-black">{m['home:sidebar.subscribeTitle']()}</h3>
           <p class="mt-2 text-sm leading-relaxed text-primary-foreground/70">
-            邮件订阅正在筹备中，开放后将汇总当月文章与书单，不打扰。
+            {m['home:sidebar.subscribeNote']()}
           </p>
           <form class="mt-4 flex" onsubmit={handleSubscribe}>
-            <label for="subscribe-email" class="sr-only">邮箱地址</label>
+            <label for="subscribe-email" class="sr-only"
+              >{m['home:sidebar.subscribeEmailLabel']()}</label
+            >
             <input
               id="subscribe-email"
               type="email"
               required
-              placeholder="you@example.com"
+              placeholder={m['home:sidebar.subscribeEmailPlaceholder']()}
               class="min-w-0 flex-1 border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
             />
             <button
               type="submit"
               class="shrink-0 bg-signal px-4 text-sm font-bold text-signal-foreground transition-[background-color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal/90 active:scale-[0.97]"
             >
-              订阅
+              {m['home:sidebar.subscribeSubmit']()}
             </button>
           </form>
           {#if subscribeNoticed}
             <p class="mt-3 text-xs leading-relaxed text-primary-foreground/80" role="status">
-              订阅功能暂未开放，开放后会在站内公告，感谢耐心等待。
+              {m['home:sidebar.subscribeNotice']()}
             </p>
           {/if}
         </div>

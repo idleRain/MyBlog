@@ -2,6 +2,22 @@
   "site": {
     "name": "闲雨小筑"
   },
+  "brand": {
+    "github": "GitHub"
+  },
+  "author": {
+    "name": "开发者",
+    "role": "全栈开发工程师",
+    "roleWithFields": "全栈工程师 · 编程与设计",
+    "tagline": "一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。",
+    "note": "白天写代码，晚上写字。相信缓慢而扎实的积累，偏爱干净的结构与诚实的文字。"
+  },
+  "meta": {
+    "minutesRead": "阅读 {{count}} 分钟",
+    "minutesReadApprox": "约 {{count}} 分钟",
+    "views_one": "{{count}} 次浏览",
+    "views_other": "{{count}} 次浏览"
+  },
   "button": {
     "save": "保存",
     "cancel": "取消",
@@ -39,9 +55,6 @@
     "githubHome": "GitHub 主页",
     "themeToggle": "切换主题",
     "aboutAuthor": "关于作者",
-    "aboutAuthorDesc": "一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。",
-    "authorName": "开发者",
-    "authorTitle": "全栈开发工程师",
     "notifications": "通知",
     "markAllRead": "全部已读",
     "noNotifications": "暂无通知"
