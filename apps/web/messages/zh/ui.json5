@@ -5,6 +5,9 @@
   "brand": {
     "github": "GitHub"
   },
+  "label": {
+    "email": "邮箱"
+  },
   "author": {
     "name": "开发者",
     "role": "全栈开发工程师",

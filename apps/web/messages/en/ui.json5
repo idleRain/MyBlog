@@ -5,6 +5,9 @@
   "brand": {
     "github": "GitHub"
   },
+  "label": {
+    "email": "Email"
+  },
   "author": {
     "name": "Developer",
     "role": "Full-stack engineer",

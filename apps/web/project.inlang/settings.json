@@ -14,7 +14,9 @@
       "account": "./messages/{locale}/account.json5",
       "comment": "./messages/{locale}/comment.json5",
       "category": "./messages/{locale}/category.json5",
-      "author": "./messages/{locale}/author.json5"
+      "author": "./messages/{locale}/author.json5",
+      "contact": "./messages/{locale}/contact.json5",
+      "projects": "./messages/{locale}/projects.json5"
     }
   },
   "baseLocale": "zh",

@@ -179,7 +179,7 @@ async function handleSubmit(event: SubmitEvent) {
           />
         </label>
         <label class="block">
-          <span class="sr-only">{m['comment:emailLabel']()}</span>
+          <span class="sr-only">{m['ui:label.email']()}</span>
           <input
             type="email"
             bind:value={authorEmail}

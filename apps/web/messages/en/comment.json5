@@ -4,7 +4,6 @@
   "count_other": "{{count}} comments",
   "nameLabel": "Name",
   "namePlaceholder": "Name *",
-  "emailLabel": "Email",
   "emailPlaceholder": "Email (not published)",
   "contentLabel": "Comment",
   "contentPlaceholder": "Say something",

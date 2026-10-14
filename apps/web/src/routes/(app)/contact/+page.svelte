@@ -1,28 +1,43 @@
 <script lang="ts">
 import GithubIcon from '$lib/components/icons/github-icon.svelte'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import { Mail } from '@lucide/svelte'
+import { m } from '$i18n'
 
-// 联系渠道集中声明，卡片区按渠道逐项渲染。
+// 站外渠道固定地址集中声明，避免散落的魔法字符串。
+const GITHUB_URL = 'https://github.com/idleRain'
+const CONTACT_EMAIL_HREF = 'mailto:gold.experience@foxmail.com'
+
+// 幽灵字为版面前景装饰字形，不承载语义，不随语言切换，故不入词表。
+const GHOST_MARK = '联'
+
+// 联系渠道集中声明，卡片区按渠道逐项渲染；图标按 icon 标识分支，不依赖已翻译的渠道名。
 const contactChannels = [
   {
-    name: 'GitHub',
-    note: 'Issue 与讨论最适合技术话题，处理进度可见。',
-    href: 'https://github.com/idleRain',
+    icon: 'github',
+    name: m['ui:brand.github'](),
+    note: m['contact:channels.githubNote'](),
+    href: GITHUB_URL,
     external: true
   },
   {
-    name: '邮箱',
-    note: '合作与长文交流请来信，工作日通常两至三天内回复。',
-    href: 'mailto:gold.experience@foxmail.com',
+    icon: 'mail',
+    name: m['ui:label.email'](),
+    note: m['contact:channels.emailNote'](),
+    href: CONTACT_EMAIL_HREF,
     external: false
   }
 ]
+
+// 标题与刊头共用同一条词条，站名取自词表。
+const pageTitle = m['ui:meta.pageTitle']({
+  title: m['contact:heading'](),
+  site: m['ui:site.name']()
+})
 </script>
 
 <svelte:head>
-  <title>联系方式 - {SITE_NAME_ZH}</title>
-  <meta name="description" content="与闲雨小筑站长取得联系的真实渠道：GitHub、邮箱与友链互换。" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={m['contact:description']({ site: m['ui:site.name']() })} />
 </svelte:head>
 
 <section class="texture-grid relative min-h-screen overflow-hidden pt-16">
@@ -31,19 +46,19 @@ const contactChannels = [
     <p
       class="mb-6 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
     >
-      往来 · Contact
+      {m['contact:eyebrow']()}
       <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
     </p>
 
     <!-- 刊头标题：衬线黑体大字，延续 Display 层级规格。 -->
     <h1 class="font-display text-4xl leading-[1.08] font-black tracking-tight sm:text-6xl">
-      联系方式
+      {m['contact:heading']()}
     </h1>
 
     <!-- 往来引语：朱红竖线引出。 -->
     <div class="mt-10 max-w-xl border-l-2 border-signal pl-6">
       <p class="font-display text-xl leading-relaxed font-medium">
-        欢迎写信交流，无论是勘误指正、技术讨论还是单纯打个招呼。
+        {m['contact:lead']()}
       </p>
     </div>
 
@@ -57,7 +72,7 @@ const contactChannels = [
           class="group border border-line bg-secondary p-6 transition-colors duration-200 hover:border-signal"
         >
           <div class="flex items-center gap-3">
-            {#if channel.name === 'GitHub'}
+            {#if channel.icon === 'github'}
               <GithubIcon class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
             {:else}
               <Mail class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
@@ -74,13 +89,13 @@ const contactChannels = [
 
     <!-- 站内通道：说明无需写信也能完成的往来事项。 -->
     <div class="mt-12">
-      <h2 class="font-display text-2xl font-black">站内通道</h2>
+      <h2 class="font-display text-2xl font-black">{m['contact:inSiteTitle']()}</h2>
       <ul class="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
         <li class="border-l-2 border-signal/40 pl-4">
-          评论留言：任意文章页下方均可留言，游客可评，站长会逐条查看。
+          {m['contact:inSiteComments']()}
         </li>
         <li class="border-l-2 border-signal/40 pl-4">
-          友链互换：在页头「友情链接」弹窗底部提交申请，通过审核后即会展示。
+          {m['contact:inSiteLinks']()}
         </li>
       </ul>
     </div>
@@ -91,6 +106,6 @@ const contactChannels = [
     class="pointer-events-none absolute right-8 bottom-14 hidden font-display text-[11rem] leading-none font-black text-foreground/[0.05] select-none lg:block"
     aria-hidden="true"
   >
-    联
+    {GHOST_MARK}
   </div>
 </section>

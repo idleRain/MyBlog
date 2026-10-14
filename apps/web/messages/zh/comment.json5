@@ -4,7 +4,6 @@
   "count_other": "共 {{count}} 条",
   "nameLabel": "姓名",
   "namePlaceholder": "姓名 *",
-  "emailLabel": "邮箱",
   "emailPlaceholder": "邮箱（不公开）",
   "contentLabel": "评论内容",
   "contentPlaceholder": "说点什么吧",
