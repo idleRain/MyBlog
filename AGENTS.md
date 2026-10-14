@@ -15,8 +15,8 @@
 3. **契约先行，双端对齐**。改 wire 格式（请求/响应结构、错误码语义、认证协议）必须同一变更窗口内同步两端，禁止"先改后端、前端以后再说"；改认证协议先更新 `contracts/auth-protocol.md`，改类型镜像跑 `pnpm run contract:check`。新增业务模块必须同时落地后端四层、`packages/api/src/modules/<module>/` 与两应用 `lib/api/index.ts` 注册。
 4. **单一权威，禁止私自实例化**。业务规则（状态流转、slug 生成、密码强度、权限判定）权威在后端，前端只做展示层优化；RBAC 权限表权威为生产 `server/configs/config.yaml` 的 `rbac` 节，权限经登录响应 `permissions[]` 下发，`apps/admin/src/lib/constants/auth.ts` 的映射仅作未下发时的降级；依赖一律构造函数注入，生产实例化点仅组合根 `server/cmd/myblog/`（`main.go` 管生命周期、`deps.go` 按域装配），禁止在 service/router/middleware 内 `NewXxxService()`。
    验证：`git grep -n "NewRBACService()" -- server` 的生产命中应仅 `cmd/myblog/deps.go` 一处。
-5. **禁止复制粘贴式共享**。两 app 间禁止新增逐字或近似重复文件，公共逻辑下沉 packages；存量逐字重复仅 `src/lib/stores/auth.ts`（15 行 ×2）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2），改任一份必须同步另一份。
-   验证：`git diff --no-index` 上述两份文件应零差异。
+5. **禁止复制粘贴式共享**。两 app 间禁止新增逐字或近似重复文件，公共逻辑下沉 packages，跨应用共用的组合组件下沉 `packages/components`；存量逐字重复仅 `src/lib/stores/auth.ts`（10 行 ×2），它是包内无法解析 `$lib/api` 而保留的纯注入接缝，上限 10 行，改任一份必须同步另一份。
+   验证：`git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts` 应零差异；`git ls-files "*theme-toggle.svelte"` 应仅 1 个，位于 `packages/components`。
 6. **数据加载归位**。`apps/web` 新页面禁止 `onMount` 取数，用 `+page.server.ts` / `+page.ts` 的 load；`apps/admin` 新页面同样禁止 `onMount` 取数，含客户端读写操作的页面配 load + 页面状态模块（`.svelte.ts`），只读页由 load 直出 page data，load 内禁止调用认证接口；API 调用不得深入叶子组件。
 7. **部署形态为单实例终态**（已接受，非待修缺陷）。应用进程、MySQL、网关各一份，全部部署于同一台服务器，由同一 nginx 实例按端口区分出入口，**确定不扩容**；会话令牌表与限流计数均为进程内存结构，服务重启或发布将导致全体用户登出，发布窗口需提前预告；故障即停站，无 RTO 承诺，RPO 为 24 小时。若未来改变该决定，扩容前必须先完成令牌表持久化与限流器外置两项改造。
    验证：`git grep -n "replicas" -- docker-compose.yml` 应为空；`git grep -n "SetTrustedProxies" -- server` 应命中 `internal/router/router.go`。
@@ -45,6 +45,7 @@ MyBlog/
 │   ├── http/                 # HTTP 请求器（ky 封装，认证回调注入）
 │   ├── api/                  # 后端接口模块与响应类型（12 个模块工厂）
 │   ├── auth/                 # 认证会话组装（createAuthStore 工厂，注入式）
+│   ├── components/           # 跨应用组合组件（由 stock 组件组合，按包名导入，无应用别名）
 │   └── ui/                   # shadcn-svelte 基础组件（stock，主题注入）
 ├── server/                   # Go 后端（Gin + GORM + MySQL）
 ├── contracts/                # 认证与 i18n 协议、错误码口径、契约金样本
@@ -88,9 +89,9 @@ pnpm run go:quality / go:vulncheck / audit:deps
 ## 6. 前端约定（apps/ + packages/）
 
 - **框架**：SvelteKit + Svelte 5 runes + TypeScript，不使用 Options API；`apps/web` 为前台 toC、SSR 路线（adapter-node），`apps/admin` 为后台 toB、SPA 路线（`ssr=false`、adapter-static，`paths.base='/admin'`）且无 i18n。
-- **组件库**：shadcn-svelte 基础组件统一在 `packages/ui` 并保持 stock，经 `$ui` 与 `$ui/*` 引入；组件归属、禁止在应用内重写与主题注入细则见 `docs/ui-design-system.md`。
+- **组件库**：shadcn-svelte 基础组件统一在 `packages/ui` 并保持 stock，经 `$ui` 与 `$ui/*` 引入；由 stock 组件组合、两应用共用的组件归属 `packages/components`，按包名 `@myblog/components/<name>` 导入，禁止塞进 `packages/ui` 或两应用各写一份；组件归属、禁止在应用内重写与主题注入细则见 `docs/ui-design-system.md`。
 - **别名**：各应用 `svelte.config.js` 声明 `$ui`、`$ui/*`、`@/*`（应用自身 `src`），前台另有 `$i18n` 与构建期 `#fonts` 别名，`$lib` 由 SvelteKit 隐式提供；对照见 `docs/development.md`「关键技术配置」。
-- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；`app.css` 只做聚合入口（含 `@source '../../../packages/ui/src'`），设计令牌在同应用 `src/styles/tokens.css`，`packages/ui` 不携带全局样式；前台为编辑杂志主题（含 `--signal` 与 `--color-line` 别名），后台为原始主题（无 `--signal`）。
+- **样式**：TailwindCSS v4（`@tailwindcss/vite`）；`app.css` 只做聚合入口（含 `@source '../../../packages/ui/src'` 与 `@source '../../../packages/components/src'`），设计令牌在同应用 `src/styles/tokens.css`，`packages/ui` 不携带全局样式；前台为编辑杂志主题（含 `--signal` 与 `--color-line` 别名），后台为原始主题（无 `--signal`）。
 - **API 层**：`packages/http` 提供 `createHttpClient` 工厂，`packages/api` 提供 12 个模块工厂，认证会话由 `@myblog/auth` 的 `createAuthStore` 组装；应用侧 `src/lib/service` 注入认证与提示回调、`src/lib/api` 实例化接口，一律 `POST` 调用后端。新增接口必须先加在 `packages/api`，禁止页面直连 ky。
 - **状态**：认证 store 逻辑已下沉 `@myblog/auth`（两应用各持薄封装），新公共状态逻辑必须下沉 packages，禁止第三处复制。
 - **i18n（仅前台）**：`@inlang/paraglide-js` + `project.inlang` / `messages/*.json5`（必须保持 JSON 兼容写法，否则编译失败）；已接入文件禁止回退硬编码，新增用户可见文案优先经 `m['ui:...']()` 取词，已接入面与其余页面分批口径见 `docs/debt/frontend.md` 第 7 条。
@@ -103,7 +104,7 @@ pnpm run go:quality / go:vulncheck / audit:deps
 - **格式化覆盖范围**：lint-staged 只对 `apps/**/src/**` 的脚本与组件文件、任意目录下的 `*.{json,yaml,yml}` 运行 prettier，对 `server/**/*.go` 运行 gofmt 与 goimports；`packages/**` 的源码不在任何 format 门禁覆盖内，新增或改动 packages 文件须手动执行 `npx prettier --write <file>`。
 - **注释**：只解释代码无法直接表达的意图、业务规则、约束、原因、风险与副作用，不复述代码；完整写作要求遵循全局规范 `~/.dsh/AGENTS.md` 第 4 节。
 - **测试文件位置**：前端测试文件不与业务文件同级，一律置于被测模块同级的 `__tests__/` 目录；跨用例共享的测试替身与夹具置于包内 `src/test/`，不放入 `__tests__/`。
-- **测试纪律**：后端各层与 `pkg/*` 均有 `*_test.go`，新增后端关键逻辑必须配套同目录测试；`packages/api`、`packages/auth`、`packages/http` 与两应用单测分别经 `pnpm run test:packages`、`pnpm run test:apps` 纳入门禁，新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）须配套 `*.test.ts`，并为所在 package 补 `typecheck`、`test` 脚本且登记进根 `test:packages`。`pnpm run check` 与 `typecheck:web` 只做类型检查，不是单元测试。
+- **测试纪律**：后端各层与 `pkg/*` 均有 `*_test.go`，新增后端关键逻辑必须配套同目录测试；`packages/api`、`packages/auth`、`packages/components`、`packages/http` 与两应用单测分别经 `pnpm run test:packages`、`pnpm run test:apps` 纳入门禁，新增 packages 公共逻辑与页面状态模块（`.svelte.ts`）须配套 `*.test.ts`，并为所在 package 补 `typecheck`、`test` 脚本且登记进根 `test:packages`。`pnpm run check` 与 `typecheck:web` 只做类型检查，不是单元测试。
 - **提交**：提交信息用简体中文、符合 commitlint 的 conventional commits（type 枚举见 `commitlint.config.js`）；单次提交跨度过大时补充正文说明。
 
 ## 8. 文档地图

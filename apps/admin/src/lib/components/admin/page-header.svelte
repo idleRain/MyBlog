@@ -1,6 +1,6 @@
 <script lang="ts">
+import { ThemeToggle } from '@myblog/components/theme-toggle'
 import { toAdminPath } from '$lib/utils/navigation'
-import { ThemeToggle } from '$lib/components'
 import * as Breadcrumb from '$ui/breadcrumb'
 import * as Sidebar from '$ui/sidebar'
 

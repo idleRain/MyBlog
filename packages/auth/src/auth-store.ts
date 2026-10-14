@@ -1,6 +1,6 @@
 import type { User } from '@myblog/api/modules/user/types'
+import { isBrowser, local } from '@myblog/shared'
 import { writable } from 'svelte/store'
-import { local } from '@myblog/shared'
 
 // 认证状态接口。
 // 会话令牌经 HttpOnly Cookie 由浏览器自动携带，前端不再持有任何令牌，
@@ -13,14 +13,10 @@ export interface AuthState {
 
 /**
  * 认证 store 依赖注入集合。
- * 应用层负责提供环境判定与登出接口，避免包内耦合 SvelteKit 环境与页面路由。
+ * 环境判定由包内经 @myblog/shared 的特性检测完成，应用层只需提供登出接口，
+ * 避免包内耦合 SvelteKit 环境与页面路由。
  */
 export interface AuthStoreDeps {
-  /**
-   * 判断当前是否运行于浏览器环境，SSR 阶段禁止访问 localStorage。
-   */
-  isBrowser: () => boolean
-
   /**
    * 调用后端登出接口，服务端撤销令牌并清除会话 Cookie。
    */
@@ -59,7 +55,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
   // 从 localStorage 加载初始状态。
   // 仅凭本地用户信息判定登录态，会话 Cookie 是否有效由首次请求的服务端裁决。
   function loadInitialState(): AuthState {
-    if (!deps.isBrowser()) return initialState
+    if (!isBrowser()) return initialState
 
     try {
       const user = local.get<User>(AUTH_USER_KEY)
@@ -93,7 +89,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
 
   // 清除本地存储中的全部认证状态。
   function clearLocalStorage() {
-    if (!deps.isBrowser()) return
+    if (!isBrowser()) return
     local.rm(AUTH_USER_KEY)
     local.rm(AUTH_PERMISSIONS_KEY)
   }
@@ -104,7 +100,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
    * 任一标签页登出后，其余标签页必须跟随，避免展示已失效的登录态。
    */
   function syncFromStorage() {
-    if (!deps.isBrowser()) return
+    if (!isBrowser()) return
 
     const nextState = loadInitialState()
     if (isSameAuthState(currentState, nextState)) return
@@ -113,7 +109,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
   }
 
   // 注册跨标签页同步监听。storage 事件仅在写入方之外的同源标签页触发，因此不会形成回环。
-  if (deps.isBrowser()) {
+  if (isBrowser()) {
     window.addEventListener('storage', event => {
       // 整库清空时 event.key 为 null，此时无法按键过滤，同样需要重新加载。
       if (event.key === null || AUTH_STORAGE_KEYS.has(event.key)) {
@@ -138,7 +134,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
         permissions
       }
 
-      if (deps.isBrowser()) {
+      if (isBrowser()) {
         local.set(AUTH_USER_KEY, user)
         local.set(AUTH_PERMISSIONS_KEY, permissions)
       }
@@ -148,7 +144,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
 
     // 登出，先尝试撤销服务端会话再清除本地状态。
     async logout(skipApiCall: boolean = false) {
-      if (!skipApiCall && deps.isBrowser() && currentState.isAuthenticated) {
+      if (!skipApiCall && isBrowser() && currentState.isAuthenticated) {
         try {
           await deps.logoutApi()
           console.log('成功调用后端登出接口')
@@ -175,7 +171,7 @@ export function createAuthStore(deps: AuthStoreDeps) {
       update(state => {
         const newState = { ...state, user }
 
-        if (deps.isBrowser()) {
+        if (isBrowser()) {
           local.set(AUTH_USER_KEY, user)
         }
 

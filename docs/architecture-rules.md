@@ -196,7 +196,8 @@ git grep -n "NewRBACService()" -- server
 
 ```
 该逻辑是否被两个 app 使用？
-├─ 是 → 必须进 packages（shared/http/api，认证域终态为独立 auth 包）
+├─ 是 → 必须进 packages（纯逻辑进 shared/http/api，认证域为 auth 包，
+│        由 stock 组件组合的界面组件进 components 包）
 └─ 否 → 留在应用内
      该逻辑与另一 app 现有代码是否同构？
      └─ 是 → 违反复用纪律，停下提取；否 → 正常开发
@@ -204,10 +205,10 @@ git grep -n "NewRBACService()" -- server
 
 已知跨 app 重复文件分两档，处理方式不同：
 
-1. **逐字重复，改任一必须同步另一份**（`git diff --no-index` 应零差异）：`src/lib/stores/auth.ts`（15 行 ×2）、`src/lib/components/theme-toggle.svelte`（45 行 ×2）。
+1. **逐字重复，改任一必须同步另一份**（`git diff --no-index` 应零差异）：`src/lib/stores/auth.ts`（10 行 ×2）。它是纯注入接缝，包内无法解析 `$lib/api`，故接缝留在应用侧并设 10 行上限。
 2. **职责同构但内容不同，不计入逐字重复**，也不要求逐字同步：`service/index.ts`（69 / 67 行，差异在 `getLanguage` 取值与 `goto` 导入来源）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，web 编辑杂志版式与 admin 居中版式已各自独立设计）。
 
-新增公共逻辑仍按 6.1 决策树优先下沉 packages；两档文件均不得再增加第三份同构实现。
+新增公共逻辑仍按 6.1 决策树优先下沉 packages；两档文件均不得再增加第三份同构实现。本轮 `theme-toggle.svelte` 由两应用副本收敛为 `packages/components/src/theme-toggle` 单一实现。
 
 ### 6.2 数据加载
 

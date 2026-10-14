@@ -5,10 +5,12 @@
 
 ## 1. 两 app 基础设施逐字重复
 
-- **状态**：存量，只减不增。
-- **基线**：逐字重复仅 **2 文件 60 行**：`src/lib/stores/auth.ts`（15 行 ×2，SHA256 一致）与 `src/lib/components/theme-toggle.svelte`（45 行 ×2，SHA256 一致）。另有 3 文件职责同构但内容不同，不计入逐字重复：`service/index.ts`（69 / 67 行）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，两 app 版式已各自独立设计）。
-- **验证命令**：`git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应为零差异）；同法核对 `theme-toggle.svelte`。
-- **红线**：修改任一逐字重复文件必须同步另一份；禁止新增逐字或近似重复文件，公共逻辑下沉 packages。
+- **状态**：存量，只减不增（本轮由 2 文件 60 行收敛至 1 文件 10 行）。
+- **基线**：逐字重复仅 `src/lib/stores/auth.ts`（10 行 ×2，SHA256 一致）。它是纯注入接缝：`packages/auth` 的 `createAuthStore` 需要 `logoutApi`，而 `$lib/api` 是应用别名、包内无法解析，故接缝必须留在应用侧，**上限 10 行**，超出即按复制粘贴式共享返工。
+  - 本轮收敛：`theme-toggle.svelte`（45 行 ×2）下沉至 `packages/components/src/theme-toggle`，两应用副本与 `lib/components/index.ts` 桶一并删除，消费点改为按包名 `@myblog/components/theme-toggle` 导入；应用侧 `isBrowser` 注入移除，环境判定改由包内复用 `@myblog/shared` 的 `isBrowser`。
+  - 另有 3 文件职责同构但内容不同，不计入逐字重复：`service/index.ts`（69 / 67 行）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，两 app 版式已各自独立设计）。
+- **验证命令**：`git diff --no-index apps/web/src/lib/stores/auth.ts apps/admin/src/lib/stores/auth.ts`（应为零差异）；`git ls-files "*theme-toggle.svelte"` 应仅命中 `packages/components` 一处；形态解析用例经 `pnpm run test:packages` 覆盖。
+- **红线**：修改任一逐字重复文件必须同步另一份，且该接缝不得超过 10 行；禁止新增逐字或近似重复文件，公共逻辑下沉 packages，跨应用组合组件下沉 `packages/components`。
 
 ## 2. admin 认证工具三轨并行
 

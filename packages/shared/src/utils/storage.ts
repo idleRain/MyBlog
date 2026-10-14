@@ -1,5 +1,6 @@
 // 运行环境检测：SSR 时不存在 window 对象，采用特性检测替代框架环境变量。
-const isBrowser = () => typeof window !== 'undefined'
+// 供 storage 内部与跨包的环境判定复用，避免各处重复实现同一检测。
+export const isBrowser = () => typeof window !== 'undefined'
 
 type StorageType = {
   set: (key: string, value: any) => void

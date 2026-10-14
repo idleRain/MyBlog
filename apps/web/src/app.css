@@ -11,7 +11,8 @@
 @import './styles/markdown.css';
 @import './styles/animations.css';
 
-/* 纳入 packages/ui 源码，Tailwind v4 默认不扫描 node_modules 与仓库外目录。 */
+/* 纳入 packages/ui 与 packages/components 源码，Tailwind v4 默认不扫描 node_modules 与仓库外目录。 */
 @source '../../../packages/ui/src';
+@source '../../../packages/components/src';
 
 @custom-variant dark (&:is(.dark *));

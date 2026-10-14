@@ -9,8 +9,9 @@
 @import './styles/animations.css';
 @import './styles/milkdown.css';
 
-/* 纳入 packages/ui 源码，Tailwind v4 默认不扫描 node_modules 与仓库外目录。 */
+/* 纳入 packages/ui 与 packages/components 源码，Tailwind v4 默认不扫描 node_modules 与仓库外目录。 */
 /* packages/ui 源码变更后工具类未更新时，重启 dev server 可强制重新扫描。 */
 @source '../../../packages/ui/src';
+@source '../../../packages/components/src';
 
 @custom-variant dark (&:is(.dark *));

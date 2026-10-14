@@ -141,7 +141,7 @@ apps/admin/src/               # 后台
 #### 关键技术配置
 
 - 路径别名见各应用 `svelte.config.js`：`$ui` 与 `$ui/*`（指向 `packages/ui/src` 源码）、`@/*`（应用自身 `src`）；`$lib` 由 SvelteKit 隐式提供，未在配置中声明；前台另有 `$i18n`（指向 `src/lib/paraglide/messages`）。`svelte.config.js` 与 `tsconfig.json` 均未声明 `#/*` 或 `~/*` 别名；前台 `vite.config.ts` 的构建期别名只有 `#fonts`（dev 走本地 fontsource、prod 走 CDN 模块），与通配形态的 `#/*` 不是一回事。
-- `packages/ui` 以**源码直连**方式被引用，各应用在 `vite.config.ts` 配置 `ssr.noExternal: ['@myblog/ui']` 参与 SSR 编译；Tailwind v4 在各应用 `app.css` 用 `@source` 显式纳入 `packages/ui/src` 扫描。
+- `packages/ui` 与 `packages/components` 均以**源码直连**方式被引用，各应用在 `vite.config.ts` 配置 `ssr.noExternal: ['@myblog/ui', '@myblog/components']` 参与 SSR 编译；Tailwind v4 在各应用 `app.css` 用 `@source` 显式纳入 `packages/ui/src` 与 `packages/components/src` 扫描。前者经 `$ui` 别名引用，后者按包名 `@myblog/components/<name>` 引用，不设应用别名。
 - 后台在 `svelte.config.js` 配置 `paths.base = '/admin'` 与 `relative: false`，与前台同源区分部署。
 - 前台经 `@inlang/paraglide-js` 做 i18n，产物位于 `src/lib/paraglide`；后台不引入 i18n。
 - 两应用均使用 `unplugin-auto-import` 自动导入 SvelteKit / Svelte / toast 常用函数。
@@ -630,7 +630,7 @@ pnpm run build:web     # 构建前端静态文件
 ### 6. 可维护性
 
 - **文档更新**: 架构规则变更时按 [`architecture-rules.md`](./architecture-rules.md) 同步规则本体与第 8 节债务索引；债务条目的状态与基线数值按 [`debt/README.md`](./debt/README.md) 的维护纪律更新对应分册，历史分期状态更新第 9 节
-- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫、日期格式化与服务端会话 Cookie 转发，`@myblog/admin` 覆盖 11 个页面状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
+- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`（`@myblog/components` 覆盖主题切换组件的形态与名称解析）。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫、日期格式化与服务端会话 Cookie 转发，`@myblog/admin` 覆盖 11 个页面状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
 - **测试文件位置**: 前端测试文件不与业务文件同级，一律置于被测模块同级的 `__tests__/` 目录（例如 `apps/admin/src/lib/utils/__tests__/tag-display.test.ts`）；跨用例共享的测试替身与夹具置于包内 `src/test/`（例如 `packages/auth/src/test/fixtures.ts`），不放入 `__tests__/`。移动测试文件后须同步修正其相对导入层级，并检查写死测试文件路径的外部锚点（如 `server/internal/handler/fixture_coverage_test.go` 的 TS 锚点常量）。
 
 ## 更多资源

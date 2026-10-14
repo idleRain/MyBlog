@@ -26,7 +26,7 @@
     "check:fonts": "tsx scripts/check-font-bundle.ts",
     "test": "pnpm run test:server && pnpm run test:packages && pnpm run test:apps && pnpm run contract:check",
     "test:server": "tsx scripts/go-tools.ts test",
-    "test:packages": "pnpm --filter @myblog/api --filter @myblog/auth --filter @myblog/http run typecheck && pnpm --filter @myblog/api --filter @myblog/auth --filter @myblog/http run test",
+    "test:packages": "pnpm --filter @myblog/api --filter @myblog/auth --filter @myblog/components --filter @myblog/http run typecheck && pnpm --filter @myblog/api --filter @myblog/auth --filter @myblog/components --filter @myblog/http run test",
     "test:apps": "pnpm -r --parallel --stream --filter @myblog/web --filter @myblog/admin run test",
     "typecheck:web": "pnpm -r --parallel --stream --filter @myblog/web --filter @myblog/admin run check",
     "lint": "pnpm run lint:web && pnpm run lint:server",

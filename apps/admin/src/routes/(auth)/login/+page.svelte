@@ -1,9 +1,9 @@
 <script lang="ts">
+import { ThemeToggle } from '@myblog/components/theme-toggle'
 import { zod4Client } from 'sveltekit-superforms/adapters'
 import { EyeOff, Eye, LogIn } from '@lucide/svelte'
 import { superForm } from 'sveltekit-superforms'
 import { authStore } from '$lib/stores/auth.ts'
-import { ThemeToggle } from '$lib/components'
 import { SITE_NAME_ZH } from '@myblog/shared'
 import { goto } from '$lib/utils/navigation'
 import type { PageProps } from './$types'
