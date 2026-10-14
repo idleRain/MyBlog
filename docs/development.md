@@ -141,7 +141,7 @@ apps/admin/src/               # 后台
 #### 关键技术配置
 
 - 路径别名见各应用 `svelte.config.js`：`$ui` 与 `$ui/*`（指向 `packages/ui/src` 源码）、`@/*`（应用自身 `src`）；`$lib` 由 SvelteKit 隐式提供，未在配置中声明；前台另有 `$i18n`（指向 `src/lib/paraglide/messages`）。`svelte.config.js` 与 `tsconfig.json` 均未声明 `#/*` 或 `~/*` 别名；前台 `vite.config.ts` 的构建期别名只有 `#fonts`（dev 走本地 fontsource、prod 走 CDN 模块），与通配形态的 `#/*` 不是一回事。
-- `packages/ui` 以**源码直连**方式被引用，各应用在 `vite.config.ts` 配置 `ssr.noExternal: ['@myblog/ui']` 参与 SSR 编译；Tailwind v4 在各应用 `app.css` 用 `@source` 显式纳入 `packages/ui/src` 扫描。
+- `packages/ui` 与 `packages/components` 均以**源码直连**方式被引用，各应用在 `vite.config.ts` 配置 `ssr.noExternal: ['@myblog/ui', '@myblog/components']` 参与 SSR 编译；Tailwind v4 在各应用 `app.css` 用 `@source` 显式纳入 `packages/ui/src` 与 `packages/components/src` 扫描。前者经 `$ui` 别名引用，后者按包名 `@myblog/components/<name>` 引用，不设应用别名。
 - 后台在 `svelte.config.js` 配置 `paths.base = '/admin'` 与 `relative: false`，与前台同源区分部署。
 - 前台经 `@inlang/paraglide-js` 做 i18n，产物位于 `src/lib/paraglide`；后台不引入 i18n。
 - 两应用均使用 `unplugin-auto-import` 自动导入 SvelteKit / Svelte / toast 常用函数。
@@ -579,6 +579,7 @@ pnpm run build:web     # 构建前端静态文件
 - **架构铁律**: 依赖方向、类型唯一真相源等结构性约束见 [`architecture-rules.md`](./architecture-rules.md)
 - **事务化模式**: 多段写库必须包裹单事务；repository 提取 `xxxTx(db *gorm.DB, ...)` 私有方法供事务与独立公开方法复用（`createTx`/`syncTagsTx`/`syncCategoriesTx`/`updateTx`/`recordArticleView` 先例，事务内所有查询与写入均走事务句柄，禁止混用 `r.db`），跨仓储共享的写逻辑下沉为包内共享 helper（`upsertContentStat` 先例），不引入仓储间依赖
 - **安全配置默认值双源对齐**: `security.login_lockout` 的 viper 默认值与 service 层 `defaultLoginLockoutPolicy` 必须一致（5 次 / 15 分钟），修改任一处必须同步另一处
+- **代理信任链取值三处一致**: `security.trusted_proxies` 的代码默认值（`defaultTrustedProxies`）、`configs/config.yaml` 与 `configs/config.example.yaml` 声明值必须一致（默认仅回环），容器编排的取值写在 `docker-compose.yml` 的 `MYBLOG_SECURITY_TRUSTED_PROXIES`，改动代理来源时必须三处同步，漏改会让客户端 IP 归并到网关地址
 
 ### 2. 错误处理
 
@@ -618,18 +619,18 @@ pnpm run build:web     # 构建前端静态文件
 - **sqlmock 维护**: repository 层 sqlmock 断言与 GORM 生成的 SQL 文本强耦合，GORM 升级或查询改写时须同步维护期望；匹配 SQL 用 `regexp.QuoteMeta` 前缀正则，期望序列须与事务内实际步骤（含 DELETE、计数 UPDATE）完全一致，否则以"剩余期望未匹配"失败
 - **契约金样本维护**: 金样本须与 Go 响应逐字节一致（`json.Compact` 豁免空白），修改实现输出字段时必须同步修订金样本并跑 `contract:check`。易错点：`datetime.JSONDate` 序列化为零值 `null`、午夜日期-only、非午夜 `"2006-01-02 15:04:05"`（非 RFC3339）；`gin.H` map 序列化按字典序排键；Go `encoding/json` 默认 HTML 转义（`<` `>` 输出 `\u003c`），金样本取值应避开尖括号；`omitempty` 对 nil 指针与空切片省略键；内嵌结构体的同名字段被外层结构体遮蔽时按索引序输出，恢复字段会排在内嵌字段之后。锁②为 `WidenLiteral`+`toExtend` 单向合法实例校验（JSON 单值无法与 nullable 联合精确相等，见 architecture-rules.md §3.4）。新增金样本必须同时补 Go 断言与 TS 锚点，`TestFixtureCoverage` 会校验目录与双端锚点一一对应
 - **gin 中间件测试**: 中间件函数内 `return` 不会中断 gin 的 handler 链，中断必须调用 `c.Abort()`；`IdentityProvider.Resolve` 失败时由实现写响应并 `Abort`，消费方 `if err != nil { return }` 依赖此语义，测试替身须模拟"写响应 + Abort"而非裸返错误。统一响应信封固定 HTTP 200，权限/认证失败以响应体业务码（`code` 字段）断言，不比较 HTTP 状态码
-- **依赖基线检查**: 相对 pathspec 必须在 `server/` 下执行：`git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router ':(exclude)*_test.go'`。在仓库根用同一段相对 pathspec 会零命中而得到假绿，仓库根执行须改写为 `-- server/internal/service server/internal/middleware server/internal/router ':(exclude)*_test.go'`。基线 **13 个文件**（service 12 + middleware 仅 `identity.go` + router 0），只减不增；`*_test.go` 须排除，否则计数会包含测试替身文件
+- **依赖基线检查**: 相对 pathspec 必须在 `server/` 下执行：`git grep -ln "MyBlog/internal/repository" -- internal/middleware internal/router ':(exclude)*_test.go'`。在仓库根用同一段相对 pathspec 会零命中而得到假绿，仓库根执行须改写为 `-- server/internal/middleware server/internal/router ':(exclude)*_test.go'`。基线 **0 个文件**（middleware 与 router 均不得 import repository；`service → repository` 属允许边，不计入）；`*_test.go` 须排除，否则计数会包含 2 个测试替身文件
 
 ### 5.1 质量门禁
 
 - **契约门禁**: `pnpm run contract:check` = Go handler fixture 测试（锁①）+ `@myblog/api` 的 `tsc --noEmit`（锁② typecheck）+ vitest 类型锚定；契约相关改动必须通过
-- **CI**: `.github/workflows/ci.yml` 为质量门禁流水线，触发方式为 push 到 master/main 以及所有 pull request；步骤依次为 checkout、setup-node 22 + corepack、setup-go（读 `server/go.mod`）、`pnpm install --frozen-lockfile`、后端 go 三连（`go build` / `go vet` / `go test -count=1`）、`go:vulncheck`、`audit:deps`、依赖方向基线 grep（在 `server/` 内执行并断言命中数 ≤ 13）、`test:packages`、生成前台 i18n 产物（`pnpm --filter @myblog/web run generate:i18n`）、`test:apps`、`check`、`contract:check`、`build:apps`、`measure:assets`、`check:fonts`、`format:check`、`lint`；工作流不含自动部署步骤
+- **CI**: `.github/workflows/ci.yml` 为质量门禁流水线，触发方式为 push 到 master/main 以及所有 pull request；步骤依次为 checkout、setup-node 22 + corepack、setup-go（读 `server/go.mod`）、`pnpm install --frozen-lockfile`、后端 go 三连（`go build` / `go vet` / `go test -count=1`）、`go:vulncheck`、`audit:deps`、依赖方向基线 grep（在 `server/` 内执行并断言违例边命中数为 0）、`test:packages`、生成前台 i18n 产物（`pnpm --filter @myblog/web run generate:i18n`）、`test:apps`、`check`、`contract:check`、`build:apps`、`measure:assets`、`check:fonts`、`format:check`、`lint`；工作流不含自动部署步骤
 - **依赖漏洞扫描**: Go 侧经 `pnpm run go:vulncheck` 运行固定版本的 `govulncheck`，判定口径为「存在可达调用链即失败」；前端与工具链侧经 `pnpm run audit:deps` 运行 `pnpm audit`，按 high/critical 阻塞、medium 及以下告警的阈值执行。扫描数据源与已知漏洞的收敛清单见 `scripts/README.md`；依赖升级由 `.github/dependabot.yml` 按周提交 PR
 
 ### 6. 可维护性
 
 - **文档更新**: 架构规则变更时按 [`architecture-rules.md`](./architecture-rules.md) 同步规则本体与第 8 节债务索引；债务条目的状态与基线数值按 [`debt/README.md`](./debt/README.md) 的维护纪律更新对应分册，历史分期状态更新第 9 节
-- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫、日期格式化与服务端会话 Cookie 转发，`@myblog/admin` 覆盖 11 个页面状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
+- **自动化测试**: 后端关键逻辑配套 `*_test.go`（service/repository 层已有存量）；前端 packages 公共逻辑与页面状态模块应补 `*.test.ts`（`@myblog/components` 覆盖主题切换组件的形态与名称解析）。应用侧单测经根 `test:apps` 汇聚（`@myblog/web` 覆盖 markdown 渲染守卫、日期格式化与服务端会话 Cookie 转发，`@myblog/admin` 覆盖 11 个页面状态模块），并与 `test:packages` 一样纳入 `pnpm run test` 与 CI。
 - **测试文件位置**: 前端测试文件不与业务文件同级，一律置于被测模块同级的 `__tests__/` 目录（例如 `apps/admin/src/lib/utils/__tests__/tag-display.test.ts`）；跨用例共享的测试替身与夹具置于包内 `src/test/`（例如 `packages/auth/src/test/fixtures.ts`），不放入 `__tests__/`。移动测试文件后须同步修正其相对导入层级，并检查写死测试文件路径的外部锚点（如 `server/internal/handler/fixture_coverage_test.go` 的 TS 锚点常量）。
 
 ## 更多资源

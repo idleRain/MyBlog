@@ -29,10 +29,11 @@
 - 聚合入口的代价是可量化的：包内 `packages/ui/src` 共 394 个文件，其中 334 个是 `.svelte`，类型检查需要逐个转换 `.svelte`；按两个应用实际引用的 24 个组件入口做静态可达分析，可达文件为 166 个（其中 `.svelte` 142 个）。
 - 导入形态与组件的部件结构对齐：单部件组件用具名导入，例如 `import { Input } from '$ui/input'`；多部件组件用命名空间导入，例如 `import * as Card from '$ui/card'`，内部按 `<Card.Root>` / `<Card.Header>` 使用。
 - `Chart` 组件在服务端渲染时会抛出运行时错误，需要时按子路径 `$ui/chart` 单独引用。
+- **组合组件不进入本包**：由 stock 组件组合、两应用共用的组件归属 `packages/components`，按包名 `@myblog/components/<name>` 导入（不设应用别名），例如 `theme-toggle`；该包只做组合，同样禁止硬编码业务色，外观仍经各应用 token 与调用处 `className` 定制。`packages/ui` 只收 shadcn 库存件，新增一律在包内执行 CLI。
 
 ### 1.3 主题注入机制（三件套）
 
-任一应用引用 `packages/ui` 源码直连组件时，必须同时具备以下三项，缺一会导致「类不生成」或「SSR 报错」：
+任一应用引用 `packages/ui` 源码直连组件时，必须同时具备以下三项，缺一会导致「类不生成」或「SSR 报错」；`packages/components` 的组件同样以源码直连，除别名一项外（该包按包名导入）同样需要 `ssr.noExternal` 与 `app.css` 的 `@source`：
 
 1. **`svelte.config.js` 别名**：`$ui` → `../../packages/ui/src`，`$ui/*` → `../../packages/ui/src/*`。
 2. **`vite.config.ts`**：`ssr.noExternal: ['@myblog/ui']`，使 `.svelte` 源码参与 SSR 编译。

@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { User } from '@myblog/api/modules/user/types'
 import { get } from 'svelte/store'
 
-// 构造注入依赖的最小替身，浏览器判定恒为 false 以隔离 localStorage。
+// 构造注入依赖的最小替身：测试默认运行于无 window 的 Node 环境，
+// 包内环境判定为 false，因此不会触碰 localStorage。
 function createTestStore(overrides?: Partial<AuthStoreDeps>) {
   const logoutApi = vi.fn(async () => {})
   const deps: AuthStoreDeps = {
-    isBrowser: () => false,
     logoutApi,
     ...overrides
   }
@@ -17,13 +17,11 @@ function createTestStore(overrides?: Partial<AuthStoreDeps>) {
 }
 
 // 构造接入浏览器环境替身的 store，用于持久化与跨标签页同步相关用例。
+// 环境替身必须在创建 store 之前安装，否则跨标签页同步监听不会注册。
 function createBrowserStore() {
   const env = installFakeBrowserEnv()
   const logoutApi = vi.fn(async () => {})
-  const store = createAuthStore({
-    isBrowser: () => true,
-    logoutApi
-  })
+  const store = createAuthStore({ logoutApi })
   return { store, env, logoutApi }
 }
 
@@ -65,10 +63,7 @@ describe('登录与持久化', () => {
     const env = installFakeBrowserEnv()
     env.seedSession({ userId: 3, username: 'user3', permissions: ['article:read'] })
 
-    const store = createAuthStore({
-      isBrowser: () => true,
-      logoutApi: async () => {}
-    })
+    const store = createAuthStore({ logoutApi: async () => {} })
 
     const state = get(store)
     expect(state.isAuthenticated).toBe(true)

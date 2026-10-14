@@ -105,5 +105,5 @@ curl -X POST http://localhost:3000/api/auth/session \
 
 ## 已知限制
 
-- 令牌表为**进程内存**结构，服务重启或发布导致全体用户登出；多副本部署前必须完成令牌表持久化（见 [`docs/architecture-rules.md`](../../../docs/architecture-rules.md) 第 7 节）。
+- 令牌表为**进程内存**结构，服务重启或发布导致全体用户登出；本项目为单实例终态且不扩容，故不做持久化，改变该决定时须先完成迁移（见 [`docs/architecture-rules.md`](../../../docs/architecture-rules.md) §7.2）。
 - 会话 Cookie 由同源标签页共享，令牌旋转不产生跨标签页竞争。

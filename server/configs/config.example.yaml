@@ -50,6 +50,14 @@ token:
 
 # API安全配置
 security:
+  # 反向代理信任链：仅列表内的来源所携带的 X-Forwarded-For 才参与客户端 IP 解析。
+  # 默认只信任本机回环，同机 nginx 反代可直接使用；容器编排经
+  # MYBLOG_SECURITY_TRUSTED_PROXIES 以逗号分隔注入（例如 172.16.0.0/12）。
+  # 置空表示服务前方没有代理，客户端 IP 一律取连接来源地址。
+  trusted_proxies:
+    - "127.0.0.1/32"
+    - "::1/128"
+
   # 频率限制配置
   rate_limit:
     enabled: true

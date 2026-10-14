@@ -20,7 +20,8 @@
 
 - 编排中无副本声明与故障转移（`git grep -n "replicas" -- docker-compose.yml` 应为空），应用进程、MySQL、网关各一份，**不支持按多副本假设做设计与承诺**。
 - 会话令牌表与请求限流计数均为进程内存结构，`server` 容器重启或重新部署将导致**全体用户登出**，发布窗口需提前预告；任一组件故障即停站，恢复依赖人工介入，无 RTO 承诺，RPO 为 24 小时（`docs/operations/backup-restore.md`）。
-- 扩容前置改造三项见 `docs/architecture-rules.md` §7.2。
+- 单实例为**终态**，本项目确定不扩容；若未来改变该决定，扩容前须先完成令牌表持久化与限流器外置两项改造（见 `docs/architecture-rules.md` §7.2）。
+- 代理信任链已收敛：仅 `MYBLOG_SECURITY_TRUSTED_PROXIES` 列出的来源所携带的 `X-Forwarded-For` 参与客户端 IP 解析，编排默认注入 `172.16.0.0/12`；自定义 Docker 地址池时须同步修改，漏改会让客户端 IP 退化为 nginx 容器地址，见 `docs/debt/security-runtime.md` 第 4 条。
 
 ### 健康探针
 
@@ -45,8 +46,8 @@
 
 `server` 容器的其余参数经 `MYBLOG_*` 前缀环境变量注入：`MYBLOG_SERVER_MODE=release`、
 `MYBLOG_SERVER_HOST=0.0.0.0`、`MYBLOG_DATABASE_HOST=mysql`、`MYBLOG_DATABASE_PORT=3306`、
-`MYBLOG_DATABASE_USERNAME=root`。变量名由 `MYBLOG_` 加配置键的大写下划线形式构成，
-列表与映射类配置无法经环境变量表达，见 `server/internal/config/config.go`。
+`MYBLOG_DATABASE_USERNAME=root`、`MYBLOG_SECURITY_TRUSTED_PROXIES=172.16.0.0/12`。变量名由 `MYBLOG_` 加配置键的大写下划线形式构成，
+列表与映射类配置无法经环境变量表达（代理信任链按逗号分隔的专用通道除外），见 `server/internal/config/config.go`。
 
 ### 数据卷
 

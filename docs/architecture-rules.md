@@ -6,7 +6,7 @@
 >
 > **效力**：本手册效力高于普通文档；与更具体的细则冲突时以更具体者为准。
 >
-> **分册**：第 1 至 7 节为规则本体，第 8 节为债务索引，第 9 至 10 节为历史登记；债务的完整条目（状态、基线数值、验证命令、完整红线）按关注域分册在 [`debt/`](./debt/README.md)。
+> **分册**：第 1 至 7 节为规则本体，第 8 节为债务与取舍索引，第 9 至 10 节为历史登记；条目完整内容（状态、基线或上限、验证命令、红线）按关注域分册在 [`debt/`](./debt/README.md)。
 
 ---
 
@@ -18,7 +18,7 @@
 | 【约定】 | 命名、格式、注释等风格约束 | 应当修正 |
 | 【债务】 | 已存在的违例，登记基线与验证命令 | **基线只减不增**（条目分册见 [`debt/`](./debt/README.md)） |
 
-**基线只减不增是本手册的核心执行机制**：存量违规不要求立即修复，但任何改动使债务指标恶化，即新增违例文件、新增实例化点或新增重复代码时判定违规。每条债务附带验证命令，任务完成前 Agent 必须自检。
+**基线只减不增是本手册的核心执行机制**：登记为债务的违例不要求立即修复，但任何改动使债务指标恶化，即新增违例文件、新增实例化点或新增重复代码时判定违规。已接受取舍不设基线，改守其在登记条目中写明的上限与前提。每条债务附带验证命令，任务完成前 Agent 必须自检。
 
 ---
 
@@ -40,7 +40,7 @@ router → handler → service → repository → domain / model
 |---|---|---|
 | service → handler | 业务逻辑不得感知 HTTP | 已合规 |
 | repository → service / handler | 数据层不得承载业务 | 已合规 |
-| middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 仅 `identity.go` 实现 1 处 |
+| middleware → repository | HTTP 横切层不得直捣存储（终态：依赖 IdentityProvider 抽象） | 已合规（`identity.go` 以包内窄接口 `userLookup` 收敛，见 `debt/architecture.md` 第 1 条） |
 | router → repository（仅为拼装中间件） | 路由层不应持有数据访问句柄 | router 依赖 repository 归零 |
 | 任何包 → `database.GetDB()` 全局单例 | 破坏可测试性 | 已合规（仅 `cmd/myblog` 与 `cmd/seed` 使用） |
 
@@ -65,8 +65,11 @@ apps/web, apps/admin（组合根：实例化与回调注入）
 
 ```bash
 # 在 server/ 目录下执行（路径相对当前目录解析，在仓库根执行会得到零命中的假绿）
-# 基线：service 12 + middleware 1（仅 identity.go）+ router 0 = 13 文件
-git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router ':(exclude)*_test.go'
+# 基线：0 文件。middleware 与 router 均不得 import repository；service 消费仓储接口属允许边，不在此命令统计
+git grep -ln "MyBlog/internal/repository" -- internal/middleware internal/router ':(exclude)*_test.go'
+
+# 仓储的具体实现 struct 与构造函数只允许出现在 repository 包与组合根，在 server/ 下执行（应为空）
+git grep -n "repository\.New" -- internal ':(exclude)*_test.go'
 
 # 前端：packages 反向依赖应用（应为空；在仓库根执行）
 git grep -ln "apps/web" -- packages
@@ -196,7 +199,8 @@ git grep -n "NewRBACService()" -- server
 
 ```
 该逻辑是否被两个 app 使用？
-├─ 是 → 必须进 packages（shared/http/api，认证域终态为独立 auth 包）
+├─ 是 → 必须进 packages（纯逻辑进 shared/http/api，认证域为 auth 包，
+│        由 stock 组件组合的界面组件进 components 包）
 └─ 否 → 留在应用内
      该逻辑与另一 app 现有代码是否同构？
      └─ 是 → 违反复用纪律，停下提取；否 → 正常开发
@@ -204,10 +208,10 @@ git grep -n "NewRBACService()" -- server
 
 已知跨 app 重复文件分两档，处理方式不同：
 
-1. **逐字重复，改任一必须同步另一份**（`git diff --no-index` 应零差异）：`src/lib/stores/auth.ts`（15 行 ×2）、`src/lib/components/theme-toggle.svelte`（45 行 ×2）。
+1. **逐字重复，改任一必须同步另一份**（`git diff --no-index` 应零差异）：`src/lib/stores/auth.ts`（10 行 ×2）。它是纯注入接缝，包内无法解析 `$lib/api`，故接缝留在应用侧并设 10 行上限。
 2. **职责同构但内容不同，不计入逐字重复**，也不要求逐字同步：`service/index.ts`（69 / 67 行，差异在 `getLanguage` 取值与 `goto` 导入来源）、`routes/+layout.svelte`（20 / 12 行）、`routes/+error.svelte`（95 / 38 行，web 编辑杂志版式与 admin 居中版式已各自独立设计）。
 
-新增公共逻辑仍按 6.1 决策树优先下沉 packages；两档文件均不得再增加第三份同构实现。
+新增公共逻辑仍按 6.1 决策树优先下沉 packages；两档文件均不得再增加第三份同构实现。本轮 `theme-toggle.svelte` 由两应用副本收敛为 `packages/components/src/theme-toggle` 单一实现。
 
 ### 6.2 数据加载
 
@@ -227,52 +231,61 @@ git grep -n "NewRBACService()" -- server
 - token pair 形状：`{accessToken, refreshToken, expiresIn}`。
 - 线格式：**不透明令牌**（服务端签发 32 位十六进制随机串，身份与生命周期登记在服务端令牌表；令牌自身不携带任何可解码信息，校验以令牌表为唯一权威，不重构也不重新签名）。
 - 刷新：`POST /api/auth/refresh`，body `{refreshToken}`；刷新即旋转（旧 refresh token 撤销），旋转前查库校验用户存在且状态正常。
-- 撤销：令牌表为内存 map（单实例前提）；撤销即从表中移除记录，过期记录随签发惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
+- 撤销：令牌表为内存 map（单实例终态前提，不迁移）；撤销即从表中移除记录，过期记录随签发惰性清理；登出撤销令牌对（refreshToken 经请求体可选提交），改密成功按用户撤销全部既有令牌。
 - access 链路取舍：信任短有效期，不逐请求查库；被禁用用户的存量 access 至多存活 `token.access_expire` 分钟，实时失效诉求由 Cookie 会话方案承接。
 - 前端 401 识别：以响应体业务码 `code === 401` 判定（`TOKEN_ERROR_MESSAGES` 文案匹配已移除，禁止回退）。
 
 ---
 
-## 7. 部署形态与可用性约束（单实例）
+## 7. 部署形态与可用性约束（单实例终态）
 
-> 本节的取舍是**有意接受**的架构决策，不是待修复的缺陷：它记录当前形态能做什么、不能做什么，以及扩容前必须先完成的改造。
-> 代码事实来源：`docker-compose.yml`（五个服务各一份，无副本与故障转移）、`service/token.go`（进程内令牌表）、`middleware/ratelimit.go`（进程内计数 map）。
+> 本项目**确定不扩容**：应用进程、MySQL、网关各一份，全部部署于同一台服务器，由同一 nginx 实例按端口区分出入口，全球仅此一份。
+> 单实例是**终态**而非过渡形态，因此本节登记形态事实与由此产生的可用性后果，不构成待改造清单。
+> 代码事实来源：`docker-compose.yml`（各服务一份，无副本与故障转移）、`service/token.go`（进程内令牌表）、`middleware/ratelimit.go`（进程内计数 map）。
 
-### 7.1 当前约束
+### 7.1 形态事实与后果
 
-| 维度 | 当前形态 | 后果 |
+| 维度 | 形态 | 后果 |
 |---|---|---|
-| 部署形态 | 应用进程、MySQL、网关各**单实例** | 无横向扩容能力，单副本容量即整站容量 |
-| 会话令牌 | 存于**进程内存**，不透明随机串，身份唯一权威在服务端令牌表 | **服务重启或发布导致全体用户登出**，发布窗口需提前预告用户 |
-| 请求限流 | 进程内计数 map，按客户端 IP 或用户维度计数 | 阈值是**单进程**口径，多副本会使实际阈值成倍放大 |
+| 部署形态 | 应用进程、MySQL、网关各一份，同一 nginx 实例按端口区分入口 | 无副本与故障转移，单份容量即整站容量 |
+| 会话令牌 | 不透明随机串存于进程内存，身份唯一权威在服务端令牌表 | **服务重启或发布导致全体用户登出**，发布窗口需提前预告用户；令牌不跨进程共享 |
+| 请求限流 | 进程内计数 map，按客户端 IP 或用户维度计数 | 阈值即**单进程**口径；进程重启后计数清零 |
 | 故障处理 | **无自动故障转移** | **故障即停站**，恢复依赖人工介入与重启；无 RTO 承诺，RPO 为 24 小时（见 `operations/backup-restore.md`） |
 
-### 7.2 扩容前置改造三项
+### 7.2 变更前提（当前不触发）
 
-三项须**全部完成**才能以增加副本的方式扩容，缺任一项即产生静默缺陷：
+若未来改变"不扩容"的决定、改以增加副本方式扩容，须先完成下列两项，缺任一项即产生静默缺陷；在当前终态下两项均**不做**，因此它们不是待还债务：
 
 1. **令牌表持久化**：把 `service/token.go` 的内存表切换到共享存储，并保持「查表即唯一权威」的既有校验语义。`model.AuthToken` 的 `TokenHash`（SHA256 十六进制）通道已就绪，可沿用该存储口径。
 2. **限流器外置**：把 `middleware/ratelimit.go` 的进程内计数迁至共享存储，否则限流阈值随副本数成倍放大，防护形同失效。
-3. **反向代理信任链**：为 `gin.Engine` 补 `SetTrustedProxies` 配置（当前零配置）。缺此配置时经网关转发后 `ClientIP()` 恒为网关地址，同时影响限流、登录失败锁定、访问审计与 WAF 四项能力；`ClientIP()` 现有 7 处调用。
 
-### 7.3 验证命令
+### 7.3 代理信任链（已收敛）
+
+客户端 IP 的取值受 `security.trusted_proxies` 白名单约束，与副本数无关：
+
+- `internal/router/router.go` 在构造引擎时调用 `SetTrustedProxies`，只有列表内来源携带的 `X-Forwarded-For` 才参与解析，非受信来源的该头部被忽略。
+- 默认只信任本机回环；容器编排经 `MYBLOG_SECURITY_TRUSTED_PROXIES` 注入容器网段，漏配会让客户端 IP 退化为网关地址。
+- 历史缺陷、订正后的影响面与回归用例见 [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条。
+
+### 7.4 验证命令
 
 ```bash
-# 改造前两处均应为空
-git grep -n "SetTrustedProxies" -- server
+# 应为空，确认单实例形态事实
 git grep -n "replicas" -- docker-compose.yml
+# 应命中 internal/router/router.go，确认信任链已接线
+git grep -n "SetTrustedProxies" -- server
 ```
 
 ---
 
-## 8. 债务登记表（基线只减不增）
+## 8. 债务与取舍登记表（基线只减不增）
 
-> 完整条目（状态、基线数值、验证命令、完整红线）按关注域分册登记在 `docs/debt/`，机制与维护流程见 [`debt/README.md`](./debt/README.md)。
-> 本节只保留索引：触碰相关区域前先按「所属分册」读对应条目，任务自检时核对基线不恶化。
+> 完整条目（状态、基线或上限、验证命令、红线）按关注域分册登记在 `docs/debt/`，机制与维护流程见 [`debt/README.md`](./debt/README.md)。
+> 本节只保留索引：触碰相关区域前先按「所属分册」读对应条目，任务自检时核对债务基线不恶化、已接受取舍不逾越上限。
 
-| 债务 | 所属分册 | 红线（一句话） |
+| 条目 | 所属分册 | 红线（一句话） |
 |---|---|---|
-| service/middleware/router import repository | [`debt/architecture.md`](./debt/architecture.md) 第 1 条 | 只减不增 |
+| service/middleware/router import repository | [`debt/architecture.md`](./debt/architecture.md) 第 1 条 | middleware 与 router 不得 import repository；service 属允许边 |
 | router 重复定义 handler 接口 + `interface{}` 断言 | [`debt/architecture.md`](./debt/architecture.md) 第 2 条 | 禁止重新引入 |
 | `RBACService` 生产实例化 | [`debt/architecture.md`](./debt/architecture.md) 第 3 条 | 禁止新增实例化点 |
 | 双 User 模型同写 users 表 | [`debt/architecture.md`](./debt/architecture.md) 第 4 条 | 新字段只加 `domain.User` |
@@ -290,8 +303,7 @@ git grep -n "replicas" -- docker-compose.yml
 | 公开端点直出实体泄漏个人信息 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 1 条 | 个人信息须经窄化 DTO 或字段白名单 |
 | 文章响应泄漏作者审计字段 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 2 条 | 新增审计字段默认 `json:"-"` |
 | WAF 内容级黑名单的固有误伤面 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 3 条 | 阻止模式必须先红后绿并配两组用例 |
-| 令牌表为内存 map | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 单实例前提；持久化前保持锁 |
-| 测试替身内嵌空接口的运行时脆性 | [`debt/testing.md`](./debt/testing.md) 第 1 条 | 受影响 fake 必须显式覆写 |
+| 代理信任链未收敛导致 `ClientIP()` 可伪造 | [`debt/security-runtime.md`](./debt/security-runtime.md) 第 4 条 | 仅 `security.trusted_proxies` 内来源可参与解析，禁止回退为信任全部来源 |
 
 ---
 
@@ -307,6 +319,8 @@ git grep -n "replicas" -- docker-compose.yml
 | 阶段三 契约切换 | handler DTO 分离；`contracts/` + 三把锁双向锚定（替代 codegen）；401 改错误码判定 | 401 文案匹配与审计字段泄漏已修复；三把锁已落地（`pnpm run contract:check`） | ✅ 影子类型归零；漂移必当天变红 |
 | 阶段四 横切归位与权限下发 | 中间件坍缩为 IdentityProvider 策略；组合根按域装配；RBAC 权限表迁数据源并下发；admin 胖组件拆分、users 搜索推回后端 | `RBACService` 生产实例化点仅 1 处；users 跨页补偿与 admin 分页均已修复；RBAC 迁 config.yaml 完成；permissions 下发完成；follow API 模块已补齐；IdentityProvider 中间件坍缩完成（router 依赖 repository 归零、middleware 1 处）；认证工具已统一；admin 胖组件行数口径 7→0，13 个页面取数归位到 load（含 11 个页面状态模块与配套单测），取数口径 6→0，`onMount` 仅余鉴权 2 处 | 权限定义全栈唯一；认证工具单轨 ✅；admin 行数与取数两条基线均归零 ✅ |
 | 阶段五 扩展点 | 后端 ContentRenderer 内容策略接口（当前 `pkg/markdown` 已直接承接 Markdown 渲染，策略接口化待做）；web 业务页面已按"公开数据 SSR + 个性化数据客户端补拉"现状接入，token 迁 cookie 已完成 | — | 新文章类型 = 插入实现，非逐层打洞 |
+| 阶段六 代理信任链收敛 | 引擎构造期接入信任链白名单；`NewRouter` 改为返回错误；配置校验拒绝覆盖全部地址的取值；补伪造转发头的四态用例 | 代理信任链未收敛导致 `ClientIP()` 可伪造（`docs/debt/security-runtime.md` 第 4 条） | ✅ 接线前实测三例失败且日志 `clientIp` 为伪造值；接线后伪造转发头不再影响 `ClientIP()` |
+| 阶段七 依赖边口径订正 | 中间件在包内声明消费方窄接口，收敛对 repository 包的依赖；债务基线拆分为允许边与违例边，同步订正 §2.1、§2.3 与 CI 断言 | service/middleware/router import repository（`docs/debt/architecture.md` 第 1 条） | ✅ middleware 与 router 的违例 import 归零；查询参数留在 repository 经确认接受；CI 基线断言由 ≤13 改为 =0 |
 
 ---
 

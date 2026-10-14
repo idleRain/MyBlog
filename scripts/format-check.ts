@@ -27,7 +27,8 @@ const PACKAGE_SOURCE_DIRECTORIES = [
   'packages/shared',
   'packages/http',
   'packages/api',
-  'packages/auth'
+  'packages/auth',
+  'packages/components'
 ]
 
 // paraglide 生成产物目录，该目录由构建过程写出，不纳入格式门禁。

@@ -50,6 +50,9 @@ services:
       # 指标监听绑定容器网卡，仅同 compose 网络的抓取端可访问，不发布到宿主机端口。
       MYBLOG_METRICS_ENABLED: 'true'
       MYBLOG_METRICS_ADDR: 0.0.0.0:9090
+      # 代理信任链：nginx 是唯一入口且 server 未发布端口，仅容器网络可达后端，
+      # 故信任 Docker 私有网段；自定义地址池时须同步改为实际网段，多项以逗号分隔。
+      MYBLOG_SECURITY_TRUSTED_PROXIES: 172.16.0.0/12
 
     volumes:
       - uploads:/app/uploads

@@ -29,6 +29,7 @@
     "@milkdown/kit": "7.22.1",
     "@myblog/api": "workspace:*",
     "@myblog/auth": "workspace:*",
+    "@myblog/components": "workspace:*",
     "@myblog/http": "workspace:*",
     "@myblog/shared": "workspace:*",
     "@myblog/ui": "workspace:*",

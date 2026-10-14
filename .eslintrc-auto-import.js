@@ -15,7 +15,6 @@ export default {
     "invalidateAll": true,
     "navigating": true,
     "onDestroy": true,
-    "onMount": true,
     "page": true,
     "preloadCode": true,
     "preloadData": true,

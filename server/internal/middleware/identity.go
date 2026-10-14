@@ -6,7 +6,6 @@ import (
 
 	"MyBlog/internal/domain"
 	"MyBlog/internal/model"
-	"MyBlog/internal/repository"
 	"MyBlog/internal/service"
 	"MyBlog/pkg/response"
 
@@ -20,14 +19,20 @@ type IdentityProvider interface {
 	Resolve(c *gin.Context) (*domain.User, error)
 }
 
+// userLookup 身份解析所需的用户读取能力，在消费方声明为窄接口，使本包不依赖仓储包的具体类型。
+// 仓储实现由组合根注入，结构化满足该接口，接口随存储层方法演进而按需扩列。
+type userLookup interface {
+	GetByID(id uint) (*domain.User, error)
+}
+
 // tokenIdentityProvider 基于令牌表与用户仓储的身份解析实现。
 type tokenIdentityProvider struct {
 	tokenService service.TokenServiceInterface
-	userRepo     repository.UserRepository
+	userRepo     userLookup
 }
 
 // NewIdentityProvider 创建身份解析器，依赖由组合根注入。
-func NewIdentityProvider(tokenService service.TokenServiceInterface, userRepo repository.UserRepository) IdentityProvider {
+func NewIdentityProvider(tokenService service.TokenServiceInterface, userRepo userLookup) IdentityProvider {
 	return &tokenIdentityProvider{
 		tokenService: tokenService,
 		userRepo:     userRepo,

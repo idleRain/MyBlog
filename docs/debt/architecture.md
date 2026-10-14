@@ -5,10 +5,12 @@
 
 ## 1. service/middleware/router import repository
 
-- **状态**：存量，只减不增。
-- **基线**：service **12** + middleware **1** + router **0**，合计 13 个文件。router 已归零，middleware 仅 `identity.go`；`*_test.go` 测试替身文件不计入。dict 模块接入曾使 service 层由 11 增至 12。
-- **验证命令**：见 `docs/architecture-rules.md` §2.3。必须在 `server/` 目录下执行（相对 pathspec 在仓库根执行会得到零命中的假绿），并带 `':(exclude)*_test.go'` 排除测试文件；不排除时命中数为 33。
-- **红线**：只减不增。
+- **状态**：已修复。
+- **基线**：违例边 **0** 个文件。`middleware → repository` 经消费方窄接口收敛——`identity.go` 的 `userLookup` 只声明 `GetByID` 一项能力，仓储实现由组合根注入后结构化满足；`router → repository` 早已归零。不排除 `*_test.go` 时命中 2 个测试替身文件（middleware 与 router 各 1）。
+- **允许边**：`service → repository` 属 `docs/architecture-rules.md` §2.1 允许图。service 消费 `repository.XxxRepositoryInterface` 时必然 import 该包，故 service 的 12 个文件不计入违例。首版基线将三者合并计为 13 个文件，实为 12 个允许边加 1 个违例边，口径随本次修复订正。
+- **已接受口径**：查询参数与结果结构（`ArticleListParams`、`ArticleArchiveGroup` 等 11 个）随接口声明在 repository 包，属接口签名的组成部分，不迁移至 `internal/domain`。
+- **验证命令**：见 `docs/architecture-rules.md` §2.3。必须在 `server/` 目录下执行（相对 pathspec 在仓库根执行会得到零命中的假绿），并带 `':(exclude)*_test.go'` 排除测试文件。
+- **红线**：`middleware` 与 `router` 不得 import repository；中间件消费存储能力一律在包内声明窄接口，实现由组合根注入。仓储的具体实现 struct 与 `New*Repository` 构造函数只允许出现在 repository 包与组合根，service 只可消费接口与查询参数。
 
 ## 2. router 重复定义 handler 接口与 `interface{}` 断言
 

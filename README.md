@@ -263,5 +263,6 @@ Domain Layer     → 领域实体与请求/响应 DTO（全系统唯一类型语
 - [x] 前台界面多语言（Header、Footer、通知铃铛、友链弹窗、错误页与 demo 页已接入 paraglide，其余页面待分批接入）
 - [x] 契约金样本与类型锚定门禁、CI 质量流水线与依赖漏洞扫描
 - [x] 部署配置和 Docker 支持（MySQL + 后端 + 前台 + Nginx + 备份单实例编排）
-- [ ] 前端窄屏与响应式细节打磨（后台字典页工具栏窄屏遗留未完成，见 `docs/debt/frontend.md` 第 8 条）
-- [ ] 扩容前置改造三项（令牌表持久化、限流器外置、补 `SetTrustedProxies`，见 `docs/architecture-rules.md` 第 7 节）
+- [ ] 前端窄屏与响应式细节打磨（后台字典页工具栏窄屏遗留已按 `docs/debt/frontend.md` 第 8 条修复，其余页面按需跟进）
+- [x] 部署形态定型为单实例终态（确定不扩容；令牌表持久化与限流器外置降为变更前提，见 `docs/architecture-rules.md` §7.2）
+- [x] 代理信任链收敛（受信来源由 `security.trusted_proxies` 白名单决定，容器编排经环境变量注入网段，伪造转发头不再生效，见 `docs/debt/security-runtime.md` 第 4 条）

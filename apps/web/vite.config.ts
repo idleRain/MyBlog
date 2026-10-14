@@ -77,8 +77,8 @@ export default ({ mode }: ConfigEnv) => {
       }
     },
     ssr: {
-      // ui 包以源码直连方式被引用，需参与 SSR 编译以支持 .svelte 组件。
-      noExternal: ['@myblog/ui']
+      // ui 与 components 包均以源码直连方式被引用，需参与 SSR 编译以支持 .svelte 组件。
+      noExternal: ['@myblog/ui', '@myblog/components']
     },
     resolve: {
       alias: {

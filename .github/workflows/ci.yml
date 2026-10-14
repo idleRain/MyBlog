@@ -56,16 +56,16 @@ jobs:
       - name: 前端依赖漏洞扫描
         run: pnpm run audit:deps
 
-      - name: 依赖方向基线（12 service + 1 middleware + 0 router）
+      - name: 依赖方向基线（middleware 与 router 不得 import repository）
         working-directory: server
         run: |
-          HITS=$(git grep -ln "MyBlog/internal/repository" -- internal/service internal/middleware internal/router \
+          HITS=$(git grep -ln "MyBlog/internal/repository" -- internal/middleware internal/router \
             | grep -v '_test\.go$' || true)
           COUNT=$(printf '%s' "$HITS" | grep -c . || true)
-          echo "依赖基线命中文件数: ${COUNT}"
-          echo "依赖基线命中文件清单:"
+          echo "违例边命中文件数: ${COUNT}"
+          echo "违例边命中文件清单:"
           printf '%s\n' "$HITS"
-          test "$COUNT" -le 13
+          test "$COUNT" -eq 0
 
       - name: 公共包单测与类型检查
         run: pnpm run test:packages

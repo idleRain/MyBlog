@@ -25,7 +25,12 @@ const packagesDirectoryPrefix = 'packages'
 const appsDirectoryPrefix = 'apps'
 
 // 纳入 vitest 门禁的工作区包，与根 test:packages 的口径保持一致。
-const gatedWorkspacePackages: string[] = ['packages/api', 'packages/auth', 'packages/http']
+const gatedWorkspacePackages: string[] = [
+  'packages/api',
+  'packages/auth',
+  'packages/components',
+  'packages/http'
+]
 
 // 纳入 vitest 门禁的应用，与根 test:apps 的口径保持一致。
 // 两应用各自持有页面状态模块与渲染管线的单测，提交前必须与 packages 同级把关。

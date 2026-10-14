@@ -1,0 +1,30 @@
+{
+  "name": "@myblog/components",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MyBlog 跨应用组合组件：由 @myblog/ui 的 stock 组件组合而成，供前台与后台共用，不承载应用专属样式与业务状态。",
+  "exports": {
+    "./*": "./src/*/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@lucide/svelte": "catalog:",
+    "@myblog/shared": "workspace:*",
+    "@myblog/ui": "workspace:*",
+    "mode-watcher": "catalog:"
+  },
+  "peerDependencies": {
+    "svelte": "catalog:"
+  },
+  "devDependencies": {
+    "svelte": "catalog:",
+    "svelte-check": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
