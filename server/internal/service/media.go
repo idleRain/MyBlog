@@ -77,18 +77,40 @@ func NewMediaService(mediaRepo repository.MediaRepositoryInterface, cfg *config.
 	}
 }
 
+// bytesPerMegabyte 大小上限配置项到字节的换算基准，配置项以 MB 为单位声明。
+const bytesPerMegabyte = 1024 * 1024
+
+// truncationProbeBytes 读取上限之外额外读取的字节数，用于判定内容是否超过上限。
+const truncationProbeBytes = 1
+
+// fileSizeExceededError 构造文件超过大小上限的业务错误，读取前的声明值检查与读取后的实际长度检查共用。
+func fileSizeExceededError(maxSizeMB int) error {
+	return fmt.Errorf("%w：文件大小超过限制 %dMB", ErrInvalidRequest, maxSizeMB)
+}
+
 // UploadFile 上传文件到本地存储并落库，同一上传者的文件哈希一致时复用已有记录。
 func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64, uploaderID uint, ipAddress string) (*model.MediaFile, error) {
-	// 校验文件大小是否超限。
-	maxSize := int64(s.cfg.Media.MaxSizeMB) * 1024 * 1024
-	if maxSize > 0 && size > maxSize {
-		return nil, fmt.Errorf("%w：文件大小超过限制 %dMB", ErrInvalidRequest, s.cfg.Media.MaxSizeMB)
+	// 上限必须为正，配置校验已在加载期拦截非法取值，此处防御直接构造服务实例的调用路径。
+	// 该情形属服务端配置错误，返回未分类错误使响应脱敏为 500，避免误判为客户端请求问题。
+	maxSize := int64(s.cfg.Media.MaxSizeMB) * bytesPerMegabyte
+	if maxSize <= 0 {
+		return nil, fmt.Errorf("媒体单文件大小上限配置无效: %dMB", s.cfg.Media.MaxSizeMB)
+	}
+
+	// 入参大小由调用方提供，先按声明值拦截明显超限的上传，避免无谓读取。
+	if size > maxSize {
+		return nil, fileSizeExceededError(s.cfg.Media.MaxSizeMB)
 	}
 
 	// 读取文件内容并计算哈希。
-	content, err := io.ReadAll(io.LimitReader(reader, maxSize+1))
+	content, err := io.ReadAll(io.LimitReader(reader, maxSize+truncationProbeBytes))
 	if err != nil {
 		return nil, fmt.Errorf("读取上传文件失败: %w", err)
+	}
+
+	// 声明值可能与实际内容不符，超限判定以实际读取字节数为准，与读取前的检查返回同一业务错误。
+	if int64(len(content)) > maxSize {
+		return nil, fileSizeExceededError(s.cfg.Media.MaxSizeMB)
 	}
 	fileHash := sha256.Sum256(content)
 	hashHex := hex.EncodeToString(fileHash[:])
@@ -123,13 +145,14 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 	// 构建访问 URL。
 	fileURL := strings.TrimRight(s.cfg.Media.BaseURL, "/") + "/" + filepath.ToSlash(relativePath)
 
+	// 落库大小取实际存储的字节数，声明值可能大于实际内容，据此记录会使读取结果与实际不符。
 	media := &model.MediaFile{
 		Filename:    filename,
 		StoredName:  storedName,
 		FilePath:    fullPath,
 		FileURL:     fileURL,
 		MimeType:    mimeType,
-		FileSize:    uint64(size),
+		FileSize:    uint64(len(content)),
 		FileHash:    hashHex,
 		Status:      model.MediaStatusActive,
 		UploaderID:  uploaderID,

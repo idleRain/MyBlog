@@ -94,6 +94,71 @@ func TestUploadFileOversize(t *testing.T) {
 	}
 }
 
+// testBytesPerMegabyte 单兆字节的字节数，供测试构造大小上限的边界内容。
+const testBytesPerMegabyte = 1024 * 1024
+
+// TestUploadFileRejectsNonPositiveMaxSizeConfig 验证大小上限非正时上传被拒绝。
+// 服务实例可被直接构造，配置校验不覆盖该路径，上限合法性的判定必须在服务层独立成立。
+func TestUploadFileRejectsNonPositiveMaxSizeConfig(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.MaxSizeMB = 0
+
+	_, err := svc.UploadFile("pic.png", bytes.NewReader(pngTestContent), int64(len(pngTestContent)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("大小上限为零时上传应返回错误")
+	}
+	// 上限非法属服务端配置错误，handler 据此分档为 500 而非客户端 400。
+	if errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("大小上限非法不应分类为请求参数错误，实际为 %v", err)
+	}
+	if len(repo.media) != 0 {
+		t.Error("被拒绝的文件不应落库")
+	}
+}
+
+// TestUploadFileRecordsActualStoredSize 验证落库大小取自实际读取字节数而非入参声明值。
+// 声明值远大于实际内容时，记录大小必须与存储内容一致，否则读回的大小与实际不符。
+func TestUploadFileRecordsActualStoredSize(t *testing.T) {
+	const maxSizeMB = 1
+	declaredSizeBytes := int64(testBytesPerMegabyte) / 2
+
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.MaxSizeMB = maxSizeMB
+
+	media, err := svc.UploadFile("pic.png", bytes.NewReader(pngTestContent), declaredSizeBytes, 1, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+	if media.FileSize != uint64(len(pngTestContent)) {
+		t.Errorf("FileSize = %d, 期望等于实际字节数 %d", media.FileSize, len(pngTestContent))
+	}
+}
+
+// TestUploadFileRejectsContentExceedingMaxSize 验证声明大小在上限内但实际内容超限时被拒绝。
+// 声明值由调用方提供，不能作为放行依据，超限判定以实际读取字节数为准。
+func TestUploadFileRejectsContentExceedingMaxSize(t *testing.T) {
+	const maxSizeMB = 1
+	declaredSizeBytes := int64(testBytesPerMegabyte)
+	content := bytes.Repeat([]byte("a"), testBytesPerMegabyte+1)
+
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.MaxSizeMB = maxSizeMB
+
+	_, err := svc.UploadFile("note.txt", bytes.NewReader(content), declaredSizeBytes, 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("实际内容超过上限的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("超限上传应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	if len(repo.media) != 0 {
+		t.Error("被拒绝的文件不应落库")
+	}
+}
+
 // TestUploadFileDeduplicates 验证同一上传者的相同内容文件通过哈希去重复用已有记录。
 func TestUploadFileDeduplicates(t *testing.T) {
 	// 计算与上传内容一致的哈希，模拟同一上传者已上传过该内容的场景。
