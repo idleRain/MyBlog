@@ -53,8 +53,9 @@ type MediaListResponse struct {
 }
 
 // allowedMimeExtensions 白名单 MIME 类型到标准存储扩展名的映射。
-// 存储扩展名一律由内容嗅探结果推导，防止伪造扩展名使静态服务以可执行类型响应。
-// svg 与 html 等可承载脚本的类型刻意不在映射内，杜绝存储型 XSS。
+// 该映射是存储扩展名的唯一来源，也是杜绝存储型 XSS 的唯一安全闸门：
+// 只有能安全命名与安全下发的类型才在键集合内，映射之外的类型无法推导出可落盘的扩展名。
+// svg 与 html 等可承载脚本的类型刻意不在映射内。
 var allowedMimeExtensions = map[string]string{
 	"image/jpeg":      ".jpg",
 	"image/png":       ".png",
@@ -127,8 +128,13 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 		return nil, err
 	}
 
-	// 生成存储文件名与相对路径，按月分目录便于归档；存储扩展名由嗅探类型推导。
-	storedName := uuid.NewString() + storedExtensionForMime(mimeType, filepath.Ext(filename))
+	// 生成存储文件名与相对路径，按月分目录便于归档。
+	// 存储扩展名只能由内容嗅探结果推导，客户端提供的文件名不参与存储命名。
+	storedExt, err := storedExtensionForMime(mimeType)
+	if err != nil {
+		return nil, err
+	}
+	storedName := uuid.NewString() + storedExt
 	subDir := timeNowStr()
 	relativePath := filepath.Join(subDir, storedName)
 	uploadDir := filepath.Join(s.cfg.Media.UploadDir, subDir)
@@ -255,13 +261,15 @@ func (s *MediaService) validateUploadType(mimeType string) error {
 	return fmt.Errorf("%w：不支持的文件类型 %s", ErrInvalidRequest, mimeType)
 }
 
-// storedExtensionForMime 从白名单映射推导存储扩展名，映射缺失时回退原始扩展名。
-// 回退仅发生在白名单关闭或运维显式放行新类型的场景，命中白名单时必然存在映射。
-func storedExtensionForMime(mimeType, originalExt string) string {
+// storedExtensionForMime 依据内容嗅探结果推导存储扩展名。
+// 客户端提供的文件名一律不参与存储命名，命中映射时返回映射后缀。
+// 映射缺失时拒绝上传，不采用中性后缀，否则任意字节仍会被接受并落盘。
+// 该拒绝与白名单拒绝语义不同，便于运维区分类型无法安全落地存储与类型未放行两种原因。
+func storedExtensionForMime(mimeType string) (string, error) {
 	if ext, ok := allowedMimeExtensions[mimeType]; ok {
-		return ext
+		return ext, nil
 	}
-	return originalExt
+	return "", fmt.Errorf("%w：内容类型 %s 无法确定安全的存储扩展名", ErrInvalidRequest, mimeType)
 }
 
 // detectContentType 通过嗅探文件内容推断 MIME 类型。

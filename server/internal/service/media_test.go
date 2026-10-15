@@ -197,7 +197,8 @@ func TestUploadFileDeduplicates(t *testing.T) {
 // 仓储实现不受业务层信任，归属判断由业务层独立承担。
 // 该场景下调用方必须获得属于自己的记录，不得回出他人的存储路径、归属与原始文件名。
 func TestUploadFileDoesNotReuseOtherUploaderRecord(t *testing.T) {
-	content := []byte("shared bytes across uploaders")
+	// 内容取真实 PNG，使上传落在映射内类型上，用例聚焦跨上传者复用而非类型判定。
+	content := pngTestContent
 	hashBytes := sha256.Sum256(content)
 	contentHash := hex.EncodeToString(hashBytes[:])
 
@@ -349,6 +350,29 @@ func TestGetMediaOwnership(t *testing.T) {
 // pngTestContent 构造可被内容嗅探识别为 image/png 的最小内容。
 var pngTestContent = append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0}, 8)...)
 
+// htmlTestContent 构造可被内容嗅探识别为 text/html 的脚本片段，用于验证脚本类型内容不会以客户端扩展名落盘。
+var htmlTestContent = []byte("<html><body><script>alert(1)</script></body></html>")
+
+// mp4TestContent 构造偏移 4 处为 ftyp 标记的内容，供内容嗅探识别为 video/mp4。
+var mp4TestContent = append([]byte{0x00, 0x00, 0x00, 0x18}, []byte("ftypmp42\x00\x00\x00\x00mp42isom")...)
+
+// requireEmptyDir 断言目录内没有任何文件，用于验证被拒绝的上传未落盘。
+func requireEmptyDir(t *testing.T, dir string) {
+	t.Helper()
+	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !entry.IsDir() {
+			t.Errorf("被拒绝的上传不应落盘，发现文件 %s", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("遍历上传目录失败: %v", err)
+	}
+}
+
 // TestUploadFileRejectsDisallowedType 验证白名单开启后非白名单类型被拒绝且不落库。
 func TestUploadFileRejectsDisallowedType(t *testing.T) {
 	repo := &fakeMediaRepo{}
@@ -391,18 +415,100 @@ func TestUploadFileDerivesStoredExtension(t *testing.T) {
 	}
 }
 
-// TestUploadFileKeepsExtensionWhenUnrestricted 验证白名单关闭时保持原始扩展名。
-func TestUploadFileKeepsExtensionWhenUnrestricted(t *testing.T) {
+// TestUploadFileRejectsUnmappedTypeWhenUnrestricted 验证白名单关闭时嗅探类型不在存储映射内的上传被拒绝。
+// 白名单关闭只放行类型校验，存储扩展名仍只能由嗅探结果推导，客户端扩展名不参与存储命名。
+func TestUploadFileRejectsUnmappedTypeWhenUnrestricted(t *testing.T) {
 	repo := &fakeMediaRepo{}
 	svc := newTestMediaService(t, repo)
 
 	content := []byte("plain text content")
-	media, err := svc.UploadFile("note.txt", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	_, err := svc.UploadFile("note.txt", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("白名单关闭时嗅探类型不在存储映射内的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("该拒绝属业务校验失败，应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	// 拒绝原因须指出嗅探到的内容类型，运维据此判断是类型无法安全落地存储而非类型未放行。
+	if !strings.Contains(err.Error(), detectContentType(content)) {
+		t.Errorf("拒绝原因应指出嗅探到的内容类型 %s，实际为 %v", detectContentType(content), err)
+	}
+	if got := len(repo.media); got != 0 {
+		t.Errorf("被拒绝的文件不应落库，实际记录数 = %d", got)
+	}
+	requireEmptyDir(t, svc.cfg.Media.UploadDir)
+}
+
+// TestUploadFileRejectsHtmlPayloadWhenUnrestricted 验证白名单关闭时脚本类型内容不会以客户端扩展名落盘。
+// 该内容与 x.html 文件名叠加后经静态服务以 text/html 下发即构成存储型 XSS，
+// 因此拒绝必须发生在写入磁盘之前。
+func TestUploadFileRejectsHtmlPayloadWhenUnrestricted(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+
+	// 前置断言：内容确实被嗅探为 text/html，确保本用例覆盖的是脚本类型内容的落盘路径。
+	if sniffed := detectContentType(htmlTestContent); !strings.HasPrefix(sniffed, "text/html") {
+		t.Fatalf("测试内容嗅探结果为 %s，不构成脚本类型内容", sniffed)
+	}
+
+	_, err := svc.UploadFile("x.html", bytes.NewReader(htmlTestContent), int64(len(htmlTestContent)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("无法确定安全存储扩展名的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("该拒绝属业务校验失败，应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	// 该拒绝与白名单拒绝是两种原因，文案必须可区分。
+	if strings.Contains(err.Error(), "不支持的文件类型") {
+		t.Errorf("拒绝原因应为无法确定存储扩展名，不应与白名单拒绝同文案，实际为 %v", err)
+	}
+	if got := len(repo.media); got != 0 {
+		t.Errorf("被拒绝的文件不应落库，实际记录数 = %d", got)
+	}
+	requireEmptyDir(t, svc.cfg.Media.UploadDir)
+}
+
+// TestUploadFileRejectsWhitelistedTypeWithoutStorageMapping 验证白名单放行不足以放行落盘。
+// 白名单条目与存储扩展名映射相互独立，运维在白名单中新增映射外类型时上传仍被拒绝，
+// 因此白名单放行不会使落盘扩展名回退为客户端提供的扩展名。
+func TestUploadFileRejectsWhitelistedTypeWithoutStorageMapping(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.AllowedTypes = []string{"video/mp4"}
+
+	// 前置断言：内容确实被嗅探为白名单内的 video/mp4，确保本用例验证的是映射缺失而非白名单拒绝。
+	if sniffed := detectContentType(mp4TestContent); sniffed != "video/mp4" {
+		t.Fatalf("测试内容嗅探结果为 %s，不构成白名单放行但映射缺失的场景", sniffed)
+	}
+
+	_, err := svc.UploadFile("x.html", bytes.NewReader(mp4TestContent), int64(len(mp4TestContent)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("白名单放行但无法确定存储扩展名的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("该拒绝属业务校验失败，应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	if got := len(repo.media); got != 0 {
+		t.Errorf("被拒绝的文件不应落库，实际记录数 = %d", got)
+	}
+	requireEmptyDir(t, svc.cfg.Media.UploadDir)
+}
+
+// TestUploadFileDerivesStoredExtensionWhenUnrestricted 验证白名单关闭时存储扩展名同样只由嗅探结果推导。
+// 与白名单开启路径互补：客户端文件名不参与存储命名的约束与白名单开关无关。
+func TestUploadFileDerivesStoredExtensionWhenUnrestricted(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+
+	media, err := svc.UploadFile("polyglot.html", bytes.NewReader(pngTestContent), int64(len(pngTestContent)), 1, "127.0.0.1")
 	if err != nil {
 		t.Fatalf("上传失败: %v", err)
 	}
-	if !strings.HasSuffix(media.StoredName, ".txt") {
-		t.Errorf("白名单关闭时应保留原始扩展名，实际为 %s", media.StoredName)
+	if !strings.HasSuffix(media.StoredName, ".png") {
+		t.Errorf("白名单关闭时存储扩展名仍应由嗅探类型推导为 .png，实际为 %s", media.StoredName)
+	}
+	if got := len(repo.media); got != 1 {
+		t.Errorf("放行的上传应落库一条记录，实际记录数 = %d", got)
 	}
 }
 
