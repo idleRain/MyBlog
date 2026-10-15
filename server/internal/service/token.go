@@ -86,13 +86,22 @@ func NewTokenService(cfg *config.Config) TokenServiceInterface {
 func (s *tokenService) GenerateTokenPair(user *domain.User) (*TokenPair, error) {
 	now := time.Now()
 
-	accessToken, err := s.issueToken(user.ID, AccessToken, now,
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.issueTokenPairLocked(user.ID, now)
+}
+
+// issueTokenPairLocked 在同一签发时刻生成访问令牌与刷新令牌。
+// 调用方必须已持有写锁。
+func (s *tokenService) issueTokenPairLocked(userID uint, issuedAt time.Time) (*TokenPair, error) {
+	accessToken, err := s.issueTokenLocked(userID, AccessToken, issuedAt,
 		time.Duration(s.config.Token.AccessExpire)*time.Minute)
 	if err != nil {
 		return nil, fmt.Errorf("生成访问令牌失败: %w", err)
 	}
 
-	refreshToken, err := s.issueToken(user.ID, RefreshToken, now,
+	refreshToken, err := s.issueTokenLocked(userID, RefreshToken, issuedAt,
 		time.Duration(s.config.Token.RefreshExpire)*time.Hour)
 	if err != nil {
 		return nil, fmt.Errorf("生成刷新令牌失败: %w", err)
@@ -109,13 +118,21 @@ func (s *tokenService) GenerateTokenPair(user *domain.User) (*TokenPair, error) 
 func (s *tokenService) issueToken(userID uint, tokenType TokenType, issuedAt time.Time,
 	duration time.Duration) (string, error) {
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.issueTokenLocked(userID, tokenType, issuedAt, duration)
+}
+
+// issueTokenLocked 生成随机令牌串并登记到令牌表。
+// 调用方必须已持有写锁。
+func (s *tokenService) issueTokenLocked(userID uint, tokenType TokenType, issuedAt time.Time,
+	duration time.Duration) (string, error) {
+
 	tokenString, err := newTokenString()
 	if err != nil {
 		return "", err
 	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	s.tokens[tokenString] = tokenRecord{
 		userID:    userID,
@@ -154,42 +171,70 @@ func (s *tokenService) ValidateRefreshToken(tokenString string) (*TokenIdentity,
 
 // validateToken 查表校验令牌并核对类型，访问令牌与刷新令牌不可互换使用。
 func (s *tokenService) validateToken(tokenString string, tokenType TokenType) (*TokenIdentity, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return s.validateTokenLocked(tokenString, tokenType, time.Now())
+}
+
+// validateTokenLocked 查表校验令牌并核对类型。
+// 调用方必须已持有令牌表锁。
+func (s *tokenService) validateTokenLocked(tokenString string, tokenType TokenType,
+	now time.Time) (*TokenIdentity, error) {
+
 	if tokenString == "" {
 		return nil, fmt.Errorf("%w：令牌为空", ErrUnauthenticated)
 	}
 
-	s.mu.RLock()
 	record, exists := s.tokens[tokenString]
-	s.mu.RUnlock()
-
 	if !exists {
 		return nil, fmt.Errorf("%w：令牌无效或已失效", ErrUnauthenticated)
 	}
 	if record.tokenType != tokenType {
 		return nil, fmt.Errorf("%w：令牌类型不符", ErrUnauthenticated)
 	}
-	if !record.expiresAt.After(time.Now()) {
+	if !record.expiresAt.After(now) {
 		return nil, fmt.Errorf("%w：令牌已过期", ErrUnauthenticated)
 	}
 
 	return &TokenIdentity{UserID: record.userID, ExpiresAt: record.expiresAt}, nil
 }
 
+// consumeRefreshTokenLocked 校验刷新令牌并将其从令牌表摘除，返回该令牌承载的身份。
+// 校验与摘除处于同一临界区，令同一刷新令牌只能被摘除一次。
+// 调用方必须已持有写锁。
+func (s *tokenService) consumeRefreshTokenLocked(refreshTokenString string,
+	now time.Time) (*TokenIdentity, error) {
+
+	identity, err := s.validateTokenLocked(refreshTokenString, RefreshToken, now)
+	if err != nil {
+		return nil, err
+	}
+
+	s.removeTokenLocked(refreshTokenString)
+
+	return identity, nil
+}
+
 // RefreshAccessToken 使用刷新令牌换取新令牌对，旧刷新令牌随即撤销。
+// 校验、摘除旧刷新令牌与签发新令牌对同处一个写锁临界区，
+// 并发提交同一刷新令牌时只有最先进入临界区的一次能够完成兑换。
+// 签发失败时不恢复已摘除的旧刷新令牌，该用户需要重新登录；
+// 保留旧令牌会使失败重试期间的并发兑换重新可行，故选择不可回退的失效。
 func (s *tokenService) RefreshAccessToken(refreshTokenString string) (*TokenPair, error) {
-	identity, err := s.ValidateRefreshToken(refreshTokenString)
+	now := time.Now()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	identity, err := s.consumeRefreshTokenLocked(refreshTokenString, now)
 	if err != nil {
 		return nil, fmt.Errorf("刷新令牌验证失败: %w", err)
 	}
 
-	tokenPair, err := s.GenerateTokenPair(&domain.User{ID: identity.UserID})
+	tokenPair, err := s.issueTokenPairLocked(identity.UserID, now)
 	if err != nil {
 		return nil, fmt.Errorf("生成新令牌对失败: %w", err)
-	}
-
-	// 刷新即旋转：旧刷新令牌立即失效，防止同一刷新令牌被重复兑换。
-	if err := s.RevokeToken(refreshTokenString); err != nil {
-		return nil, fmt.Errorf("撤销旧刷新令牌失败: %w", err)
 	}
 
 	return tokenPair, nil
