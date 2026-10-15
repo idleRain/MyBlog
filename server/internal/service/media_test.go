@@ -21,7 +21,7 @@ import (
 type fakeMediaRepo struct {
 	repository.MediaRepositoryInterface
 	media     []*model.MediaFile
-	getByHash func(hash string) (*model.MediaFile, error)
+	getByHash func(hash string, uploaderID uint) (*model.MediaFile, error)
 	getByID   func(id uint) (*model.MediaFile, error)
 }
 
@@ -31,12 +31,13 @@ func (f *fakeMediaRepo) Create(media *model.MediaFile) error {
 	return nil
 }
 
-func (f *fakeMediaRepo) GetByFileHash(hash string) (*model.MediaFile, error) {
+// GetByFileHashAndUploader 默认按上传者过滤，与生产仓储的限定语义一致。
+func (f *fakeMediaRepo) GetByFileHashAndUploader(hash string, uploaderID uint) (*model.MediaFile, error) {
 	if f.getByHash != nil {
-		return f.getByHash(hash)
+		return f.getByHash(hash, uploaderID)
 	}
 	for _, media := range f.media {
-		if media.FileHash == hash {
+		if media.FileHash == hash && media.UploaderID == uploaderID {
 			return media, nil
 		}
 	}
@@ -93,18 +94,19 @@ func TestUploadFileOversize(t *testing.T) {
 	}
 }
 
-// TestUploadFileDeduplicates 验证相同内容文件通过哈希去重复用已有记录。
+// TestUploadFileDeduplicates 验证同一上传者的相同内容文件通过哈希去重复用已有记录。
 func TestUploadFileDeduplicates(t *testing.T) {
-	// 计算与上传内容一致的哈希，模拟文件已存在的场景。
+	// 计算与上传内容一致的哈希，模拟同一上传者已上传过该内容的场景。
 	content := []byte("same content")
 	hashBytes := sha256.Sum256(content)
 	contentHash := hex.EncodeToString(hashBytes[:])
 
-	existing := &model.MediaFile{ID: 1, FileHash: contentHash, FileURL: "/uploads/2026/01/a.png", Filename: "a.png"}
+	const uploaderID uint = 1
+	existing := &model.MediaFile{ID: 1, FileHash: contentHash, FileURL: "/uploads/2026/01/a.png", Filename: "a.png", UploaderID: uploaderID}
 	repo := &fakeMediaRepo{
 		media: []*model.MediaFile{existing},
-		getByHash: func(hash string) (*model.MediaFile, error) {
-			if hash == contentHash {
+		getByHash: func(hash string, ownerID uint) (*model.MediaFile, error) {
+			if hash == contentHash && ownerID == uploaderID {
 				return existing, nil
 			}
 			return nil, domain.ErrMediaNotFound
@@ -113,13 +115,106 @@ func TestUploadFileDeduplicates(t *testing.T) {
 	svc := newTestMediaService(t, repo)
 
 	// 上传相同内容，应命中已有记录。
-	media, err := svc.UploadFile("b.png", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	media, err := svc.UploadFile("b.png", bytes.NewReader(content), int64(len(content)), uploaderID, "127.0.0.1")
 	if err != nil {
 		t.Fatalf("上传失败: %v", err)
 	}
 
 	if media.ID != 1 {
 		t.Errorf("去重后应返回已有记录，实际 ID = %d", media.ID)
+	}
+	if got := len(repo.media); got != 1 {
+		t.Errorf("去重命中不应新建记录，实际记录数 = %d", got)
+	}
+}
+
+// TestUploadFileDoesNotReuseOtherUploaderRecord 验证仓储忽略上传者过滤时服务层仍拒绝跨用户复用。
+// 仓储实现不受业务层信任，归属判断由业务层独立承担。
+// 该场景下调用方必须获得属于自己的记录，不得回出他人的存储路径、归属与原始文件名。
+func TestUploadFileDoesNotReuseOtherUploaderRecord(t *testing.T) {
+	content := []byte("shared bytes across uploaders")
+	hashBytes := sha256.Sum256(content)
+	contentHash := hex.EncodeToString(hashBytes[:])
+
+	const otherUploaderID uint = 1
+	const currentUploaderID uint = 2
+	otherRecord := &model.MediaFile{
+		ID:         1,
+		Filename:   "other-owner.png",
+		FilePath:   `C:\srv\uploads\2026\01\other-owner.png`,
+		FileHash:   contentHash,
+		UploaderID: otherUploaderID,
+	}
+	// 钩子无视上传者参数并强行返回他人记录，模拟忽略过滤条件的仓储实现。
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{otherRecord},
+		getByHash: func(hash string, _ uint) (*model.MediaFile, error) {
+			if hash == contentHash {
+				return otherRecord, nil
+			}
+			return nil, domain.ErrMediaNotFound
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	media, err := svc.UploadFile("mine.png", bytes.NewReader(content), int64(len(content)), currentUploaderID, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+
+	if media.UploaderID != currentUploaderID {
+		t.Errorf("上传结果应归属于当前上传者，实际 uploaderId = %d", media.UploaderID)
+	}
+	if media.FilePath == otherRecord.FilePath {
+		t.Errorf("上传结果不应回出他人存储路径，实际 filePath = %s", media.FilePath)
+	}
+	if media.Filename != "mine.png" {
+		t.Errorf("上传结果应保留本次提交的原始文件名，实际 filename = %s", media.Filename)
+	}
+	if got := len(repo.media); got != 2 {
+		t.Errorf("跨上传者命中应新增属于本人的记录，实际记录数 = %d", got)
+	}
+}
+
+// TestUploadFileDeduplicatesOwnRecordAmongOthers 验证同哈希存在多位上传者记录时，去重落在调用方自己的记录上。
+// 限定上传者之前，查询只会返回主键最小的一行，非首位上传者每次重复上传都会新建副本。
+func TestUploadFileDeduplicatesOwnRecordAmongOthers(t *testing.T) {
+	content := []byte("content held by two uploaders")
+	hashBytes := sha256.Sum256(content)
+	contentHash := hex.EncodeToString(hashBytes[:])
+
+	const otherUploaderID uint = 1
+	const currentUploaderID uint = 2
+	otherRecord := &model.MediaFile{ID: 1, Filename: "other.png", FileHash: contentHash, UploaderID: otherUploaderID}
+	ownRecord := &model.MediaFile{ID: 2, Filename: "mine.png", FileURL: "/uploads/2026/01/mine.png", FileHash: contentHash, UploaderID: currentUploaderID}
+	// 钩子按上传者分流，模拟按上传者限定查询的生产仓储。
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{otherRecord, ownRecord},
+		getByHash: func(hash string, ownerID uint) (*model.MediaFile, error) {
+			if hash != contentHash {
+				return nil, domain.ErrMediaNotFound
+			}
+			if ownerID == otherUploaderID {
+				return otherRecord, nil
+			}
+			if ownerID == currentUploaderID {
+				return ownRecord, nil
+			}
+			return nil, domain.ErrMediaNotFound
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	media, err := svc.UploadFile("mine.png", bytes.NewReader(content), int64(len(content)), currentUploaderID, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+
+	if media.ID != ownRecord.ID {
+		t.Errorf("去重应命中调用方自己的记录，实际 ID = %d", media.ID)
+	}
+	if got := len(repo.media); got != 2 {
+		t.Errorf("去重命中不应新建记录，实际记录数 = %d", got)
 	}
 }
 

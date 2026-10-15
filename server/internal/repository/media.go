@@ -16,7 +16,7 @@ type MediaRepositoryInterface interface {
 	// 基础CRUD操作
 	Create(media *model.MediaFile) error
 	GetByID(id uint) (*model.MediaFile, error)
-	GetByFileHash(hash string) (*model.MediaFile, error)
+	GetByFileHashAndUploader(hash string, uploaderID uint) (*model.MediaFile, error)
 	Update(media *model.MediaFile) error
 	Delete(id uint) error
 
@@ -60,10 +60,12 @@ func (r *MediaRepository) GetByID(id uint) (*model.MediaFile, error) {
 	return &media, nil
 }
 
-// GetByFileHash 根据文件哈希获取媒体文件，用于去重与秒传。
-func (r *MediaRepository) GetByFileHash(hash string) (*model.MediaFile, error) {
+// GetByFileHashAndUploader 按文件哈希与上传者查询媒体文件，用于同一上传者范围内的秒传去重。
+// 同一内容可能被多个上传者各持一份记录，限定上传者使命中落在调用方自己的记录上，
+// 避免非首位上传者每次重复上传都新建副本。
+func (r *MediaRepository) GetByFileHashAndUploader(hash string, uploaderID uint) (*model.MediaFile, error) {
 	var media model.MediaFile
-	if err := r.db.Where("file_hash = ?", hash).First(&media).Error; err != nil {
+	if err := r.db.Where("file_hash = ?", hash).Where("uploader_id = ?", uploaderID).First(&media).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrMediaNotFound
 		}

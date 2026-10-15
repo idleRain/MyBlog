@@ -81,7 +81,7 @@ curl -X POST http://localhost:3000/api/media/upload \
 | data.uploader | object | 否 | 上传者窄化视图，仅普通上传路径输出 |
 
 > `data.uploader` 为 `domain.UploaderPublic` 窄化视图，仅含 `id`、`username`、`nickname`、`avatar`；
-> 秒传去重路径复用 `GetByFileHash` 查询结果，未预加载上传者关联，该键整体省略。
+> 秒传去重路径复用 `GetByFileHashAndUploader` 查询结果，未预加载上传者关联，该键整体省略。
 > 上传者 IP `uploadIP` 在实体上为 `json:"-"`，任何响应都不输出。
 
 #### 响应示例
@@ -115,7 +115,7 @@ curl -X POST http://localhost:3000/api/media/upload \
 | 401 | 未登录或令牌无效 |
 | 500 | 打开或读取上传文件失败、创建目录或写入文件失败、保存媒体记录失败（错误原文仅落日志） |
 
-> 相同内容的文件会通过 SHA256 哈希命中已有记录，返回已存在的媒体文件（秒传去重）；
+> 同一上传者重复上传相同内容时会通过 SHA256 哈希命中已有记录，返回已存在的媒体文件（秒传去重）；
 > 哈希比对先于类型白名单校验，白名单调整后旧文件仍可按哈希命中。
 
 ### 2. 获取文件详情

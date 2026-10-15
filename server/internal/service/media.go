@@ -77,7 +77,7 @@ func NewMediaService(mediaRepo repository.MediaRepositoryInterface, cfg *config.
 	}
 }
 
-// UploadFile 上传文件到本地存储并落库，文件哈希相同则复用已有记录。
+// UploadFile 上传文件到本地存储并落库，同一上传者的文件哈希一致时复用已有记录。
 func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64, uploaderID uint, ipAddress string) (*model.MediaFile, error) {
 	// 校验文件大小是否超限。
 	maxSize := int64(s.cfg.Media.MaxSizeMB) * 1024 * 1024
@@ -93,8 +93,9 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 	fileHash := sha256.Sum256(content)
 	hashHex := hex.EncodeToString(fileHash[:])
 
-	// 文件哈希一致时直接复用已有记录，实现秒传去重。
-	if existing, err := s.mediaRepo.GetByFileHash(hashHex); err == nil {
+	// 查询按上传者限定，使命中确定地落在调用方自己的记录上。
+	// 显式归属判断是拒绝跨用户复用的安全边界，仓储实现忽略过滤条件时依然生效。
+	if existing, err := s.mediaRepo.GetByFileHashAndUploader(hashHex, uploaderID); err == nil && existing.UploaderID == uploaderID {
 		return existing, nil
 	}
 
