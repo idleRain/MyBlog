@@ -1,0 +1,43 @@
+{
+  "heading": "Privacy Policy",
+  "description": "The privacy policy of {{site}}: what data is collected, why, how long it is kept and how it is redacted.",
+  "eyebrow": "Compliance · Privacy",
+  "lead": "The site processes visitor data on a minimal-necessary basis, collecting only what keeps the features running, and states all of it on this page.",
+  "collectionTitle": "What this site collects",
+  "collection": {
+    "browsing": {
+      "title": "Article view data",
+      "item1": "Viewing an article records the source IP address, used to count views de-duplicated by visitor and calendar day; the site does not currently use browser fingerprints or other extra visitor identifiers.",
+      "item2": "View details serve on-site statistics only; the aggregated result is the view count shown on the article page."
+    },
+    "search": {
+      "title": "On-site search records",
+      "item1": "Searching from the index page records the keyword, the number of results and the query duration, used to analyse search quality and refine popular terms.",
+      "item2": "Search records are not linked with your other activity into a profile."
+    },
+    "comment": {
+      "title": "Comment information",
+      "item1": "Guests leaving a comment provide a nickname and an email address; the nickname is shown publicly with the comment, the email address is not.",
+      "item2": "The IP and browser-identifier fields reserved in the comment table are not currently used; should they be enabled, this page will be updated first."
+    },
+    "account": {
+      "title": "Account data",
+      "item1": "Registration is closed and accounts are created by the site administrator. Signing in collects a username, an email address and a password, and the password is stored as a one-way bcrypt hash that nobody, including the administrator, can read.",
+      "item2": "The nickname, avatar, bio and website address entered on the profile page are used for on-site display only."
+    },
+    "session": {
+      "title": "Session cookies",
+      "item1": "After signing in, two cookies are written to the browser, mb_access_token and mb_refresh_token, used solely to keep the session alive; the tokens are opaque random strings issued by the server, and the cookies themselves carry no identity information.",
+      "item2": "Both cookies set the HttpOnly attribute, so page scripts cannot read them, and they are sent only with requests under the /api path; the same-site policy is SameSite=Lax, so cross-site requests do not carry them.",
+      "item3": "The access token lasts 15 minutes by default and the refresh token 7 days; signing out or changing the password revokes the corresponding session on the server and tells the browser to remove the local cookies."
+    }
+  },
+  "promiseTitle": "Our commitments",
+  "promise1": "Data is never sold or shared with third parties.",
+  "promise2": "The site carries no advertising scripts and no cross-site trackers.",
+  "promise3": "Public API output is redacted; sensitive fields such as comment email addresses and source IPs are never returned by public endpoints.",
+  "promise4": "View and search details are kept long term for statistical analysis only; if an automatic cleanup cycle is introduced, this page will be updated to say so.",
+  "promise5": "Any new data-collection scenario is announced on this page before it is introduced.",
+  "updateBefore": "This policy describes how the site actually processes data today; any change will be made directly on this page, keeping the latest version. Questions about the policy or about data handling can be raised through the channels on the",
+  "updateAfter": "page."
+}

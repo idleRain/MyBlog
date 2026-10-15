@@ -1,7 +1,7 @@
 <script lang="ts">
 import { gsap, MOTION } from '$lib/motion/gsap-setup'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import { ArrowUpRight } from '@lucide/svelte'
+import { m } from '$i18n'
 
 // 外部链接与站内锚点集中声明，避免散落的魔法字符串。
 const GITHUB_URL = 'https://github.com/idleRain'
@@ -87,7 +87,7 @@ $effect(() => {
         <p
           class="hero-eyebrow-label mb-6 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
         >
-          手记 · 代码与生活
+          {m['home:hero.eyebrow']()}
           <span class="hero-eyebrow-rule h-px w-10 bg-signal/60" aria-hidden="true"></span>
         </p>
 
@@ -95,23 +95,24 @@ $effect(() => {
           class="font-display text-5xl leading-[1.08] font-black tracking-tight text-balance sm:text-6xl lg:text-7xl"
         >
           <span class="block overflow-hidden">
-            <span class="hero-line-inner block">把想法，</span>
+            <span class="hero-line-inner block">{m['home:hero.headlineLead']()}</span>
           </span>
           <span class="block overflow-hidden">
             <span class="hero-line-inner block">
-              编译成<span class="text-signal">界面</span>
+              {m['home:hero.headlineTail']()}<span class="text-signal"
+                >{m['home:hero.headlineAccent']()}</span
+              >
               <span
                 class="ml-4 align-middle font-mono text-sm font-normal tracking-normal text-muted-foreground sm:text-base"
               >
-                // 工程 × 设计
+                {m['home:hero.headlineNote']()}
               </span>
             </span>
           </span>
         </h1>
 
         <p class="hero-intro mt-8 max-w-xl text-lg leading-relaxed text-muted-foreground">
-          记录工程实践的思考、城市漫游的见闻，以及那些深夜读完的书。
-          相信缓慢而扎实的积累，偏爱干净的结构与诚实的文字。
+          {m['home:hero.intro']()}
         </p>
 
         <div class="mt-10 flex flex-wrap items-center gap-4">
@@ -119,7 +120,7 @@ $effect(() => {
             href={ARTICLES_ANCHOR}
             class="hero-cta inline-flex items-center gap-2 bg-primary px-7 py-3.5 text-sm font-bold text-primary-foreground transition-[background-color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal hover:text-signal-foreground active:scale-[0.97]"
           >
-            开始阅读
+            {m['home:hero.ctaRead']()}
             <span aria-hidden="true">↓</span>
           </a>
           <a
@@ -128,19 +129,21 @@ $effect(() => {
             rel="noopener noreferrer"
             class="hero-cta inline-flex items-center gap-2 border border-border px-7 py-3.5 text-sm font-bold text-foreground transition-[border-color,color,transform] duration-200 ease-(--ease-out-strong) hover:border-signal hover:text-signal active:scale-[0.97]"
           >
-            GitHub
+            {m['ui:brand.github']()}
             <ArrowUpRight class="h-4 w-4" aria-hidden="true" />
           </a>
         </div>
       </div>
 
       <!-- 编辑摘录：朱红竖线引出的本月手记 -->
-      <div class="md:col-span-4" aria-label="本月摘录">
+      <div class="md:col-span-4" aria-label={m['home:hero.excerptLabel']()}>
         <div class="hero-quote-rule border-l-2 border-signal pl-6">
           <blockquote class="hero-quote-body font-display text-xl leading-relaxed font-medium">
-            “把想清楚的事写下来，把写下来的事做出来。”
+            {m['home:hero.quote']()}
           </blockquote>
-          <p class="hero-quote-body mt-4 text-sm text-muted-foreground">—— 创刊编辑手记</p>
+          <p class="hero-quote-body mt-4 text-sm text-muted-foreground">
+            {m['home:hero.quoteAuthor']()}
+          </p>
         </div>
       </div>
     </div>
@@ -151,11 +154,13 @@ $effect(() => {
         class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-5 font-mono text-xs text-muted-foreground"
       >
         <div class="flex items-center gap-6">
-          <span>01 / 工程</span>
-          <span>02 / 设计</span>
-          <span>03 / 生活</span>
+          <span>{m['home:hero.specEngineering']()}</span>
+          <span>{m['home:hero.specDesign']()}</span>
+          <span>{m['home:hero.specLife']()}</span>
         </div>
-        <span class="tracking-[0.18em] uppercase">{`${SITE_NAME_ZH} — EST. 2026`}</span>
+        <span class="tracking-[0.18em] uppercase"
+          >{m['home:hero.imprint']({ site: m['ui:site.name']() })}</span
+        >
       </div>
     </div>
   </div>
@@ -173,7 +178,7 @@ $effect(() => {
     <span
       class="font-mono text-[10px] tracking-[0.32em] text-muted-foreground uppercase [writing-mode:vertical-rl]"
     >
-      Scroll
+      {m['home:hero.scrollHint']()}
     </span>
     <span class="scroll-track" aria-hidden="true"></span>
   </div>

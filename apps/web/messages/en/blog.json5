@@ -1,0 +1,50 @@
+{
+  "list": {
+    "title": "{{site}} - Post index",
+    "description": "The index of every post, ordered by publication time, with keyword search and paging.",
+    "eyebrow": "Journal · All issues",
+    "heading": "Post index",
+    "resultCount_one": "“{{search}}” · {{count}} result",
+    "resultCount_other": "“{{search}}” · {{count}} results",
+    "searchLabel": "Search posts",
+    "searchPlaceholder": "Search titles and body text…",
+    "searchSubmit": "Search",
+    "searchEmpty": "No posts found for “{{search}}”.",
+    "searchEmptyBefore": "Try another keyword, or",
+    "searchEmptyClear": "clear the search",
+    "searchEmptyAfter": "to browse every issue."
+  },
+  "detail": {
+    "eyebrow": "Journal · Post",
+    "notFound": "This post does not exist or is not published yet",
+    "commentsClosed": "Comments are closed for this post.",
+    "backToIndex": "← Back to the index"
+  },
+  "archives": {
+    "title": "{{site}} - Archives",
+    "description": "The chronological archive of every post, arranged by year and month.",
+    "eyebrow": "Chronicle · Archives",
+    "heading": "Archives",
+    "orderNote": "Arranged by year",
+    "emptyTitle": "The timeline awaits its first posts.",
+    "yearCount_one": "{{count}} article",
+    "yearCount_other": "{{count}} articles",
+    "monthLine": "Month {{month}} · {{date}}"
+  },
+  "actions": {
+    "signInRequired": "Sign in to join the conversation",
+    "liked": "Liked",
+    "like": "Like",
+    "bookmarked": "Saved",
+    "bookmark": "Save"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "← Previous",
+    "next": "Next →",
+    "position": "Page {{current}} / {{total}}"
+  },
+  "error": {
+    "archivesFailed": "Failed to load the archive data, please try again later"
+  }
+}

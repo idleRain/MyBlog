@@ -5,6 +5,7 @@ import { authStore } from '$lib/stores/auth'
 import { goto } from '$app/navigation'
 import { toast } from 'svelte-sonner'
 import { ArticleAPI } from '$lib/api'
+import { m } from '$i18n'
 
 interface Props {
   articleId: number
@@ -46,7 +47,7 @@ async function refreshStates() {
 
 // 未登录时引导前往登录页，登录方案落地前先走占位页。
 function requireAuth() {
-  toast.info('登录后即可参与互动')
+  toast.info(m['blog:actions.signInRequired']())
   void goto('/login')
 }
 
@@ -62,7 +63,7 @@ async function toggleLike() {
   try {
     const response = isLiked ? await ArticleAPI.unlike(articleId) : await ArticleAPI.like(articleId)
     if (response.code !== RESPONSE_CODE_SUCCESS) {
-      toast.error(response.message || '操作失败，请稍后重试')
+      toast.error(response.message || m['ui:action.failed']())
       return
     }
     isLiked = !isLiked
@@ -85,7 +86,7 @@ async function toggleBookmark() {
       ? await ArticleAPI.unbookmark(articleId)
       : await ArticleAPI.bookmark(articleId)
     if (response.code !== RESPONSE_CODE_SUCCESS) {
-      toast.error(response.message || '操作失败，请稍后重试')
+      toast.error(response.message || m['ui:action.failed']())
       return
     }
     isBookmarked = !isBookmarked
@@ -106,7 +107,7 @@ async function toggleBookmark() {
       : 'border-border text-foreground hover:border-signal hover:text-signal'}"
   >
     <Heart class="h-4 w-4" aria-hidden="true" />
-    {isLiked ? '已点赞' : '点赞'}
+    {isLiked ? m['blog:actions.liked']() : m['blog:actions.like']()}
   </button>
   <button
     type="button"
@@ -117,6 +118,6 @@ async function toggleBookmark() {
       : 'border-border text-foreground hover:border-signal hover:text-signal'}"
   >
     <Bookmark class="h-4 w-4" aria-hidden="true" />
-    {isBookmarked ? '已收藏' : '收藏'}
+    {isBookmarked ? m['blog:actions.bookmarked']() : m['blog:actions.bookmark']()}
   </button>
 </div>

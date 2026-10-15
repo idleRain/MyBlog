@@ -1,8 +1,8 @@
 <script lang="ts">
 import { ArticleIndexList, PaginationNav } from '$lib/components/article'
 import { FollowButton } from '$lib/components/user'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
+import { m } from '$i18n'
 
 let { data }: PageProps = $props()
 
@@ -11,13 +11,17 @@ const profile = $derived(data.profile)
 // 展示名优先取昵称，缺失时回退用户名。
 const displayName = $derived(profile.nickname || profile.username)
 
+// 标题与描述随语言切换，站名取自词表。
+const pageTitle = $derived(m['author:title']({ name: displayName, site: m['ui:site.name']() }))
+const pageDescription = $derived(profile.bio || m['author:description']({ name: displayName }))
+
 // 总页数向上取整，无文章时保持 1 以呈现完整导航骨架。
 const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pageSize)))
 </script>
 
 <svelte:head>
-  <title>{displayName} - 作者主页 - {SITE_NAME_ZH}</title>
-  <meta name="description" content={profile.bio || `${displayName}发布的全部文章`} />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
 </svelte:head>
 
 <section class="texture-grid min-h-screen pt-16">
@@ -35,7 +39,7 @@ const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pa
           <p
             class="mb-3 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
           >
-            作者 · Author
+            {m['author:eyebrow']()}
             <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
           </p>
           <h1 class="font-display text-3xl font-black">{displayName}</h1>
@@ -52,9 +56,9 @@ const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pa
       <div
         class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 font-mono text-xs text-muted-foreground"
       >
-        <span>文章 {profile.articleCount} 篇</span>
-        <span>粉丝 {profile.followerCount}</span>
-        <span>关注 {profile.followingCount}</span>
+        <span>{m['author:articleCount']({ count: profile.articleCount })}</span>
+        <span>{m['author:followerCount']({ count: profile.followerCount })}</span>
+        <span>{m['author:followingCount']({ count: profile.followingCount })}</span>
         {#if profile.website}
           <a
             href={profile.website}
@@ -72,8 +76,8 @@ const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pa
     <div class="mt-12">
       {#if data.list.articles.length === 0}
         <div class="border-l-2 border-signal py-4 pl-6">
-          <p class="font-display text-xl font-medium">该作者暂无已发布的文章。</p>
-          <p class="mt-2 text-sm text-muted-foreground">可以先去目录页看看其他内容。</p>
+          <p class="font-display text-xl font-medium">{m['author:emptyTitle']()}</p>
+          <p class="mt-2 text-sm text-muted-foreground">{m['author:emptyNote']()}</p>
         </div>
       {:else}
         <ArticleIndexList

@@ -1,0 +1,13 @@
+{
+  "heading": "联系方式",
+  "description": "与{{site}}站长取得联系的真实渠道：GitHub、邮箱与友链互换。",
+  "eyebrow": "往来 · Contact",
+  "lead": "欢迎写信交流，无论是勘误指正、技术讨论还是单纯打个招呼。",
+  "channels": {
+    "emailNote": "合作与长文交流请来信，工作日通常两至三天内回复。",
+    "githubNote": "Issue 与讨论最适合技术话题，处理进度可见。"
+  },
+  "inSiteTitle": "站内通道",
+  "inSiteComments": "评论留言：任意文章页下方均可留言，游客可评，站长会逐条查看。",
+  "inSiteLinks": "友链互换：在页头「友情链接」弹窗底部提交申请，通过审核后即会展示。"
+}

@@ -1,0 +1,13 @@
+{
+  "heading": "Contact",
+  "description": "The real channels for reaching the {{site}} author: GitHub, email and link exchange.",
+  "eyebrow": "Correspondence · Contact",
+  "lead": "Letters are welcome, whether it is a correction, a technical discussion or simply saying hello.",
+  "channels": {
+    "emailNote": "Write in for collaboration or long-form exchanges; replies usually arrive within two to three working days.",
+    "githubNote": "Issues and discussions suit technical topics best, and progress stays visible."
+  },
+  "inSiteTitle": "On-site channels",
+  "inSiteComments": "Comments: leave a note under any post; guests may comment and the author reads every one.",
+  "inSiteLinks": "Link exchange: submit an application at the bottom of the friendly-links dialog in the header; approved links appear there."
+}

@@ -63,20 +63,20 @@ MyBlog 采用 Monorepo 架构，将前后端代码统一管理在一个仓库中
 
 后端按领域划分为以下业务模块，每个模块遵循 handler → service → repository 三层结构，接口统一定义在各层实现所在包：
 
-| 模块 | handler | service | repository | 说明 |
-|------|---------|---------|------------|------|
-| 用户管理 | `handler/user.go` | `service/user.go` | `repository/user.go` | 登录、CRUD、不透明双令牌 |
-| 文章管理 | `handler/article.go` | `service/article.go` | `repository/article.go` | 文章 CRUD、发布归档、互动 |
-| 分类管理 | `handler/category.go` | `service/category.go` | `repository/category.go` | 分类树形管理 |
-| 标签管理 | `handler/tag.go` | `service/tag.go` | `repository/tag.go` | 标签与热门标签 |
-| 评论管理 | `handler/comment.go` | `service/comment.go` | `repository/comment.go` | 评论与审核状态机 |
-| 媒体文件 | `handler/media.go` | `service/media.go` | `repository/media.go` | 上传与管理 |
-| 系统设置 | `handler/setting.go` | `service/setting.go` | `repository/setting.go` | 配置与脱敏 |
-| 友情链接 | `handler/friendly_link.go` | `service/friendly_link.go` | `repository/friendly_link.go` | 友链申请与审核 |
-| 站点统计 | `handler/stats.go` | `service/stats.go` | `repository/stats.go` | 运营数据分析 |
-| 站内通知 | `handler/notification.go` | `service/notification.go` | `repository/notification.go` | 消息中心 |
-| 用户关注 | `handler/user_follow.go` | `service/user_follow.go` | `repository/user_follow.go` | 关注关系 |
-| 数据字典 | `handler/dict.go` | `service/dict.go` | `repository/dict.go` | 字典类型与字典项 |
+| 模块     | handler                    | service                    | repository                    | 说明                      |
+| -------- | -------------------------- | -------------------------- | ----------------------------- | ------------------------- |
+| 用户管理 | `handler/user.go`          | `service/user.go`          | `repository/user.go`          | 登录、CRUD、不透明双令牌  |
+| 文章管理 | `handler/article.go`       | `service/article.go`       | `repository/article.go`       | 文章 CRUD、发布归档、互动 |
+| 分类管理 | `handler/category.go`      | `service/category.go`      | `repository/category.go`      | 分类树形管理              |
+| 标签管理 | `handler/tag.go`           | `service/tag.go`           | `repository/tag.go`           | 标签与热门标签            |
+| 评论管理 | `handler/comment.go`       | `service/comment.go`       | `repository/comment.go`       | 评论与审核状态机          |
+| 媒体文件 | `handler/media.go`         | `service/media.go`         | `repository/media.go`         | 上传与管理                |
+| 系统设置 | `handler/setting.go`       | `service/setting.go`       | `repository/setting.go`       | 配置与脱敏                |
+| 友情链接 | `handler/friendly_link.go` | `service/friendly_link.go` | `repository/friendly_link.go` | 友链申请与审核            |
+| 站点统计 | `handler/stats.go`         | `service/stats.go`         | `repository/stats.go`         | 运营数据分析              |
+| 站内通知 | `handler/notification.go`  | `service/notification.go`  | `repository/notification.go`  | 消息中心                  |
+| 用户关注 | `handler/user_follow.go`   | `service/user_follow.go`   | `repository/user_follow.go`   | 关注关系                  |
+| 数据字典 | `handler/dict.go`          | `service/dict.go`          | `repository/dict.go`          | 字典类型与字典项          |
 
 #### 依赖注入
 
@@ -88,20 +88,20 @@ MyBlog 采用 Monorepo 架构，将前后端代码统一管理在一个仓库中
 
 #### 应用拆分
 
-| 应用 | 定位 | 特性 | 开发端口 |
-| --- | --- | --- | --- |
-| `apps/web`（@myblog/web） | 前台 toC | 博客业务页面（首页/目录/详情/分类/归档/作者页/登录/收藏）+ demo 页 + i18n（paraglide） | 8899 |
-| `apps/admin`（@myblog/admin） | 后台 toB | 管理控制台 + 登录页，基准路径 `/admin`，无 i18n | 9988 |
+| 应用                          | 定位     | 特性                                                                                   | 开发端口 |
+| ----------------------------- | -------- | -------------------------------------------------------------------------------------- | -------- |
+| `apps/web`（@myblog/web）     | 前台 toC | 博客业务页面（首页/目录/详情/分类/归档/作者页/登录/收藏）+ demo 页 + i18n（paraglide） | 8899     |
+| `apps/admin`（@myblog/admin） | 后台 toB | 管理控制台 + 登录页，基准路径 `/admin`，无 i18n                                        | 9988     |
 
 #### 公共包
 
-| 包 | 职责 | 关键依赖 |
-| --- | --- | --- |
-| `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量（站点常量与后端响应码 `RESPONSE_CODE_*`），不依赖 SvelteKit/Svelte | clsx、tailwind-merge、mitt |
-| `@myblog/http` | `createHttpClient` 工厂（ky 封装，认证回调注入） | ky、@myblog/shared |
-| `@myblog/api` | 后端接口模块与响应类型（article/category/comment/dict/follow/friendlyLink/media/notification/setting/stats/tag/user 共 12 个模块工厂） | @myblog/http、@myblog/shared |
-| `@myblog/auth` | 认证会话组装：`createAuthStore` 工厂（注入式，逻辑两应用共享） | @myblog/api、@myblog/shared（svelte 为 peerDependency） |
-| `@myblog/ui` | shadcn-svelte 基础组件，保持 stock，主题经各应用设计令牌注入 | bits-ui、vaul-svelte 等 |
+| 包               | 职责                                                                                                                                   | 关键依赖                                                |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `@myblog/shared` | 纯工具（`cn`、深拷贝、防抖节流等）+ 通用类型 + 常量（站点常量与后端响应码 `RESPONSE_CODE_*`），不依赖 SvelteKit/Svelte                 | clsx、tailwind-merge、mitt                              |
+| `@myblog/http`   | `createHttpClient` 工厂（ky 封装，认证回调注入）                                                                                       | ky、@myblog/shared                                      |
+| `@myblog/api`    | 后端接口模块与响应类型（article/category/comment/dict/follow/friendlyLink/media/notification/setting/stats/tag/user 共 12 个模块工厂） | @myblog/http、@myblog/shared                            |
+| `@myblog/auth`   | 认证会话组装：`createAuthStore` 工厂（注入式，逻辑两应用共享）                                                                         | @myblog/api、@myblog/shared（svelte 为 peerDependency） |
+| `@myblog/ui`     | shadcn-svelte 基础组件，保持 stock，主题经各应用设计令牌注入                                                                           | bits-ui、vaul-svelte 等                                 |
 
 依赖方向单向无环：应用 → `ui` → `shared`；应用 → `auth`/`http` → `shared`；应用 → `api` → `http` + `shared`。
 
@@ -150,11 +150,11 @@ apps/admin/src/               # 后台
 
 ### 环境要求
 
-| 工具    | 版本要求 | 说明                            |
-| ------- | -------- | ------------------------------- |
-| Go      | 1.26.9   | 后端开发语言                    |
-| Node.js | 22+      | JavaScript 运行时与脚本执行器   |
-| MySQL   | 8.0+     | 数据库服务                      |
+| 工具    | 版本要求 | 说明                          |
+| ------- | -------- | ----------------------------- |
+| Go      | 1.26.9   | 后端开发语言                  |
+| Node.js | 22+      | JavaScript 运行时与脚本执行器 |
+| MySQL   | 8.0+     | 数据库服务                    |
 
 Go 版本的单一事实来源为 `server/go.mod` 的 `go` 指令（当前 `1.26.9`），CI 经 `actions/setup-go` 的 `go-version-file` 读取该值；本地低于该版本时由 `GOTOOLCHAIN` 自动下载对应工具链。
 
@@ -329,11 +329,11 @@ git diff --cached --name-only   # 核对清单后再执行 git commit
 
 两应用各有两个由 `unplugin-auto-import` 写入的文件，仓库根另有一个无消费方的历史残留，**均入库跟踪但不由人工维护**：
 
-| 文件 | 写入者 | 说明 |
-|---|---|---|
-| `apps/<app>/typings/auto-imports.d.ts` | 该应用的 vite 插件 | 自动导入的全局类型声明 |
-| `apps/<app>/.eslintrc-auto-import.js` | 该应用的 vite 插件 | 同名全局变量的 eslint globals，被该应用 `eslint.config.js` 直接 import |
-| `.eslintrc-auto-import.js`（仓库根） | 某次以仓库根为工作目录的运行 | **无任何消费方**，改它不影响任何门禁 |
+| 文件                                   | 写入者                       | 说明                                                                   |
+| -------------------------------------- | ---------------------------- | ---------------------------------------------------------------------- |
+| `apps/<app>/typings/auto-imports.d.ts` | 该应用的 vite 插件           | 自动导入的全局类型声明                                                 |
+| `apps/<app>/.eslintrc-auto-import.js`  | 该应用的 vite 插件           | 同名全局变量的 eslint globals，被该应用 `eslint.config.js` 直接 import |
+| `.eslintrc-auto-import.js`（仓库根）   | 某次以仓库根为工作目录的运行 | **无任何消费方**，改它不影响任何门禁                                   |
 
 该插件以追加方式写入声明：**误加或误删的声明不会随下次运行自动消失**，改错必须手工修正。调整自动导入白名单后，应显式重跑一次前端构建（vite 插件只在构建与开发服务启动时写入，`svelte-check` 不会触发），并核对上述文件的差异是否符合预期；出现与本轮改动无关的差异时不要顺手提交。
 
@@ -512,9 +512,13 @@ const request = createHttpClient({
     // 会话令牌存放于 HttpOnly Cookie，由浏览器自动携带；
     // 回调不读取任何令牌，只负责在服务端拒绝当前会话时发起续期。
     refreshSession: () => authStore.refreshSingleFlight(refreshSession),
-    onAuthFailure: async message => { /* 清除本地认证状态并跳转登录页 */ }
+    onAuthFailure: async message => {
+      /* 清除本地认证状态并跳转登录页 */
+    }
   },
-  onError: message => { /* 界面统一提示，如 toast.error(message) */ }
+  onError: message => {
+    /* 界面统一提示，如 toast.error(message) */
+  }
 })
 
 // 应用侧 src/lib/api/index.ts：实例化接口模块
@@ -534,18 +538,24 @@ const updated = await UserAPI.updateUser({ id: user.id, username: 'new-name', em
 
 `@myblog/api` 的 user 模块存在两个合法镜像形状，各自对应不同的后端输出，禁止混用：
 
-| 类型 | 镜像源 | 对应端点 |
-| --- | --- | --- |
-| `User` | `domain.User.ToResponse()` 裁剪形状 | 登录、`users/list`、`users/get` |
+| 类型          | 镜像源                                                     | 对应端点                                |
+| ------------- | ---------------------------------------------------------- | --------------------------------------- |
+| `User`        | `domain.User.ToResponse()` 裁剪形状                        | 登录、`users/list`、`users/get`         |
 | `ProfileUser` | `domain.User` 自助全量形状（含 bio/website/coverImage 等） | `users/profile`、`users/profile/update` |
 
 修改后端任一形状的输出字段集时，必须同步 `@myblog/api/modules/user/types.ts` 对应类型并运行 `contract:check`（类型镜像义务）。两类形状的 `birthday` 均为 `string | null`：后端经 `datetime.JSONDate` 输出，零值序列化为 `null` 而非空字符串。
 
 #### 5. 界面多语言（仅 apps/web）
 
-- 用户可见文案经 `$i18n` 的 `m['ui:...']()` 取词；接入现状与红线见 [`architecture-rules.md`](./architecture-rules.md)（Header/Footer/错误页已接入，其余页面待页面大变动后分批，已接入文件禁止回退硬编码）
-- `messages/*.json5` 必须保持 **JSON 兼容写法**（双引号、无尾逗号）：paraglide 编译器按严格 JSON 解析，无引号键/尾逗号/单引号会直接编译失败
+- 用户可见文案经 `$i18n` 的 `m['<namespace>:<key>']()` 取词；apps/web 已全量接入，接入面清单、豁免口径与红线见 [`debt/frontend.md`](./debt/frontend.md) 第 7 条（新增豁免类别须先写入该条）
+- **namespace 按面拆分**：`ui` 只承载跨面 chrome 与共享词（站名、作者身份、品牌名、通用元信息、共享空状态），页面文案进各自面的 namespace；同一文案出现在两个面时必须上收到 `ui`，不在各面重复登记；新增 namespace 须在 `apps/web/project.inlang/settings.json` 的 `plugin.inlang.i18next.pathPattern` 注册，并在 `messages/zh` 与 `messages/en` 各建同名文件
+- **插值用双花括号**：`{{param}}` 是 i18next 语法，取词写作 `m['blog:list.title']({ site })`；写成单花括号 `{param}` 会被当作字面量原样输出，生成的取词函数也不会声明该入参。词条首尾的空格具有语义，英文词条常以词尾空格衔接相邻的强调节点，不手工去除
+- **计数词条用复数变体**：同一条目写 `count_one` 与 `count_other` 两个键，取值时参数名必须为 `count`，例如 `m['ui:meta.postCount']({ count: posts.length })`；变体缺失时取词回退为原始 key 字符串，故两个语言文件必须键集合一致
+- **句子被节点切开时按片段取词**：完整句子中间嵌链接或强调节点时，拆成 `…Before` / 链接文案 / `…After` 多条词条，语序由词条内容决定，不把 HTML 写进词条
+- `messages/*.json5` 必须保持 **JSON 兼容写法**（双引号、无尾逗号、不写注释）：paraglide 编译器按严格 JSON 解析，无引号键/尾逗号/单引号会直接编译失败；`apps/web/messages/` 已列入 `.prettierignore`，因为 prettier 的 json5 解析器会把键改写为无引号形式，直接导致编译失败
 - 修改词表后需重新编译生成 `src/lib/paraglide` 产物：`pnpm --filter @myblog/web exec paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide`，等价入口为 `pnpm --filter @myblog/web run generate:i18n`（`vite dev`/`build` 亦会自动触发）
+- `apps/web/vitest.config.ts` 已声明 `$i18n` 别名，单测可引用取词模块，但取词模块是编译产物，跑 `pnpm --filter @myblog/web run test` 前需先执行 `generate:i18n`
+- 后台 `apps/admin` 无 i18n，`packages/*` 无法解析 `$i18n` 别名：共享包不得内置用户可见文案，需要展示的提示一律经回调由应用侧注入（见 `docs/debt/architecture.md` 第 8 条）
 
 ## 部署指南
 

@@ -186,7 +186,7 @@ function openAdminConsole() {
             <Dialog.Content class="bg-popover/95 backdrop-blur-md sm:max-w-md">
               <Dialog.Header>
                 <Dialog.Title>{m['ui:header.aboutAuthor']()}</Dialog.Title>
-                <Dialog.Description>{m['ui:header.aboutAuthorDesc']()}</Dialog.Description>
+                <Dialog.Description>{m['ui:author.tagline']()}</Dialog.Description>
               </Dialog.Header>
               <div class="flex flex-col space-y-3">
                 <div class="flex items-center space-x-3">
@@ -194,8 +194,8 @@ function openAdminConsole() {
                     <span class="text-lg font-bold text-signal-foreground">M</span>
                   </div>
                   <div>
-                    <h3 class="font-semibold text-foreground">{m['ui:header.authorName']()}</h3>
-                    <p class="text-sm text-muted-foreground">{m['ui:header.authorTitle']()}</p>
+                    <h3 class="font-semibold text-foreground">{m['ui:author.name']()}</h3>
+                    <p class="text-sm text-muted-foreground">{m['ui:author.role']()}</p>
                   </div>
                 </div>
               </div>

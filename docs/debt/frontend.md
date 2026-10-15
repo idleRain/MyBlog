@@ -54,10 +54,19 @@
 
 ## 7. web 界面多语言局部接入
 
-- **状态**：推进中，分批接入。
-- **基线**：语言切换对 Header、Footer、错误页真实生效（含 NotificationBell、FriendlyLinkDialog 两个 Header 子组件与 demo 页），其余页面文案硬编码中文，en 模式下界面为混合语言；词表文件必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败）。
-- **验证命令**：`git grep -ln "\$i18n" -- apps/web/src`（已接入面：Header、Footer、NotificationBell、FriendlyLinkDialog、`+error`、demo）。
-- **红线**：已接入文件禁止回退硬编码；新增用户可见文案优先经 `m.*` 词表取词；其余页面接入待页面大变动后分批推进。
+- **状态**：已修复。apps/web 全部用户可见文案接入 paraglide 词表，en 模式下界面不再出现混合语言。
+- **基线**：已接入面 **41** 个文件，按面拆分 13 个 namespace、中英各 **329** 条词条——ui 91 / account 59 / home 37 / blog 36 / privacy 29 / comment 15 / about 14 / projects 12 / author 11 / contact 9 / auth 7 / category 5 / common 4。接入面覆盖 Header、Footer、NotificationBell、FriendlyLinkDialog、`+error`、首页整面、文章域整面（含 `lib/markdown/` 的代码块文案）、用户域整面（含两个服务端 load 与 `lib/service/index.ts`）、聚合页、`PagePlaceholder` 与 contact / projects / about / privacy 四个静态页。无用户可见文案的文件不计入：ArticleListSkeleton、ProfileFormSkeleton、各桶文件，以及 `lib/motion/` 等纯逻辑模块。
+- **豁免口径**：以下内容判为不是文案，按类别豁免，不在词表内。
+  1. 测试用例描述与夹具（`**/__tests__/`）。
+  2. 开发者可见的日志与内部异常：`console.error` 文案，以及 `enhance-code-blocks.ts` 中经调用方捕获并记日志的内部异常。
+  3. 语言切换器中的语言自称（`简体中文`）：语言名按惯例以本语言显示，不随界面语言切换。
+  4. `routes/demo/` 沙盒：其 `+page.ts` 在生产构建下抛 404 使路由不可达，文案仅在开发期可见。
+  5. 静态页右下角幽灵字（`介`、`联`、`隐`、`档`）：`aria-hidden` 的版面前景装饰字形，不承载语义也不随语言切换，以命名常量 `GHOST_MARK` 声明并注明理由。
+  6. `packages/*` 内置文案不归本应用词表管辖，另见 [`architecture.md`](./architecture.md) 第 8 条。
+- **词表约定**：按面拆分为独立 namespace 并在 `project.inlang/settings.json` 的 `pathPattern` 注册，`ui` 只承载跨面 chrome 与共享词；同一文案出现在两个面时必须上收到 `ui`，不在各面重复登记（已上收篇数计数、`持续更新`、`文章列表加载失败`、`返回首页`、邮箱标签、`{{title}} - {{site}}` 标题模式与作者身份）；插值必须用 i18next 双花括号 `{{param}}`，单花括号会被当作字面量原样输出；计数词条写 `_one`/`_other` 两个变体，参数名必须为 `count` 才参与 `Intl.PluralRules` 选择，变体缺失时取词回退为原始 key 字符串；词表必须保持 JSON 兼容写法（paraglide 编译器按严格 JSON 解析，json5 特性直接编译失败），故 `apps/web/messages/` 已列入 `.prettierignore`；句子被节点切开时拆成 `…Before` / 链接文案 / `…After` 多条词条，不把 HTML 写进词条。
+- **取值纪律**：取词结果若参与渲染且依赖 props 或局部状态，必须用 `$derived` 包裹，写成普通 `const` 会触发 Svelte 的 `state_referenced_locally` 警告并只取到初值；分支判定与列表键值不得依赖已翻译的取值（如按渠道名判断图标、按翻译后的标题做 key），改用与语言无关的标识字段。
+- **验证命令**：`git grep -ln "\$i18n" -- apps/web/src`（41 个文件，回归时只增不减）；`pnpm --filter @myblog/web run generate:i18n` 后核对 `messages/{zh,en}` 各 namespace 的键集合与条数一致；`pnpm --filter @myblog/web run check && pnpm --filter @myblog/web run test`（`vitest.config.ts` 已声明 `$i18n` 别名，单测引用取词模块前需先编译词表）；回归锚点为全量审计——`apps/web/src` 内非注释中文只应命中上述 6 类豁免，其余命中即违例。
+- **红线**：已接入文件禁止回退硬编码；新增用户可见文案一律经 `m.*` 取词，页面文案进本面 namespace 不塞回 `ui`；同一文案跨面复用时上收 `ui`；新增豁免类别须先写入本条。
 
 ## 8. 字典页窄屏交互与工具栏布局遗留
 

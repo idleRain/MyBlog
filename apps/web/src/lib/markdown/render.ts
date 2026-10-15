@@ -26,6 +26,7 @@ import type { Plugin } from 'unified'
 import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
 import { unified } from 'unified'
+import { m } from '$i18n'
 
 // 管线统一使用完整泛型签名的高亮器类型；core 模式的 never 泛型与 rehype 插件参数不兼容。
 type PipelineHighlighter = HighlighterGeneric<BundledLanguage, BundledTheme>
@@ -106,10 +107,8 @@ const LANGUAGE_LOADERS: Record<string, LanguageInput> = {
   batch: () => import('@shikijs/langs/batch')
 }
 
-// Shiki 内置的无语法纯文本语言，无需加载 grammar 即可按主题渲染，展示名统一为「文本」。
+// Shiki 内置的无语法纯文本语言，无需加载 grammar 即可按主题渲染。
 const PLAIN_TEXT_LANGUAGES = new Set(['text', 'txt', 'plain', 'plaintext'])
-// 纯文本类代码块的展示名。
-const PLAIN_TEXT_LANGUAGE_LABEL = '文本'
 
 // 模块级单例复用 grammar 与主题资源，避免每次渲染重建高亮器。
 let highlighterPromise: Promise<PipelineHighlighter> | null = null
@@ -194,10 +193,7 @@ const CODE_BLOCK_COPY_TEXT_CLASS = 'code-block-copy-text'
 const CODE_BLOCK_ICON_COPY_CLASS = 'code-block-icon-copy'
 const CODE_BLOCK_ICON_CHECK_CLASS = 'code-block-icon-check'
 
-// 复制按钮的初始文案，成功与失败文案由客户端交互模块在复制后切换。
-const COPY_BUTTON_LABEL = '复制'
-// 复制按钮的无障碍名称，供读屏器播报按钮用途。
-const COPY_BUTTON_ARIA_LABEL = '复制代码'
+// 复制按钮的文案与无障碍名称取自词表，成功与失败文案由客户端交互模块切换。
 
 // 代码块语言标注到展示名的映射，键的收录范围与 LANGUAGE_LOADERS 对齐，未收录的标注首字母大写展示。
 const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
@@ -277,7 +273,7 @@ function readCodeLanguage(pre: HastElement): string | null {
 /** 解析语言标注的展示名，无语言标注返回 null 使头部只保留复制按钮。 */
 function resolveLanguageLabel(language: string | null): string | null {
   if (language === null) return null
-  if (PLAIN_TEXT_LANGUAGES.has(language)) return PLAIN_TEXT_LANGUAGE_LABEL
+  if (PLAIN_TEXT_LANGUAGES.has(language)) return m['ui:codeBlock.plainText']()
   const display = LANGUAGE_DISPLAY_NAMES[language]
   if (display) return display
   return `${language.charAt(0).toUpperCase()}${language.slice(1)}`
@@ -316,7 +312,7 @@ function buildCopyButton(): ElementContent {
       type: 'button',
       className: [CODE_BLOCK_COPY_BUTTON_CLASS],
       dataCodeCopy: '',
-      ariaLabel: COPY_BUTTON_ARIA_LABEL
+      ariaLabel: m['ui:codeBlock.copyAria']()
     },
     children: [
       createIconElement(CODE_BLOCK_ICON_COPY_CLASS, COPY_ICON_PARTS),
@@ -325,7 +321,7 @@ function buildCopyButton(): ElementContent {
         type: 'element',
         tagName: 'span',
         properties: { className: [CODE_BLOCK_COPY_TEXT_CLASS], ariaLive: 'polite' },
-        children: [{ type: 'text', value: COPY_BUTTON_LABEL }]
+        children: [{ type: 'text', value: m['ui:codeBlock.copy']() }]
       }
     ]
   }

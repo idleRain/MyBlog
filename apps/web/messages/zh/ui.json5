@@ -2,6 +2,52 @@
   "site": {
     "name": "闲雨小筑"
   },
+  "brand": {
+    "github": "GitHub"
+  },
+  "label": {
+    "email": "邮箱"
+  },
+  "author": {
+    "name": "开发者",
+    "role": "全栈开发工程师",
+    "roleWithFields": "全栈工程师 · 编程与设计",
+    "tagline": "一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。",
+    "note": "白天写代码，晚上写字。相信缓慢而扎实的积累，偏爱干净的结构与诚实的文字。",
+    "approach": "关注工程结构与界面品质的交界地带，习惯把复杂问题拆成清晰的小块，再把小块装回优雅的整体。"
+  },
+  "meta": {
+    "minutesRead": "阅读 {{count}} 分钟",
+    "minutesReadApprox": "约 {{count}} 分钟",
+    "views_one": "{{count}} 次浏览",
+    "views_other": "{{count}} 次浏览",
+    "postCount_one": "共 {{count}} 篇",
+    "postCount_other": "共 {{count}} 篇",
+    "ongoing": "持续更新",
+    "pageTitle": "{{title}} - {{site}}"
+  },
+  "empty": {
+    "inPreparation": "创刊号正在筹备中，文章即将发布。",
+    "backHome": "可以先回到首页浏览版面与站点介绍。"
+  },
+  "action": {
+    "failed": "操作失败，请稍后重试",
+    "submitting": "提交中…",
+    "backHome": "返回首页"
+  },
+  "session": {
+    "expired": "登录已过期，请重新登录"
+  },
+  "placeholder": {
+    "scheduleNote": "版面排期中 · 功能将在后续迭代接入"
+  },
+  "codeBlock": {
+    "copy": "复制",
+    "copied": "已复制",
+    "copyFailed": "复制失败",
+    "copyAria": "复制代码",
+    "plainText": "文本"
+  },
   "button": {
     "save": "保存",
     "cancel": "取消",
@@ -39,9 +85,6 @@
     "githubHome": "GitHub 主页",
     "themeToggle": "切换主题",
     "aboutAuthor": "关于作者",
-    "aboutAuthorDesc": "一个热爱编程和设计的创造者，用代码编织创意，用技术改变世界。",
-    "authorName": "开发者",
-    "authorTitle": "全栈开发工程师",
     "notifications": "通知",
     "markAllRead": "全部已读",
     "noNotifications": "暂无通知"
@@ -73,7 +116,6 @@
     "contactEmail": "联系邮箱",
     "contactEmailPlaceholder": "用于接收审核结果",
     "submit": "提交申请",
-    "submitting": "提交中…",
     "applySubmitted": "申请已提交，等待站长审核",
     "submitFailed": "申请提交失败，请稍后重试"
   },
@@ -84,6 +126,6 @@
     "serverErrorTitle": "印刷机出了点故障",
     "serverErrorSubtitle": "服务器遇到了意外状况，内容暂时无法呈现",
     "retry": "重试加载",
-    "backHome": "返回首页"
+    "listFailed": "文章列表加载失败，请稍后重试"
   }
 }

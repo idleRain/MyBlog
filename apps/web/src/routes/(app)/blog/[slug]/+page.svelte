@@ -3,9 +3,9 @@ import { enhanceCodeBlocks } from '$lib/markdown/enhance-code-blocks'
 import { CommentSection } from '$lib/components/comment'
 import { ArticleActions } from '$lib/components/article'
 import { formatDate } from '$lib/utils/format-date'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
 import { ArticleAPI } from '$lib/api'
+import { m } from '$i18n'
 
 let { data }: PageProps = $props()
 
@@ -24,7 +24,12 @@ $effect(() => {
 </script>
 
 <svelte:head>
-  <title>{article.seoTitle || article.title} - {SITE_NAME_ZH}</title>
+  <title
+    >{m['ui:meta.pageTitle']({
+      title: article.seoTitle || article.title,
+      site: m['ui:site.name']()
+    })}</title
+  >
   {#if article.seoDescription || article.summary}
     <meta name="description" content={article.seoDescription || article.summary} />
   {/if}
@@ -41,7 +46,7 @@ $effect(() => {
         <p
           class="mb-6 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
         >
-          手记 · 文章
+          {m['blog:detail.eyebrow']()}
           <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
         </p>
         <h1 class="font-display text-4xl leading-[1.15] font-black tracking-tight sm:text-5xl">
@@ -52,8 +57,8 @@ $effect(() => {
         >
           <span>{authorName}</span>
           <span>{formatDate(article.publishedAt ?? article.createdAt)}</span>
-          <span>阅读 {article.readingTime} 分钟</span>
-          <span>{article.viewCount} 次浏览</span>
+          <span>{m['ui:meta.minutesRead']({ count: article.readingTime })}</span>
+          <span>{m['ui:meta.views']({ count: article.viewCount })}</span>
         </p>
       </header>
 
@@ -92,7 +97,9 @@ $effect(() => {
       {:else}
         <div class="mt-16 border-t border-border pt-10">
           <div class="border-l-2 border-signal py-4 pl-6">
-            <p class="text-sm leading-relaxed text-muted-foreground">这篇文章已关闭评论。</p>
+            <p class="text-sm leading-relaxed text-muted-foreground">
+              {m['blog:detail.commentsClosed']()}
+            </p>
           </div>
         </div>
       {/if}
@@ -102,7 +109,7 @@ $effect(() => {
           href="/blog"
           class="group inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
         >
-          ← 返回目录
+          {m['blog:detail.backToIndex']()}
         </a>
       </div>
     </div>

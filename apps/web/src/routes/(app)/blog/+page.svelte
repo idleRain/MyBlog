@@ -1,10 +1,13 @@
 <script lang="ts">
 import { ArticleIndexList, PaginationNav } from '$lib/components/article'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
 import { Search } from '@lucide/svelte'
+import { m } from '$i18n'
 
 let { data }: PageProps = $props()
+
+// 标题在多处头部标签复用，站名取自词表以随语言切换。
+const pageTitle = m['blog:list.title']({ site: m['ui:site.name']() })
 
 // 总页数向上取整，无文章时保持 1 以呈现完整导航骨架。
 const totalPages = $derived(Math.max(1, Math.ceil(data.list.total / data.list.pageSize)))
@@ -14,8 +17,8 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
 </script>
 
 <svelte:head>
-  <title>博客目录 - {SITE_NAME_ZH}</title>
-  <meta name="description" content="全部文章的目录页，按发布时间编排，支持关键词检索与翻页浏览。" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={m['blog:list.description']()} />
 </svelte:head>
 
 <section class="texture-grid min-h-screen pt-16">
@@ -26,25 +29,25 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
         <p
           class="mb-3 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
         >
-          手记 · 全部刊目
+          {m['blog:list.eyebrow']()}
           <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
         </p>
-        <h1 class="font-display text-3xl font-black">博客目录</h1>
+        <h1 class="font-display text-3xl font-black">{m['blog:list.heading']()}</h1>
       </div>
       {#if data.search}
         <span class="shrink-0 font-mono text-sm text-muted-foreground">
-          检索「{data.search}」· {data.list.total} 篇结果
+          {m['blog:list.resultCount']({ search: data.search, count: data.list.total })}
         </span>
       {:else}
         <span class="shrink-0 font-mono text-sm text-muted-foreground">
-          共 {data.list.total} 篇 · 持续更新
+          {m['ui:meta.postCount']({ count: data.list.total })} · {m['ui:meta.ongoing']()}
         </span>
       {/if}
     </div>
 
     <!-- 检索区：原生 GET 表单提交 search 参数，复用后端 ngram 全文索引，无脚本参与。 -->
     <form method="get" action="/blog" role="search" class="mb-10 flex items-stretch gap-3">
-      <label for="blog-search" class="sr-only">搜索文章</label>
+      <label for="blog-search" class="sr-only">{m['blog:list.searchLabel']()}</label>
       <div class="relative flex-1">
         <Search
           class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -55,7 +58,7 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
           type="search"
           name="search"
           value={data.search}
-          placeholder="检索标题与正文关键词…"
+          placeholder={m['blog:list.searchPlaceholder']()}
           class="w-full border border-line bg-card py-2.5 pr-3 pl-9 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
         />
       </div>
@@ -63,7 +66,7 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
         type="submit"
         class="shrink-0 bg-signal px-5 text-sm font-bold text-signal-foreground transition-[background-color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal/90 active:scale-[0.97]"
       >
-        检索
+        {m['blog:list.searchSubmit']()}
       </button>
     </form>
 
@@ -71,18 +74,22 @@ const searchQuery = $derived(data.search ? `search=${encodeURIComponent(data.sea
       {#if data.search}
         <!-- 检索空态：说明无命中并引导清除检索，避免与创刊空态混淆。 -->
         <div class="border-l-2 border-signal py-4 pl-6">
-          <p class="font-display text-xl font-medium">未检索到与「{data.search}」相关的文章。</p>
+          <p class="font-display text-xl font-medium">
+            {m['blog:list.searchEmpty']({ search: data.search })}
+          </p>
           <p class="mt-2 text-sm text-muted-foreground">
-            可以更换关键词重试，或
-            <a href="/blog" class="text-signal underline-offset-4 hover:underline">清除检索</a>
-            浏览全部刊目。
+            {m['blog:list.searchEmptyBefore']()}
+            <a href="/blog" class="text-signal underline-offset-4 hover:underline">
+              {m['blog:list.searchEmptyClear']()}
+            </a>
+            {m['blog:list.searchEmptyAfter']()}
           </p>
         </div>
       {:else}
         <!-- 空状态：以编辑口吻说明现状，避免出现工程化提示。 -->
         <div class="border-l-2 border-signal py-4 pl-6">
-          <p class="font-display text-xl font-medium">创刊号正在筹备中，文章即将发布。</p>
-          <p class="mt-2 text-sm text-muted-foreground">可以先回到首页浏览版面与站点介绍。</p>
+          <p class="font-display text-xl font-medium">{m['ui:empty.inPreparation']()}</p>
+          <p class="mt-2 text-sm text-muted-foreground">{m['ui:empty.backHome']()}</p>
         </div>
       {/if}
     {:else}

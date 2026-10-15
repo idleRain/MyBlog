@@ -4,6 +4,7 @@ import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { ArticleAPI, TagAPI } from '$lib/api'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
+import { m } from '$i18n'
 
 // 首页无服务器端数据加载前显式关闭预渲染，接入业务数据后维持 SSR 按需渲染行为。
 export const prerender = false
@@ -29,7 +30,7 @@ export const load: PageLoad = async () => {
     popularResponse.code !== RESPONSE_CODE_SUCCESS ||
     !popularResponse.data
   ) {
-    throw error(503, '首页数据加载失败，请稍后重试')
+    throw error(503, m['home:error.loadFailed']())
   }
 
   const archives: ArticleArchiveYear[] =

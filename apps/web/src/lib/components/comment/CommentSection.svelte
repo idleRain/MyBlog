@@ -6,6 +6,7 @@ import { SvelteMap } from 'svelte/reactivity'
 import { authStore } from '$lib/stores/auth'
 import { toast } from 'svelte-sonner'
 import { CommentAPI } from '$lib/api'
+import { m } from '$i18n'
 
 // 评论内容的长度上限，与后端 binding 校验保持一致。
 const COMMENT_MAX_LENGTH = 2000
@@ -138,11 +139,11 @@ async function handleSubmit(event: SubmitEvent) {
     })
 
     if (response.code !== RESPONSE_CODE_SUCCESS) {
-      toast.error(response.message || '评论提交失败，请稍后重试')
+      toast.error(response.message || m['comment:submitFailed']())
       return
     }
 
-    toast.success('评论已提交，审核通过后展示')
+    toast.success(m['comment:submitSuccess']())
     content = ''
     authorName = ''
     authorEmail = ''
@@ -156,8 +157,10 @@ async function handleSubmit(event: SubmitEvent) {
 <section id="comments" class="mt-16 border-t border-border pt-10">
   <!-- 板块标题栏：与目录页标题栏同构。 -->
   <div class="mb-8 flex items-end justify-between border-b border-line pb-4">
-    <h2 class="font-display text-2xl font-black">评论</h2>
-    <span class="font-mono text-sm text-muted-foreground">共 {total} 条</span>
+    <h2 class="font-display text-2xl font-black">{m['comment:title']()}</h2>
+    <span class="font-mono text-sm text-muted-foreground">
+      {m['comment:count']({ count: total })}
+    </span>
   </div>
 
   <!-- 发表表单：游客通道要求姓名，登录通道隐藏游客字段。 -->
@@ -165,46 +168,50 @@ async function handleSubmit(event: SubmitEvent) {
     {#if !isAuthenticated}
       <div class="mb-4 grid gap-4 sm:grid-cols-2">
         <label class="block">
-          <span class="sr-only">姓名</span>
+          <span class="sr-only">{m['comment:nameLabel']()}</span>
           <input
             type="text"
             bind:value={authorName}
             required
             maxlength={AUTHOR_NAME_MAX_LENGTH}
-            placeholder="姓名 *"
+            placeholder={m['comment:namePlaceholder']()}
             class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
           />
         </label>
         <label class="block">
-          <span class="sr-only">邮箱</span>
+          <span class="sr-only">{m['ui:label.email']()}</span>
           <input
             type="email"
             bind:value={authorEmail}
-            placeholder="邮箱（不公开）"
+            placeholder={m['comment:emailPlaceholder']()}
             class="w-full border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
           />
         </label>
       </div>
     {/if}
     <label class="block">
-      <span class="sr-only">评论内容</span>
+      <span class="sr-only">{m['comment:contentLabel']()}</span>
       <textarea
         bind:value={content}
         required
         maxlength={COMMENT_MAX_LENGTH}
         rows={4}
-        placeholder={isAuthenticated ? '说点什么吧' : '以访客身份说点什么吧'}
+        placeholder={isAuthenticated
+          ? m['comment:contentPlaceholder']()
+          : m['comment:guestContentPlaceholder']()}
         class="w-full resize-y border border-line bg-background px-3 py-2.5 text-sm text-foreground transition-colors duration-150 outline-none placeholder:text-muted-foreground focus:border-signal"
       ></textarea>
     </label>
     <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-      <p class="min-w-0 font-mono text-xs text-muted-foreground">评论提交后需经审核才会展示</p>
+      <p class="min-w-0 font-mono text-xs text-muted-foreground">
+        {m['comment:moderationNote']()}
+      </p>
       <button
         type="submit"
         disabled={submitting}
         class="shrink-0 bg-signal px-6 py-2.5 text-sm font-bold text-signal-foreground transition-[background-color,transform] duration-200 ease-(--ease-out-strong) hover:bg-signal/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? '提交中…' : '发表评论'}
+        {submitting ? m['ui:action.submitting']() : m['comment:submit']()}
       </button>
     </div>
   </form>
@@ -212,7 +219,7 @@ async function handleSubmit(event: SubmitEvent) {
   {#if threads.length === 0}
     <!-- 空状态：以编辑口吻引导参与讨论。 -->
     <div class="border-l-2 border-signal py-4 pl-6">
-      <p class="text-sm leading-relaxed text-muted-foreground">还没有评论，来说点什么吧。</p>
+      <p class="text-sm leading-relaxed text-muted-foreground">{m['comment:empty']()}</p>
     </div>
   {:else}
     <ol class="divide-y divide-line">
@@ -257,7 +264,7 @@ async function handleSubmit(event: SubmitEvent) {
         onclick={loadMore}
         class="mt-8 py-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
       >
-        查看更多评论
+        {m['comment:loadMore']()}
       </button>
     {/if}
   {/if}

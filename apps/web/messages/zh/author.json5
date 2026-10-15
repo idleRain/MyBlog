@@ -1,0 +1,13 @@
+{
+  "title": "{{name}} - 作者主页 - {{site}}",
+  "description": "{{name}}发布的全部文章",
+  "eyebrow": "作者 · Author",
+  "articleCount_one": "文章 {{count}} 篇",
+  "articleCount_other": "文章 {{count}} 篇",
+  "followerCount_one": "粉丝 {{count}}",
+  "followerCount_other": "粉丝 {{count}}",
+  "followingCount": "关注 {{count}}",
+  "emptyTitle": "该作者暂无已发布的文章。",
+  "emptyNote": "可以先去目录页看看其他内容。",
+  "notFound": "作者不存在"
+}

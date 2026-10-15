@@ -1,4 +1,6 @@
 <script lang="ts">
+import { m } from '$i18n'
+
 // 分页导航属性：basePath 为不带查询串的页面路径，query 为翻页时需保留的查询串。
 interface Props {
   currentPage: number
@@ -22,7 +24,7 @@ function pageHref(page: number): string {
   无 JavaScript 环境跟随的真实链接。包装层补齐透传之前，此处保留锚点版式。
 -->
 <nav
-  aria-label="分页导航"
+  aria-label={m['blog:pagination.label']()}
   class="mt-12 flex items-center justify-between border-t border-border pt-6 font-mono text-sm text-muted-foreground"
 >
   {#if currentPage > 1}
@@ -31,21 +33,21 @@ function pageHref(page: number): string {
       rel="prev"
       class="py-2 transition-colors duration-200 hover:text-signal"
     >
-      ← 上一页
+      {m['blog:pagination.previous']()}
     </a>
   {:else}
-    <span aria-hidden="true" class="py-2">← 上一页</span>
+    <span aria-hidden="true" class="py-2">{m['blog:pagination.previous']()}</span>
   {/if}
-  <span>第 {currentPage} / {totalPages} 页</span>
+  <span>{m['blog:pagination.position']({ current: currentPage, total: totalPages })}</span>
   {#if currentPage < totalPages}
     <a
       href={pageHref(currentPage + 1)}
       rel="next"
       class="py-2 transition-colors duration-200 hover:text-signal"
     >
-      下一页 →
+      {m['blog:pagination.next']()}
     </a>
   {:else}
-    <span aria-hidden="true" class="py-2">下一页 →</span>
+    <span aria-hidden="true" class="py-2">{m['blog:pagination.next']()}</span>
   {/if}
 </nav>

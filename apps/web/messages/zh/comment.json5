@@ -1,0 +1,17 @@
+{
+  "title": "评论",
+  "count_one": "共 {{count}} 条",
+  "count_other": "共 {{count}} 条",
+  "nameLabel": "姓名",
+  "namePlaceholder": "姓名 *",
+  "emailPlaceholder": "邮箱（不公开）",
+  "contentLabel": "评论内容",
+  "contentPlaceholder": "说点什么吧",
+  "guestContentPlaceholder": "以访客身份说点什么吧",
+  "moderationNote": "评论提交后需经审核才会展示",
+  "submit": "发表评论",
+  "empty": "还没有评论，来说点什么吧。",
+  "loadMore": "查看更多评论",
+  "submitFailed": "评论提交失败，请稍后重试",
+  "submitSuccess": "评论已提交，审核通过后展示"
+}

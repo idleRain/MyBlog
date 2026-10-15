@@ -1,9 +1,9 @@
 <script lang="ts">
 import { ArticleIndexList, ArticleListSkeleton, PaginationNav } from '$lib/components/article'
 import type { Article } from '@myblog/api/modules/article/types'
-import { SITE_NAME_ZH } from '@myblog/shared'
 import type { PageProps } from './$types'
 import { navigating } from '$app/state'
+import { m } from '$i18n'
 
 // 收藏列表每页数量，与 +page.server.ts 保持一致，用于计算列表跨页编号偏移。
 const FAVORITES_PAGE_SIZE = 12
@@ -13,6 +13,9 @@ const MIN_SKELETON_ROWS = 3
 
 // 数据由 +page.server.ts 的 load 在服务端取回，页面只负责渲染。
 let { data }: PageProps = $props()
+
+// 标题中的站名取自词表，以随语言切换。
+const pageTitle = m['account:favorites.title']({ site: m['ui:site.name']() })
 
 // 页面状态直接派生自 load 结果，因此首屏不存在「先渲染容器再补拉」的空窗。
 const articles = $derived<Article[]>(data.list.articles)
@@ -29,8 +32,8 @@ const skeletonRows = $derived(Math.max(MIN_SKELETON_ROWS, articles.length))
 </script>
 
 <svelte:head>
-  <title>我的收藏 - {SITE_NAME_ZH}</title>
-  <meta name="description" content="当前登录用户收藏的文章列表。" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={m['account:favorites.description']()} />
 </svelte:head>
 
 <section class="texture-grid min-h-screen pt-16">
@@ -41,12 +44,14 @@ const skeletonRows = $derived(Math.max(MIN_SKELETON_ROWS, articles.length))
         <p
           class="mb-3 flex items-center gap-3 text-sm font-bold tracking-[0.35em] text-signal uppercase"
         >
-          收藏 · Bookmarks
+          {m['account:favorites.eyebrow']()}
           <span class="h-px w-10 bg-signal/60" aria-hidden="true"></span>
         </p>
-        <h1 class="font-display text-3xl font-black">我的收藏</h1>
+        <h1 class="font-display text-3xl font-black">{m['account:favorites.heading']()}</h1>
       </div>
-      <span class="shrink-0 font-mono text-sm text-muted-foreground">共 {total} 篇</span>
+      <span class="shrink-0 font-mono text-sm text-muted-foreground">
+        {m['ui:meta.postCount']({ count: total })}
+      </span>
     </div>
 
     {#if isNavigatingHere}
@@ -57,8 +62,8 @@ const skeletonRows = $derived(Math.max(MIN_SKELETON_ROWS, articles.length))
       <PaginationNav {currentPage} {totalPages} basePath="/favorites" />
     {:else}
       <div class="border-l-2 border-signal py-4 pl-6">
-        <p class="font-display text-xl font-medium">还没有收藏任何文章。</p>
-        <p class="mt-2 text-sm text-muted-foreground">在文章页点击收藏按钮，即可在这里找到它们。</p>
+        <p class="font-display text-xl font-medium">{m['account:favorites.emptyTitle']()}</p>
+        <p class="mt-2 text-sm text-muted-foreground">{m['account:favorites.emptyNote']()}</p>
       </div>
     {/if}
   </div>

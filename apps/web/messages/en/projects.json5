@@ -1,0 +1,16 @@
+{
+  "heading": "Projects",
+  "description": "An archive of personal and open-source work, currently featuring the {{site}} full-stack project.",
+  "eyebrow": "Archive · Projects",
+  "lead": "Everything here is real and verifiable; each entry is updated as the project evolves.",
+  "card": {
+    "title": "MyBlog · {{site}}",
+    "meta": "Since 2026 · under continuous iteration",
+    "paragraphOne": "The site you are reading is the first entry in this archive: a full-stack personal blog built with Go and SvelteKit, covering eleven business modules including articles, comments, favorites, follows, notifications, statistics and friendly links, with role-based access control and Chinese full-text search.",
+    "paragraphTwo": "The project is organised as a pnpm monorepo: the frontend is split into five shared packages, namely api, http, auth, shared and ui, while the backend is layered into handler, service and repository. The comment moderation state machine, the notification pipeline and the backup and restore scripts are real implementations rather than demo samples.",
+    "sourceLink": "View the source repository"
+  },
+  "techStackTitle": "Tech stack",
+  "moreTitle": "More entries are being prepared and will appear as they are ready.",
+  "moreNote": "New work shows up first in the post index as a journal entry, then moves here."
+}

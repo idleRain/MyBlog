@@ -2,6 +2,7 @@ import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import { ArticleAPI, CategoryAPI } from '$lib/api'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
+import { m } from '$i18n'
 
 // 分类页每页数量，与目录页保持一致的版面节奏。
 const CATEGORY_PAGE_SIZE = 12
@@ -13,7 +14,7 @@ export const load: PageLoad = async ({ params, url }) => {
 
   const categoryResponse = await CategoryAPI.getBySlug(params.slug)
   if (categoryResponse.code !== RESPONSE_CODE_SUCCESS || !categoryResponse.data) {
-    throw error(404, '分类不存在')
+    throw error(404, m['category:notFound']())
   }
 
   const listResponse = await ArticleAPI.byCategory(categoryResponse.data.id, {
@@ -23,7 +24,7 @@ export const load: PageLoad = async ({ params, url }) => {
     order: 'desc'
   })
   if (listResponse.code !== RESPONSE_CODE_SUCCESS || !listResponse.data) {
-    throw error(503, '文章列表加载失败，请稍后重试')
+    throw error(503, m['ui:error.listFailed']())
   }
 
   return { category: categoryResponse.data, list: listResponse.data, currentPage }

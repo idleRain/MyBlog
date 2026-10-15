@@ -4,6 +4,7 @@
  */
 
 import type { Action } from 'svelte/action'
+import { m } from '$i18n'
 
 // 复制结果反馈的展示时长，超时后按钮恢复初始文案与图标。
 const COPY_FEEDBACK_MS = 2000
@@ -12,11 +13,6 @@ const COPY_FEEDBACK_MS = 2000
 const CODE_BLOCK_SELECTOR = '.code-block'
 const COPY_BUTTON_SELECTOR = '[data-code-copy]'
 const COPY_TEXT_SELECTOR = '.code-block-copy-text'
-
-// 按钮三种状态下的文案：初始态、复制成功态与复制失败态。
-const COPY_LABEL = '复制'
-const COPIED_LABEL = '已复制'
-const COPY_FAILED_LABEL = '复制失败'
 
 /**
  * 将代码文本写入剪贴板，依赖异步剪贴板 API，
@@ -57,7 +53,7 @@ export const enhanceCodeBlocks: Action<HTMLElement> = container => {
       setTimeout(() => {
         revertTimers.delete(button)
         button.dataset.copied = 'false'
-        if (textNode) textNode.textContent = COPY_LABEL
+        if (textNode) textNode.textContent = m['ui:codeBlock.copy']()
       }, COPY_FEEDBACK_MS)
     )
   }
@@ -68,10 +64,10 @@ export const enhanceCodeBlocks: Action<HTMLElement> = container => {
     if (text === null) return
     try {
       await writeClipboard(text)
-      showFeedback(button, COPIED_LABEL, true)
+      showFeedback(button, m['ui:codeBlock.copied'](), true)
     } catch (error) {
       console.error('复制代码失败:', error)
-      showFeedback(button, COPY_FAILED_LABEL, false)
+      showFeedback(button, m['ui:codeBlock.copyFailed'](), false)
     }
   }
 

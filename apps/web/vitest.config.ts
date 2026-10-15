@@ -18,7 +18,9 @@ export default defineConfig({
       // 与应用源码保持同一套别名，避免测试走另一条解析路径。
       $lib: fileURLToPath(new URL('./src/lib', import.meta.url)),
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      $ui: fileURLToPath(new URL('../../packages/ui/src', import.meta.url))
+      $ui: fileURLToPath(new URL('../../packages/ui/src', import.meta.url)),
+      // 取词模块是 paraglide 编译产物，单测前需先执行 generate:i18n。
+      $i18n: fileURLToPath(new URL('./src/lib/paraglide/messages', import.meta.url))
     }
   },
   test: {

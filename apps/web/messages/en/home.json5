@@ -1,0 +1,55 @@
+{
+  "seo": {
+    "title": "{{site}} - Compiling ideas into interfaces",
+    "description": "A personal blog on engineering practice and creative design, exploring what modern web development makes possible.",
+    "descriptionShort": "A personal blog on engineering practice and creative design",
+    "keywords": "blog,technology,development,design,SvelteKit,Go,full-stack development"
+  },
+  "hero": {
+    "eyebrow": "Journal · Code & Life",
+    "headlineLead": "Compiling ideas",
+    "headlineTail": "into ",
+    "headlineAccent": "interfaces",
+    "headlineNote": "// engineering × design",
+    "intro": "Notes on engineering practice, city wanderings, and the books finished late at night. I believe in slow and solid accumulation, and favour clean structures and honest writing.",
+    "ctaRead": "Start reading",
+    "excerptLabel": "This month's excerpt",
+    "quote": "“Write down what you have thought through, then do what you have written down.”",
+    "quoteAuthor": "— founding editor's note",
+    "specEngineering": "01 / Engineering",
+    "specDesign": "02 / Design",
+    "specLife": "03 / Life",
+    "imprint": "{{site}} — EST. 2026",
+    "scrollHint": "Scroll"
+  },
+  "index": {
+    "title": "Recent posts",
+    "emptyNote": "You can browse the layout and the site introduction in the meantime, or wait for updates on the archive page.",
+    "viewAll": "View all posts"
+  },
+  "featured": {
+    "badge": "Featured",
+    "categoryFallback": "Journal",
+    "readMore": "Read the full post"
+  },
+  "sidebar": {
+    "popular": "Popular posts",
+    "tags": "Tags",
+    "subscribeTitle": "Subscribe to the journal",
+    "subscribeNote": "Email subscription is in preparation. Once open it will gather the month's posts and reading list, without intruding.",
+    "subscribeEmailLabel": "Email address",
+    "subscribeEmailPlaceholder": "you@example.com",
+    "subscribeSubmit": "Subscribe",
+    "subscribeNotice": "Subscription is not open yet. An announcement will follow on the site, thank you for waiting."
+  },
+  "archivePreview": {
+    "title": "Creative timeline",
+    "viewAll": "Full archive →"
+  },
+  "action": {
+    "backToTop": "Back to top"
+  },
+  "error": {
+    "loadFailed": "Failed to load the home page data, please try again later"
+  }
+}

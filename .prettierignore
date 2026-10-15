@@ -14,3 +14,6 @@ yarn.lock
 packages/ui/
 .eslintrc-auto-import.js
 auto-imports.d.ts
+
+# 词表文件经 paraglide 按严格 JSON 解析，prettier 的 json5 解析器会改写为无引号键与单引号串，导致编译失败
+apps/web/messages/

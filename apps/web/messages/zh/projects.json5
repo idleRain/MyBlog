@@ -1,0 +1,16 @@
+{
+  "heading": "项目档案",
+  "description": "个人项目与开源作品的档案陈列，当前收录{{site}}全栈工程。",
+  "eyebrow": "档案 · Projects",
+  "lead": "这里陈列真实可查证的作品，每份档案随项目演进同步更新。",
+  "card": {
+    "title": "MyBlog · {{site}}",
+    "meta": "2026 年起 · 持续迭代",
+    "paragraphOne": "你正在浏览的站点，本身就是档案里的第一件作品：一套 Go 与 SvelteKit 构成的全栈个人博客工程，覆盖文章、评论、收藏、关注、通知、统计与友链等十一个业务模块，支持角色权限控制与中文全文检索。",
+    "paragraphTwo": "工程采用 pnpm Monorepo 组织：前端拆分为 api、http、auth、shared、ui 五个共享包，后端按 handler、service、repository 三层分层；评论审核状态机、通知生产链路与备份恢复脚本均为真实实现，而非演示样例。",
+    "sourceLink": "查看源码仓库"
+  },
+  "techStackTitle": "技术构成",
+  "moreTitle": "更多档案整理中，随刊出陆续上架。",
+  "moreNote": "新的作品会先在博客目录以手记形式亮相，再归入此处。"
+}

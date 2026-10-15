@@ -1,0 +1,50 @@
+{
+  "list": {
+    "title": "{{site}} - 博客目录",
+    "description": "全部文章的目录页，按发布时间编排，支持关键词检索与翻页浏览。",
+    "eyebrow": "手记 · 全部刊目",
+    "heading": "博客目录",
+    "resultCount_one": "检索「{{search}}」· {{count}} 篇结果",
+    "resultCount_other": "检索「{{search}}」· {{count}} 篇结果",
+    "searchLabel": "搜索文章",
+    "searchPlaceholder": "检索标题与正文关键词…",
+    "searchSubmit": "检索",
+    "searchEmpty": "未检索到与「{{search}}」相关的文章。",
+    "searchEmptyBefore": "可以更换关键词重试，或",
+    "searchEmptyClear": "清除检索",
+    "searchEmptyAfter": "浏览全部刊目。"
+  },
+  "detail": {
+    "eyebrow": "手记 · 文章",
+    "notFound": "文章不存在或尚未发布",
+    "commentsClosed": "这篇文章已关闭评论。",
+    "backToIndex": "← 返回目录"
+  },
+  "archives": {
+    "title": "{{site}} - 归档",
+    "description": "全部文章的编年归档，按年份与月份编排。",
+    "eyebrow": "编年 · Archives",
+    "heading": "归档",
+    "orderNote": "按年份编排",
+    "emptyTitle": "时间线正在等待第一批文章。",
+    "yearCount_one": "共 {{count}} 篇文章",
+    "yearCount_other": "共 {{count}} 篇文章",
+    "monthLine": "{{month}} 月 · {{date}}"
+  },
+  "actions": {
+    "signInRequired": "登录后即可参与互动",
+    "liked": "已点赞",
+    "like": "点赞",
+    "bookmarked": "已收藏",
+    "bookmark": "收藏"
+  },
+  "pagination": {
+    "label": "分页导航",
+    "previous": "← 上一页",
+    "next": "下一页 →",
+    "position": "第 {{current}} / {{total}} 页"
+  },
+  "error": {
+    "archivesFailed": "归档数据加载失败，请稍后重试"
+  }
+}

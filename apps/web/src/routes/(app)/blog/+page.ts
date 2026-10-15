@@ -2,6 +2,7 @@ import { RESPONSE_CODE_SUCCESS } from '@myblog/shared'
 import type { PageLoad } from './$types'
 import { error } from '@sveltejs/kit'
 import { ArticleAPI } from '$lib/api'
+import { m } from '$i18n'
 
 // 目录页每页数量，独立于后端默认值显式声明。
 const BLOG_PAGE_SIZE = 12
@@ -24,7 +25,7 @@ export const load: PageLoad = async ({ url }) => {
   })
 
   if (response.code !== RESPONSE_CODE_SUCCESS || !response.data) {
-    throw error(503, '文章列表加载失败，请稍后重试')
+    throw error(503, m['ui:error.listFailed']())
   }
 
   return { list: response.data, currentPage, search }

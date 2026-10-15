@@ -9,8 +9,10 @@ import '../app.css'
 const status = $derived(page.status)
 const error = $derived(page.error)
 
-// 依据状态码区分文案，500 为服务端故障，其余视为目标资源缺失。
-const isServerError = $derived(status === 500)
+// 错误页按状态码分档：5xx 为服务端故障，提供重试入口并展示具体消息；其余状态码视为目标资源缺失，仅保留返回入口。
+// 数据加载失败以 503 冒泡到错误页，故分档下限取 500 而非仅匹配 500 本身。
+const SERVER_ERROR_STATUS_MIN = 500
+const isServerError = $derived(status >= SERVER_ERROR_STATUS_MIN)
 const errorTitle = $derived(
   isServerError ? m['ui:error.serverErrorTitle']() : m['ui:error.notFoundTitle']()
 )
@@ -66,14 +68,14 @@ const errorSubtitle = $derived(
           href="/"
           class="inline-flex items-center gap-2 border border-border px-7 py-3.5 text-sm font-bold text-foreground transition-[border-color,color,transform] duration-200 ease-(--ease-out-strong) hover:border-signal hover:text-signal active:scale-[0.97]"
         >
-          {m['ui:error.backHome']()}
+          {m['ui:action.backHome']()}
         </a>
       {:else}
         <a
           href="/"
           class="group inline-flex items-center gap-2 text-sm font-bold text-signal underline-offset-4 hover:underline"
         >
-          {m['ui:error.backHome']()}
+          {m['ui:action.backHome']()}
           <span
             class="transition-transform duration-200 ease-(--ease-out-strong) group-hover:-translate-x-1"
             aria-hidden="true"
