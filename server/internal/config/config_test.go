@@ -81,6 +81,7 @@ func validTestConfig() *Config {
 	return &Config{
 		Server:   ServerConfig{Port: 3000},
 		Database: DatabaseConfig{Host: "localhost", Username: "root", DBName: "blog"},
+		Media:    MediaConfig{MaxSizeMB: 10},
 		Token: TokenConfig{
 			AccessExpire:  15,
 			RefreshExpire: 168,
@@ -110,6 +111,19 @@ func validTestConfig() *Config {
 func TestValidateConfigAcceptsValidConfig(t *testing.T) {
 	if err := validateConfig(validTestConfig()); err != nil {
 		t.Errorf("合法配置不应返回错误: %v", err)
+	}
+}
+
+// TestValidateConfigRejectsNonPositiveMediaMaxSize 验证媒体单文件大小上限非正即拒绝启动。
+// 上限为零会让上传读取被截断为一个字节，而声明大小照原样落库，存储内容与记录大小不一致。
+func TestValidateConfigRejectsNonPositiveMediaMaxSize(t *testing.T) {
+	for _, maxSizeMB := range []int{0, -1} {
+		cfg := validTestConfig()
+		cfg.Media.MaxSizeMB = maxSizeMB
+
+		if err := validateConfig(cfg); err == nil {
+			t.Errorf("media.max_size_mb = %d，应返回错误", maxSizeMB)
+		}
 	}
 }
 

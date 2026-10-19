@@ -56,7 +56,7 @@ type RBACConfig struct {
 type MediaConfig struct {
 	UploadDir    string   `mapstructure:"upload_dir"`    // 本地存储目录
 	BaseURL      string   `mapstructure:"base_url"`      // 文件访问 URL 前缀
-	MaxSizeMB    int      `mapstructure:"max_size_mb"`   // 单文件大小上限，单位 MB
+	MaxSizeMB    int      `mapstructure:"max_size_mb"`   // 单文件大小上限，单位 MB，必须为正数
 	AllowedTypes []string `mapstructure:"allowed_types"` // 允许的 MIME 类型，空表示不限制
 }
 
@@ -386,6 +386,11 @@ func validateConfig(cfg *Config) error {
 
 	if cfg.Token.RefreshExpire <= 0 {
 		return fmt.Errorf("刷新令牌过期时间必须大于0")
+	}
+
+	// 媒体大小上限必须为正，非正取值会让上传读取被截断而声明大小照原样落库。
+	if cfg.Media.MaxSizeMB <= 0 {
+		return fmt.Errorf("无效的媒体单文件大小上限: %dMB", cfg.Media.MaxSizeMB)
 	}
 
 	// RBAC 配置校验：四类角色必须全部登记层级与权限。

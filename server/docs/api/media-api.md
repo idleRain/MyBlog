@@ -11,7 +11,7 @@
 - **静态访问**: 服务启动时按 `media.base_url` 挂载静态目录（`internal/router/router.go` 的 `engine.Static`），`fileUrl` 可直接公开访问且目录列表关闭；生产部署经 `deploy/nginx.conf` 的 `location /uploads/` 反代到该静态服务
 - **单文件上限**: `media.max_size_mb` 配置，默认 10MB
 - **允许类型**: `media.allowed_types` 白名单，默认 `image/jpeg`、`image/png`、`image/gif`、`image/webp`、`application/pdf`；校验对象是内容嗅探结果（`http.DetectContentType`），客户端声明的文件名与 Content-Type 均不参与判定，白名单为空表示不限制
-- **存储扩展名**: 命中白名单映射的上述 5 种类型按嗅探结果推导扩展名，其余类型沿用原始扩展名；`svg`、`html` 等可承载脚本的类型不在映射内
+- **存储扩展名**: 一律由内容嗅探结果推导，仅上述 5 种类型可确定存储扩展名，客户端提供的文件名不参与存储命名；命中白名单但无法确定存储扩展名的类型会被拒绝，`svg`、`html` 等可承载脚本的类型刻意不在映射内
 - **文件命名**: 上传后以 UUID 重命名，按年月分目录归档
 - **目录创建**: 上传目录由上传动作按 `0755` 创建；就绪探针 `pkg/storage.CheckWritable` 以真实写入探测目录可写性
 
@@ -81,7 +81,7 @@ curl -X POST http://localhost:3000/api/media/upload \
 | data.uploader | object | 否 | 上传者窄化视图，仅普通上传路径输出 |
 
 > `data.uploader` 为 `domain.UploaderPublic` 窄化视图，仅含 `id`、`username`、`nickname`、`avatar`；
-> 秒传去重路径复用 `GetByFileHash` 查询结果，未预加载上传者关联，该键整体省略。
+> 秒传去重路径复用 `GetByFileHashAndUploader` 查询结果，未预加载上传者关联，该键整体省略。
 > 上传者 IP `uploadIP` 在实体上为 `json:"-"`，任何响应都不输出。
 
 #### 响应示例
@@ -111,11 +111,11 @@ curl -X POST http://localhost:3000/api/media/upload \
 
 | 状态码 | 说明 |
 |--------|------|
-| 400 | 表单缺少 file 字段、请求参数不合法：文件大小超过限制 / 文件类型不在白名单（哨兵错误 `ErrInvalidRequest`） |
+| 400 | 表单缺少 file 字段、请求参数不合法：文件大小超过限制 / 文件类型不在白名单 / 内容类型无法确定安全的存储扩展名（后两者哨兵错误均为 `ErrInvalidRequest`，文案可区分） |
 | 401 | 未登录或令牌无效 |
 | 500 | 打开或读取上传文件失败、创建目录或写入文件失败、保存媒体记录失败（错误原文仅落日志） |
 
-> 相同内容的文件会通过 SHA256 哈希命中已有记录，返回已存在的媒体文件（秒传去重）；
+> 同一上传者重复上传相同内容时会通过 SHA256 哈希命中已有记录，返回已存在的媒体文件（秒传去重）；
 > 哈希比对先于类型白名单校验，白名单调整后旧文件仍可按哈希命中。
 
 ### 2. 获取文件详情

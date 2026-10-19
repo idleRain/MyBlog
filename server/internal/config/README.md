@@ -15,6 +15,7 @@
 - `server.port` 超出 1 至 65535。
 - `database.host`、`database.username`、`database.dbname` 为空。
 - `token.access_expire` 或 `token.refresh_expire` 不为正数。
+- `media.max_size_mb` 不为正数。
 - `rbac.role_hierarchy` 或 `rbac.role_permissions` 缺少 superadmin、admin、editor、user 任一类角色的定义。
 - `i18n.supported_languages` 为空，或 `i18n.default_language` 不在该列表内。
 - `security.trusted_proxies` 含空项、非法 IP 或 CIDR，或出现 `0.0.0.0/0` 与 `::/0` 这类覆盖全部地址的取值。

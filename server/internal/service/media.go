@@ -53,8 +53,9 @@ type MediaListResponse struct {
 }
 
 // allowedMimeExtensions 白名单 MIME 类型到标准存储扩展名的映射。
-// 存储扩展名一律由内容嗅探结果推导，防止伪造扩展名使静态服务以可执行类型响应。
-// svg 与 html 等可承载脚本的类型刻意不在映射内，杜绝存储型 XSS。
+// 该映射是存储扩展名的唯一来源，也是杜绝存储型 XSS 的唯一安全闸门：
+// 只有能安全命名与安全下发的类型才在键集合内，映射之外的类型无法推导出可落盘的扩展名。
+// svg 与 html 等可承载脚本的类型刻意不在映射内。
 var allowedMimeExtensions = map[string]string{
 	"image/jpeg":      ".jpg",
 	"image/png":       ".png",
@@ -77,24 +78,47 @@ func NewMediaService(mediaRepo repository.MediaRepositoryInterface, cfg *config.
 	}
 }
 
-// UploadFile 上传文件到本地存储并落库，文件哈希相同则复用已有记录。
+// bytesPerMegabyte 大小上限配置项到字节的换算基准，配置项以 MB 为单位声明。
+const bytesPerMegabyte = 1024 * 1024
+
+// truncationProbeBytes 读取上限之外额外读取的字节数，用于判定内容是否超过上限。
+const truncationProbeBytes = 1
+
+// fileSizeExceededError 构造文件超过大小上限的业务错误，读取前的声明值检查与读取后的实际长度检查共用。
+func fileSizeExceededError(maxSizeMB int) error {
+	return fmt.Errorf("%w：文件大小超过限制 %dMB", ErrInvalidRequest, maxSizeMB)
+}
+
+// UploadFile 上传文件到本地存储并落库，同一上传者的文件哈希一致时复用已有记录。
 func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64, uploaderID uint, ipAddress string) (*model.MediaFile, error) {
-	// 校验文件大小是否超限。
-	maxSize := int64(s.cfg.Media.MaxSizeMB) * 1024 * 1024
-	if maxSize > 0 && size > maxSize {
-		return nil, fmt.Errorf("%w：文件大小超过限制 %dMB", ErrInvalidRequest, s.cfg.Media.MaxSizeMB)
+	// 上限必须为正，配置校验已在加载期拦截非法取值，此处防御直接构造服务实例的调用路径。
+	// 该情形属服务端配置错误，返回未分类错误使响应脱敏为 500，避免误判为客户端请求问题。
+	maxSize := int64(s.cfg.Media.MaxSizeMB) * bytesPerMegabyte
+	if maxSize <= 0 {
+		return nil, fmt.Errorf("媒体单文件大小上限配置无效: %dMB", s.cfg.Media.MaxSizeMB)
+	}
+
+	// 入参大小由调用方提供，先按声明值拦截明显超限的上传，避免无谓读取。
+	if size > maxSize {
+		return nil, fileSizeExceededError(s.cfg.Media.MaxSizeMB)
 	}
 
 	// 读取文件内容并计算哈希。
-	content, err := io.ReadAll(io.LimitReader(reader, maxSize+1))
+	content, err := io.ReadAll(io.LimitReader(reader, maxSize+truncationProbeBytes))
 	if err != nil {
 		return nil, fmt.Errorf("读取上传文件失败: %w", err)
+	}
+
+	// 声明值可能与实际内容不符，超限判定以实际读取字节数为准，与读取前的检查返回同一业务错误。
+	if int64(len(content)) > maxSize {
+		return nil, fileSizeExceededError(s.cfg.Media.MaxSizeMB)
 	}
 	fileHash := sha256.Sum256(content)
 	hashHex := hex.EncodeToString(fileHash[:])
 
-	// 文件哈希一致时直接复用已有记录，实现秒传去重。
-	if existing, err := s.mediaRepo.GetByFileHash(hashHex); err == nil {
+	// 查询按上传者限定，使命中确定地落在调用方自己的记录上。
+	// 显式归属判断是拒绝跨用户复用的安全边界，仓储实现忽略过滤条件时依然生效。
+	if existing, err := s.mediaRepo.GetByFileHashAndUploader(hashHex, uploaderID); err == nil && existing.UploaderID == uploaderID {
 		return existing, nil
 	}
 
@@ -104,8 +128,13 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 		return nil, err
 	}
 
-	// 生成存储文件名与相对路径，按月分目录便于归档；存储扩展名由嗅探类型推导。
-	storedName := uuid.NewString() + storedExtensionForMime(mimeType, filepath.Ext(filename))
+	// 生成存储文件名与相对路径，按月分目录便于归档。
+	// 存储扩展名只能由内容嗅探结果推导，客户端提供的文件名不参与存储命名。
+	storedExt, err := storedExtensionForMime(mimeType)
+	if err != nil {
+		return nil, err
+	}
+	storedName := uuid.NewString() + storedExt
 	subDir := timeNowStr()
 	relativePath := filepath.Join(subDir, storedName)
 	uploadDir := filepath.Join(s.cfg.Media.UploadDir, subDir)
@@ -122,13 +151,14 @@ func (s *MediaService) UploadFile(filename string, reader io.Reader, size int64,
 	// 构建访问 URL。
 	fileURL := strings.TrimRight(s.cfg.Media.BaseURL, "/") + "/" + filepath.ToSlash(relativePath)
 
+	// 落库大小取实际存储的字节数，声明值可能大于实际内容，据此记录会使读取结果与实际不符。
 	media := &model.MediaFile{
 		Filename:    filename,
 		StoredName:  storedName,
 		FilePath:    fullPath,
 		FileURL:     fileURL,
 		MimeType:    mimeType,
-		FileSize:    uint64(size),
+		FileSize:    uint64(len(content)),
 		FileHash:    hashHex,
 		Status:      model.MediaStatusActive,
 		UploaderID:  uploaderID,
@@ -231,13 +261,15 @@ func (s *MediaService) validateUploadType(mimeType string) error {
 	return fmt.Errorf("%w：不支持的文件类型 %s", ErrInvalidRequest, mimeType)
 }
 
-// storedExtensionForMime 从白名单映射推导存储扩展名，映射缺失时回退原始扩展名。
-// 回退仅发生在白名单关闭或运维显式放行新类型的场景，命中白名单时必然存在映射。
-func storedExtensionForMime(mimeType, originalExt string) string {
+// storedExtensionForMime 依据内容嗅探结果推导存储扩展名。
+// 客户端提供的文件名一律不参与存储命名，命中映射时返回映射后缀。
+// 映射缺失时拒绝上传，不采用中性后缀，否则任意字节仍会被接受并落盘。
+// 该拒绝与白名单拒绝语义不同，便于运维区分类型无法安全落地存储与类型未放行两种原因。
+func storedExtensionForMime(mimeType string) (string, error) {
 	if ext, ok := allowedMimeExtensions[mimeType]; ok {
-		return ext
+		return ext, nil
 	}
-	return originalExt
+	return "", fmt.Errorf("%w：内容类型 %s 无法确定安全的存储扩展名", ErrInvalidRequest, mimeType)
 }
 
 // detectContentType 通过嗅探文件内容推断 MIME 类型。

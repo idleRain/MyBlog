@@ -21,7 +21,7 @@ import (
 type fakeMediaRepo struct {
 	repository.MediaRepositoryInterface
 	media     []*model.MediaFile
-	getByHash func(hash string) (*model.MediaFile, error)
+	getByHash func(hash string, uploaderID uint) (*model.MediaFile, error)
 	getByID   func(id uint) (*model.MediaFile, error)
 }
 
@@ -31,12 +31,13 @@ func (f *fakeMediaRepo) Create(media *model.MediaFile) error {
 	return nil
 }
 
-func (f *fakeMediaRepo) GetByFileHash(hash string) (*model.MediaFile, error) {
+// GetByFileHashAndUploader 默认按上传者过滤，与生产仓储的限定语义一致。
+func (f *fakeMediaRepo) GetByFileHashAndUploader(hash string, uploaderID uint) (*model.MediaFile, error) {
 	if f.getByHash != nil {
-		return f.getByHash(hash)
+		return f.getByHash(hash, uploaderID)
 	}
 	for _, media := range f.media {
-		if media.FileHash == hash {
+		if media.FileHash == hash && media.UploaderID == uploaderID {
 			return media, nil
 		}
 	}
@@ -93,18 +94,84 @@ func TestUploadFileOversize(t *testing.T) {
 	}
 }
 
-// TestUploadFileDeduplicates 验证相同内容文件通过哈希去重复用已有记录。
+// testBytesPerMegabyte 单兆字节的字节数，供测试构造大小上限的边界内容。
+const testBytesPerMegabyte = 1024 * 1024
+
+// TestUploadFileRejectsNonPositiveMaxSizeConfig 验证大小上限非正时上传被拒绝。
+// 服务实例可被直接构造，配置校验不覆盖该路径，上限合法性的判定必须在服务层独立成立。
+func TestUploadFileRejectsNonPositiveMaxSizeConfig(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.MaxSizeMB = 0
+
+	_, err := svc.UploadFile("pic.png", bytes.NewReader(pngTestContent), int64(len(pngTestContent)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("大小上限为零时上传应返回错误")
+	}
+	// 上限非法属服务端配置错误，handler 据此分档为 500 而非客户端 400。
+	if errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("大小上限非法不应分类为请求参数错误，实际为 %v", err)
+	}
+	if len(repo.media) != 0 {
+		t.Error("被拒绝的文件不应落库")
+	}
+}
+
+// TestUploadFileRecordsActualStoredSize 验证落库大小取自实际读取字节数而非入参声明值。
+// 声明值远大于实际内容时，记录大小必须与存储内容一致，否则读回的大小与实际不符。
+func TestUploadFileRecordsActualStoredSize(t *testing.T) {
+	const maxSizeMB = 1
+	declaredSizeBytes := int64(testBytesPerMegabyte) / 2
+
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.MaxSizeMB = maxSizeMB
+
+	media, err := svc.UploadFile("pic.png", bytes.NewReader(pngTestContent), declaredSizeBytes, 1, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+	if media.FileSize != uint64(len(pngTestContent)) {
+		t.Errorf("FileSize = %d, 期望等于实际字节数 %d", media.FileSize, len(pngTestContent))
+	}
+}
+
+// TestUploadFileRejectsContentExceedingMaxSize 验证声明大小在上限内但实际内容超限时被拒绝。
+// 声明值由调用方提供，不能作为放行依据，超限判定以实际读取字节数为准。
+func TestUploadFileRejectsContentExceedingMaxSize(t *testing.T) {
+	const maxSizeMB = 1
+	declaredSizeBytes := int64(testBytesPerMegabyte)
+	content := bytes.Repeat([]byte("a"), testBytesPerMegabyte+1)
+
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.MaxSizeMB = maxSizeMB
+
+	_, err := svc.UploadFile("note.txt", bytes.NewReader(content), declaredSizeBytes, 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("实际内容超过上限的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("超限上传应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	if len(repo.media) != 0 {
+		t.Error("被拒绝的文件不应落库")
+	}
+}
+
+// TestUploadFileDeduplicates 验证同一上传者的相同内容文件通过哈希去重复用已有记录。
 func TestUploadFileDeduplicates(t *testing.T) {
-	// 计算与上传内容一致的哈希，模拟文件已存在的场景。
+	// 计算与上传内容一致的哈希，模拟同一上传者已上传过该内容的场景。
 	content := []byte("same content")
 	hashBytes := sha256.Sum256(content)
 	contentHash := hex.EncodeToString(hashBytes[:])
 
-	existing := &model.MediaFile{ID: 1, FileHash: contentHash, FileURL: "/uploads/2026/01/a.png", Filename: "a.png"}
+	const uploaderID uint = 1
+	existing := &model.MediaFile{ID: 1, FileHash: contentHash, FileURL: "/uploads/2026/01/a.png", Filename: "a.png", UploaderID: uploaderID}
 	repo := &fakeMediaRepo{
 		media: []*model.MediaFile{existing},
-		getByHash: func(hash string) (*model.MediaFile, error) {
-			if hash == contentHash {
+		getByHash: func(hash string, ownerID uint) (*model.MediaFile, error) {
+			if hash == contentHash && ownerID == uploaderID {
 				return existing, nil
 			}
 			return nil, domain.ErrMediaNotFound
@@ -113,13 +180,107 @@ func TestUploadFileDeduplicates(t *testing.T) {
 	svc := newTestMediaService(t, repo)
 
 	// 上传相同内容，应命中已有记录。
-	media, err := svc.UploadFile("b.png", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	media, err := svc.UploadFile("b.png", bytes.NewReader(content), int64(len(content)), uploaderID, "127.0.0.1")
 	if err != nil {
 		t.Fatalf("上传失败: %v", err)
 	}
 
 	if media.ID != 1 {
 		t.Errorf("去重后应返回已有记录，实际 ID = %d", media.ID)
+	}
+	if got := len(repo.media); got != 1 {
+		t.Errorf("去重命中不应新建记录，实际记录数 = %d", got)
+	}
+}
+
+// TestUploadFileDoesNotReuseOtherUploaderRecord 验证仓储忽略上传者过滤时服务层仍拒绝跨用户复用。
+// 仓储实现不受业务层信任，归属判断由业务层独立承担。
+// 该场景下调用方必须获得属于自己的记录，不得回出他人的存储路径、归属与原始文件名。
+func TestUploadFileDoesNotReuseOtherUploaderRecord(t *testing.T) {
+	// 内容取真实 PNG，使上传落在映射内类型上，用例聚焦跨上传者复用而非类型判定。
+	content := pngTestContent
+	hashBytes := sha256.Sum256(content)
+	contentHash := hex.EncodeToString(hashBytes[:])
+
+	const otherUploaderID uint = 1
+	const currentUploaderID uint = 2
+	otherRecord := &model.MediaFile{
+		ID:         1,
+		Filename:   "other-owner.png",
+		FilePath:   `C:\srv\uploads\2026\01\other-owner.png`,
+		FileHash:   contentHash,
+		UploaderID: otherUploaderID,
+	}
+	// 钩子无视上传者参数并强行返回他人记录，模拟忽略过滤条件的仓储实现。
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{otherRecord},
+		getByHash: func(hash string, _ uint) (*model.MediaFile, error) {
+			if hash == contentHash {
+				return otherRecord, nil
+			}
+			return nil, domain.ErrMediaNotFound
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	media, err := svc.UploadFile("mine.png", bytes.NewReader(content), int64(len(content)), currentUploaderID, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+
+	if media.UploaderID != currentUploaderID {
+		t.Errorf("上传结果应归属于当前上传者，实际 uploaderId = %d", media.UploaderID)
+	}
+	if media.FilePath == otherRecord.FilePath {
+		t.Errorf("上传结果不应回出他人存储路径，实际 filePath = %s", media.FilePath)
+	}
+	if media.Filename != "mine.png" {
+		t.Errorf("上传结果应保留本次提交的原始文件名，实际 filename = %s", media.Filename)
+	}
+	if got := len(repo.media); got != 2 {
+		t.Errorf("跨上传者命中应新增属于本人的记录，实际记录数 = %d", got)
+	}
+}
+
+// TestUploadFileDeduplicatesOwnRecordAmongOthers 验证同哈希存在多位上传者记录时，去重落在调用方自己的记录上。
+// 限定上传者之前，查询只会返回主键最小的一行，非首位上传者每次重复上传都会新建副本。
+func TestUploadFileDeduplicatesOwnRecordAmongOthers(t *testing.T) {
+	content := []byte("content held by two uploaders")
+	hashBytes := sha256.Sum256(content)
+	contentHash := hex.EncodeToString(hashBytes[:])
+
+	const otherUploaderID uint = 1
+	const currentUploaderID uint = 2
+	otherRecord := &model.MediaFile{ID: 1, Filename: "other.png", FileHash: contentHash, UploaderID: otherUploaderID}
+	ownRecord := &model.MediaFile{ID: 2, Filename: "mine.png", FileURL: "/uploads/2026/01/mine.png", FileHash: contentHash, UploaderID: currentUploaderID}
+	// 钩子按上传者分流，模拟按上传者限定查询的生产仓储。
+	repo := &fakeMediaRepo{
+		media: []*model.MediaFile{otherRecord, ownRecord},
+		getByHash: func(hash string, ownerID uint) (*model.MediaFile, error) {
+			if hash != contentHash {
+				return nil, domain.ErrMediaNotFound
+			}
+			if ownerID == otherUploaderID {
+				return otherRecord, nil
+			}
+			if ownerID == currentUploaderID {
+				return ownRecord, nil
+			}
+			return nil, domain.ErrMediaNotFound
+		},
+	}
+	svc := newTestMediaService(t, repo)
+
+	media, err := svc.UploadFile("mine.png", bytes.NewReader(content), int64(len(content)), currentUploaderID, "127.0.0.1")
+	if err != nil {
+		t.Fatalf("上传失败: %v", err)
+	}
+
+	if media.ID != ownRecord.ID {
+		t.Errorf("去重应命中调用方自己的记录，实际 ID = %d", media.ID)
+	}
+	if got := len(repo.media); got != 2 {
+		t.Errorf("去重命中不应新建记录，实际记录数 = %d", got)
 	}
 }
 
@@ -189,6 +350,29 @@ func TestGetMediaOwnership(t *testing.T) {
 // pngTestContent 构造可被内容嗅探识别为 image/png 的最小内容。
 var pngTestContent = append([]byte("\x89PNG\r\n\x1a\n"), bytes.Repeat([]byte{0}, 8)...)
 
+// htmlTestContent 构造可被内容嗅探识别为 text/html 的脚本片段，用于验证脚本类型内容不会以客户端扩展名落盘。
+var htmlTestContent = []byte("<html><body><script>alert(1)</script></body></html>")
+
+// mp4TestContent 构造偏移 4 处为 ftyp 标记的内容，供内容嗅探识别为 video/mp4。
+var mp4TestContent = append([]byte{0x00, 0x00, 0x00, 0x18}, []byte("ftypmp42\x00\x00\x00\x00mp42isom")...)
+
+// requireEmptyDir 断言目录内没有任何文件，用于验证被拒绝的上传未落盘。
+func requireEmptyDir(t *testing.T, dir string) {
+	t.Helper()
+	err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if !entry.IsDir() {
+			t.Errorf("被拒绝的上传不应落盘，发现文件 %s", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("遍历上传目录失败: %v", err)
+	}
+}
+
 // TestUploadFileRejectsDisallowedType 验证白名单开启后非白名单类型被拒绝且不落库。
 func TestUploadFileRejectsDisallowedType(t *testing.T) {
 	repo := &fakeMediaRepo{}
@@ -231,18 +415,100 @@ func TestUploadFileDerivesStoredExtension(t *testing.T) {
 	}
 }
 
-// TestUploadFileKeepsExtensionWhenUnrestricted 验证白名单关闭时保持原始扩展名。
-func TestUploadFileKeepsExtensionWhenUnrestricted(t *testing.T) {
+// TestUploadFileRejectsUnmappedTypeWhenUnrestricted 验证白名单关闭时嗅探类型不在存储映射内的上传被拒绝。
+// 白名单关闭只放行类型校验，存储扩展名仍只能由嗅探结果推导，客户端扩展名不参与存储命名。
+func TestUploadFileRejectsUnmappedTypeWhenUnrestricted(t *testing.T) {
 	repo := &fakeMediaRepo{}
 	svc := newTestMediaService(t, repo)
 
 	content := []byte("plain text content")
-	media, err := svc.UploadFile("note.txt", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	_, err := svc.UploadFile("note.txt", bytes.NewReader(content), int64(len(content)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("白名单关闭时嗅探类型不在存储映射内的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("该拒绝属业务校验失败，应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	// 拒绝原因须指出嗅探到的内容类型，运维据此判断是类型无法安全落地存储而非类型未放行。
+	if !strings.Contains(err.Error(), detectContentType(content)) {
+		t.Errorf("拒绝原因应指出嗅探到的内容类型 %s，实际为 %v", detectContentType(content), err)
+	}
+	if got := len(repo.media); got != 0 {
+		t.Errorf("被拒绝的文件不应落库，实际记录数 = %d", got)
+	}
+	requireEmptyDir(t, svc.cfg.Media.UploadDir)
+}
+
+// TestUploadFileRejectsHtmlPayloadWhenUnrestricted 验证白名单关闭时脚本类型内容不会以客户端扩展名落盘。
+// 该内容与 x.html 文件名叠加后经静态服务以 text/html 下发即构成存储型 XSS，
+// 因此拒绝必须发生在写入磁盘之前。
+func TestUploadFileRejectsHtmlPayloadWhenUnrestricted(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+
+	// 前置断言：内容确实被嗅探为 text/html，确保本用例覆盖的是脚本类型内容的落盘路径。
+	if sniffed := detectContentType(htmlTestContent); !strings.HasPrefix(sniffed, "text/html") {
+		t.Fatalf("测试内容嗅探结果为 %s，不构成脚本类型内容", sniffed)
+	}
+
+	_, err := svc.UploadFile("x.html", bytes.NewReader(htmlTestContent), int64(len(htmlTestContent)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("无法确定安全存储扩展名的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("该拒绝属业务校验失败，应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	// 该拒绝与白名单拒绝是两种原因，文案必须可区分。
+	if strings.Contains(err.Error(), "不支持的文件类型") {
+		t.Errorf("拒绝原因应为无法确定存储扩展名，不应与白名单拒绝同文案，实际为 %v", err)
+	}
+	if got := len(repo.media); got != 0 {
+		t.Errorf("被拒绝的文件不应落库，实际记录数 = %d", got)
+	}
+	requireEmptyDir(t, svc.cfg.Media.UploadDir)
+}
+
+// TestUploadFileRejectsWhitelistedTypeWithoutStorageMapping 验证白名单放行不足以放行落盘。
+// 白名单条目与存储扩展名映射相互独立，运维在白名单中新增映射外类型时上传仍被拒绝，
+// 因此白名单放行不会使落盘扩展名回退为客户端提供的扩展名。
+func TestUploadFileRejectsWhitelistedTypeWithoutStorageMapping(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+	svc.cfg.Media.AllowedTypes = []string{"video/mp4"}
+
+	// 前置断言：内容确实被嗅探为白名单内的 video/mp4，确保本用例验证的是映射缺失而非白名单拒绝。
+	if sniffed := detectContentType(mp4TestContent); sniffed != "video/mp4" {
+		t.Fatalf("测试内容嗅探结果为 %s，不构成白名单放行但映射缺失的场景", sniffed)
+	}
+
+	_, err := svc.UploadFile("x.html", bytes.NewReader(mp4TestContent), int64(len(mp4TestContent)), 1, "127.0.0.1")
+	if err == nil {
+		t.Fatal("白名单放行但无法确定存储扩展名的上传应返回错误")
+	}
+	if !errors.Is(err, ErrInvalidRequest) {
+		t.Errorf("该拒绝属业务校验失败，应包装 ErrInvalidRequest，实际为 %v", err)
+	}
+	if got := len(repo.media); got != 0 {
+		t.Errorf("被拒绝的文件不应落库，实际记录数 = %d", got)
+	}
+	requireEmptyDir(t, svc.cfg.Media.UploadDir)
+}
+
+// TestUploadFileDerivesStoredExtensionWhenUnrestricted 验证白名单关闭时存储扩展名同样只由嗅探结果推导。
+// 与白名单开启路径互补：客户端文件名不参与存储命名的约束与白名单开关无关。
+func TestUploadFileDerivesStoredExtensionWhenUnrestricted(t *testing.T) {
+	repo := &fakeMediaRepo{}
+	svc := newTestMediaService(t, repo)
+
+	media, err := svc.UploadFile("polyglot.html", bytes.NewReader(pngTestContent), int64(len(pngTestContent)), 1, "127.0.0.1")
 	if err != nil {
 		t.Fatalf("上传失败: %v", err)
 	}
-	if !strings.HasSuffix(media.StoredName, ".txt") {
-		t.Errorf("白名单关闭时应保留原始扩展名，实际为 %s", media.StoredName)
+	if !strings.HasSuffix(media.StoredName, ".png") {
+		t.Errorf("白名单关闭时存储扩展名仍应由嗅探类型推导为 .png，实际为 %s", media.StoredName)
+	}
+	if got := len(repo.media); got != 1 {
+		t.Errorf("放行的上传应落库一条记录，实际记录数 = %d", got)
 	}
 }
 

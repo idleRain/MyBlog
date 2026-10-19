@@ -7,6 +7,7 @@ import { Switch } from '$ui/switch'
 import { Button } from '$ui/button'
 import { Label } from '$ui/label'
 import { Input } from '$ui/input'
+import { untrack } from 'svelte'
 
 interface Props {
   open: boolean
@@ -39,19 +40,22 @@ let formError = $state('')
  */
 $effect(() => {
   if (!open) return
-  name = target?.name ?? ''
-  slug = target?.slug ?? ''
-  color = target?.color || '#808080'
-  description = target?.description ?? ''
-  status = target?.status ?? 1
-  isHot = target?.isHot ?? false
+  // 回填写入不参与依赖收集，否则表单字段会被 effect 订阅，键入即触发重跑并覆盖用户输入。
+  untrack(() => {
+    name = target?.name ?? ''
+    slug = target?.slug ?? ''
+    color = target?.color || '#808080'
+    description = target?.description ?? ''
+    status = target?.status ?? 1
+    isHot = target?.isHot ?? false
 
-  // 英文翻译行允许按字段缺失，缺失字段回填为空串。
-  const en = target?.translations?.find(row => row.locale === 'en') ?? null
-  enName = en?.name ?? ''
-  enDescription = en?.description ?? ''
-  enSnapshot = JSON.stringify([enName, enDescription])
-  formError = ''
+    // 英文翻译行允许按字段缺失，缺失字段回填为空串。
+    const en = target?.translations?.find(row => row.locale === 'en') ?? null
+    enName = en?.name ?? ''
+    enDescription = en?.description ?? ''
+    enSnapshot = JSON.stringify([enName, enDescription])
+    formError = ''
+  })
 })
 
 /**

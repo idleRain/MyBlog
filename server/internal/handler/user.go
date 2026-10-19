@@ -64,6 +64,17 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// 拥有 user:create 权限的管理员可借此创建超级管理员，从而获得 system:config 等管理员不具备的权限，因此在调用服务层前按角色可分配范围拦截。
+	currentUserRole, exists := c.Get("userRole")
+	if !exists {
+		response.Unauthorized(c, "无法获取用户权限信息")
+		return
+	}
+	if req.Role != "" && !h.userService.CanUserManageRole(currentUserRole.(string), req.Role) {
+		response.Forbidden(c, "权限不足，无法分配该角色")
+		return
+	}
+
 	// 调用服务层创建用户
 	user, err := h.userService.CreateUser(&req)
 	if err != nil {
