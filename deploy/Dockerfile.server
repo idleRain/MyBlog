@@ -2,7 +2,7 @@
 # Go 版本与 server/go.mod 声明的 1.26.1 对齐，配置经环境变量注入，不烧录真实密钥。
 
 # 阶段一：编译 Go 二进制
-FROM golang:1.26-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /src
 # 先拷贝依赖清单以命中 go mod 下载缓存层
 COPY server/go.mod server/go.sum ./
