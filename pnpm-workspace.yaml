@@ -34,7 +34,7 @@ catalog:
   '@tailwindcss/vite': 4.3.3
   typescript: 6.0.3
   # 契约锚定测试需要读取仓库内文件，Node 内置模块类型声明跨包共用，版本经此处统一。
-  '@types/node': 24.13.3
+  '@types/node': 26.6.5
   unplugin-auto-import: 21.1.0
   vite: 8.2.2
   vite-plugin-devtools-json: 1.1.0
